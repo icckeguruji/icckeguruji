@@ -59,6 +59,7 @@ import {
 } from '@/types';
 import { getStoredData, saveStoredData } from '@/lib/storage';
 import Logo from '@/components/Logo';
+import WhatsAppBotHub from '@/components/WhatsAppBotHub';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState(getStoredData());
@@ -66,7 +67,7 @@ export default function AdminDashboardPage() {
   
   // Left Sidebar active tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'payments' | 'courses' | 'lectures' | 'notes' | 'dpp' | 'pyq' | 'forum' | 'students' | 'quizzes' | 'timetable' | 'cms' | 'broadcast' | 'settings'
+    'overview' | 'payments' | 'courses' | 'lectures' | 'notes' | 'dpp' | 'pyq' | 'forum' | 'whatsapp' | 'students' | 'quizzes' | 'timetable' | 'cms' | 'broadcast' | 'settings'
   >('overview');
 
   // CMS Sub-tabs: 'announcements' | 'articles' | 'testimonials' | 'faqs'
@@ -726,11 +727,12 @@ export default function AdminDashboardPage() {
     },
     { id: 'pyq', label: 'PYQ Papers', icon: Download, count: (data.pyqPapers || []).length },
     { id: 'forum', label: 'Doubt Forum', icon: MessageSquare, count: (data.communityPosts || []).length },
+    { id: 'whatsapp', label: 'WhatsApp AI Bot (QR)', icon: MessageSquare, highlight: true },
+    { id: 'broadcast', label: 'Telegram Guruji Bot', icon: Send, highlight: true },
     { id: 'quizzes', label: 'Quizzes & Mock Tests', icon: Award, count: data.quizzes.length },
     { id: 'timetable', label: 'Weekly Timetable', icon: Calendar, count: data.timetable.length },
     { id: 'students', label: 'Student Directory', icon: Users, count: data.students.length },
-    { id: 'cms', label: 'CMS (Content Manager)', icon: PenTool, highlight: true },
-    { id: 'broadcast', label: 'Broadcast & Alerts', icon: Send },
+    { id: 'cms', label: 'CMS (Content Manager)', icon: PenTool },
     { id: 'settings', label: 'Institute Settings', icon: Settings },
   ];
 
@@ -868,11 +870,12 @@ export default function AdminDashboardPage() {
                 {activeTab === 'dpp' && 'Daily Practice Problems (DPP) & Homework Review'}
                 {activeTab === 'pyq' && 'Previous Years Question Papers (PYQ) Hub'}
                 {activeTab === 'forum' && 'Student Doubt Discussion Forum Moderator'}
+                {activeTab === 'whatsapp' && 'WhatsApp 24/7 AI Counselor & QR Connect'}
+                {activeTab === 'broadcast' && 'Telegram Guruji Bot (Command Center & Dashboard Control)'}
                 {activeTab === 'quizzes' && 'Chapter Quizzes & Mock Test Engine'}
                 {activeTab === 'timetable' && 'Weekly Live Timetable & Routine'}
                 {activeTab === 'students' && 'Enrolled Students Directory'}
                 {activeTab === 'cms' && 'CMS (Content Management System)'}
-                {activeTab === 'broadcast' && 'Telegram & WhatsApp Broadcast'}
                 {activeTab === 'settings' && 'Institute Configuration'}
               </h2>
               <p className="text-[11px] text-slate-400 hidden sm:block">
@@ -2570,62 +2573,156 @@ export default function AdminDashboardPage() {
           )}
 
           {/* =====================================================================
-              10. BROADCAST TAB
+              9.5. WHATSAPP BOT HUB TAB (QR LINK & GEMINI AI)
+          ===================================================================== */}
+          {activeTab === 'whatsapp' && (
+            <WhatsAppBotHub config={data.config} courses={data.courses} />
+          )}
+
+          {/* =====================================================================
+              10. TELEGRAM GURUJI BOT & COMMAND CENTER
           ===================================================================== */}
           {activeTab === 'broadcast' && (
-            <div className="max-w-3xl bg-white border border-slate-200 p-8 rounded-3xl shadow-xs space-y-6">
-              <div>
-                <h3 className="font-black text-slate-900 text-lg mb-1 flex items-center gap-2">
-                  <Send className="w-5 h-5 text-sky-500" />
-                  Instant Telegram &amp; WhatsApp Broadcast
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Yahan se aap sabhi enrolled students ko ek saath **Live Class Link**, **Naye Notes** ya **Exam Notification** send kar sakte hain. Ye alert direct student dashboard aur Telegram group par live reflect hoga.
-                </p>
+            <div className="space-y-6">
+              {/* Telegram Command Center Card */}
+              <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
+                <div className="relative z-10 max-w-3xl space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-white/20 text-white text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-sky-300 animate-pulse"></span>
+                      Telegram Webhook Bot Active
+                    </span>
+                    <span className="text-xs text-sky-100 font-mono">
+                      @{data.config.telegramBotUsername || 'IccKeGurujiBot'}
+                    </span>
+                  </div>
+
+                  <h2 className="text-2xl sm:text-3xl font-black">
+                    Telegram Guruji Bot — Complete Mobile Dashboard Control
+                  </h2>
+                  <p className="text-xs sm:text-sm text-sky-100 leading-relaxed">
+                    Aapko laptop kholne ki zarurat nahi hai! Guruji apne phone par Telegram bot ko message karke ya buttons tap karke UPI payments approve kar sakte hain, live stats dekh sakte hain, aur students ke liye urgent broadcast alerts post kar sakte hain.
+                  </p>
+                </div>
               </div>
 
-              {broadcastSent && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2">
-                  <Check className="w-5 h-5 text-emerald-600 stroke-[3]" />
-                  <span>Broadcast successfully sent! Notice board ticker aur Telegram group par alert chala gaya hai.</span>
-                </div>
-              )}
+              {/* Bot Webhook URL & Command Cheat Sheet */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left: Commands Cheat Sheet */}
+                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                    <Send className="w-4 h-4 text-sky-500" />
+                    Telegram Bot Commands Cheat-Sheet
+                  </h3>
 
-              <form onSubmit={handleSendBroadcast} className="space-y-4 text-xs sm:text-sm">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">
-                    Broadcast Message / Notice *
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={broadcastMsg}
-                    onChange={(e) => setBroadcastMsg(e.target.value)}
-                    placeholder="e.g. 🔴 LIVE CLASS ALERT: Aaj shaam 7:00 PM Electrostatics masterclass shuru hone wali hai. Sabhi students formula notebook lekar ready rahein!"
-                    className="w-full p-4 bg-slate-50 border border-slate-300 rounded-2xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none text-sm font-medium"
-                  />
-                </div>
+                  <div className="space-y-2.5 text-xs">
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                      <span className="font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                        /pending
+                      </span>
+                      <p className="text-slate-700">
+                        Pending UPI payments ki list dikhata hai. Har payment ke niche <strong>[✅ Approve]</strong> aur <strong>[❌ Reject]</strong> ke buttons aate hain jinhe 1-tap me approve kiya ja sakta hai.
+                      </p>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600">
-                  <div className="p-3.5 bg-sky-50 rounded-2xl border border-sky-100 flex items-center gap-2.5">
-                    <Send className="w-4 h-4 text-sky-600 shrink-0" />
-                    <span>Telegram Group: <strong>{data.config.telegramGroupLink}</strong></span>
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                      <span className="font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                        /stats
+                      </span>
+                      <p className="text-slate-700">
+                        Total Enrolled Students, Aaj ki Direct UPI Revenue, aur Active Batches ka live summary.
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                      <span className="font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                        /broadcast &lt;msg&gt;
+                      </span>
+                      <p className="text-slate-700">
+                        Website ke live notice ticker aur student dashboard par instant notification publish karta hai.
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                      <span className="font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                        /timetable
+                      </span>
+                      <p className="text-slate-700">
+                        Aaj ki sabhi scheduled live classes aur faculty timing dikhata hai.
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                      <span className="font-mono font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                        /dpp
+                      </span>
+                      <p className="text-slate-700">
+                        Students ki pending homework aur numerical submissions review ke liye dikhata hai.
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-2.5">
-                    <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>WhatsApp Helpline: <strong>{data.config.whatsappNumber}</strong></span>
-                  </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={!broadcastMsg.trim()}
-                  className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-2xl shadow-md shadow-blue-500/20 text-sm flex items-center justify-center gap-2 transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>Send Broadcast to All Students</span>
-                </button>
-              </form>
+                {/* Right: Webhook Link & Quick Broadcast */}
+                <div className="space-y-6">
+                  {/* Webhook Configuration Card */}
+                  <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-3">
+                    <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      Telegram Bot Webhook Endpoint
+                    </h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Telegram par commands receive karne ke liye aapka webhook endpoint 100% ready hai:
+                    </p>
+
+                    <div className="p-3 bg-slate-50 rounded-xl font-mono text-xs text-slate-800 border border-slate-200 break-all select-all">
+                      https://icckeguruji.vercel.app/api/telegram/webhook
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 bg-blue-50 p-3 rounded-xl border border-blue-200 space-y-1">
+                      <span className="font-bold text-blue-900">Webhook Set Karne Ka 1-Click Link:</span>
+                      <p className="font-mono break-all text-[10px] text-blue-800">
+                        https://api.telegram.org/bot&lt;BOT_TOKEN&gt;/setWebhook?url=https://icckeguruji.vercel.app/api/telegram/webhook
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Manual Broadcast Form */}
+                  <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+                    <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <Send className="w-4 h-4 text-sky-500" />
+                      Quick Notice Broadcast from Web
+                    </h3>
+
+                    {broadcastSent && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        Notice student dashboard aur Telegram group par live broadcast ho gaya!
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSendBroadcast} className="space-y-3">
+                      <textarea
+                        rows={3}
+                        required
+                        value={broadcastMsg}
+                        onChange={(e) => setBroadcastMsg(e.target.value)}
+                        placeholder="e.g. 🔴 LIVE CLASS: Aaj shaam 7:00 PM Electrostatics masterclass shuru hogi!"
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={!broadcastMsg.trim()}
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                      >
+                        <Send className="w-4 h-4" />
+                        Publish Broadcast to All Students
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
