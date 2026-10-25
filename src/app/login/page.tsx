@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { authenticateUser } from '@/lib/storage';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [showForgotModal, setShowForgotModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -187,12 +189,13 @@ export default function LoginPage() {
               />
               <span>Remember me</span>
             </label>
-            <span
-              className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
-              onClick={() => alert('Demo Passwords: "student123" ya "admin123" hain.')}
+            <button
+              type="button"
+              className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+              onClick={() => setShowForgotModal(true)}
             >
               Forgot Password?
-            </span>
+            </button>
           </div>
 
           {/* Submit Button */}
@@ -259,6 +262,20 @@ export default function LoginPage() {
       <div className="max-w-md w-full mx-auto text-center pt-6 text-xs text-slate-400">
         © 2026 ICC KE GURUJI. All rights reserved.
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <ForgotPasswordModal
+          initialEmail={identifier.includes('@') ? identifier : ''}
+          onClose={() => setShowForgotModal(false)}
+          onSuccessReset={(user) => {
+            setSuccess(`Swagat hai, ${user.name}! Naya password set ho gaya.`);
+            setTimeout(() => {
+              router.push(user.role === 'admin' ? '/admin' : '/course/course-1');
+            }, 600);
+          }}
+        />
+      )}
     </div>
   );
 }

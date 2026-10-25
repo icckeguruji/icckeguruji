@@ -168,6 +168,7 @@ export interface CoachingConfig {
   telegramGroupLink: string;
   telegramBotUsername: string;
   contactEmail: string;
+  googleAppsScriptEmailUrl?: string;
   heroHeadline?: string;
   heroSubheadline?: string;
   admissionBadgeText?: string;

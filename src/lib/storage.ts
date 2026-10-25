@@ -28,6 +28,7 @@ export const DEFAULT_CONFIG: CoachingConfig = {
   telegramGroupLink: "https://t.me/icckeguruji_official",
   telegramBotUsername: "IccKeGurujiBot",
   contactEmail: "contact@icckeguruji.com",
+  googleAppsScriptEmailUrl: "",
   heroHeadline: "Apne Career Ka Lakshya Haasil Karein with ICC KE GURUJI",
   heroSubheadline: "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji aur paid Telegram group alerts.",
   admissionBadgeText: "New Academic Session 2026 Admissions Open • Direct UPI Zero Commission",
@@ -1050,5 +1051,55 @@ export function authenticateUser(
   saveStoredData('USER', newStudent);
 
   return { success: true, user: newStudent, redirectTo: '/course/course-1' };
+}
+
+/**
+ * Update user password after OTP reset
+ */
+export function resetUserPassword(
+  identifier: string,
+  newPassword: string
+): { success: boolean; user?: User; error?: string } {
+  const data = getStoredData();
+  const cleanId = (identifier || '').trim().toLowerCase();
+  const digitsOnly = cleanId.replace(/[^0-9]/g, '');
+
+  if (!cleanId) return { success: false, error: 'Email ya Phone required hai.' };
+  if (!newPassword || newPassword.length < 6) return { success: false, error: 'Naya password kam se kam 6 characters ka hona chahiye.' };
+
+  // Check admin
+  if (cleanId === 'admin@icckeguruji.com' || cleanId === 'admin') {
+    const admin: User = {
+      id: "admin-guruji",
+      name: "Guruji (Alok Sharma)",
+      phone: "+91 98765 43210",
+      email: "admin@icckeguruji.com",
+      password: newPassword,
+      role: "admin",
+      enrolledCourseIds: ["course-1", "course-2", "course-3"],
+      joinedDate: "Founder",
+    };
+    saveStoredData('USER', admin);
+    return { success: true, user: admin };
+  }
+
+  // Check existing student
+  const student = data.students.find((s) => {
+    const sEmail = (s.email || '').toLowerCase();
+    const sDigits = (s.phone || '').replace(/[^0-9]/g, '').slice(-10);
+    return sEmail === cleanId || (digitsOnly.length >= 10 && sDigits === digitsOnly.slice(-10));
+  });
+
+  if (student) {
+    student.password = newPassword;
+    saveStoredData('STUDENTS', data.students);
+    if (data.user.id === student.id || data.user.email === student.email) {
+      data.user.password = newPassword;
+      saveStoredData('USER', data.user);
+    }
+    return { success: true, user: student };
+  }
+
+  return { success: false, error: 'Account nahi mila. Kripya valid registered email enter karein.' };
 }
 

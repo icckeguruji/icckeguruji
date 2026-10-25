@@ -38,7 +38,10 @@ import {
   ThumbsUp,
   Pencil,
   Star,
-  Eye
+  Eye,
+  Mail,
+  Copy,
+  Loader2
 } from 'lucide-react';
 import {
   Course,
@@ -63,6 +66,7 @@ import { getStoredData, saveStoredData } from '@/lib/storage';
 import Logo from '@/components/Logo';
 import WhatsAppBotHub from '@/components/WhatsAppBotHub';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import { GOOGLE_APPS_SCRIPT_CODE } from '@/lib/gasScript';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState(getStoredData());
@@ -196,6 +200,9 @@ export default function AdminDashboardPage() {
   // Settings form
   const [configForm, setConfigForm] = useState<CoachingConfig>(data.config);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [copyGasSuccess, setCopyGasSuccess] = useState(false);
+  const [testEmailLoading, setTestEmailLoading] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // DPP Management state
   const [gradingSubmission, setGradingSubmission] = useState<DppSubmission | null>(null);
@@ -267,6 +274,24 @@ export default function AdminDashboardPage() {
     saveStoredData('STUDENTS', updatedStudents);
 
     saveStoredData('PAYMENTS', updatedPayments);
+
+    // Send email receipt & classroom link to student
+    const studentObj = data.students.find((s) => s.id === payment.userId || s.phone === payment.userPhone);
+    const targetEmail = payment.userEmail || studentObj?.email;
+    if (targetEmail) {
+      fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'payment_approved',
+          to: targetEmail,
+          studentName: payment.userName,
+          courseTitle: payment.courseTitle,
+          classroomLink: typeof window !== 'undefined' ? `${window.location.origin}/course/${payment.courseId}` : `https://icckeguruji.vercel.app/course/${payment.courseId}`,
+        }),
+      }).catch((emailErr) => console.warn('Student approval email failed:', emailErr));
+    }
+
     refreshState();
   };
 
@@ -822,6 +847,53 @@ export default function AdminDashboardPage() {
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2500);
     refreshState();
+  };
+
+  // Copy Google Apps Script Code
+  const handleCopyGasScript = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
+      setCopyGasSuccess(true);
+      setTimeout(() => setCopyGasSuccess(false), 2500);
+    }
+  };
+
+  // Send Test Email via Google Apps Script Webhook
+  const handleTestEmail = async () => {
+    setTestEmailLoading(true);
+    setTestEmailResult(null);
+    try {
+      const res = await fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'test',
+          to: configForm.contactEmail || 'admin@icckeguruji.com',
+          customUrl: configForm.googleAppsScriptEmailUrl || ''
+        })
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setTestEmailResult({
+          success: true,
+          message: result.via === 'google-apps-script'
+            ? `✅ Test email successfully sent to ${configForm.contactEmail || 'admin@icckeguruji.com'} via Google Apps Script (Gmail)!`
+            : `⚠️ Webhook URL configure nahi hai (Simulator Mode). Real email bhejne ke liye script.new Web App URL paste karke Save karein.`
+        });
+      } else {
+        setTestEmailResult({
+          success: false,
+          message: result.error || 'Failed to send test email'
+        });
+      }
+    } catch (err: unknown) {
+      setTestEmailResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Error sending email'
+      });
+    } finally {
+      setTestEmailLoading(false);
+    }
   };
 
   // DPP Handlers
@@ -4339,6 +4411,132 @@ export default function AdminDashboardPage() {
                     placeholder="https://t.me/icckeguruji_official"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Official Contact & Alert Email</label>
+                  <input
+                    type="email"
+                    value={configForm.contactEmail || ''}
+                    onChange={(e) => setConfigForm({ ...configForm, contactEmail: e.target.value })}
+                    placeholder="contact@icckeguruji.com"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                  />
+                  <span className="text-[11px] text-slate-400">Payment alerts aur test emails is email par aayenge.</span>
+                </div>
+
+                {/* Google Apps Script (script.new) Email Dispatcher Integration */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/50 border-2 border-blue-200 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+                          Google Apps Script Email Alerts (script.new)
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            100% FREE
+                          </span>
+                        </h3>
+                        <p className="text-[11px] text-slate-600">
+                          Personal Gmail se automated Password Reset OTP aur Payment Receipts bhejein (Zero Monthly Fees).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="https://script.new"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition-all"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Open script.new</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleCopyGasScript}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                      >
+                        {copyGasSuccess ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy Script Code</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3 Step Instruction Box */}
+                  <div className="p-3 bg-white/80 border border-blue-100 rounded-xl text-[11px] text-slate-600 space-y-1">
+                    <p className="font-bold text-slate-800">⚡ 30-Second Setup Guide:</p>
+                    <ol className="list-decimal list-inside space-y-0.5 text-slate-600 pl-1">
+                      <li>Upar <b>&quot;Copy Script Code&quot;</b> par click karein aur <b>&quot;Open script.new&quot;</b> kholiye.</li>
+                      <li>Wahan pura code paste karein aur top right <b>Deploy ➜ New deployment ➜ Web app</b> chuniye.</li>
+                      <li><b>Execute as: Me</b> aur <b>Who has access: Anyone</b> select karke Deploy karein aur Web app URL copy karke yahan paste karein:</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      Google Apps Script Web App URL
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="url"
+                        value={configForm.googleAppsScriptEmailUrl || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, googleAppsScriptEmailUrl: e.target.value })}
+                        placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                        className="flex-1 px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleTestEmail}
+                        disabled={testEmailLoading}
+                        className="px-4 py-2.5 bg-slate-900 hover:bg-black disabled:opacity-60 text-white rounded-xl text-xs font-bold shrink-0 flex items-center justify-center gap-2 shadow-sm transition-all"
+                      >
+                        {testEmailLoading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Sending Test...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Send Test Email</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <span className="text-[11px] text-slate-400 mt-1 block">
+                      Jab tak Web App URL add nahi hoga, system instant Demo Simulator mode me OTP display karega.
+                    </span>
+                  </div>
+
+                  {testEmailResult && (
+                    <div
+                      className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                        testEmailResult.success
+                          ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                          : 'bg-rose-50 border border-rose-200 text-rose-800'
+                      }`}
+                    >
+                      {testEmailResult.success ? (
+                        <Check className="w-4 h-4 shrink-0 stroke-[3]" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                      )}
+                      <span>{testEmailResult.message}</span>
+                    </div>
+                  )}
                 </div>
 
                 <button

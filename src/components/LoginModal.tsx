@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { User as UserType } from '@/types';
 import { authenticateUser } from '@/lib/storage';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -29,6 +30,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -162,6 +164,15 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <div className="flex justify-end mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
             </div>
 
             <button
@@ -226,6 +237,18 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <ForgotPasswordModal
+          initialEmail={identifier.includes('@') ? identifier : ''}
+          onClose={() => setShowForgotModal(false)}
+          onSuccessReset={(user) => {
+            onLoginSuccess(user);
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }

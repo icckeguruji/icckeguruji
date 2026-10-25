@@ -81,6 +81,21 @@ export default function UpiPaymentModal({
       const updatedPayments = [newPayment, ...data.payments];
       saveStoredData('PAYMENTS', updatedPayments);
 
+      // Trigger automatic email alert to Guruji/Admin
+      fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'payment_alert_to_admin',
+          to: config.contactEmail || 'admin@icckeguruji.com',
+          studentName: studentName.trim(),
+          studentPhone: studentPhone.trim(),
+          courseTitle: course.title,
+          amount: course.price,
+          utr: cleanUtr,
+        }),
+      }).catch((emailErr) => console.warn('Payment email alert failed:', emailErr));
+
       setIsSubmitting(false);
       setSubmitted(true);
     } catch (err) {
