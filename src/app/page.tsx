@@ -190,65 +190,50 @@ export default function HomePage() {
           </div>
 
           {/* Quick Jump Directory Bar */}
-          <div className="pt-2 max-w-3xl mx-auto">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Quick Navigation Shortcuts
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+          <div className="pt-4 max-w-4xl mx-auto">
+            <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-xs">
               <a
                 href="#courses-section"
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                🎯 Batches
+                <span>🎯 Batches</span>
               </a>
               <a
                 href="#timetable"
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                📅 Live Routine
+                <span>📅 Live Routine</span>
               </a>
               <a
                 href="#daily-practice"
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                📝 Daily MCQ
+                <span>📝 Daily MCQ</span>
               </a>
               <a
                 href="#pyq"
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                📚 Free PYQs
+                <span>📚 Free PYQs</span>
               </a>
               <a
                 href="#articles"
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                📖 Study Guides
+                <span>📖 Study Guides</span>
               </a>
               <a
                 href="#toppers"
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                🏆 Toppers
+                <span>🏆 Toppers</span>
               </a>
               <a
                 href="#faqs"
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                ❓ FAQs
+                <span>❓ FAQs</span>
               </a>
-              <Link
-                href="/course/course-1"
-                className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-xs"
-              >
-                🤖 AI Tutor
-              </Link>
-              <Link
-                href="/admin"
-                className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold transition-all shadow-xs"
-              >
-                🛡️ Admin Portal
-              </Link>
             </div>
           </div>
 
