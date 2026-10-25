@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     if (apiKey) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
                   role: 'user',
                   parts: [
                     {
-                      text: `You are an expert, encouraging coaching teacher and doubt-solving assistant for an Indian coaching institute named 'Lakshya Institute'.
+                      text: `You are an expert, encouraging coaching teacher and doubt-solving assistant for an Indian coaching institute named 'ICC KE GURUJI'.
 The student is studying the course: "${courseTitle || 'Class 12 Physics & Tech'}".
 Subject/Topic: "${subject || 'General'}".
 
