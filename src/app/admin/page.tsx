@@ -62,6 +62,7 @@ import {
 import { getStoredData, saveStoredData } from '@/lib/storage';
 import Logo from '@/components/Logo';
 import WhatsAppBotHub from '@/components/WhatsAppBotHub';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState(getStoredData());
@@ -985,7 +986,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-blue-600 selection:text-white w-full max-w-full overflow-x-hidden">
       {/* =========================================================================
           LEFT SIDEBAR (Fixed Desktop & Responsive Drawer)
       ========================================================================= */}
@@ -1098,7 +1099,7 @@ export default function AdminDashboardPage() {
       {/* =========================================================================
           MAIN CONTENT AREA
       ========================================================================= */}
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
         {/* Top Navbar */}
         <header className="h-18 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
           <div className="flex items-center gap-3">
@@ -1148,7 +1149,7 @@ export default function AdminDashboardPage() {
         </header>
 
         {/* Content Body */}
-        <main className="p-4 sm:p-8 flex-1">
+        <main className="p-4 sm:p-8 flex-1 w-full max-w-full overflow-x-hidden pb-24 md:pb-8">
           {/* =====================================================================
               1. OVERVIEW TAB
           ===================================================================== */}
@@ -4351,6 +4352,9 @@ export default function AdminDashboardPage() {
           )}
         </main>
       </div>
+
+      {/* Mobile App Navigation Dock */}
+      <MobileBottomNav currentUser={currentUser} />
     </div>
   );
 }

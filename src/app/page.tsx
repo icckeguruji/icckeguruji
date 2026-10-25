@@ -93,7 +93,7 @@ export default function HomePage() {
   const categories = ['All', 'Competitive Exams', 'Board Exams', 'Coding & Tech'];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white w-full max-w-full overflow-x-hidden pb-20 md:pb-0">
       <Navbar
         currentUser={currentUser}
         config={data.config}
@@ -108,7 +108,7 @@ export default function HomePage() {
           CMS: LIVE ANNOUNCEMENT NOTICE TICKER BAR
       ========================================================================= */}
       {data.announcements.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 text-white py-2 px-4 text-xs font-semibold shadow-inner">
+        <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 text-white py-2 px-4 text-xs font-semibold shadow-inner w-full overflow-hidden">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 truncate">
               <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shrink-0">
@@ -133,8 +133,8 @@ export default function HomePage() {
       )}
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10 pb-16 bg-gradient-to-b from-white via-blue-50/30 to-slate-50 border-b border-slate-200">
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[750px] h-[380px] bg-gradient-to-tr from-blue-400/10 via-indigo-400/10 to-violet-400/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden pt-10 pb-16 bg-gradient-to-b from-white via-blue-50/30 to-slate-50 border-b border-slate-200 w-full max-w-full">
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-full max-w-[750px] h-[380px] bg-gradient-to-tr from-blue-400/10 via-indigo-400/10 to-violet-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-6">
           {/* Admission / Promo Badge from CMS */}

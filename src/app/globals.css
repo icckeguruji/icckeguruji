@@ -12,11 +12,30 @@
   --font-mono: var(--font-geist-mono);
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
 body {
+  max-width: 100vw;
+  width: 100%;
+  overflow-x: hidden !important;
+  position: relative;
+  margin: 0;
+  padding: 0;
   background-color: var(--background);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent unwanted horizontal swipe/scroll on mobile devices */
+html {
+  touch-action: pan-y;
 }
 
 /* Custom scrollbars for clean light feel */

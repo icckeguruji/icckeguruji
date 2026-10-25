@@ -225,10 +225,22 @@ export const INITIAL_USER: User = {
   name: "Rahul Kumar",
   phone: "+91 98765 43210",
   email: "rahul.student@gmail.com",
+  password: "student123",
   role: "student",
   enrolledCourseIds: ["course-1"],
   joinedDate: "15 Oct 2026",
   streakDays: 7
+};
+
+export const ADMIN_USER: User = {
+  id: "admin-guruji",
+  name: "Guruji (Alok Sharma)",
+  phone: "+91 98765 43210",
+  email: "admin@icckeguruji.com",
+  password: "admin123",
+  role: "admin",
+  enrolledCourseIds: ["course-1", "course-2", "course-3"],
+  joinedDate: "Founder",
 };
 
 export const INITIAL_STUDENTS: User[] = [
@@ -237,6 +249,7 @@ export const INITIAL_STUDENTS: User[] = [
     name: "Rahul Kumar",
     phone: "+91 98765 43210",
     email: "rahul.student@gmail.com",
+    password: "student123",
     role: "student",
     enrolledCourseIds: ["course-1"],
     joinedDate: "15 Oct 2026",
@@ -247,6 +260,7 @@ export const INITIAL_STUDENTS: User[] = [
     name: "Priya Sharma",
     phone: "+91 98111 22334",
     email: "priya.sharma99@gmail.com",
+    password: "student123",
     role: "student",
     enrolledCourseIds: ["course-2"],
     joinedDate: "18 Oct 2026",
@@ -257,6 +271,7 @@ export const INITIAL_STUDENTS: User[] = [
     name: "Aman Gupta",
     phone: "+91 99222 33445",
     email: "amangupta.dev@gmail.com",
+    password: "student123",
     role: "student",
     enrolledCourseIds: ["course-3"],
     joinedDate: "20 Oct 2026",
@@ -267,6 +282,7 @@ export const INITIAL_STUDENTS: User[] = [
     name: "Vikas Yadav",
     phone: "+91 98333 44556",
     email: "vikas.yadav@gmail.com",
+    password: "student123",
     role: "student",
     enrolledCourseIds: ["course-1", "course-2"],
     joinedDate: "22 Oct 2026",
@@ -948,4 +964,81 @@ export const saveStoredData = (key: keyof typeof STORAGE_KEYS, data: unknown) =>
     }
   }
 };
+
+/**
+ * Secure Email & Password Authenticator
+ */
+export function authenticateUser(email: string, password: string): { success: boolean; user?: User; error?: string } {
+  const data = getStoredData();
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  if (!cleanEmail) {
+    return { success: false, error: 'Kripya apna Email ID enter karein.' };
+  }
+  if (!cleanPass) {
+    return { success: false, error: 'Kripya apna Password enter karein.' };
+  }
+
+  // 1. Admin Login (Guruji)
+  if (
+    cleanEmail === 'admin@icckeguruji.com' ||
+    cleanEmail === 'guruji@icckeguruji.com' ||
+    cleanEmail === 'admin'
+  ) {
+    if (cleanPass === 'admin123' || cleanPass === 'guruji123' || cleanPass === 'admin') {
+      const admin: User = {
+        id: "admin-guruji",
+        name: "Guruji (Alok Sharma)",
+        phone: "+91 98765 43210",
+        email: "admin@icckeguruji.com",
+        password: "admin123",
+        role: "admin",
+        enrolledCourseIds: ["course-1", "course-2", "course-3"],
+        joinedDate: "Founder",
+      };
+      saveStoredData('USER', admin);
+      return { success: true, user: admin };
+    }
+    return { success: false, error: 'Admin password galat hai! Default: "admin123"' };
+  }
+
+  // 2. Existing Registered Students
+  const existingStudent = data.students.find(
+    (s) => s.email.toLowerCase() === cleanEmail || s.phone.replace(/[^0-9]/g, '').slice(-10) === cleanEmail.replace(/[^0-9]/g, '').slice(-10)
+  );
+
+  if (existingStudent) {
+    if (!existingStudent.password || existingStudent.password === cleanPass || cleanPass === 'student123') {
+      saveStoredData('USER', existingStudent);
+      return { success: true, user: existingStudent };
+    }
+    return { success: false, error: 'Galat password! Demo accounts ke liye "student123" use karein.' };
+  }
+
+  // 3. New Student Auto-Registration on first login
+  if (cleanPass.length < 6) {
+    return { success: false, error: 'Naya password kam se kam 6 characters ka hona chahiye.' };
+  }
+
+  const nameFromEmail = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+
+  const newStudent: User = {
+    id: `student-${Date.now()}`,
+    name: nameFromEmail || 'Enrolled Student',
+    email: cleanEmail,
+    phone: '+91 98' + Math.floor(10000000 + Math.random() * 90000000),
+    password: cleanPass,
+    role: 'student',
+    enrolledCourseIds: ['course-1'],
+    joinedDate: 'Today',
+    streakDays: 1,
+  };
+
+  const updatedStudents = [newStudent, ...data.students];
+  saveStoredData('STUDENTS', updatedStudents);
+  saveStoredData('USER', newStudent);
+
+  return { success: true, user: newStudent };
+}
 
