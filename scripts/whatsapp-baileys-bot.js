@@ -17,24 +17,31 @@ const path = require('path');
 const fs = require('fs');
 
 const AUTH_FOLDER = path.join(__dirname, '../auth_info_baileys');
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+let GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const envPath = path.join(__dirname, '../.env.local');
+if (!GEMINI_API_KEY && fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const match = envContent.match(/GEMINI_API_KEY=([^\r\n]+)/);
+  if (match) {
+    GEMINI_API_KEY = match[1].trim();
+  }
+}
 const UPI_ID = process.env.UPI_ID || 'icckeguruji@okaxis';
 
 async function callGeminiAi(studentMessage, studentName) {
-  if (!GEMINI_API_KEY) {
-    // Intelligent educational fallback when API key is not configured
-    const msgLower = studentMessage.toLowerCase();
-    if (msgLower.includes('fee') || msgLower.includes('price') || msgLower.includes('course')) {
-      return `Namaste ${studentName || ''}! 🙏\nICC KE GURUJI coaching ke batches:\n1. Class 12 Physics Complete: ₹999\n2. Class 10 Board Crash Course: ₹499\n3. Full-Stack Web Dev: ₹1,499\n\nDirect UPI ID: ${UPI_ID} par pay karke UTR number share karein, batch turant active ho jayega!`;
-    }
-    if (msgLower.includes('utr') || msgLower.includes('pay') || msgLower.includes('done')) {
-      return `Dhanyawad! Aapka payment details Guruji ke Telegram Command Center par receive ho chuka hai. Guruji 5 minute mein verify karke aapka batch unlock kar denge. Welcome to ICC KE GURUJI!`;
-    }
-    return `Namaste! 🙏 Main ICC KE GURUJI ka official 24/7 AI Counselor hun. Aap batch details, live class timing ya fees ke bare mein puch sakte hain. Aapki kya sahayata karun?`;
+  const msgLower = (studentMessage || '').toLowerCase();
+
+  // Smart immediate handlers for high-priority student inquiries
+  if (msgLower.includes('fee') || msgLower.includes('price') || msgLower.includes('kitna') || msgLower.includes('kitne')) {
+    return `Namaste ${studentName || ''}! 🙏\nICC KE GURUJI coaching ke active batches:\n1. Class 12 Physics Complete: ₹999\n2. Class 10 Board Crash Course: ₹499\n3. Full-Stack Web Dev: ₹1,499\n\nDirect UPI ID: ${UPI_ID} par pay karke UTR number share karein, batch turant active ho jayega!`;
+  }
+  if (msgLower.includes('utr') || msgLower.includes('pay kar diya') || msgLower.includes('paid') || msgLower.includes('screenshot')) {
+    return `Dhanyawad ${studentName || ''}! 🙏 Aapka payment details Guruji ke Telegram Command Center par receive ho chuka hai. Guruji 5 minute mein verify karke aapka batch unlock kar denge. Welcome to ICC KE GURUJI!`;
   }
 
-  try {
-    const prompt = `Aap 'ICC KE GURUJI' coaching institute ke official WhatsApp AI Counselor hain.
+  if (GEMINI_API_KEY) {
+    try {
+      const prompt = `Aap 'ICC KE GURUJI' coaching institute ke official WhatsApp AI Counselor hain.
 Student Name: ${studentName || 'Student'}
 Student's incoming WhatsApp message: "${studentMessage}"
 
@@ -45,24 +52,31 @@ Instructions:
 4. If they send a UTR or payment confirmation, confirm that Guruji is reviewing it from his Telegram dashboard right now.
 Keep reply concise (3-5 lines max) so it looks natural on WhatsApp.`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 250, temperature: 0.7 }
-        })
-      }
-    );
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 250, temperature: 0.7 }
+          }),
+          signal: AbortSignal.timeout(6000)
+        }
+      );
 
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Namaste! Guruji jald hi aapse sampark karenge.';
-  } catch (err) {
-    console.error('Gemini error:', err);
-    return 'Namaste! Aapka message receive ho gaya hai. Guruji jald hi aapse sampark karenge.';
+      if (response.ok) {
+        const data = await response.json();
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (replyText) return replyText;
+      }
+    } catch (err) {
+      console.log('Gemini call skipped/timed out, using smart counselor response.');
+    }
   }
+
+  // Educational Hinglish counselor fallback
+  return `Namaste ${studentName || ''}! 🙏 Main ICC KE GURUJI ka official 24/7 AI Counselor hun.\nAap batch details, live classes schedule, notes, ya fees ke bare mein puch sakte hain. Aapki kya sahayata karun?`;
 }
 
 async function startWhatsAppBot() {

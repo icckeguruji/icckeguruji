@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     if (apiKey) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -45,7 +45,8 @@ Instructions:
                 temperature: 0.7,
                 maxOutputTokens: 1000,
               }
-            })
+            }),
+            signal: AbortSignal.timeout(6000)
           }
         );
 
@@ -57,7 +58,7 @@ Instructions:
           }
         }
       } catch (geminiError) {
-        console.error('Gemini API call failed, falling back to smart responder:', geminiError);
+        console.error('Gemini API call timed out or failed, falling back to smart responder:', geminiError);
       }
     }
 
