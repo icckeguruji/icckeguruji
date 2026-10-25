@@ -2,19 +2,18 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   X,
   Mail,
   Lock,
   Eye,
   EyeOff,
-  User,
-  ShieldCheck,
   LogIn,
-  BookOpen,
-  ArrowRight,
+  ShieldCheck,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { User as UserType } from '@/types';
 import { authenticateUser } from '@/lib/storage';
@@ -25,23 +24,38 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps) {
-  const [activeTab, setActiveTab] = useState<'student' | 'admin'>('student');
-  const [email, setEmail] = useState('');
+  const router = useRouter();
+
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     setTimeout(() => {
-      const res = authenticateUser(email, password);
+      const res = authenticateUser(identifier, password);
       if (res.success && res.user) {
+        const isGuruji = res.user.role === 'admin';
+        setSuccess(
+          isGuruji
+            ? 'Pranam Guruji! Admin Dashboard open ho raha hai...'
+            : `Swagat hai, ${res.user.name}!`
+        );
         onLoginSuccess(res.user);
-        onClose();
+
+        setTimeout(() => {
+          onClose();
+          if (res.redirectTo) {
+            router.push(res.redirectTo);
+          }
+        }, 500);
       } else {
         setError(res.error || 'Email ya Password galat hai.');
         setLoading(false);
@@ -49,19 +63,16 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
     }, 300);
   };
 
-  const handleQuickFill = (type: 'student-rahul' | 'student-priya' | 'admin') => {
+  const handleQuickFill = (type: 'rahul' | 'priya' | 'admin') => {
     setError('');
-    if (type === 'student-rahul') {
-      setActiveTab('student');
-      setEmail('rahul.student@gmail.com');
+    if (type === 'rahul') {
+      setIdentifier('rahul.student@gmail.com');
       setPassword('student123');
-    } else if (type === 'student-priya') {
-      setActiveTab('student');
-      setEmail('priya.sharma99@gmail.com');
+    } else if (type === 'priya') {
+      setIdentifier('priya.sharma99@gmail.com');
       setPassword('student123');
     } else {
-      setActiveTab('admin');
-      setEmail('admin@icckeguruji.com');
+      setIdentifier('admin@icckeguruji.com');
       setPassword('admin123');
     }
   };
@@ -77,7 +88,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
             </div>
             <div>
               <h3 className="font-black text-lg text-white">Login • ICC KE GURUJI</h3>
-              <p className="text-xs text-blue-100 font-medium">Access your Live Classes &amp; Notes</p>
+              <p className="text-xs text-blue-100 font-medium">Automatic Student &amp; Admin Access</p>
             </div>
           </div>
           <button
@@ -89,40 +100,6 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
           </button>
         </div>
 
-        {/* Tab switch */}
-        <div className="p-2 bg-slate-100 flex gap-1 border-b border-slate-200 text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('student');
-              setError('');
-            }}
-            className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'student'
-                ? 'bg-white text-blue-700 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Student Login</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('admin');
-              setError('');
-            }}
-            className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'admin'
-                ? 'bg-white text-purple-700 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Guruji Admin</span>
-          </button>
-        </div>
-
         <div className="p-6">
           {error && (
             <div className="p-3 mb-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center gap-2">
@@ -131,22 +108,30 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
             </div>
           )}
 
+          {success && (
+            <div className="p-3 mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
+              <span>{success}</span>
+            </div>
+          )}
+
+          {/* Unified Single Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">
-            {/* Email Field */}
+            {/* Email / Phone Field */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Email ID *
+                Email ID or Mobile Number *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={activeTab === 'student' ? 'e.g. rahul.student@gmail.com' : 'admin@icckeguruji.com'}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="e.g. rahul.student@gmail.com or 9876543210"
                   className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -182,18 +167,14 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all ${
-                activeTab === 'student'
-                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
-                  : 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/20'
-              }`}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
             >
               {loading ? (
-                <span>Logging in...</span>
+                <span>Signing in...</span>
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
-                  <span>{activeTab === 'student' ? 'Sign In' : 'Enter Admin Console'}</span>
+                  <span>Sign In</span>
                 </>
               )}
             </button>
@@ -204,22 +185,30 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2.5">
               ⚡ 1-Click Quick Demo Login
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-3 gap-1.5 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickFill('student-rahul')}
-                className="p-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 rounded-xl text-left transition-colors"
+                onClick={() => handleQuickFill('rahul')}
+                className="p-2 bg-slate-50 hover:bg-blue-50 border border-slate-200 rounded-xl text-left transition-colors"
               >
-                <div className="text-blue-700 font-bold">Rahul (Student)</div>
-                <div className="text-[10px] text-slate-500">Physics Mastery</div>
+                <div className="text-blue-700 font-bold truncate">Rahul</div>
+                <div className="text-[10px] text-slate-500">Student</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickFill('priya')}
+                className="p-2 bg-slate-50 hover:bg-blue-50 border border-slate-200 rounded-xl text-left transition-colors"
+              >
+                <div className="text-blue-700 font-bold truncate">Priya</div>
+                <div className="text-[10px] text-slate-500">Student</div>
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickFill('admin')}
-                className="p-2.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl text-left transition-colors"
+                className="p-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl text-left transition-colors"
               >
-                <div className="text-purple-800 font-bold">Guruji Admin</div>
-                <div className="text-[10px] text-purple-600">Master Control</div>
+                <div className="text-purple-800 font-bold truncate">Guruji</div>
+                <div className="text-[10px] text-purple-600">Admin</div>
               </button>
             </div>
           </div>

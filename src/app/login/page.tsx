@@ -10,12 +10,10 @@ import {
   EyeOff,
   LogIn,
   ShieldCheck,
-  Sparkles,
-  ArrowRight,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  BookOpen,
+  Sparkles,
   UserCheck
 } from 'lucide-react';
 import Logo from '@/components/Logo';
@@ -24,8 +22,7 @@ import { authenticateUser } from '@/lib/storage';
 export default function LoginPage() {
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'student' | 'admin'>('student');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -40,37 +37,36 @@ export default function LoginPage() {
     setLoading(true);
 
     setTimeout(() => {
-      const res = authenticateUser(email, password);
+      const res = authenticateUser(identifier, password);
 
       if (res.success && res.user) {
-        setSuccess(`Swagat hai, ${res.user.name}! Logging you in...`);
+        const isGuruji = res.user.role === 'admin';
+        setSuccess(
+          isGuruji
+            ? `Pranam Guruji! Admin Dashboard open ho raha hai...`
+            : `Swagat hai, ${res.user.name}! Classroom open ho raha hai...`
+        );
+
         setTimeout(() => {
-          if (res.user?.role === 'admin') {
-            router.push('/admin');
-          } else {
-            router.push('/course/course-1');
-          }
+          router.push(res.redirectTo || (isGuruji ? '/admin' : '/course/course-1'));
         }, 600);
       } else {
         setError(res.error || 'Email ya Password galat hai.');
         setLoading(false);
       }
-    }, 400);
+    }, 350);
   };
 
-  const handleQuickFill = (type: 'student-rahul' | 'student-priya' | 'admin') => {
+  const handleQuickFill = (type: 'rahul' | 'priya' | 'admin') => {
     setError('');
-    if (type === 'student-rahul') {
-      setActiveTab('student');
-      setEmail('rahul.student@gmail.com');
+    if (type === 'rahul') {
+      setIdentifier('rahul.student@gmail.com');
       setPassword('student123');
-    } else if (type === 'student-priya') {
-      setActiveTab('student');
-      setEmail('priya.sharma99@gmail.com');
+    } else if (type === 'priya') {
+      setIdentifier('priya.sharma99@gmail.com');
       setPassword('student123');
     } else {
-      setActiveTab('admin');
-      setEmail('admin@icckeguruji.com');
+      setIdentifier('admin@icckeguruji.com');
       setPassword('admin123');
     }
   };
@@ -78,7 +74,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 flex flex-col justify-between selection:bg-blue-600 selection:text-white px-4 py-6 sm:py-10">
       {/* Top Header Link */}
-      <div className="max-w-md w-full mx-auto flex items-center justify-between pb-6">
+      <div className="max-w-md w-full mx-auto flex items-center justify-between pb-4">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 transition-colors p-2 rounded-xl hover:bg-white/80"
@@ -91,9 +87,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Main Login Card */}
+      {/* Main Single Unified Login Card */}
       <div className="max-w-md w-full mx-auto bg-white border border-slate-200/90 rounded-3xl shadow-xl shadow-blue-500/5 p-6 sm:p-8 relative overflow-hidden">
-        {/* Glow decoration */}
+        {/* Subtle decorative glow */}
         <div className="absolute -top-16 -right-16 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -103,81 +99,45 @@ export default function LoginPage() {
             <Logo size="md" />
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            {activeTab === 'student' ? 'Student Portal Login' : 'Guruji Admin Console'}
+            Sign In to ICC KE GURUJI
           </h1>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            {activeTab === 'student'
-              ? 'Apne live lectures, notes aur AI Doubt Guruji access karne ke liye login karein.'
-              : 'Coaching batches, payments aur CMS manage karne ke liye Guruji credentials use karein.'}
+          <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+            Student ho ya Guruji Admin, apna Email ya Mobile aur Password daalein. Aapka portal automatic open ho jayega.
           </p>
-        </div>
-
-        {/* Tab Switcher */}
-        <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl mb-6 text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('student');
-              setError('');
-            }}
-            className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'student'
-                ? 'bg-white text-blue-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Student Login</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab('admin');
-              setError('');
-            }}
-            className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'admin'
-                ? 'bg-white text-purple-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Guruji Admin</span>
-          </button>
         </div>
 
         {/* Error / Success Alerts */}
         {error && (
-          <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 animate-pulse" />
             <span>{success}</span>
           </div>
         )}
 
-        {/* Login Form */}
+        {/* Single Unified Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">
-          {/* Email Input */}
+          {/* Email / Mobile Identifier */}
           <div>
             <label className="block text-slate-700 font-bold mb-1.5 text-xs">
-              Email ID *
+              Email ID or Mobile Number *
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <Mail className="w-4 h-4" />
               </div>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={activeTab === 'student' ? 'e.g. rahul.student@gmail.com' : 'admin@icckeguruji.com'}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="e.g. rahul.student@gmail.com or 9876543210"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-2xl text-slate-900 text-xs sm:text-sm focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-medium transition-all"
               />
             </div>
@@ -223,11 +183,14 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 rounded-sm"
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <span>Remember me</span>
             </label>
-            <span className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer" onClick={() => alert('Demo Accounts ke passwords: "student123" ya "admin123" hain.')}>
+            <span
+              className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+              onClick={() => alert('Demo Passwords: "student123" ya "admin123" hain.')}
+            >
               Forgot Password?
             </span>
           </div>
@@ -236,47 +199,43 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3.5 rounded-2xl font-bold text-xs sm:text-sm text-white shadow-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] ${
-              activeTab === 'student'
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 shadow-blue-500/25 hover:from-blue-700 hover:to-violet-700'
-                : 'bg-gradient-to-r from-purple-600 to-indigo-700 shadow-purple-500/25 hover:from-purple-700 hover:to-indigo-800'
-            }`}
+            className="w-full py-3.5 rounded-2xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 shadow-lg shadow-blue-500/25 hover:from-blue-700 hover:to-violet-700 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99]"
           >
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Verifying Credentials...
+                Signing in...
               </span>
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
-                <span>{activeTab === 'student' ? 'Sign In to Classroom' : 'Access Admin Console'}</span>
+                <span>Sign In to My Account</span>
               </>
             )}
           </button>
         </form>
 
-        {/* 1-Click Demo Logins Pills */}
+        {/* 1-Click Demo Fill Pills */}
         <div className="mt-6 pt-5 border-t border-slate-100">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 text-center">
-            ⚡ 1-Click Quick Demo Fill
+            ⚡ Quick 1-Click Demo Login Fill
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-3 gap-2 text-xs">
             <button
               type="button"
-              onClick={() => handleQuickFill('student-rahul')}
+              onClick={() => handleQuickFill('rahul')}
               className="p-2 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 font-semibold text-center transition-colors flex flex-col items-center gap-0.5"
             >
               <span className="font-bold">Rahul (Student)</span>
-              <span className="text-[10px] text-slate-400">Class 12 Physics</span>
+              <span className="text-[10px] text-slate-400">Class 12</span>
             </button>
             <button
               type="button"
-              onClick={() => handleQuickFill('student-priya')}
+              onClick={() => handleQuickFill('priya')}
               className="p-2 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 font-semibold text-center transition-colors flex flex-col items-center gap-0.5"
             >
               <span className="font-bold">Priya (Student)</span>
-              <span className="text-[10px] text-slate-400">Class 10 Board</span>
+              <span className="text-[10px] text-slate-400">Class 10</span>
             </button>
             <button
               type="button"
@@ -292,7 +251,7 @@ export default function LoginPage() {
         {/* Security Notice */}
         <div className="mt-5 text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Encrypted Session • Zero Data Sharing</span>
+          <span>Encrypted Session • Automatic Role Detection</span>
         </div>
       </div>
 

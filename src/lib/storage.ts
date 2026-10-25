@@ -966,25 +966,31 @@ export const saveStoredData = (key: keyof typeof STORAGE_KEYS, data: unknown) =>
 };
 
 /**
- * Secure Email & Password Authenticator
+ * Unified Secure Authenticator (Single Login for Student & Admin)
+ * Automatically detects whether user is Guruji Admin or Student and routes them!
  */
-export function authenticateUser(email: string, password: string): { success: boolean; user?: User; error?: string } {
+export function authenticateUser(
+  identifier: string,
+  password: string
+): { success: boolean; user?: User; redirectTo?: string; error?: string } {
   const data = getStoredData();
-  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanId = (identifier || '').trim().toLowerCase();
   const cleanPass = (password || '').trim();
+  const digitsOnly = cleanId.replace(/[^0-9]/g, '');
 
-  if (!cleanEmail) {
-    return { success: false, error: 'Kripya apna Email ID enter karein.' };
+  if (!cleanId) {
+    return { success: false, error: 'Kripya apna Email ID ya Mobile Number enter karein.' };
   }
   if (!cleanPass) {
     return { success: false, error: 'Kripya apna Password enter karein.' };
   }
 
-  // 1. Admin Login (Guruji)
+  // 1. Check Guruji Admin Login
   if (
-    cleanEmail === 'admin@icckeguruji.com' ||
-    cleanEmail === 'guruji@icckeguruji.com' ||
-    cleanEmail === 'admin'
+    cleanId === 'admin@icckeguruji.com' ||
+    cleanId === 'guruji@icckeguruji.com' ||
+    cleanId === 'admin' ||
+    digitsOnly === '9876543210'
   ) {
     if (cleanPass === 'admin123' || cleanPass === 'guruji123' || cleanPass === 'admin') {
       const admin: User = {
@@ -998,36 +1004,40 @@ export function authenticateUser(email: string, password: string): { success: bo
         joinedDate: "Founder",
       };
       saveStoredData('USER', admin);
-      return { success: true, user: admin };
+      return { success: true, user: admin, redirectTo: '/admin' };
     }
     return { success: false, error: 'Admin password galat hai! Default: "admin123"' };
   }
 
-  // 2. Existing Registered Students
-  const existingStudent = data.students.find(
-    (s) => s.email.toLowerCase() === cleanEmail || s.phone.replace(/[^0-9]/g, '').slice(-10) === cleanEmail.replace(/[^0-9]/g, '').slice(-10)
-  );
+  // 2. Check Existing Registered Students (by Email OR Phone)
+  const existingStudent = data.students.find((s) => {
+    const sEmail = (s.email || '').toLowerCase();
+    const sDigits = (s.phone || '').replace(/[^0-9]/g, '').slice(-10);
+    return sEmail === cleanId || (digitsOnly.length >= 10 && sDigits === digitsOnly.slice(-10));
+  });
 
   if (existingStudent) {
     if (!existingStudent.password || existingStudent.password === cleanPass || cleanPass === 'student123') {
       saveStoredData('USER', existingStudent);
-      return { success: true, user: existingStudent };
+      return { success: true, user: existingStudent, redirectTo: '/course/course-1' };
     }
     return { success: false, error: 'Galat password! Demo accounts ke liye "student123" use karein.' };
   }
 
-  // 3. New Student Auto-Registration on first login
+  // 3. New Student Instant Registration on first login
   if (cleanPass.length < 6) {
-    return { success: false, error: 'Naya password kam se kam 6 characters ka hona chahiye.' };
+    return { success: false, error: 'Password kam se kam 6 characters ka hona chahiye.' };
   }
 
-  const nameFromEmail = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+  const nameFromEmail = cleanId.includes('@')
+    ? cleanId.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim()
+    : `Student ${digitsOnly.slice(-4) || 'Learner'}`;
 
   const newStudent: User = {
     id: `student-${Date.now()}`,
     name: nameFromEmail || 'Enrolled Student',
-    email: cleanEmail,
-    phone: '+91 98' + Math.floor(10000000 + Math.random() * 90000000),
+    email: cleanId.includes('@') ? cleanId : `${digitsOnly}@student.local`,
+    phone: digitsOnly ? `+91 ${digitsOnly.slice(-10)}` : '+91 98' + Math.floor(10000000 + Math.random() * 90000000),
     password: cleanPass,
     role: 'student',
     enrolledCourseIds: ['course-1'],
@@ -1039,6 +1049,6 @@ export function authenticateUser(email: string, password: string): { success: bo
   saveStoredData('STUDENTS', updatedStudents);
   saveStoredData('USER', newStudent);
 
-  return { success: true, user: newStudent };
+  return { success: true, user: newStudent, redirectTo: '/course/course-1' };
 }
 
