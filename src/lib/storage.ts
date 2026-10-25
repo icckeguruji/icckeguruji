@@ -28,7 +28,7 @@ export const DEFAULT_CONFIG: CoachingConfig = {
   telegramGroupLink: "https://t.me/icckeguruji_official",
   telegramBotUsername: "IccKeGurujiBot",
   contactEmail: "contact@icckeguruji.com",
-  googleAppsScriptEmailUrl: "",
+  googleAppsScriptEmailUrl: "https://script.google.com/macros/s/AKfycbzGhBvMJerQBuiuyibRoQh4RRQXZhxuyIryMWLC4vjnb43loVXvhJXxb1pKEYzHwSrA/exec",
   heroHeadline: "Apne Career Ka Lakshya Haasil Karein with ICC KE GURUJI",
   heroSubheadline: "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji aur paid Telegram group alerts.",
   admissionBadgeText: "New Academic Session 2026 Admissions Open • Direct UPI Zero Commission",
