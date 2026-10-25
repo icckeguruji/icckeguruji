@@ -30,6 +30,20 @@ export const DEFAULT_CONFIG: CoachingConfig = {
   contactEmail: "contact@icckeguruji.com",
   heroHeadline: "Apne Career Ka Lakshya Haasil Karein with ICC KE GURUJI",
   heroSubheadline: "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji aur paid Telegram group alerts.",
+  admissionBadgeText: "New Academic Session 2026 Admissions Open • Direct UPI Zero Commission",
+  marqueeNotice: "🔴 Aaj Shaam 7:00 PM Live Numerical Class & Formula Revision! Sabhi students time par join karein.",
+  stat1Value: "10,000+",
+  stat1Label: "Enrolled Students",
+  stat2Value: "98.4%",
+  stat2Label: "Highest Board Score",
+  stat3Value: "24/7",
+  stat3Label: "AI Guruji Doubt Tutor",
+  stat4Value: "0% Fee",
+  stat4Label: "Direct UPI Transfer",
+  homeQuizQuestion: "Agar do static charges ke beech ki distance ko half (r/2) kar diya jaye, toh unke beech lagne wala electrostatic force kitna ho jayega?",
+  homeQuizOptions: ["2 Guna (Double)", "4 Guna (4 Times)", "Aadha (Half)", "1/4th (One-Fourth)"],
+  homeQuizCorrectIndex: 1,
+  homeQuizExplanation: "Correct Answer: B (4 Guna)! Coulomb's law ke mutabiq F ∝ 1/r². Jab distance aadhi (r/2) hogi, toh force 4 guna badh jayega. Sabhi batches mein aise chapter-wise mock tests available hain!",
 };
 
 export const INITIAL_COURSES: Course[] = [
@@ -860,7 +874,8 @@ export const getStoredData = (): StoredData => {
     const lessons: Lesson[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.LESSONS) || 'null') || INITIAL_LESSONS;
     const notes: PdfNote[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTES) || 'null') || INITIAL_NOTES;
     const payments: PaymentRequest[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.PAYMENTS) || 'null') || INITIAL_PAYMENTS;
-    const config: CoachingConfig = JSON.parse(localStorage.getItem(STORAGE_KEYS.CONFIG) || 'null') || DEFAULT_CONFIG;
+    const rawConfig = JSON.parse(localStorage.getItem(STORAGE_KEYS.CONFIG) || 'null');
+    const config: CoachingConfig = rawConfig ? { ...DEFAULT_CONFIG, ...rawConfig } : DEFAULT_CONFIG;
     const user: User = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null') || INITIAL_USER;
     const students: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.STUDENTS) || 'null') || INITIAL_STUDENTS;
     const announcements: Announcement[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS) || 'null') || INITIAL_ANNOUNCEMENTS;

@@ -169,6 +169,20 @@ export interface CoachingConfig {
   contactEmail: string;
   heroHeadline?: string;
   heroSubheadline?: string;
+  admissionBadgeText?: string;
+  marqueeNotice?: string;
+  stat1Value?: string;
+  stat1Label?: string;
+  stat2Value?: string;
+  stat2Label?: string;
+  stat3Value?: string;
+  stat3Label?: string;
+  stat4Value?: string;
+  stat4Label?: string;
+  homeQuizQuestion?: string;
+  homeQuizOptions?: string[];
+  homeQuizCorrectIndex?: number;
+  homeQuizExplanation?: string;
 }
 
 // =========================================================================

@@ -35,8 +35,10 @@ import {
   Zap,
   CheckCircle2,
   Download,
-  BookMarked,
-  ThumbsUp
+  ThumbsUp,
+  Pencil,
+  Star,
+  Eye
 } from 'lucide-react';
 import {
   Course,
@@ -70,11 +72,33 @@ export default function AdminDashboardPage() {
     'overview' | 'payments' | 'courses' | 'lectures' | 'notes' | 'dpp' | 'pyq' | 'forum' | 'whatsapp' | 'students' | 'quizzes' | 'timetable' | 'cms' | 'broadcast' | 'settings'
   >('overview');
 
-  // CMS Sub-tabs: 'announcements' | 'articles' | 'testimonials' | 'faqs'
-  const [cmsSubTab, setCmsSubTab] = useState<'announcements' | 'articles' | 'testimonials' | 'faqs'>('announcements');
+  // CMS Sub-tabs: 'hero' | 'daily_quiz' | 'announcements' | 'articles' | 'testimonials' | 'faqs'
+  const [cmsSubTab, setCmsSubTab] = useState<'hero' | 'daily_quiz' | 'announcements' | 'articles' | 'testimonials' | 'faqs'>('hero');
 
   // Mobile sidebar drawer
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Editing state for full CMS management
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editingLecture, setEditingLecture] = useState<Lesson | null>(null);
+  const [editingNote, setEditingNote] = useState<PdfNote | null>(null);
+  const [editingTimetableSlot, setEditingTimetableSlot] = useState<TimetableSlot | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
+  const [editingFaq, setEditingFaq] = useState<FaqItem | null>(null);
+
+  // Homepage Daily Quiz CMS form state
+  const [homeQuizForm, setHomeQuizForm] = useState({
+    question: data.config.homeQuizQuestion || "Agar do static charges ke beech ki distance ko half (r/2) kar diya jaye, toh unke beech lagne wala electrostatic force kitna ho jayega?",
+    optionA: data.config.homeQuizOptions?.[0] || '2 Guna (Double)',
+    optionB: data.config.homeQuizOptions?.[1] || '4 Guna (4 Times)',
+    optionC: data.config.homeQuizOptions?.[2] || 'Aadha (Half)',
+    optionD: data.config.homeQuizOptions?.[3] || '1/4th (One-Fourth)',
+    correctIndex: data.config.homeQuizCorrectIndex ?? 1,
+    explanation: data.config.homeQuizExplanation || "Correct Answer: B (4 Guna)! Coulomb's law ke mutabiq F ∝ 1/r². Jab distance aadhi (r/2) hogi, toh force 4 guna badh jayega. Sabhi batches mein aise chapter-wise mock tests available hain!",
+  });
+  const [homeQuizSaved, setHomeQuizSaved] = useState(false);
 
   // Forms state
   const [newCourse, setNewCourse] = useState({
@@ -320,6 +344,33 @@ export default function AdminDashboardPage() {
     refreshState();
   };
 
+  // Update Course
+  const handleUpdateCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCourse) return;
+    const updated = data.courses.map((c) => (c.id === editingCourse.id ? editingCourse : c));
+    saveStoredData('COURSES', updated);
+    setEditingCourse(null);
+    refreshState();
+  };
+
+  // Delete Course
+  const handleDeleteCourse = (courseId: string) => {
+    if (!confirm('Kya aap is course ko delete karna chahte hain?')) return;
+    const updated = data.courses.filter((c) => c.id !== courseId);
+    saveStoredData('COURSES', updated);
+    refreshState();
+  };
+
+  // Toggle Bestseller / Popular
+  const handleTogglePopular = (courseId: string) => {
+    const updated = data.courses.map((c) =>
+      c.id === courseId ? { ...c, isPopular: !c.isPopular } : c
+    );
+    saveStoredData('COURSES', updated);
+    refreshState();
+  };
+
   // Add Lecture
   const handleCreateLecture = (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,6 +411,43 @@ export default function AdminDashboardPage() {
     refreshState();
   };
 
+  // Toggle Lecture Live Now status
+  const handleToggleLectureLive = (lessonId: string) => {
+    const updated = data.lessons.map((les) =>
+      les.id === lessonId ? { ...les, isLive: !les.isLive } : les
+    );
+    saveStoredData('LESSONS', updated);
+    refreshState();
+  };
+
+  // Update Lecture
+  const handleUpdateLecture = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLecture) return;
+    let cleanYtId = editingLecture.youtubeId.trim();
+    if (cleanYtId.includes('v=')) {
+      cleanYtId = cleanYtId.split('v=')[1].split('&')[0];
+    } else if (cleanYtId.includes('youtu.be/')) {
+      cleanYtId = cleanYtId.split('youtu.be/')[1].split('?')[0];
+    } else if (cleanYtId.includes('live/')) {
+      cleanYtId = cleanYtId.split('live/')[1].split('?')[0];
+    }
+    const updated = data.lessons.map((les) =>
+      les.id === editingLecture.id ? { ...editingLecture, youtubeId: cleanYtId } : les
+    );
+    saveStoredData('LESSONS', updated);
+    setEditingLecture(null);
+    refreshState();
+  };
+
+  // Delete Lecture
+  const handleDeleteLecture = (lessonId: string) => {
+    if (!confirm('Kya aap is lecture ko delete karna chahte hain?')) return;
+    const updated = data.lessons.filter((les) => les.id !== lessonId);
+    saveStoredData('LESSONS', updated);
+    refreshState();
+  };
+
   // Add Note
   const handleCreateNote = (e: React.FormEvent) => {
     e.preventDefault();
@@ -385,6 +473,24 @@ export default function AdminDashboardPage() {
       fileSize: '4.5 MB',
       pageCount: 20,
     });
+    refreshState();
+  };
+
+  // Update Note
+  const handleUpdateNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingNote) return;
+    const updated = data.notes.map((n) => (n.id === editingNote.id ? editingNote : n));
+    saveStoredData('NOTES', updated);
+    setEditingNote(null);
+    refreshState();
+  };
+
+  // Delete Note
+  const handleDeleteNote = (noteId: string) => {
+    if (!confirm('Kya aap is PDF note ko delete karna chahte hain?')) return;
+    const updated = data.notes.filter((n) => n.id !== noteId);
+    saveStoredData('NOTES', updated);
     refreshState();
   };
 
@@ -448,6 +554,33 @@ export default function AdminDashboardPage() {
     refreshState();
   };
 
+  // Toggle Timetable slot Live Now
+  const handleToggleTimetableLive = (slotId: string) => {
+    const updated = data.timetable.map((s) =>
+      s.id === slotId ? { ...s, isLiveNow: !s.isLiveNow } : s
+    );
+    saveStoredData('TIMETABLE', updated);
+    refreshState();
+  };
+
+  // Update Timetable slot
+  const handleUpdateTimetableSlot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTimetableSlot) return;
+    const updated = data.timetable.map((s) => (s.id === editingTimetableSlot.id ? editingTimetableSlot : s));
+    saveStoredData('TIMETABLE', updated);
+    setEditingTimetableSlot(null);
+    refreshState();
+  };
+
+  // Delete Timetable slot
+  const handleDeleteTimetableSlot = (slotId: string) => {
+    if (!confirm('Kya aap is timetable slot ko delete karna chahte hain?')) return;
+    const updated = data.timetable.filter((s) => s.id !== slotId);
+    saveStoredData('TIMETABLE', updated);
+    refreshState();
+  };
+
   // CMS: Add Announcement
   const handleCreateAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();
@@ -469,6 +602,35 @@ export default function AdminDashboardPage() {
       category: 'live_class',
       isPinned: true,
     });
+    refreshState();
+  };
+
+  // Toggle Pin Announcement
+  const handleTogglePinAnnouncement = (annId: string) => {
+    const updated = data.announcements.map((a) =>
+      a.id === annId ? { ...a, isPinned: !a.isPinned } : a
+    );
+    saveStoredData('ANNOUNCEMENTS', updated);
+    refreshState();
+  };
+
+  // Update Announcement
+  const handleUpdateAnnouncement = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAnnouncement) return;
+    const updated = data.announcements.map((a) =>
+      a.id === editingAnnouncement.id ? editingAnnouncement : a
+    );
+    saveStoredData('ANNOUNCEMENTS', updated);
+    setEditingAnnouncement(null);
+    refreshState();
+  };
+
+  // Delete Announcement
+  const handleDeleteAnnouncement = (annId: string) => {
+    if (!confirm('Kya aap is notice ko delete karna chahte hain?')) return;
+    const updated = data.announcements.filter((a) => a.id !== annId);
+    saveStoredData('ANNOUNCEMENTS', updated);
     refreshState();
   };
 
@@ -500,6 +662,26 @@ export default function AdminDashboardPage() {
     refreshState();
   };
 
+  // Update Article
+  const handleUpdateArticle = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingArticle) return;
+    const updated = data.articles.map((a) =>
+      a.id === editingArticle.id ? editingArticle : a
+    );
+    saveStoredData('ARTICLES', updated);
+    setEditingArticle(null);
+    refreshState();
+  };
+
+  // Delete Article
+  const handleDeleteArticle = (articleId: string) => {
+    if (!confirm('Kya aap is article ko delete karna chahte hain?')) return;
+    const updated = data.articles.filter((a) => a.id !== articleId);
+    saveStoredData('ARTICLES', updated);
+    refreshState();
+  };
+
   // CMS: Add Testimonial
   const handleCreateTestimonial = (e: React.FormEvent) => {
     e.preventDefault();
@@ -525,6 +707,26 @@ export default function AdminDashboardPage() {
     refreshState();
   };
 
+  // Update Testimonial
+  const handleUpdateTestimonial = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTestimonial) return;
+    const updated = data.testimonials.map((t) =>
+      t.id === editingTestimonial.id ? editingTestimonial : t
+    );
+    saveStoredData('TESTIMONIALS', updated);
+    setEditingTestimonial(null);
+    refreshState();
+  };
+
+  // Delete Testimonial
+  const handleDeleteTestimonial = (testimonialId: string) => {
+    if (!confirm('Kya aap is topper review ko delete karna chahte hain?')) return;
+    const updated = data.testimonials.filter((t) => t.id !== testimonialId);
+    saveStoredData('TESTIMONIALS', updated);
+    refreshState();
+  };
+
   // CMS: Add FAQ
   const handleCreateFaq = (e: React.FormEvent) => {
     e.preventDefault();
@@ -541,6 +743,52 @@ export default function AdminDashboardPage() {
       question: '',
       answer: '',
     });
+    refreshState();
+  };
+
+  // Update FAQ
+  const handleUpdateFaq = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFaq) return;
+    const updated = data.faqs.map((f) =>
+      f.id === editingFaq.id ? editingFaq : f
+    );
+    saveStoredData('FAQS', updated);
+    setEditingFaq(null);
+    refreshState();
+  };
+
+  // Delete FAQ
+  const handleDeleteFaq = (faqId: string) => {
+    if (!confirm('Kya aap is FAQ ko delete karna chahte hain?')) return;
+    const updated = data.faqs.filter((f) => f.id !== faqId);
+    saveStoredData('FAQS', updated);
+    refreshState();
+  };
+
+  // CMS: Save Homepage Daily Practice Quiz
+  const handleSaveHomeQuiz = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updatedConfig: CoachingConfig = {
+      ...configForm,
+      homeQuizQuestion: homeQuizForm.question,
+      homeQuizOptions: [homeQuizForm.optionA, homeQuizForm.optionB, homeQuizForm.optionC, homeQuizForm.optionD],
+      homeQuizCorrectIndex: Number(homeQuizForm.correctIndex),
+      homeQuizExplanation: homeQuizForm.explanation,
+    };
+    setConfigForm(updatedConfig);
+    saveStoredData('CONFIG', updatedConfig);
+    setHomeQuizSaved(true);
+    setTimeout(() => setHomeQuizSaved(false), 2500);
+    refreshState();
+  };
+
+  // CMS: Save Homepage Hero, Branding & Stats
+  const handleSaveHeroBranding = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveStoredData('CONFIG', configForm);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2500);
     refreshState();
   };
 
@@ -1216,30 +1464,197 @@ export default function AdminDashboardPage() {
 
               <div className="lg:col-span-2 space-y-4">
                 {data.courses.map((c: Course) => (
-                  <div key={c.id} className="p-5 bg-white border border-slate-200 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs">
-                    <div>
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                        {c.category}
-                      </span>
-                      <h4 className="font-black text-slate-900 text-base mt-1">{c.title}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">{c.subtitle}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-slate-600 font-medium">
-                        <span>Price: <strong className="text-emerald-600">₹{c.price}</strong></span>
+                  <div key={c.id} className="p-5 bg-white border border-slate-200 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs hover:border-blue-200 transition-colors">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                          {c.category}
+                        </span>
+                        {c.isPopular && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> Bestseller
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-black text-slate-900 text-base">{c.title}</h4>
+                      <p className="text-xs text-slate-500 line-clamp-1">{c.subtitle}</p>
+                      <div className="flex items-center gap-3 text-xs text-slate-600 font-medium pt-1">
+                        <span>Price: <strong className="text-emerald-600">₹{c.price}</strong> <span className="line-through text-slate-400">₹{c.originalPrice}</span></span>
                         <span>•</span>
                         <span>Duration: {c.duration}</span>
+                        <span>•</span>
+                        <span>Mentor: {c.instructorName}</span>
                       </div>
                     </div>
 
-                    <Link
-                      href={`/course/${c.id}`}
-                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 rounded-xl border border-slate-300 shrink-0 flex items-center gap-1.5 transition-colors"
-                    >
-                      Open Classroom
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                      <button
+                        onClick={() => handleTogglePopular(c.id)}
+                        title="Toggle Homepage Bestseller Badge"
+                        className={`p-2 rounded-xl text-xs font-bold transition-colors border ${
+                          c.isPopular
+                            ? 'bg-amber-50 border-amber-300 text-amber-800'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        <Star className={`w-3.5 h-3.5 ${c.isPopular ? 'fill-amber-500 text-amber-500' : ''}`} />
+                      </button>
+
+                      <button
+                        onClick={() => setEditingCourse(c)}
+                        className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 flex items-center gap-1.5 transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteCourse(c.id)}
+                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 transition-colors"
+                        title="Delete Course"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <Link
+                        href={`/course/${c.id}`}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 rounded-xl border border-slate-300 flex items-center gap-1.5 transition-colors"
+                      >
+                        <span>Classroom</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Edit Course Modal */}
+              {editingCourse && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Course CMS
+                      </h3>
+                      <button
+                        onClick={() => setEditingCourse(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateCourse} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Course Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingCourse.title}
+                          onChange={(e) => setEditingCourse({ ...editingCourse, title: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Subtitle / Tagline</label>
+                        <input
+                          type="text"
+                          value={editingCourse.subtitle}
+                          onChange={(e) => setEditingCourse({ ...editingCourse, subtitle: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Offer Price (₹) *</label>
+                          <input
+                            type="number"
+                            required
+                            value={editingCourse.price}
+                            onChange={(e) => setEditingCourse({ ...editingCourse, price: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Original Price (₹)</label>
+                          <input
+                            type="number"
+                            value={editingCourse.originalPrice}
+                            onChange={(e) => setEditingCourse({ ...editingCourse, originalPrice: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Category</label>
+                          <select
+                            value={editingCourse.category}
+                            onChange={(e) => setEditingCourse({ ...editingCourse, category: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold"
+                          >
+                            <option value="Competitive Exams">Competitive Exams</option>
+                            <option value="Board Exams">Board Exams</option>
+                            <option value="Coding &amp; Tech">Coding &amp; Tech</option>
+                            <option value="General">General Coaching</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Duration</label>
+                          <input
+                            type="text"
+                            value={editingCourse.duration}
+                            onChange={(e) => setEditingCourse({ ...editingCourse, duration: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Lead Instructor Name</label>
+                        <input
+                          type="text"
+                          value={editingCourse.instructorName}
+                          onChange={(e) => setEditingCourse({ ...editingCourse, instructorName: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          id="editPopularCheckbox"
+                          checked={!!editingCourse.isPopular}
+                          onChange={(e) => setEditingCourse({ ...editingCourse, isPopular: e.target.checked })}
+                          className="w-4 h-4 rounded text-amber-500 bg-slate-100 border-slate-300"
+                        />
+                        <label htmlFor="editPopularCheckbox" className="text-xs text-amber-800 font-bold flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Featured Bestseller on Homepage
+                        </label>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-3">
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors"
+                        >
+                          Save Changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingCourse(null)}
+                          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1330,12 +1745,12 @@ export default function AdminDashboardPage() {
 
               <div className="lg:col-span-2 space-y-3">
                 {data.lessons.map((les: Lesson) => (
-                  <div key={les.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl flex items-center justify-between gap-4 shadow-xs">
+                  <div key={les.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs hover:border-blue-200 transition-colors">
                     <div>
                       <div className="flex items-center gap-2">
                         {les.isLive ? (
-                          <span className="text-[10px] bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full font-bold border border-rose-300 animate-pulse">
-                            LIVE NOW
+                          <span className="text-[10px] bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full font-bold border border-rose-300 flex items-center gap-1 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600" /> LIVE NOW
                           </span>
                         ) : (
                           <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-semibold">
@@ -1348,15 +1763,154 @@ export default function AdminDashboardPage() {
                       <p className="text-xs text-slate-500 font-medium">{les.scheduledAt || les.duration}</p>
                     </div>
 
-                    <Link
-                      href={`/course/${les.courseId}`}
-                      className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-blue-700 rounded-xl border border-slate-300 shrink-0"
-                    >
-                      View in Player
-                    </Link>
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                      {/* 1-Click Toggle Live Status */}
+                      <button
+                        onClick={() => handleToggleLectureLive(les.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                          les.isLive
+                            ? 'bg-rose-50 border-rose-300 text-rose-700 hover:bg-rose-100'
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                        title="Click to toggle Live Now status"
+                      >
+                        {les.isLive ? '🔴 End Live' : '⚪ Go Live'}
+                      </button>
+
+                      {/* Edit Lecture */}
+                      <button
+                        onClick={() => setEditingLecture(les)}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 transition-colors"
+                        title="Edit Lecture Details"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Delete Lecture */}
+                      <button
+                        onClick={() => handleDeleteLecture(les.id)}
+                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 transition-colors"
+                        title="Delete Lecture"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <Link
+                        href={`/course/${les.courseId}`}
+                        className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-blue-700 rounded-xl border border-slate-300"
+                      >
+                        Player
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Edit Lecture Modal */}
+              {editingLecture && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-rose-600" /> Edit YouTube Lecture CMS
+                      </h3>
+                      <button
+                        onClick={() => setEditingLecture(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateLecture} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Course</label>
+                        <select
+                          value={editingLecture.courseId}
+                          onChange={(e) => setEditingLecture({ ...editingLecture, courseId: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        >
+                          {data.courses.map((c) => (
+                            <option key={c.id} value={c.id}>{c.title}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Lecture Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingLecture.title}
+                          onChange={(e) => setEditingLecture({ ...editingLecture, title: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">YouTube Video ID / URL *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingLecture.youtubeId}
+                          onChange={(e) => setEditingLecture({ ...editingLecture, youtubeId: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Scheduled Time</label>
+                          <input
+                            type="text"
+                            value={editingLecture.scheduledAt || ''}
+                            onChange={(e) => setEditingLecture({ ...editingLecture, scheduledAt: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Duration</label>
+                          <input
+                            type="text"
+                            value={editingLecture.duration || ''}
+                            onChange={(e) => setEditingLecture({ ...editingLecture, duration: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          id="editLiveCheckbox"
+                          checked={editingLecture.isLive}
+                          onChange={(e) => setEditingLecture({ ...editingLecture, isLive: e.target.checked })}
+                          className="w-4 h-4 rounded text-rose-600 bg-slate-100 border-slate-300"
+                        />
+                        <label htmlFor="editLiveCheckbox" className="text-xs text-rose-700 font-bold flex items-center gap-1">
+                          Mark as 🔴 LIVE STREAM NOW
+                        </label>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-3">
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition-colors"
+                        >
+                          Save Changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingLecture(null)}
+                          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1453,17 +2007,128 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <a
-                      href={note.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 rounded-xl border border-slate-300 shrink-0"
-                    >
-                      Open PDF
-                    </a>
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                      <button
+                        onClick={() => setEditingNote(note)}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 transition-colors"
+                        title="Edit Note Details"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 transition-colors"
+                        title="Delete Note"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <a
+                        href={note.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 rounded-xl border border-slate-300"
+                      >
+                        Open PDF
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Edit Note Modal */}
+              {editingNote && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit PDF Note CMS
+                      </h3>
+                      <button
+                        onClick={() => setEditingNote(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateNote} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Course</label>
+                        <select
+                          value={editingNote.courseId}
+                          onChange={(e) => setEditingNote({ ...editingNote, courseId: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        >
+                          {data.courses.map((c) => (
+                            <option key={c.id} value={c.id}>{c.title}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Note Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingNote.title}
+                          onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">PDF File URL *</label>
+                        <input
+                          type="url"
+                          required
+                          value={editingNote.fileUrl}
+                          onChange={(e) => setEditingNote({ ...editingNote, fileUrl: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">File Size</label>
+                          <input
+                            type="text"
+                            value={editingNote.fileSize}
+                            onChange={(e) => setEditingNote({ ...editingNote, fileSize: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Page Count</label>
+                          <input
+                            type="number"
+                            value={editingNote.pageCount || 10}
+                            onChange={(e) => setEditingNote({ ...editingNote, pageCount: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-3">
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors"
+                        >
+                          Save Changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingNote(null)}
+                          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2189,7 +2854,7 @@ export default function AdminDashboardPage() {
               {/* Timetable List */}
               <div className="lg:col-span-2 space-y-3">
                 {data.timetable.map((slot) => (
-                  <div key={slot.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl flex items-center justify-between gap-4 shadow-xs">
+                  <div key={slot.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs hover:border-blue-200 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="w-16 text-center py-2 px-1 rounded-xl bg-slate-100 text-slate-700 font-black text-xs shrink-0">
                         {slot.day}
@@ -2198,26 +2863,158 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono font-bold text-slate-500">{slot.time}</span>
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{slot.subject}</span>
+                          {slot.isLiveNow && (
+                            <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold border border-rose-300 animate-pulse">
+                              LIVE NOW
+                            </span>
+                          )}
                         </div>
                         <h5 className="font-bold text-slate-900 text-sm mt-0.5">{slot.topic}</h5>
                         <div className="text-[11px] text-slate-400">By {slot.faculty}</div>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        const updated = data.timetable.filter((t) => t.id !== slot.id);
-                        saveStoredData('TIMETABLE', updated);
-                        refreshState();
-                      }}
-                      className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
-                      title="Remove Slot"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* 1-Click Toggle Live Now */}
+                      <button
+                        onClick={() => handleToggleTimetableLive(slot.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                          slot.isLiveNow
+                            ? 'bg-rose-50 border-rose-300 text-rose-700 hover:bg-rose-100'
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                        title="Toggle live badge on timetable"
+                      >
+                        {slot.isLiveNow ? '🔴 Live Now' : '⚪ Mark Live'}
+                      </button>
+
+                      {/* Edit Slot */}
+                      <button
+                        onClick={() => setEditingTimetableSlot(slot)}
+                        className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 transition-colors"
+                        title="Edit Slot"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Delete Slot */}
+                      <button
+                        onClick={() => handleDeleteTimetableSlot(slot.id)}
+                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 transition-colors"
+                        title="Remove Slot"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Edit Timetable Slot Modal */}
+              {editingTimetableSlot && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Timetable Slot CMS
+                      </h3>
+                      <button
+                        onClick={() => setEditingTimetableSlot(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateTimetableSlot} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Day of Week *</label>
+                        <select
+                          value={editingTimetableSlot.day}
+                          onChange={(e) => setEditingTimetableSlot({ ...editingTimetableSlot, day: e.target.value as TimetableSlot['day'] })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        >
+                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Time Slot *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingTimetableSlot.time}
+                          onChange={(e) => setEditingTimetableSlot({ ...editingTimetableSlot, time: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Subject &amp; Batch *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingTimetableSlot.subject}
+                          onChange={(e) => setEditingTimetableSlot({ ...editingTimetableSlot, subject: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Topic Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingTimetableSlot.topic}
+                          onChange={(e) => setEditingTimetableSlot({ ...editingTimetableSlot, topic: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Faculty Name</label>
+                        <input
+                          type="text"
+                          value={editingTimetableSlot.faculty}
+                          onChange={(e) => setEditingTimetableSlot({ ...editingTimetableSlot, faculty: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          id="editSlotLiveCheckbox"
+                          checked={!!editingTimetableSlot.isLiveNow}
+                          onChange={(e) => setEditingTimetableSlot({ ...editingTimetableSlot, isLiveNow: e.target.checked })}
+                          className="w-4 h-4 rounded text-rose-600 bg-slate-100 border-slate-300"
+                        />
+                        <label htmlFor="editSlotLiveCheckbox" className="text-xs text-rose-700 font-bold flex items-center gap-1">
+                          Mark as 🔴 Live Right Now
+                        </label>
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-3">
+                        <button
+                          type="submit"
+                          className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors"
+                        >
+                          Save Changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingTimetableSlot(null)}
+                          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2308,66 +3105,429 @@ export default function AdminDashboardPage() {
           )}
 
           {/* =====================================================================
-              9. CMS TAB
+              9. CMS (CONTENT MANAGEMENT SYSTEM) TAB
           ===================================================================== */}
           {activeTab === 'cms' && (
             <div className="space-y-6">
-              <div className="bg-white border border-slate-200 p-4 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+              <div className="bg-white border border-slate-200 p-4 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
                 <div>
                   <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
                     <PenTool className="w-4 h-4 text-blue-600" />
-                    Content Management System (CMS)
+                    Website Content Management System (CMS)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Website announcements, study guides, toppers aur FAQs bina code change kiye live edit karein.
+                    Hero headline, admission badge, daily practice question, notice board, articles, toppers aur FAQs ko live edit karein.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl overflow-x-auto text-xs font-bold">
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl overflow-x-auto text-xs font-bold no-scrollbar">
+                  <button
+                    onClick={() => setCmsSubTab('hero')}
+                    className={`px-3 py-1.5 rounded-xl transition-all shrink-0 ${
+                      cmsSubTab === 'hero'
+                        ? 'bg-white text-blue-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    🏠 Hero &amp; Stats
+                  </button>
+                  <button
+                    onClick={() => setCmsSubTab('daily_quiz')}
+                    className={`px-3 py-1.5 rounded-xl transition-all shrink-0 ${
+                      cmsSubTab === 'daily_quiz'
+                        ? 'bg-white text-blue-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    🎯 Daily MCQ
+                  </button>
                   <button
                     onClick={() => setCmsSubTab('announcements')}
-                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                    className={`px-3 py-1.5 rounded-xl transition-all shrink-0 ${
                       cmsSubTab === 'announcements'
                         ? 'bg-white text-blue-700 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Notice Board ({data.announcements.length})
+                    📢 Notices ({data.announcements.length})
                   </button>
                   <button
                     onClick={() => setCmsSubTab('articles')}
-                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                    className={`px-3 py-1.5 rounded-xl transition-all shrink-0 ${
                       cmsSubTab === 'articles'
                         ? 'bg-white text-blue-700 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Articles ({data.articles.length})
+                    📖 Articles ({data.articles.length})
                   </button>
                   <button
                     onClick={() => setCmsSubTab('testimonials')}
-                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                    className={`px-3 py-1.5 rounded-xl transition-all shrink-0 ${
                       cmsSubTab === 'testimonials'
                         ? 'bg-white text-blue-700 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Toppers ({data.testimonials.length})
+                    🏆 Toppers ({data.testimonials.length})
                   </button>
                   <button
                     onClick={() => setCmsSubTab('faqs')}
-                    className={`px-3 py-1.5 rounded-xl transition-all ${
+                    className={`px-3 py-1.5 rounded-xl transition-all shrink-0 ${
                       cmsSubTab === 'faqs'
                         ? 'bg-white text-blue-700 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    FAQs ({data.faqs.length})
+                    ❓ FAQs ({data.faqs.length})
                   </button>
                 </div>
               </div>
 
-              {/* Subtab 1: Announcements */}
+              {/* =============================================================
+                  CMS SUBTAB 1: HOMEPAGE HERO & BRANDING CMS
+              ============================================================= */}
+              {cmsSubTab === 'hero' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Form */}
+                  <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        Homepage Hero Text &amp; Statistics Counter CMS
+                      </h4>
+                      {settingsSaved && (
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Saved!
+                        </span>
+                      )}
+                    </div>
+
+                    <form onSubmit={handleSaveHeroBranding} className="space-y-3 text-xs">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">
+                          Admission Badge Text (Top Banner Pill)
+                        </label>
+                        <input
+                          type="text"
+                          value={configForm.admissionBadgeText || ''}
+                          onChange={(e) => setConfigForm({ ...configForm, admissionBadgeText: e.target.value })}
+                          placeholder="e.g. New Academic Session 2026 Admissions Open • Direct UPI Zero Commission"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">
+                          Main Hero Headline *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={configForm.heroHeadline || ''}
+                          onChange={(e) => setConfigForm({ ...configForm, heroHeadline: e.target.value })}
+                          placeholder="e.g. Apne Career Ka Lakshya Haasil Karein with ICC KE GURUJI"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">
+                          Hero Subheadline (Description Paragraph)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={configForm.heroSubheadline || ''}
+                          onChange={(e) => setConfigForm({ ...configForm, heroSubheadline: e.target.value })}
+                          placeholder="e.g. Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes..."
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      {/* 4 Metric Counters */}
+                      <div className="pt-2 border-t border-slate-100 space-y-2">
+                        <span className="font-bold text-slate-900 block text-xs">
+                          4 Metric Counter Boxes on Homepage:
+                        </span>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                            <span className="text-[10px] text-blue-700 font-bold">Counter 1</span>
+                            <input
+                              type="text"
+                              value={configForm.stat1Value || '10,000+'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat1Value: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                            />
+                            <input
+                              type="text"
+                              value={configForm.stat1Label || 'Enrolled Students'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat1Label: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[10px] text-slate-600"
+                            />
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                            <span className="text-[10px] text-emerald-700 font-bold">Counter 2</span>
+                            <input
+                              type="text"
+                              value={configForm.stat2Value || '98.4%'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat2Value: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                            />
+                            <input
+                              type="text"
+                              value={configForm.stat2Label || 'Highest Board Score'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat2Label: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[10px] text-slate-600"
+                            />
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                            <span className="text-[10px] text-amber-700 font-bold">Counter 3</span>
+                            <input
+                              type="text"
+                              value={configForm.stat3Value || '24/7'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat3Value: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                            />
+                            <input
+                              type="text"
+                              value={configForm.stat3Label || 'AI Guruji Doubt Tutor'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat3Label: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[10px] text-slate-600"
+                            />
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                            <span className="text-[10px] text-purple-700 font-bold">Counter 4</span>
+                            <input
+                              type="text"
+                              value={configForm.stat4Value || '0% Fee'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat4Value: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
+                            />
+                            <input
+                              type="text"
+                              value={configForm.stat4Label || 'Direct UPI Transfer'}
+                              onChange={(e) => setConfigForm({ ...configForm, stat4Label: e.target.value })}
+                              className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[10px] text-slate-600"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs transition-colors mt-2"
+                      >
+                        Save Hero &amp; Branding CMS
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Live Hero Preview Card */}
+                  <div className="bg-gradient-to-b from-blue-50/50 to-white border border-slate-200 p-6 rounded-3xl shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5 text-blue-600" /> Real-time Website Preview
+                      </div>
+
+                      <div className="text-center space-y-3 py-4">
+                        <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">
+                          {configForm.admissionBadgeText || 'New Session Admissions Open'}
+                        </span>
+
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
+                          {configForm.heroHeadline || 'Apne Career Ka Lakshya Haasil Karein'}
+                        </h2>
+
+                        <p className="text-xs text-slate-600 max-w-md mx-auto line-clamp-3">
+                          {configForm.heroSubheadline || 'Daily YouTube Live interactive classes...'}
+                        </p>
+                      </div>
+
+                      {/* 4 Metrics Preview */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 border-t border-slate-200/80">
+                        <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-center">
+                          <div className="text-sm font-black text-slate-900">{configForm.stat1Value || '10,000+'}</div>
+                          <div className="text-[10px] text-blue-600 font-bold">{configForm.stat1Label || 'Students'}</div>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-center">
+                          <div className="text-sm font-black text-slate-900">{configForm.stat2Value || '98.4%'}</div>
+                          <div className="text-[10px] text-emerald-600 font-bold">{configForm.stat2Label || 'Score'}</div>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-center">
+                          <div className="text-sm font-black text-slate-900">{configForm.stat3Value || '24/7'}</div>
+                          <div className="text-[10px] text-amber-600 font-bold">{configForm.stat3Label || 'AI Tutor'}</div>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-center">
+                          <div className="text-sm font-black text-slate-900">{configForm.stat4Value || '0% Fee'}</div>
+                          <div className="text-[10px] text-purple-600 font-bold">{configForm.stat4Label || 'UPI'}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+                      <span>Reflects immediately on student homepage</span>
+                      <Link href="/" className="font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                        Open Homepage <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* =============================================================
+                  CMS SUBTAB 2: DAILY PRACTICE MCQ CMS
+              ============================================================= */}
+              {cmsSubTab === 'daily_quiz' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Homepage Practice MCQ CMS
+                      </h4>
+                      {homeQuizSaved && (
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Saved!
+                        </span>
+                      )}
+                    </div>
+
+                    <form onSubmit={handleSaveHomeQuiz} className="space-y-3 text-xs">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">
+                          Practice Question Text *
+                        </label>
+                        <textarea
+                          rows={3}
+                          required
+                          value={homeQuizForm.question}
+                          onChange={(e) => setHomeQuizForm({ ...homeQuizForm, question: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Option A *</label>
+                          <input
+                            type="text"
+                            required
+                            value={homeQuizForm.optionA}
+                            onChange={(e) => setHomeQuizForm({ ...homeQuizForm, optionA: e.target.value })}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Option B *</label>
+                          <input
+                            type="text"
+                            required
+                            value={homeQuizForm.optionB}
+                            onChange={(e) => setHomeQuizForm({ ...homeQuizForm, optionB: e.target.value })}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Option C *</label>
+                          <input
+                            type="text"
+                            required
+                            value={homeQuizForm.optionC}
+                            onChange={(e) => setHomeQuizForm({ ...homeQuizForm, optionC: e.target.value })}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Option D *</label>
+                          <input
+                            type="text"
+                            required
+                            value={homeQuizForm.optionD}
+                            onChange={(e) => setHomeQuizForm({ ...homeQuizForm, optionD: e.target.value })}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Correct Option *</label>
+                        <select
+                          value={homeQuizForm.correctIndex}
+                          onChange={(e) => setHomeQuizForm({ ...homeQuizForm, correctIndex: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        >
+                          <option value={0}>Option A: {homeQuizForm.optionA}</option>
+                          <option value={1}>Option B: {homeQuizForm.optionB}</option>
+                          <option value={2}>Option C: {homeQuizForm.optionC}</option>
+                          <option value={3}>Option D: {homeQuizForm.optionD}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Guruji Explanation &amp; Solution</label>
+                        <textarea
+                          rows={3}
+                          value={homeQuizForm.explanation}
+                          onChange={(e) => setHomeQuizForm({ ...homeQuizForm, explanation: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 font-bold text-white rounded-xl shadow-xs transition-colors"
+                      >
+                        Publish Practice MCQ to Homepage
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Preview of MCQ */}
+                  <div className="bg-slate-50 border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-emerald-600" /> Live Interactive Preview
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4.5 space-y-3">
+                      <div className="flex items-center justify-between text-xs text-slate-400 font-bold">
+                        <span>Daily Practice numerical</span>
+                        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">+4 Marks</span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm leading-snug">
+                        {homeQuizForm.question}
+                      </h4>
+                      <div className="space-y-1.5 text-xs">
+                        {[homeQuizForm.optionA, homeQuizForm.optionB, homeQuizForm.optionC, homeQuizForm.optionD].map((opt, i) => (
+                          <div
+                            key={i}
+                            className={`p-2.5 rounded-xl border font-bold flex items-center justify-between ${
+                              i === Number(homeQuizForm.correctIndex)
+                                ? 'bg-emerald-50 border-emerald-400 text-emerald-900'
+                                : 'bg-slate-50 border-slate-200 text-slate-700'
+                            }`}
+                          >
+                            <span>{String.fromCharCode(65 + i)}. {opt}</span>
+                            {i === Number(homeQuizForm.correctIndex) && (
+                              <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">Correct</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-slate-700">
+                        <span className="font-bold text-blue-900 block mb-0.5">Guruji Solution:</span>
+                        <p>{homeQuizForm.explanation}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* =============================================================
+                  CMS SUBTAB 3: ANNOUNCEMENTS & NOTICE BOARD CMS
+              ============================================================= */}
               {cmsSubTab === 'announcements' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
@@ -2390,12 +3550,26 @@ export default function AdminDashboardPage() {
                           rows={3}
                           value={newAnnouncement.message}
                           onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
+                          placeholder="Students can read full notice here..."
                           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
                         />
                       </div>
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Category</label>
+                        <select
+                          value={newAnnouncement.category}
+                          onChange={(e) => setNewAnnouncement({ ...newAnnouncement, category: e.target.value as Announcement['category'] })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        >
+                          <option value="live_class">🔴 Live Class Alert</option>
+                          <option value="notes_alert">📚 Notes Alert</option>
+                          <option value="exam_alert">⚡ Exam Alert</option>
+                          <option value="general">📢 General Notice</option>
+                        </select>
+                      </div>
                       <button
                         type="submit"
-                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs"
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs transition-colors"
                       >
                         Publish Notice
                       </button>
@@ -2404,21 +3578,109 @@ export default function AdminDashboardPage() {
 
                   <div className="lg:col-span-2 space-y-3">
                     {data.announcements.map((ann) => (
-                      <div key={ann.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl flex items-start justify-between gap-4 shadow-xs">
+                      <div key={ann.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs hover:border-blue-200 transition-colors">
                         <div>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
-                            {ann.category} • {ann.date}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                              {ann.category} • {ann.date}
+                            </span>
+                            {ann.isPinned && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                                📌 Pinned
+                              </span>
+                            )}
+                          </div>
                           <h5 className="font-bold text-slate-900 text-sm mt-1">{ann.title}</h5>
                           <p className="text-xs text-slate-500 mt-0.5">{ann.message}</p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => handleTogglePinAnnouncement(ann.id)}
+                            className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl text-xs font-bold"
+                            title="Toggle Pin"
+                          >
+                            📌
+                          </button>
+                          <button
+                            onClick={() => setEditingAnnouncement(ann)}
+                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-colors"
+                            title="Edit Notice"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAnnouncement(ann.id)}
+                            className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors"
+                            title="Delete Notice"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* Edit Announcement Modal */}
+                  {editingAnnouncement && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                          <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Notice CMS
+                          </h3>
+                          <button onClick={() => setEditingAnnouncement(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <form onSubmit={handleUpdateAnnouncement} className="space-y-3 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Headline *</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingAnnouncement.title}
+                              onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, title: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Message</label>
+                            <textarea
+                              rows={3}
+                              value={editingAnnouncement.message}
+                              onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, message: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 pt-1">
+                            <input
+                              type="checkbox"
+                              id="editPinAnn"
+                              checked={!!editingAnnouncement.isPinned}
+                              onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, isPinned: e.target.checked })}
+                              className="w-4 h-4 rounded text-blue-600"
+                            />
+                            <label htmlFor="editPinAnn" className="text-xs text-slate-700 font-bold">Pin to Top Notice Bar</label>
+                          </div>
+                          <div className="flex items-center gap-3 pt-3">
+                            <button type="submit" className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
+                              Save Changes
+                            </button>
+                            <button type="button" onClick={() => setEditingAnnouncement(null)} className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl">
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Subtab 2: Articles */}
+              {/* =============================================================
+                  CMS SUBTAB 4: ARTICLES & STUDY GUIDES CMS
+              ============================================================= */}
               {cmsSubTab === 'articles' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
@@ -2443,6 +3705,26 @@ export default function AdminDashboardPage() {
                           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
                         />
                       </div>
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Category</label>
+                        <input
+                          type="text"
+                          value={newArticle.category}
+                          onChange={(e) => setNewArticle({ ...newArticle, category: e.target.value })}
+                          placeholder="e.g. Preparation Guide / Physics Derivation"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Read Time</label>
+                        <input
+                          type="text"
+                          value={newArticle.readTime}
+                          onChange={(e) => setNewArticle({ ...newArticle, readTime: e.target.value })}
+                          placeholder="e.g. 5 min read"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
                       <button
                         type="submit"
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs"
@@ -2454,19 +3736,105 @@ export default function AdminDashboardPage() {
 
                   <div className="lg:col-span-2 space-y-3">
                     {data.articles.map((art) => (
-                      <div key={art.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl shadow-xs">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
-                          {art.category} • {art.readTime}
-                        </span>
-                        <h5 className="font-bold text-slate-900 text-sm mt-1">{art.title}</h5>
-                        <p className="text-xs text-slate-500 mt-1">{art.excerpt}</p>
+                      <div key={art.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-200 transition-colors">
+                        <div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                            {art.category} • {art.readTime}
+                          </span>
+                          <h5 className="font-bold text-slate-900 text-sm mt-1">{art.title}</h5>
+                          <p className="text-xs text-slate-500 mt-1">{art.excerpt}</p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => setEditingArticle(art)}
+                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl"
+                            title="Edit Article"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteArticle(art.id)}
+                            className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl"
+                            title="Delete Article"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* Edit Article Modal */}
+                  {editingArticle && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                      <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                          <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Article CMS
+                          </h3>
+                          <button onClick={() => setEditingArticle(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <form onSubmit={handleUpdateArticle} className="space-y-3 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Title *</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingArticle.title}
+                              onChange={(e) => setEditingArticle({ ...editingArticle, title: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Excerpt</label>
+                            <textarea
+                              rows={2}
+                              value={editingArticle.excerpt}
+                              onChange={(e) => setEditingArticle({ ...editingArticle, excerpt: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-slate-700 font-bold mb-1">Category</label>
+                              <input
+                                type="text"
+                                value={editingArticle.category}
+                                onChange={(e) => setEditingArticle({ ...editingArticle, category: e.target.value })}
+                                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-700 font-bold mb-1">Read Time</label>
+                              <input
+                                type="text"
+                                value={editingArticle.readTime}
+                                onChange={(e) => setEditingArticle({ ...editingArticle, readTime: e.target.value })}
+                                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 pt-3">
+                            <button type="submit" className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
+                              Save Changes
+                            </button>
+                            <button type="button" onClick={() => setEditingArticle(null)} className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl">
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Subtab 3: Testimonials */}
+              {/* =============================================================
+                  CMS SUBTAB 5: TESTIMONIALS & TOPPERS CMS
+              ============================================================= */}
               {cmsSubTab === 'testimonials' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
@@ -2489,6 +3857,17 @@ export default function AdminDashboardPage() {
                           required
                           value={newTestimonial.examRank}
                           onChange={(e) => setNewTestimonial({ ...newTestimonial, examRank: e.target.value })}
+                          placeholder="e.g. 98.4% CBSE Board 2024"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Exam Name</label>
+                        <input
+                          type="text"
+                          value={newTestimonial.examName}
+                          onChange={(e) => setNewTestimonial({ ...newTestimonial, examName: e.target.value })}
+                          placeholder="Class 12 Physics Topper"
                           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
                         />
                       </div>
@@ -2512,19 +3891,96 @@ export default function AdminDashboardPage() {
 
                   <div className="lg:col-span-2 space-y-3">
                     {data.testimonials.map((t) => (
-                      <div key={t.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl shadow-xs">
-                        <div className="flex items-center justify-between mb-1">
-                          <h5 className="font-bold text-slate-900 text-sm">{t.studentName}</h5>
-                          <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">{t.examRank}</span>
+                      <div key={t.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-200 transition-colors">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h5 className="font-bold text-slate-900 text-sm">{t.studentName}</h5>
+                            <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">{t.examRank}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 italic">"{t.review}"</p>
+                          <div className="text-[10px] text-slate-400 mt-1">{t.examName}</div>
                         </div>
-                        <p className="text-xs text-slate-600 italic">"{t.review}"</p>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => setEditingTestimonial(t)}
+                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl"
+                            title="Edit Review"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTestimonial(t.id)}
+                            className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl"
+                            title="Delete Review"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* Edit Testimonial Modal */}
+                  {editingTestimonial && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                          <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Topper Review CMS
+                          </h3>
+                          <button onClick={() => setEditingTestimonial(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <form onSubmit={handleUpdateTestimonial} className="space-y-3 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Student Name *</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingTestimonial.studentName}
+                              onChange={(e) => setEditingTestimonial({ ...editingTestimonial, studentName: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Exam Rank *</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingTestimonial.examRank}
+                              onChange={(e) => setEditingTestimonial({ ...editingTestimonial, examRank: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Review</label>
+                            <textarea
+                              rows={3}
+                              value={editingTestimonial.review}
+                              onChange={(e) => setEditingTestimonial({ ...editingTestimonial, review: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                            />
+                          </div>
+                          <div className="flex items-center gap-3 pt-3">
+                            <button type="submit" className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
+                              Save Changes
+                            </button>
+                            <button type="button" onClick={() => setEditingTestimonial(null)} className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl">
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Subtab 4: FAQs */}
+              {/* =============================================================
+                  CMS SUBTAB 6: FREQUENTLY ASKED QUESTIONS (FAQ) CMS
+              ============================================================= */}
               {cmsSubTab === 'faqs' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
@@ -2561,12 +4017,77 @@ export default function AdminDashboardPage() {
 
                   <div className="lg:col-span-2 space-y-3">
                     {data.faqs.map((faq) => (
-                      <div key={faq.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl shadow-xs">
-                        <h5 className="font-bold text-slate-900 text-sm mb-1">{faq.question}</h5>
-                        <p className="text-xs text-slate-600">{faq.answer}</p>
+                      <div key={faq.id} className="p-4.5 bg-white border border-slate-200 rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-start justify-between gap-4 hover:border-blue-200 transition-colors">
+                        <div>
+                          <h5 className="font-bold text-slate-900 text-sm mb-1">{faq.question}</h5>
+                          <p className="text-xs text-slate-600">{faq.answer}</p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => setEditingFaq(faq)}
+                            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl"
+                            title="Edit FAQ"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFaq(faq.id)}
+                            className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl"
+                            title="Delete FAQ"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* Edit FAQ Modal */}
+                  {editingFaq && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                          <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit FAQ CMS
+                          </h3>
+                          <button onClick={() => setEditingFaq(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <form onSubmit={handleUpdateFaq} className="space-y-3 text-xs">
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Question *</label>
+                            <input
+                              type="text"
+                              required
+                              value={editingFaq.question}
+                              onChange={(e) => setEditingFaq({ ...editingFaq, question: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-slate-700 font-bold mb-1">Answer *</label>
+                            <textarea
+                              rows={4}
+                              required
+                              value={editingFaq.answer}
+                              onChange={(e) => setEditingFaq({ ...editingFaq, answer: e.target.value })}
+                              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                            />
+                          </div>
+                          <div className="flex items-center gap-3 pt-3">
+                            <button type="submit" className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
+                              Save Changes
+                            </button>
+                            <button type="button" onClick={() => setEditingFaq(null)} className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl">
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

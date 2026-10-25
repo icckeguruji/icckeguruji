@@ -25,7 +25,9 @@ import {
   Zap,
   Flame,
   TrendingUp,
-  Smartphone
+  Smartphone,
+  MessageCircle,
+  ShieldAlert
 } from 'lucide-react';
 import { Course, User, CoachingConfig, Announcement, Article, Testimonial, FaqItem, TimetableSlot } from '@/types';
 import { getStoredData, saveStoredData } from '@/lib/storage';
@@ -131,26 +133,34 @@ export default function HomePage() {
       )}
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 bg-gradient-to-b from-white via-blue-50/30 to-slate-50 border-b border-slate-200">
+      <section className="relative overflow-hidden pt-10 pb-16 bg-gradient-to-b from-white via-blue-50/30 to-slate-50 border-b border-slate-200">
         <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[750px] h-[380px] bg-gradient-to-tr from-blue-400/10 via-indigo-400/10 to-violet-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-6">
+          {/* Admission / Promo Badge from CMS */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-xs">
-            <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
-            <span>New Academic Session 2026 Admissions Open • Direct UPI Zero Commission</span>
+            <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+            <span>{data.config.admissionBadgeText || "New Academic Session 2026 Admissions Open • Direct UPI Zero Commission"}</span>
           </div>
 
+          {/* Hero Headline from CMS */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 max-w-4xl mx-auto leading-tight">
-            Apne Career Ka Lakshya Haasil Karein with{' '}
-            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
-              {data.config.coachingName}
-            </span>
+            {data.config.heroHeadline || (
+              <>
+                Apne Career Ka Lakshya Haasil Karein with{' '}
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                  {data.config.coachingName}
+                </span>
+              </>
+            )}
           </h1>
 
+          {/* Hero Subheadline from CMS */}
           <p className="text-slate-600 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
             {data.config.heroSubheadline || "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji aur paid Telegram group alerts."}
           </p>
 
+          {/* CTA Buttons */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <a
               href="#courses-section"
@@ -167,31 +177,104 @@ export default function HomePage() {
               <Radio className="w-4 h-4 text-rose-600 animate-pulse" />
               <span>Watch Live Classroom Demo</span>
             </Link>
+
+            <a
+              href={`https://wa.me/${(data.config.whatsappNumber || '+919876543210').replace(/[^0-9]/g, '')}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-5 py-3.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-2xl text-sm border border-emerald-200 shadow-xs flex items-center gap-2 transition-all"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span>Ask Guruji on WhatsApp</span>
+            </a>
           </div>
 
-          {/* Quick Metrics */}
-          <div className="pt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
+          {/* Quick Jump Directory Bar */}
+          <div className="pt-2 max-w-3xl mx-auto">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+              Quick Navigation Shortcuts
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+              <a
+                href="#courses-section"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              >
+                🎯 Batches
+              </a>
+              <a
+                href="#timetable"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              >
+                📅 Live Routine
+              </a>
+              <a
+                href="#daily-practice"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              >
+                📝 Daily MCQ
+              </a>
+              <a
+                href="#pyq"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              >
+                📚 Free PYQs
+              </a>
+              <a
+                href="#articles"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              >
+                📖 Study Guides
+              </a>
+              <a
+                href="#toppers"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              >
+                🏆 Toppers
+              </a>
+              <a
+                href="#faqs"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 text-xs font-bold transition-all shadow-xs"
+              >
+                ❓ FAQs
+              </a>
+              <Link
+                href="/course/course-1"
+                className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-xs"
+              >
+                🤖 AI Tutor
+              </Link>
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold transition-all shadow-xs"
+              >
+                🛡️ Admin Portal
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick Metrics from CMS */}
+          <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">10,000+</div>
-              <div className="text-xs font-bold text-blue-600">Enrolled Students</div>
+              <div className="text-2xl font-black text-slate-900">{data.config.stat1Value || "10,000+"}</div>
+              <div className="text-xs font-bold text-blue-600">{data.config.stat1Label || "Enrolled Students"}</div>
               <div className="text-[11px] text-slate-400">Trusted all over India</div>
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">98.4%</div>
-              <div className="text-xs font-bold text-emerald-600">Highest Board Score</div>
+              <div className="text-2xl font-black text-slate-900">{data.config.stat2Value || "98.4%"}</div>
+              <div className="text-xs font-bold text-emerald-600">{data.config.stat2Label || "Highest Board Score"}</div>
               <div className="text-[11px] text-slate-400">CBSE &amp; State Boards</div>
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">24/7</div>
-              <div className="text-xs font-bold text-amber-600">AI Guruji Doubt Tutor</div>
+              <div className="text-2xl font-black text-slate-900">{data.config.stat3Value || "24/7"}</div>
+              <div className="text-xs font-bold text-amber-600">{data.config.stat3Label || "AI Guruji Doubt Tutor"}</div>
               <div className="text-[11px] text-slate-400">Step-by-step solutions</div>
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">0% Fee</div>
-              <div className="text-xs font-bold text-purple-600">Direct UPI Transfer</div>
+              <div className="text-2xl font-black text-slate-900">{data.config.stat4Value || "0% Fee"}</div>
+              <div className="text-xs font-bold text-purple-600">{data.config.stat4Label || "Direct UPI Transfer"}</div>
               <div className="text-[11px] text-slate-400">Zero Gateway Commission</div>
             </div>
           </div>
@@ -376,7 +459,7 @@ export default function HomePage() {
       {/* =========================================================================
           FEATURE: LIVE WEEKLY TIMETABLE ROUTINE
       ========================================================================= */}
-      <section className="py-14 bg-white border-y border-slate-200">
+      <section id="timetable" className="py-14 bg-white border-y border-slate-200 scroll-mt-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <WeeklyTimetable slots={data.timetable} />
         </div>
@@ -385,7 +468,7 @@ export default function HomePage() {
       {/* =========================================================================
           FEATURE: INTERACTIVE DAILY PRACTICE MCQ PREVIEW
       ========================================================================= */}
-      <section className="py-16 bg-gradient-to-b from-blue-50/50 to-white border-b border-slate-200">
+      <section id="daily-practice" className="py-16 bg-gradient-to-b from-blue-50/50 to-white border-b border-slate-200 scroll-mt-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
@@ -401,37 +484,46 @@ export default function HomePage() {
 
           <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-md">
             <div className="flex items-center justify-between mb-3 text-xs text-slate-400 font-bold">
-              <span>Class 12 Physics • Electrostatics</span>
+              <span>Guruji Live Daily Numerical Drill</span>
               <span className="text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                 +4 Marks
               </span>
             </div>
 
             <h4 className="text-base sm:text-lg font-black text-slate-900 mb-4">
-              Agar do static charges ke beech ki distance ko half (r/2) kar diya jaye, toh unke beech lagne wala electrostatic force kitna ho jayega?
+              {data.config.homeQuizQuestion || "Agar do static charges ke beech ki distance ko half (r/2) kar diya jaye, toh unke beech lagne wala electrostatic force kitna ho jayega?"}
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              {['2 Guna (Double)', '4 Guna (4 Times)', 'Aadha (Half)', '1/4th (One-Fourth)'].map((opt, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSampleQuizAnswer(i);
-                    setShowSampleResult(true);
-                  }}
-                  className={`p-3.5 rounded-2xl border text-left text-xs sm:text-sm font-bold transition-all flex items-center justify-between ${
-                    sampleQuizAnswer === i
-                      ? i === 1
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20'
-                        : 'bg-rose-50 border-rose-500 text-rose-900'
-                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-                  }`}
-                >
-                  <span>{String.fromCharCode(65 + i)}. {opt}</span>
-                  {showSampleResult && i === 1 && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
-                </button>
-              ))}
-            </div>
+            {(() => {
+              const options = (data.config.homeQuizOptions && data.config.homeQuizOptions.length === 4)
+                ? data.config.homeQuizOptions
+                : ['2 Guna (Double)', '4 Guna (4 Times)', 'Aadha (Half)', '1/4th (One-Fourth)'];
+              const correctIdx = data.config.homeQuizCorrectIndex ?? 1;
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  {options.map((opt, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setSampleQuizAnswer(i);
+                        setShowSampleResult(true);
+                      }}
+                      className={`p-3.5 rounded-2xl border text-left text-xs sm:text-sm font-bold transition-all flex items-center justify-between ${
+                        sampleQuizAnswer === i
+                          ? i === correctIdx
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20'
+                            : 'bg-rose-50 border-rose-500 text-rose-900'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <span>{String.fromCharCode(65 + i)}. {opt}</span>
+                      {showSampleResult && i === correctIdx && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {showSampleResult && (
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-slate-700 space-y-1 animate-in fade-in duration-200">
@@ -440,7 +532,7 @@ export default function HomePage() {
                   Guruji Solution:
                 </span>
                 <p className="leading-relaxed">
-                  Correct Answer: <strong>B (4 Guna)</strong>! Coulomb's law ke mutabiq <code>F ∝ 1/r²</code>. Jab distance aadhi (r/2) hogi, toh force 4 guna badh jayega. Sabhi batches mein aise chapter-wise mock tests available hain!
+                  {data.config.homeQuizExplanation || "Correct Answer: B (4 Guna)! Coulomb's law ke mutabiq F ∝ 1/r². Jab distance aadhi (r/2) hogi, toh force 4 guna badh jayega. Sabhi batches mein aise chapter-wise mock tests available hain!"}
                 </p>
               </div>
             )}
@@ -451,7 +543,7 @@ export default function HomePage() {
       {/* =========================================================================
           FEATURE: PREVIOUS YEARS QUESTION PAPERS (PYQ) & SOLUTIONS
       ========================================================================= */}
-      <section id="pyq" className="py-16 bg-slate-50 border-b border-slate-200">
+      <section id="pyq" className="py-16 bg-slate-50 border-b border-slate-200 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <PyqSection papers={data.pyqPapers || []} />
         </div>
@@ -461,7 +553,7 @@ export default function HomePage() {
           CMS: STUDY GUIDES & ARTICLES SECTION
       ========================================================================= */}
       {data.articles.length > 0 && (
-        <section className="py-16 bg-white border-b border-slate-200">
+        <section id="articles" className="py-16 bg-white border-b border-slate-200 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center max-w-2xl mx-auto">
               <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
@@ -513,7 +605,7 @@ export default function HomePage() {
           CMS: TOPPERS & TESTIMONIALS (HALL OF FAME)
       ========================================================================= */}
       {data.testimonials.length > 0 && (
-        <section className="py-16 bg-slate-50 border-b border-slate-200">
+        <section id="toppers" className="py-16 bg-slate-50 border-b border-slate-200 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center max-w-2xl mx-auto">
               <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
@@ -564,7 +656,7 @@ export default function HomePage() {
           CMS: FREQUENTLY ASKED QUESTIONS (FAQ)
       ========================================================================= */}
       {data.faqs.length > 0 && (
-        <section className="py-16 bg-white border-b border-slate-200">
+        <section id="faqs" className="py-16 bg-white border-b border-slate-200 scroll-mt-20">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center">
               <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
@@ -605,37 +697,178 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="bg-white py-10 text-xs text-slate-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <Logo size="sm" />
+      {/* =========================================================================
+          COMPREHENSIVE DIRECTORY FOOTER (4 COLUMNS + DIRECT LINKS)
+      ========================================================================= */}
+      <footer className="bg-white border-t border-slate-200 pt-14 pb-8 text-xs text-slate-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {/* Column 1: Institute Branding & Info */}
+            <div className="space-y-4">
+              <Logo size="md" />
+              <p className="text-slate-500 text-xs leading-relaxed">
+                {data.config.tagline || "Live Classes, Smart Notes & 24/7 AI Guruji"}. India's dedicated learning platform for Board exams and competitive exams with 0% gateway commission.
+              </p>
+              <div className="space-y-1.5 text-[11px] text-slate-600">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800">Helpline:</span>
+                  <a href={`tel:${data.config.whatsappNumber}`} className="hover:text-blue-600 font-mono">
+                    {data.config.whatsappNumber}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800">Official UPI ID:</span>
+                  <span className="font-mono bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200 font-bold">
+                    {data.config.upiId}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-          <div className="text-slate-500 font-medium">
-            © 2026 {data.config.coachingName}. All Rights Reserved. Free Hosting Architecture.
+            {/* Column 2: Quick Jump Directory */}
+            <div className="space-y-3">
+              <h4 className="font-black text-slate-900 text-sm uppercase tracking-wider text-xs">
+                Quick Navigation
+              </h4>
+              <ul className="space-y-2 text-xs font-semibold text-slate-600">
+                <li>
+                  <a href="#courses-section" className="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>🎯</span> Popular Batches
+                  </a>
+                </li>
+                <li>
+                  <a href="#timetable" className="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>📅</span> Weekly Live Routine
+                  </a>
+                </li>
+                <li>
+                  <a href="#daily-practice" className="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>📝</span> Daily Practice MCQ
+                  </a>
+                </li>
+                <li>
+                  <a href="#pyq" className="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>📚</span> Free PYQs &amp; Solutions
+                  </a>
+                </li>
+                <li>
+                  <a href="#articles" className="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>📖</span> Study Guides &amp; Tips
+                  </a>
+                </li>
+                <li>
+                  <a href="#toppers" className="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>🏆</span> Toppers Hall of Fame
+                  </a>
+                </li>
+                <li>
+                  <a href="#faqs" className="hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <span>❓</span> Common FAQs
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Student Tools & Classroom */}
+            <div className="space-y-3">
+              <h4 className="font-black text-slate-900 text-sm uppercase tracking-wider text-xs">
+                Student Learning Tools
+              </h4>
+              <ul className="space-y-2 text-xs font-semibold text-slate-600">
+                <li>
+                  <Link href="/course/course-1" className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Live YouTube Classroom</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/course/course-1" className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>24/7 AI Guruji Doubt Solver</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/course/course-1" className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Handwritten PDF Golden Notes</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/course/course-1" className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Moving Anti-Piracy Watermark</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/course/course-1" className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-purple-500" />
+                    <span>Verifiable Course Certificates</span>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Official Community & Admin */}
+            <div className="space-y-3">
+              <h4 className="font-black text-slate-900 text-sm uppercase tracking-wider text-xs">
+                Community &amp; Connect
+              </h4>
+              <div className="space-y-2.5">
+                <a
+                  href={`https://wa.me/${(data.config.whatsappNumber || '+919876543210').replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-2.5 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div>
+                    <div className="font-bold text-xs">WhatsApp AI Counselor</div>
+                    <div className="text-[10px] text-emerald-600">Scan QR / Instant Chat 24/7</div>
+                  </div>
+                </a>
+
+                <a
+                  href={data.config.telegramGroupLink || 'https://t.me/icckeguruji_official'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 flex items-center gap-2.5 transition-colors"
+                >
+                  <Send className="w-4 h-4 text-sky-600 shrink-0" />
+                  <div>
+                    <div className="font-bold text-xs">Telegram Community Channel</div>
+                    <div className="text-[10px] text-sky-600">Daily Alerts &amp; Free Study Materials</div>
+                  </div>
+                </a>
+
+                <Link
+                  href="/admin"
+                  className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-2.5 transition-colors"
+                >
+                  <ShieldAlert className="w-4 h-4 text-purple-600 shrink-0" />
+                  <div>
+                    <div className="font-bold text-xs">Guruji Admin Console (CMS)</div>
+                    <div className="text-[10px] text-purple-600">Manage Batches, UPI &amp; Content</div>
+                  </div>
+                </Link>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-600 font-semibold">
-            <a
-              href={`https://wa.me/${data.config.whatsappNumber.replace(/[^0-9]/g, '')}`}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-emerald-600"
-            >
-              WhatsApp Support
-            </a>
-            <span>•</span>
-            <a
-              href={data.config.telegramGroupLink}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-sky-600"
-            >
-              Telegram Community
-            </a>
-            <span>•</span>
-            <Link href="/admin" className="hover:text-purple-600">
-              Admin Portal
-            </Link>
+          {/* Bottom Copyright Bar */}
+          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-[11px]">
+            <div>
+              © 2026 {data.config.coachingName}. All Rights Reserved. Free Hosting Architecture (Next.js &amp; Vercel).
+            </div>
+            <div className="flex items-center gap-4 font-semibold text-slate-600">
+              <span className="flex items-center gap-1 text-emerald-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Zero Commission UPI Active
+              </span>
+              <span>•</span>
+              <a href="#faqs" className="hover:text-blue-600">Privacy &amp; Terms</a>
+              <span>•</span>
+              <Link href="/admin" className="hover:text-purple-600">Admin Login</Link>
+            </div>
           </div>
         </div>
       </footer>
