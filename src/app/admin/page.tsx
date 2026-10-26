@@ -1467,15 +1467,6 @@ export default function AdminDashboardPage() {
             </button>
           </div>
 
-          {/* Admin badge */}
-          <div className="px-5 py-3 bg-purple-50/70 border-b border-purple-100 flex items-center justify-between text-xs shrink-0">
-            <span className="font-extrabold text-purple-900 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-purple-600" />
-              Guruji Admin Console
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
-
           {/* Sidebar Menu Categorized */}
           <nav className="p-3 space-y-4 overflow-y-auto flex-1">
             {navSections.map((section) => (
@@ -1537,7 +1528,7 @@ export default function AdminDashboardPage() {
                 <ShieldCheck className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900 leading-tight">Admin Console</div>
+                <div className="font-bold text-xs text-slate-900 leading-tight">Admin Account</div>
                 <div className="text-[10px] text-slate-500">Teacher &amp; Management</div>
               </div>
             </div>

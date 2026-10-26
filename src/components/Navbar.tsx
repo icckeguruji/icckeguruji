@@ -248,7 +248,7 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
                     >
                       <div className="flex items-center gap-2">
                         <ShieldAlert className="w-4 h-4" />
-                        <span>Admin Console</span>
+                        <span>Admin Dashboard</span>
                       </div>
                       <span className="text-[10px] bg-purple-200/60 text-purple-900 px-2 py-0.5 rounded-full font-bold">Admin</span>
                     </Link>
