@@ -55,6 +55,7 @@ import {
   Testimonial,
   FaqItem,
   Quiz,
+  QuizQuestion,
   TimetableSlot,
   Flashcard,
   DppAssignment,
@@ -92,6 +93,53 @@ export default function AdminDashboardPage() {
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const [editingFaq, setEditingFaq] = useState<FaqItem | null>(null);
+
+  // New CRUD states for Students
+  const [editingStudent, setEditingStudent] = useState<User | null>(null);
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [newStudent, setNewStudent] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    password: 'student123',
+    enrolledCourseIds: [data.courses[0]?.id || 'course-1'],
+    streakDays: 5,
+  });
+
+  // New CRUD states for Quizzes
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+  const [isAddingQuiz, setIsAddingQuiz] = useState(false);
+  const [newQuizMeta, setNewQuizMeta] = useState({
+    courseId: data.courses[0]?.id || 'course-1',
+    title: '',
+    chapter: '',
+    durationMinutes: 30,
+    totalMarks: 20,
+  });
+  const [editingQuizQuestion, setEditingQuizQuestion] = useState<{ quizId: string; question: QuizQuestion } | null>(null);
+
+  // New CRUD states for DPP, PYQ, Forum, Payments
+  const [editingDpp, setEditingDpp] = useState<DppAssignment | null>(null);
+  const [editingPyq, setEditingPyq] = useState<PyqPaper | null>(null);
+  const [editingPost, setEditingPost] = useState<CommunityPost | null>(null);
+  const [isAddingPost, setIsAddingPost] = useState(false);
+  const [newPost, setNewPost] = useState({
+    courseId: data.courses[0]?.id || 'course-1',
+    title: '',
+    question: '',
+    tags: 'Physics, Numericals',
+  });
+  const [isAddingPayment, setIsAddingPayment] = useState(false);
+  const [newManualPayment, setNewManualPayment] = useState({
+    studentName: '',
+    studentPhone: '',
+    studentEmail: '',
+    courseId: data.courses[0]?.id || 'course-1',
+    amount: data.courses[0]?.price || 999,
+    paymentMode: 'Cash / Offline',
+    utrNumber: '',
+  });
 
   // Homepage Daily Quiz CMS form state
   const [homeQuizForm, setHomeQuizForm] = useState({
@@ -1019,42 +1067,344 @@ export default function AdminDashboardPage() {
     refreshState();
   };
 
+  // DPP Update Handler
+  const handleUpdateDpp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDpp) return;
+    const updated = (data.dpps || []).map((d) => (d.id === editingDpp.id ? editingDpp : d));
+    saveStoredData('DPPS', updated);
+    setEditingDpp(null);
+    refreshState();
+  };
+
+  // PYQ Update Handler
+  const handleUpdatePyq = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPyq) return;
+    const updated = (data.pyqPapers || []).map((p) => (p.id === editingPyq.id ? editingPyq : p));
+    saveStoredData('PYQS', updated);
+    setEditingPyq(null);
+    refreshState();
+  };
+
+  // Student CRUD Handlers
+  const handleCreateStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStudent.name.trim() || !newStudent.phone.trim()) return;
+
+    const studentObj: User = {
+      id: `user-${Date.now()}`,
+      name: newStudent.name.trim(),
+      phone: newStudent.phone.trim(),
+      email: newStudent.email.trim() || `${newStudent.phone.trim()}@student.local`,
+      password: newStudent.password.trim() || 'student123',
+      role: 'student',
+      enrolledCourseIds: newStudent.enrolledCourseIds,
+      joinedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      streakDays: Number(newStudent.streakDays) || 1,
+    };
+
+    saveStoredData('STUDENTS', [studentObj, ...data.students]);
+    setIsAddingStudent(false);
+    setNewStudent({
+      name: '',
+      phone: '',
+      email: '',
+      password: 'student123',
+      enrolledCourseIds: [data.courses[0]?.id || 'course-1'],
+      streakDays: 5,
+    });
+    refreshState();
+  };
+
+  const handleUpdateStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    const updated = data.students.map((s) => (s.id === editingStudent.id ? editingStudent : s));
+    saveStoredData('STUDENTS', updated);
+    if (currentUser.id === editingStudent.id) {
+      saveStoredData('USER', editingStudent);
+    }
+    setEditingStudent(null);
+    refreshState();
+  };
+
+  const handleDeleteStudent = (studentId: string) => {
+    if (!confirm('Kya aap is student ko permanently delete karna chahte hain?')) return;
+    const updated = data.students.filter((s) => s.id !== studentId);
+    saveStoredData('STUDENTS', updated);
+    refreshState();
+  };
+
+  // Quiz / Mock Test CRUD Handlers
+  const handleCreateQuiz = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQuizMeta.title.trim()) return;
+
+    const quizObj: Quiz = {
+      id: `quiz-${Date.now()}`,
+      courseId: newQuizMeta.courseId,
+      title: newQuizMeta.title.trim(),
+      chapter: newQuizMeta.chapter.trim() || 'Chapter Test',
+      durationMinutes: Number(newQuizMeta.durationMinutes) || 30,
+      totalMarks: Number(newQuizMeta.totalMarks) || 20,
+      questions: [],
+    };
+
+    saveStoredData('QUIZZES', [quizObj, ...data.quizzes]);
+    setIsAddingQuiz(false);
+    setNewQuizMeta({
+      courseId: data.courses[0]?.id || 'course-1',
+      title: '',
+      chapter: '',
+      durationMinutes: 30,
+      totalMarks: 20,
+    });
+    refreshState();
+  };
+
+  const handleUpdateQuiz = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingQuiz) return;
+    const updated = data.quizzes.map((q) => (q.id === editingQuiz.id ? editingQuiz : q));
+    saveStoredData('QUIZZES', updated);
+    setEditingQuiz(null);
+    refreshState();
+  };
+
+  const handleDeleteQuiz = (quizId: string) => {
+    if (!confirm('Kya aap is pure Mock Test ko delete karna chahte hain?')) return;
+    const updated = data.quizzes.filter((q) => q.id !== quizId);
+    saveStoredData('QUIZZES', updated);
+    refreshState();
+  };
+
+  const handleDeleteQuizQuestion = (quizId: string, questionId: string) => {
+    if (!confirm('Kya aap is question ko delete karna chahte hain?')) return;
+    const updated = data.quizzes.map((q) => {
+      if (q.id === quizId) {
+        return {
+          ...q,
+          questions: q.questions.filter((item) => item.id !== questionId),
+        };
+      }
+      return q;
+    });
+    saveStoredData('QUIZZES', updated);
+    refreshState();
+  };
+
+  const handleUpdateQuizQuestion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingQuizQuestion) return;
+    const { quizId, question } = editingQuizQuestion;
+    const updated = data.quizzes.map((q) => {
+      if (q.id === quizId) {
+        return {
+          ...q,
+          questions: q.questions.map((item) => (item.id === question.id ? question : item)),
+        };
+      }
+      return q;
+    });
+    saveStoredData('QUIZZES', updated);
+    setEditingQuizQuestion(null);
+    refreshState();
+  };
+
+  // Forum CRUD Handlers
+  const handleCreatePost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPost.title.trim() || !newPost.question.trim()) return;
+
+    const courseObj = data.courses.find((c) => c.id === newPost.courseId);
+    const postObj: CommunityPost = {
+      id: `post-${Date.now()}`,
+      courseId: newPost.courseId,
+      courseTitle: courseObj?.title || 'General Doubt Forum',
+      authorName: 'Er. Alok Sharma (Guruji)',
+      authorPhone: configForm.whatsappNumber || '+91 98765 43210',
+      title: newPost.title.trim(),
+      question: newPost.question.trim(),
+      tags: newPost.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      createdAt: 'Just now',
+      upvotes: 1,
+      isResolved: false,
+      answers: [],
+    };
+
+    saveStoredData('COMMUNITY_POSTS', [postObj, ...(data.communityPosts || [])]);
+    setIsAddingPost(false);
+    setNewPost({
+      courseId: data.courses[0]?.id || 'course-1',
+      title: '',
+      question: '',
+      tags: 'Physics, Numericals',
+    });
+    refreshState();
+  };
+
+  const handleUpdatePost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPost) return;
+    const updated = (data.communityPosts || []).map((p) => (p.id === editingPost.id ? editingPost : p));
+    saveStoredData('COMMUNITY_POSTS', updated);
+    setEditingPost(null);
+    refreshState();
+  };
+
+  const handleDeletePost = (postId: string) => {
+    if (!confirm('Kya aap is discussion doubt ko delete karna chahte hain?')) return;
+    const updated = (data.communityPosts || []).filter((p) => p.id !== postId);
+    saveStoredData('COMMUNITY_POSTS', updated);
+    refreshState();
+  };
+
+  const handleTogglePostResolved = (postId: string) => {
+    const updated = (data.communityPosts || []).map((p) => {
+      if (p.id === postId) {
+        return { ...p, isResolved: !p.isResolved };
+      }
+      return p;
+    });
+    saveStoredData('COMMUNITY_POSTS', updated);
+    refreshState();
+  };
+
+  // Manual Offline / Cash Payment & Delete Payment Handlers
+  const handleCreateManualPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newManualPayment.studentName.trim() || !newManualPayment.studentPhone.trim()) return;
+
+    const selectedCourse = data.courses.find((c) => c.id === newManualPayment.courseId) || data.courses[0];
+    const cleanUtr = newManualPayment.utrNumber.trim() || `MANUAL-${Date.now().toString().slice(-6)}`;
+
+    const paymentObj: PaymentRequest = {
+      id: `pay-${Date.now()}`,
+      userId: `user-manual-${Date.now()}`,
+      userName: newManualPayment.studentName.trim(),
+      userPhone: newManualPayment.studentPhone.trim(),
+      userEmail: newManualPayment.studentEmail.trim() || `${newManualPayment.studentPhone.trim()}@student.local`,
+      courseId: selectedCourse.id,
+      courseTitle: selectedCourse.title,
+      amount: Number(newManualPayment.amount) || selectedCourse.price,
+      utrNumber: cleanUtr,
+      upiIdUsed: `Offline / ${newManualPayment.paymentMode}`,
+      status: 'approved',
+      createdAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const existingStudent = data.students.find((s) => s.phone === paymentObj.userPhone);
+    let updatedStudents = [...data.students];
+    if (existingStudent) {
+      updatedStudents = updatedStudents.map((s) => {
+        if (s.id === existingStudent.id) {
+          return {
+            ...s,
+            enrolledCourseIds: Array.from(new Set([...s.enrolledCourseIds, selectedCourse.id])),
+          };
+        }
+        return s;
+      });
+    } else {
+      const newStud: User = {
+        id: paymentObj.userId,
+        name: paymentObj.userName,
+        phone: paymentObj.userPhone,
+        email: paymentObj.userEmail,
+        password: 'student123',
+        role: 'student',
+        enrolledCourseIds: [selectedCourse.id],
+        joinedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        streakDays: 1,
+      };
+      updatedStudents = [newStud, ...updatedStudents];
+    }
+
+    saveStoredData('STUDENTS', updatedStudents);
+    saveStoredData('PAYMENTS', [paymentObj, ...data.payments]);
+    setIsAddingPayment(false);
+    setNewManualPayment({
+      studentName: '',
+      studentPhone: '',
+      studentEmail: '',
+      courseId: data.courses[0]?.id || 'course-1',
+      amount: data.courses[0]?.price || 999,
+      paymentMode: 'Cash / Offline',
+      utrNumber: '',
+    });
+    refreshState();
+  };
+
+  const handleDeletePayment = (paymentId: string) => {
+    if (!confirm('Kya aap is payment record ko delete karna chahte hain?')) return;
+    const updated = data.payments.filter((p: PaymentRequest) => p.id !== paymentId);
+    saveStoredData('PAYMENTS', updated);
+    refreshState();
+  };
+
   // Stats
   const approvedPayments = data.payments.filter((p: PaymentRequest) => p.status === 'approved');
   const pendingPayments = data.payments.filter((p: PaymentRequest) => p.status === 'pending');
   const pendingDpps = (data.dppSubmissions || []).filter((s) => s.status === 'pending');
   const totalRevenue = approvedPayments.reduce((acc: number, curr: PaymentRequest) => acc + curr.amount, 0);
 
-  // Left Sidebar items list
-  const navItems = [
-    { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
+  // Left Sidebar items categorized into sections for a simplified, clean UI
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: any;
+    count?: number;
+    badge?: number | string | null;
+    badgeColor?: string;
+    highlight?: boolean;
+  }
+
+  const navSections: Array<{ title: string; items: NavItem[] }> = [
     {
-      id: 'payments',
-      label: 'UPI Approvals',
-      icon: CreditCard,
-      badge: pendingPayments.length > 0 ? pendingPayments.length : null,
-      badgeColor: 'bg-amber-500 text-slate-950 font-black'
+      title: 'Academics & Batches',
+      items: [
+        { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
+        { id: 'courses', label: 'Courses & Batches', icon: BookOpen, count: data.courses.length },
+        { id: 'lectures', label: 'Live & YouTube', icon: Radio, count: data.lessons.length },
+        { id: 'notes', label: 'PDF Study Notes', icon: FileText, count: data.notes.length },
+        {
+          id: 'dpp',
+          label: 'DPP & Homework',
+          icon: CheckCircle2,
+          badge: pendingDpps.length > 0 ? pendingDpps.length : null,
+          badgeColor: 'bg-emerald-500 text-white font-black',
+          count: (data.dpps || []).length
+        },
+        { id: 'pyq', label: 'PYQ Papers', icon: Download, count: (data.pyqPapers || []).length },
+        { id: 'quizzes', label: 'Quizzes & Mock Tests', icon: Award, count: data.quizzes.length },
+        { id: 'timetable', label: 'Weekly Timetable', icon: Calendar, count: data.timetable.length },
+      ]
     },
-    { id: 'courses', label: 'Courses & Batches', icon: BookOpen, count: data.courses.length },
-    { id: 'lectures', label: 'Live & YouTube', icon: Radio, count: data.lessons.length },
-    { id: 'notes', label: 'PDF Study Notes', icon: FileText, count: data.notes.length },
     {
-      id: 'dpp',
-      label: 'DPP & Homework',
-      icon: CheckCircle2,
-      badge: pendingDpps.length > 0 ? pendingDpps.length : null,
-      badgeColor: 'bg-emerald-500 text-white font-black',
-      count: (data.dpps || []).length
+      title: 'Students & Finance',
+      items: [
+        {
+          id: 'payments',
+          label: 'UPI Approvals',
+          icon: CreditCard,
+          badge: pendingPayments.length > 0 ? pendingPayments.length : null,
+          badgeColor: 'bg-amber-500 text-slate-950 font-black'
+        },
+        { id: 'students', label: 'Student Directory', icon: Users, count: data.students.length },
+        { id: 'forum', label: 'Doubt Forum', icon: MessageSquare, count: (data.communityPosts || []).length },
+      ]
     },
-    { id: 'pyq', label: 'PYQ Papers', icon: Download, count: (data.pyqPapers || []).length },
-    { id: 'forum', label: 'Doubt Forum', icon: MessageSquare, count: (data.communityPosts || []).length },
-    { id: 'whatsapp', label: 'WhatsApp AI Bot (QR)', icon: MessageSquare, highlight: true },
-    { id: 'broadcast', label: 'Telegram Guruji Bot', icon: Send, highlight: true },
-    { id: 'quizzes', label: 'Quizzes & Mock Tests', icon: Award, count: data.quizzes.length },
-    { id: 'timetable', label: 'Weekly Timetable', icon: Calendar, count: data.timetable.length },
-    { id: 'students', label: 'Student Directory', icon: Users, count: data.students.length },
-    { id: 'cms', label: 'CMS (Content Manager)', icon: PenTool },
-    { id: 'settings', label: 'Institute Settings', icon: Settings },
+    {
+      title: 'Tools & Settings',
+      items: [
+        { id: 'whatsapp', label: 'WhatsApp AI Bot (QR)', icon: MessageSquare, highlight: true },
+        { id: 'broadcast', label: 'Telegram Guruji Bot', icon: Send, highlight: true },
+        { id: 'cms', label: 'CMS (Content Manager)', icon: PenTool },
+        { id: 'settings', label: 'Institute Settings', icon: Settings },
+      ]
+    }
   ];
 
   return (
@@ -1067,9 +1417,9 @@ export default function AdminDashboardPage() {
           mobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
-        <div>
+        <div className="flex flex-col h-full">
           {/* Logo Header */}
-          <div className="h-18 px-5 border-b border-slate-200 flex items-center justify-between">
+          <div className="h-18 px-5 border-b border-slate-200 flex items-center justify-between shrink-0">
             <Link href="/" className="hover:opacity-90 transition-opacity">
               <Logo size="sm" />
             </Link>
@@ -1082,7 +1432,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Admin badge */}
-          <div className="px-5 py-3 bg-purple-50/70 border-b border-purple-100 flex items-center justify-between text-xs">
+          <div className="px-5 py-3 bg-purple-50/70 border-b border-purple-100 flex items-center justify-between text-xs shrink-0">
             <span className="font-extrabold text-purple-900 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-purple-600" />
               Guruji Admin Console
@@ -1090,49 +1440,56 @@ export default function AdminDashboardPage() {
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           </div>
 
-          {/* Sidebar Menu Items */}
-          <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-210px)]">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id as typeof activeTab);
-                    setMobileSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                    <span>{item.label}</span>
-                  </div>
+          {/* Sidebar Menu Categorized */}
+          <nav className="p-3 space-y-4 overflow-y-auto flex-1">
+            {navSections.map((section) => (
+              <div key={section.title} className="space-y-1">
+                <div className="px-3 py-1 text-[10px] font-black tracking-wider uppercase text-slate-400">
+                  {section.title}
+                </div>
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id as typeof activeTab);
+                        setMobileSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                        <span>{item.label}</span>
+                      </div>
 
-                  <div className="flex items-center gap-1">
-                    {item.badge && (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${item.badgeColor || 'bg-blue-100 text-blue-700'}`}>
-                        {item.badge}
-                      </span>
-                    )}
-                    {item.count !== undefined && !item.badge && (
-                      <span className={`text-[11px] ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
-                        {item.count}
-                      </span>
-                    )}
-                    {item.highlight && !isActive && (
-                      <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-100 text-amber-800 font-extrabold uppercase">
-                        CMS
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                      <div className="flex items-center gap-1">
+                        {item.badge && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] ${item.badgeColor || 'bg-blue-100 text-blue-700'}`}>
+                            {item.badge}
+                          </span>
+                        )}
+                        {item.count !== undefined && !item.badge && (
+                          <span className={`text-[11px] font-mono ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
+                            {item.count}
+                          </span>
+                        )}
+                        {item.highlight && !isActive && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-100 text-amber-800 font-extrabold uppercase">
+                            AI
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </div>
 
@@ -1273,6 +1630,61 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {/* Quick Actions Shortcuts ("seplify karo") */}
+              <div className="p-4 bg-white border border-slate-200 rounded-3xl shadow-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Quick Actions &amp; New Entries
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-semibold">1-Click Fast Access</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  <button
+                    onClick={() => setActiveTab('courses')}
+                    className="p-2.5 rounded-2xl bg-blue-50/70 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Course</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('lectures')}
+                    className="p-2.5 rounded-2xl bg-rose-50/70 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Radio className="w-3.5 h-3.5" />
+                    <span>+ Live Stream</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('notes')}
+                    className="p-2.5 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>+ PDF Notes</span>
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('students'); setIsAddingStudent(true); }}
+                    className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>+ Add Student</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('dpp')}
+                    className="p-2.5 rounded-2xl bg-amber-50/70 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>+ DPP Task</span>
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('quizzes'); setIsAddingQuiz(true); }}
+                    className="p-2.5 rounded-2xl bg-purple-50/70 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Award className="w-3.5 h-3.5" />
+                    <span>+ Mock Test</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Quick Actions & Recent Pending */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs">
@@ -1343,16 +1755,58 @@ export default function AdminDashboardPage() {
                       rows={3}
                       className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
                     />
+
+                    <button
+                      onClick={handleSendBroadcast}
+                      disabled={!broadcastMsg.trim()}
+                      className="w-full mt-3 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Instant Broadcast Notice</span>
+                    </button>
                   </div>
 
-                  <button
-                    onClick={handleSendBroadcast}
-                    disabled={!broadcastMsg.trim()}
-                    className="w-full mt-3 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Instant Broadcast Notice</span>
-                  </button>
+                  {/* Recent Published Broadcasts with Delete/Edit */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                      <span>Recent Notices ({data.announcements.length})</span>
+                      <button
+                        onClick={() => { setActiveTab('cms'); setCmsSubTab('announcements'); }}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Manage in CMS ➜
+                      </button>
+                    </div>
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                      {data.announcements.slice(0, 3).map((ann) => (
+                        <div
+                          key={ann.id}
+                          className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="truncate flex-1">
+                            <div className="font-bold text-slate-900 truncate">{ann.title}</div>
+                            <div className="text-[11px] text-slate-500 truncate">{ann.message}</div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => setEditingAnnouncement(ann)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit Notice"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAnnouncement(ann.id)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="Delete Notice"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1371,6 +1825,13 @@ export default function AdminDashboardPage() {
                     Aap <strong>"Approve"</strong> par click karenge toh course access instant unlock ho jayega!
                   </span>
                 </div>
+                <button
+                  onClick={() => setIsAddingPayment(true)}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-xs transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Record Offline / Cash Admission</span>
+                </button>
               </div>
 
               <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
@@ -1421,25 +1882,33 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
                           <td className="py-4 px-5 text-right">
-                            {p.status === 'pending' ? (
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => handleApprovePayment(p)}
-                                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleRejectPayment(p.id)}
-                                  className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold transition-colors"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-slate-400 font-medium">Processed</span>
-                            )}
+                            <div className="flex items-center justify-end gap-1.5">
+                              {p.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => handleApprovePayment(p)}
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectPayment(p.id)}
+                                    className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold transition-colors"
+                                    title="Reject"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => handleDeletePayment(p.id)}
+                                className="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-colors border border-slate-200"
+                                title="Delete Record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1447,6 +1916,142 @@ export default function AdminDashboardPage() {
                   </table>
                 </div>
               </div>
+
+              {/* Record Manual Payment Modal */}
+              {isAddingPayment && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-emerald-600" /> Record Offline / Cash Admission
+                      </h3>
+                      <button
+                        onClick={() => setIsAddingPayment(false)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCreateManualPayment} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Student Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={newManualPayment.studentName}
+                          onChange={(e) => setNewManualPayment({ ...newManualPayment, studentName: e.target.value })}
+                          placeholder="e.g. Anjali Verma"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Mobile Number *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newManualPayment.studentPhone}
+                            onChange={(e) => setNewManualPayment({ ...newManualPayment, studentPhone: e.target.value })}
+                            placeholder="e.g. 9876543210"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Email ID</label>
+                          <input
+                            type="email"
+                            value={newManualPayment.studentEmail}
+                            onChange={(e) => setNewManualPayment({ ...newManualPayment, studentEmail: e.target.value })}
+                            placeholder="anjali@gmail.com"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Select Batch to Enroll *</label>
+                        <select
+                          value={newManualPayment.courseId}
+                          onChange={(e) => {
+                            const found = data.courses.find((c) => c.id === e.target.value);
+                            setNewManualPayment({
+                              ...newManualPayment,
+                              courseId: e.target.value,
+                              amount: found ? found.price : newManualPayment.amount,
+                            });
+                          }}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        >
+                          {data.courses.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.title} (₹{c.price})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Fees Paid (₹) *</label>
+                          <input
+                            type="number"
+                            required
+                            value={newManualPayment.amount}
+                            onChange={(e) => setNewManualPayment({ ...newManualPayment, amount: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Payment Mode</label>
+                          <select
+                            value={newManualPayment.paymentMode}
+                            onChange={(e) => setNewManualPayment({ ...newManualPayment, paymentMode: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          >
+                            <option value="Cash / Offline">Cash / In-Person</option>
+                            <option value="Direct Bank NEFT/IMPS">Direct Bank NEFT/IMPS</option>
+                            <option value="Cheque / DD">Cheque / DD</option>
+                            <option value="Other UPI">External UPI</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Receipt / Ref Number (Optional)</label>
+                        <input
+                          type="text"
+                          value={newManualPayment.utrNumber}
+                          onChange={(e) => setNewManualPayment({ ...newManualPayment, utrNumber: e.target.value })}
+                          placeholder="e.g. REC-2026-089"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800">
+                        ✅ Submit karne par student ka account auto-create ho jayega aur batch turant unlock ho jayega!
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingPayment(false)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Record Admission &amp; Unlock
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2464,16 +3069,149 @@ export default function AdminDashboardPage() {
                           Due: {dpp.dueDate} • {dpp.totalMarks} Marks
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteDpp(dpp.id)}
-                        className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => setEditingDpp(dpp)}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-colors border border-blue-200"
+                          title="Edit DPP"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDpp(dpp.id)}
+                          className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors border border-rose-200"
+                          title="Delete DPP"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Edit DPP Modal */}
+              {editingDpp && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit DPP Assignment
+                      </h3>
+                      <button
+                        onClick={() => setEditingDpp(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateDpp} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Select Batch *</label>
+                        <select
+                          value={editingDpp.courseId}
+                          onChange={(e) => setEditingDpp({ ...editingDpp, courseId: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        >
+                          {data.courses.map((c) => (
+                            <option key={c.id} value={c.id}>{c.title}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">DPP Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingDpp.title}
+                          onChange={(e) => setEditingDpp({ ...editingDpp, title: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Chapter Name</label>
+                          <input
+                            type="text"
+                            value={editingDpp.chapter}
+                            onChange={(e) => setEditingDpp({ ...editingDpp, chapter: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Due Date</label>
+                          <input
+                            type="text"
+                            value={editingDpp.dueDate}
+                            onChange={(e) => setEditingDpp({ ...editingDpp, dueDate: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Total Marks</label>
+                          <input
+                            type="number"
+                            value={editingDpp.totalMarks}
+                            onChange={(e) => setEditingDpp({ ...editingDpp, totalMarks: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Questions Count</label>
+                          <input
+                            type="number"
+                            value={editingDpp.questionCount}
+                            onChange={(e) => setEditingDpp({ ...editingDpp, questionCount: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">PDF File URL</label>
+                        <input
+                          type="url"
+                          value={editingDpp.pdfUrl || ''}
+                          onChange={(e) => setEditingDpp({ ...editingDpp, pdfUrl: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Instructions / Description</label>
+                        <textarea
+                          rows={2}
+                          value={editingDpp.description}
+                          onChange={(e) => setEditingDpp({ ...editingDpp, description: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingDpp(null)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Update DPP
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2603,15 +3341,134 @@ export default function AdminDashboardPage() {
                         Paper
                       </a>
                       <button
-                        onClick={() => handleDeletePyq(paper.id)}
-                        className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg"
+                        onClick={() => setEditingPyq(paper)}
+                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-colors border border-blue-200"
+                        title="Edit PYQ"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePyq(paper.id)}
+                        className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors border border-rose-200"
+                        title="Delete PYQ"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Edit PYQ Modal */}
+              {editingPyq && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-purple-600" /> Edit PYQ Paper
+                      </h3>
+                      <button
+                        onClick={() => setEditingPyq(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdatePyq} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Paper Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingPyq.title}
+                          onChange={(e) => setEditingPyq({ ...editingPyq, title: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Exam Category</label>
+                          <input
+                            type="text"
+                            value={editingPyq.exam}
+                            onChange={(e) => setEditingPyq({ ...editingPyq, exam: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Exam Year</label>
+                          <input
+                            type="text"
+                            value={editingPyq.year}
+                            onChange={(e) => setEditingPyq({ ...editingPyq, year: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Subject</label>
+                          <input
+                            type="text"
+                            value={editingPyq.subject}
+                            onChange={(e) => setEditingPyq({ ...editingPyq, subject: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">File Size</label>
+                          <input
+                            type="text"
+                            value={editingPyq.fileSize}
+                            onChange={(e) => setEditingPyq({ ...editingPyq, fileSize: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Question Paper PDF URL *</label>
+                        <input
+                          type="url"
+                          required
+                          value={editingPyq.pdfUrl}
+                          onChange={(e) => setEditingPyq({ ...editingPyq, pdfUrl: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Solution PDF URL (Optional)</label>
+                        <input
+                          type="url"
+                          value={editingPyq.solutionPdfUrl || ''}
+                          onChange={(e) => setEditingPyq({ ...editingPyq, solutionPdfUrl: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingPyq(null)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Update PYQ Paper
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2620,11 +3477,18 @@ export default function AdminDashboardPage() {
           ===================================================================== */}
           {activeTab === 'forum' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-blue-600" /> Student Doubts to Answer as Guruji (
                   {(data.communityPosts || []).length})
                 </h3>
+                <button
+                  onClick={() => setIsAddingPost(true)}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-xs transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Post Topic as Guruji</span>
+                </button>
               </div>
 
               <div className="space-y-4">
@@ -2636,17 +3500,52 @@ export default function AdminDashboardPage() {
                           <span className="font-extrabold text-blue-700 text-xs">{post.authorName}</span>
                           <span className="text-[11px] text-slate-400">• {post.authorPhone}</span>
                           <span className="text-[11px] text-slate-400">• {post.createdAt}</span>
-                          {post.isResolved && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          {post.isResolved ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                               Resolved ✓
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              Open Doubt
                             </span>
                           )}
                         </div>
                         <h4 className="font-black text-slate-900 text-base mt-1">{post.title}</h4>
                       </div>
-                      <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-xl">
-                        👍 {post.upvotes}
-                      </span>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleTogglePostResolved(post.id)}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-colors border ${
+                            post.isResolved
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-amber-50 hover:text-amber-700'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
+                          }`}
+                          title="Toggle Resolved Status"
+                        >
+                          {post.isResolved ? 'Mark Open' : 'Mark Resolved'}
+                        </button>
+
+                        <button
+                          onClick={() => setEditingPost(post)}
+                          className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-colors border border-blue-200"
+                          title="Edit Post"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeletePost(post.id)}
+                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors border border-rose-200"
+                          title="Delete Post"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-xl">
+                          👍 {post.upvotes}
+                        </span>
+                      </div>
                     </div>
 
                     <p className="text-xs sm:text-sm text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-100 leading-relaxed font-sans">
@@ -2690,6 +3589,150 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Add Post Modal */}
+              {isAddingPost && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-blue-600" /> Post New Discussion Topic as Guruji
+                      </h3>
+                      <button
+                        onClick={() => setIsAddingPost(false)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCreatePost} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Select Batch *</label>
+                        <select
+                          value={newPost.courseId}
+                          onChange={(e) => setNewPost({ ...newPost, courseId: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        >
+                          {data.courses.map((c) => (
+                            <option key={c.id} value={c.id}>{c.title}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Topic Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={newPost.title}
+                          onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+                          placeholder="e.g. Important Numericals on Gauss's Law Discussion"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Description / Concept Question *</label>
+                        <textarea
+                          rows={4}
+                          required
+                          value={newPost.question}
+                          onChange={(e) => setNewPost({ ...newPost, question: e.target.value })}
+                          placeholder="Topic ka detail ya problem statement yahan likhein..."
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Tags (comma separated)</label>
+                        <input
+                          type="text"
+                          value={newPost.tags}
+                          onChange={(e) => setNewPost({ ...newPost, tags: e.target.value })}
+                          placeholder="Physics, Electrostatics, Numericals"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingPost(false)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Publish Topic
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Post Modal */}
+              {editingPost && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Discussion Topic
+                      </h3>
+                      <button
+                        onClick={() => setEditingPost(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdatePost} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Topic Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingPost.title}
+                          onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Question / Detail *</label>
+                        <textarea
+                          rows={4}
+                          required
+                          value={editingPost.question}
+                          onChange={(e) => setEditingPost({ ...editingPost, question: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingPost(null)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Update Topic
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2697,150 +3740,492 @@ export default function AdminDashboardPage() {
               NEW: 6. QUIZZES & MOCK TESTS MANAGER TAB
           ===================================================================== */}
           {activeTab === 'quizzes' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Form to add MCQ */}
-              <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
-                <h3 className="font-black text-slate-900 text-base mb-3 flex items-center gap-2">
-                  <Award className="w-4 h-4 text-amber-500" /> Add MCQ to Mock Test
-                </h3>
-                <form onSubmit={handleAddQuizQuestion} className="space-y-3 text-xs sm:text-sm">
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Select Mock Test *</label>
-                    <select
-                      value={newQuizQ.quizId}
-                      onChange={(e) => setNewQuizQ({ ...newQuizQ, quizId: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
-                    >
-                      {data.quizzes.map((q) => (
-                        <option key={q.id} value={q.id}>
-                          {q.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Question Text *</label>
-                    <textarea
-                      rows={2}
-                      required
-                      value={newQuizQ.question}
-                      onChange={(e) => setNewQuizQ({ ...newQuizQ, question: e.target.value })}
-                      placeholder="e.g. What is the unit of electric dipole moment?"
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-700 font-bold mb-1">Option A *</label>
-                      <input
-                        type="text"
-                        required
-                        value={newQuizQ.optionA}
-                        onChange={(e) => setNewQuizQ({ ...newQuizQ, optionA: e.target.value })}
-                        placeholder="Option A"
-                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-700 font-bold mb-1">Option B *</label>
-                      <input
-                        type="text"
-                        required
-                        value={newQuizQ.optionB}
-                        onChange={(e) => setNewQuizQ({ ...newQuizQ, optionB: e.target.value })}
-                        placeholder="Option B"
-                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-700 font-bold mb-1">Option C</label>
-                      <input
-                        type="text"
-                        value={newQuizQ.optionC}
-                        onChange={(e) => setNewQuizQ({ ...newQuizQ, optionC: e.target.value })}
-                        placeholder="Option C"
-                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-700 font-bold mb-1">Option D</label>
-                      <input
-                        type="text"
-                        value={newQuizQ.optionD}
-                        onChange={(e) => setNewQuizQ({ ...newQuizQ, optionD: e.target.value })}
-                        placeholder="Option D"
-                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Correct Answer *</label>
-                    <select
-                      value={newQuizQ.correctIndex}
-                      onChange={(e) => setNewQuizQ({ ...newQuizQ, correctIndex: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                    >
-                      <option value={0}>Option A is Correct</option>
-                      <option value={1}>Option B is Correct</option>
-                      <option value={2}>Option C is Correct</option>
-                      <option value={3}>Option D is Correct</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Guruji Explanation</label>
-                    <textarea
-                      rows={2}
-                      value={newQuizQ.explanation}
-                      onChange={(e) => setNewQuizQ({ ...newQuizQ, explanation: e.target.value })}
-                      placeholder="Why is this answer correct..."
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs transition-all mt-2"
-                  >
-                    Add Question to Test
-                  </button>
-                </form>
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
+                <div>
+                  <h3 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                    <Award className="w-4 h-4 text-amber-500" />
+                    Chapter Quizzes &amp; Mock Test Engine ({data.quizzes.length} Tests)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Naye mock tests create karein, questions edit ya delete karein aur answers verify karein.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAddingQuiz(true)}
+                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs shrink-0 flex items-center gap-1.5 shadow-xs transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Create New Mock Test</span>
+                </button>
               </div>
 
-              {/* Existing Quizzes */}
-              <div className="lg:col-span-2 space-y-4">
-                {data.quizzes.map((quiz) => (
-                  <div key={quiz.id} className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Form to add MCQ */}
+                <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
+                  <h3 className="font-black text-slate-900 text-base mb-3 flex items-center gap-2">
+                    <Plus className="w-4 h-4 text-blue-600" /> Add MCQ to Test
+                  </h3>
+                  <form onSubmit={handleAddQuizQuestion} className="space-y-3 text-xs sm:text-sm">
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">Select Mock Test *</label>
+                      <select
+                        value={newQuizQ.quizId}
+                        onChange={(e) => setNewQuizQ({ ...newQuizQ, quizId: e.target.value })}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold focus:bg-white focus:border-blue-600 focus:outline-none"
+                      >
+                        {data.quizzes.map((q) => (
+                          <option key={q.id} value={q.id}>
+                            {q.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">Question Text *</label>
+                      <textarea
+                        rows={2}
+                        required
+                        value={newQuizQ.question}
+                        onChange={(e) => setNewQuizQ({ ...newQuizQ, question: e.target.value })}
+                        placeholder="e.g. What is the unit of electric dipole moment?"
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                          {quiz.chapter}
-                        </span>
-                        <h4 className="font-black text-slate-900 text-base mt-1">{quiz.title}</h4>
+                        <label className="block text-slate-700 font-bold mb-1">Option A *</label>
+                        <input
+                          type="text"
+                          required
+                          value={newQuizQ.optionA}
+                          onChange={(e) => setNewQuizQ({ ...newQuizQ, optionA: e.target.value })}
+                          placeholder="Option A"
+                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
                       </div>
-                      <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                        {quiz.questions.length} Questions • {quiz.totalMarks} Marks
-                      </span>
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Option B *</label>
+                        <input
+                          type="text"
+                          required
+                          value={newQuizQ.optionB}
+                          onChange={(e) => setNewQuizQ({ ...newQuizQ, optionB: e.target.value })}
+                          placeholder="Option B"
+                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Option C</label>
+                        <input
+                          type="text"
+                          value={newQuizQ.optionC}
+                          onChange={(e) => setNewQuizQ({ ...newQuizQ, optionC: e.target.value })}
+                          placeholder="Option C"
+                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Option D</label>
+                        <input
+                          type="text"
+                          value={newQuizQ.optionD}
+                          onChange={(e) => setNewQuizQ({ ...newQuizQ, optionD: e.target.value })}
+                          placeholder="Option D"
+                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      {quiz.questions.map((q, idx) => (
-                        <div key={q.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs">
-                          <div className="font-bold text-slate-900 mb-1">
-                            Q{idx + 1}. {q.question}
-                          </div>
-                          <div className="text-[11px] text-emerald-700 font-semibold">
-                            Correct: Option {String.fromCharCode(65 + q.correctIndex)} ({q.options[q.correctIndex]})
-                          </div>
-                        </div>
-                      ))}
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">Correct Answer *</label>
+                      <select
+                        value={newQuizQ.correctIndex}
+                        onChange={(e) => setNewQuizQ({ ...newQuizQ, correctIndex: Number(e.target.value) })}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                      >
+                        <option value={0}>Option A is Correct</option>
+                        <option value={1}>Option B is Correct</option>
+                        <option value={2}>Option C is Correct</option>
+                        <option value={3}>Option D is Correct</option>
+                      </select>
                     </div>
-                  </div>
-                ))}
+
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">Guruji Explanation</label>
+                      <textarea
+                        rows={2}
+                        value={newQuizQ.explanation}
+                        onChange={(e) => setNewQuizQ({ ...newQuizQ, explanation: e.target.value })}
+                        placeholder="Why is this answer correct..."
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs transition-all mt-2"
+                    >
+                      Add Question to Test
+                    </button>
+                  </form>
+                </div>
+
+                {/* Existing Quizzes */}
+                <div className="lg:col-span-2 space-y-4">
+                  {data.quizzes.map((quiz) => (
+                    <div key={quiz.id} className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                        <div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                            {quiz.chapter}
+                          </span>
+                          <h4 className="font-black text-slate-900 text-base mt-1">{quiz.title}</h4>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                            {quiz.questions.length} Questions • {quiz.totalMarks} Marks
+                          </span>
+                          <button
+                            onClick={() => setEditingQuiz(quiz)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-xl border border-blue-200 transition-colors"
+                            title="Edit Test Details"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuiz(quiz.id)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 transition-colors"
+                            title="Delete Test"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {quiz.questions.map((q, idx) => (
+                          <div key={q.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="font-bold text-slate-900 mb-1">
+                                Q{idx + 1}. {q.question}
+                              </div>
+                              <div className="text-[11px] text-emerald-700 font-semibold">
+                                Correct: Option {String.fromCharCode(65 + q.correctIndex)} ({q.options[q.correctIndex]})
+                              </div>
+                              {q.explanation && (
+                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                  💡 {q.explanation}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => setEditingQuizQuestion({ quizId: quiz.id, question: q })}
+                                className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                title="Edit Question"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteQuizQuestion(quiz.id, q.id)}
+                                className="p-1 text-rose-600 hover:bg-rose-100 rounded"
+                                title="Delete Question"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
+
+              {/* Create Mock Test Modal */}
+              {isAddingQuiz && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-amber-500" /> Create New Mock Test / Quiz
+                      </h3>
+                      <button
+                        onClick={() => setIsAddingQuiz(false)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCreateQuiz} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Select Batch *</label>
+                        <select
+                          value={newQuizMeta.courseId}
+                          onChange={(e) => setNewQuizMeta({ ...newQuizMeta, courseId: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        >
+                          {data.courses.map((c) => (
+                            <option key={c.id} value={c.id}>{c.title}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Test Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={newQuizMeta.title}
+                          onChange={(e) => setNewQuizMeta({ ...newQuizMeta, title: e.target.value })}
+                          placeholder="e.g. Electrostatics Full Mock Test 01"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Chapter Name</label>
+                          <input
+                            type="text"
+                            value={newQuizMeta.chapter}
+                            onChange={(e) => setNewQuizMeta({ ...newQuizMeta, chapter: e.target.value })}
+                            placeholder="e.g. Chapter 01"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Duration (Minutes)</label>
+                          <input
+                            type="number"
+                            value={newQuizMeta.durationMinutes}
+                            onChange={(e) => setNewQuizMeta({ ...newQuizMeta, durationMinutes: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Total Marks</label>
+                        <input
+                          type="number"
+                          value={newQuizMeta.totalMarks}
+                          onChange={(e) => setNewQuizMeta({ ...newQuizMeta, totalMarks: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingQuiz(false)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-xs"
+                        >
+                          Create Test
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Mock Test Modal */}
+              {editingQuiz && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Mock Test Details
+                      </h3>
+                      <button
+                        onClick={() => setEditingQuiz(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateQuiz} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Test Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingQuiz.title}
+                          onChange={(e) => setEditingQuiz({ ...editingQuiz, title: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Chapter Name</label>
+                          <input
+                            type="text"
+                            value={editingQuiz.chapter}
+                            onChange={(e) => setEditingQuiz({ ...editingQuiz, chapter: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Duration (Mins)</label>
+                          <input
+                            type="number"
+                            value={editingQuiz.durationMinutes}
+                            onChange={(e) => setEditingQuiz({ ...editingQuiz, durationMinutes: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Total Marks</label>
+                        <input
+                          type="number"
+                          value={editingQuiz.totalMarks}
+                          onChange={(e) => setEditingQuiz({ ...editingQuiz, totalMarks: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingQuiz(null)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Save Changes
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Question Modal */}
+              {editingQuizQuestion && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Question
+                      </h3>
+                      <button
+                        onClick={() => setEditingQuizQuestion(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateQuizQuestion} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Question Text *</label>
+                        <textarea
+                          rows={3}
+                          required
+                          value={editingQuizQuestion.question.question}
+                          onChange={(e) =>
+                            setEditingQuizQuestion({
+                              ...editingQuizQuestion,
+                              question: { ...editingQuizQuestion.question, question: e.target.value },
+                            })
+                          }
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {['Option A', 'Option B', 'Option C', 'Option D'].map((optLabel, idx) => (
+                          <div key={idx}>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">{optLabel} *</label>
+                            <input
+                              type="text"
+                              required={idx < 2}
+                              value={editingQuizQuestion.question.options[idx] || ''}
+                              onChange={(e) => {
+                                const newOpts = [...editingQuizQuestion.question.options];
+                                newOpts[idx] = e.target.value;
+                                setEditingQuizQuestion({
+                                  ...editingQuizQuestion,
+                                  question: { ...editingQuizQuestion.question, options: newOpts },
+                                });
+                              }}
+                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Correct Answer</label>
+                        <select
+                          value={editingQuizQuestion.question.correctIndex}
+                          onChange={(e) =>
+                            setEditingQuizQuestion({
+                              ...editingQuizQuestion,
+                              question: { ...editingQuizQuestion.question, correctIndex: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        >
+                          <option value={0}>Option A is Correct</option>
+                          <option value={1}>Option B is Correct</option>
+                          <option value={2}>Option C is Correct</option>
+                          <option value={3}>Option D is Correct</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Explanation</label>
+                        <textarea
+                          rows={2}
+                          value={editingQuizQuestion.question.explanation}
+                          onChange={(e) =>
+                            setEditingQuizQuestion({
+                              ...editingQuizQuestion,
+                              question: { ...editingQuizQuestion.question, explanation: e.target.value },
+                            })
+                          }
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingQuizQuestion(null)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Save Question
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3097,11 +4482,35 @@ export default function AdminDashboardPage() {
           {activeTab === 'students' && (
             <div className="space-y-6">
               <div className="p-4 bg-white border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-700 shadow-xs">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>
-                    Yahan aap sabhi registered students ko dekh sakte hain aur kisi bhi student ka course access **1-Click mein Unlock ya Revoke** kar sakte hain.
-                  </span>
+                <div>
+                  <h3 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                    <Users className="w-4 h-4 text-blue-600" />
+                    Enrolled Students Directory ({data.students.length} Students)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Naye students add karein, details edit karein ya course access 1-Click mein Unlock/Lock karein.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      placeholder="Search name, phone, email..."
+                      className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setIsAddingStudent(true)}
+                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-xs transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Student</span>
+                  </button>
                 </div>
               </div>
 
@@ -3114,66 +4523,343 @@ export default function AdminDashboardPage() {
                         <th className="py-3.5 px-5 font-bold">Mobile Number</th>
                         <th className="py-3.5 px-5 font-bold">Streak</th>
                         <th className="py-3.5 px-5 font-bold">Enrolled Batches</th>
-                        <th className="py-3.5 px-5 font-bold text-right">Quick Access Toggle</th>
+                        <th className="py-3.5 px-5 font-bold text-right">Actions &amp; Access</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {data.students.map((student: User) => (
-                        <tr key={student.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-4 px-5">
-                            <div className="font-bold text-slate-900">{student.name}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{student.email}</div>
-                          </td>
-                          <td className="py-4 px-5 font-mono font-bold text-slate-800">
-                            {student.phone}
-                          </td>
-                          <td className="py-4 px-5 text-xs font-bold text-amber-700">
-                            {student.streakDays || 5} Days 🔥
-                          </td>
-                          <td className="py-4 px-5">
-                            <div className="flex flex-wrap gap-1">
-                              {student.enrolledCourseIds.length === 0 ? (
-                                <span className="text-xs text-slate-400 italic">No active batch</span>
-                              ) : (
-                                student.enrolledCourseIds.map((cId) => (
-                                  <span
-                                    key={cId}
-                                    className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
-                                  >
-                                    {cId}
-                                  </span>
-                                ))
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-4 px-5 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {data.courses.map((c) => {
-                                const hasAccess = student.enrolledCourseIds.includes(c.id);
-                                return (
-                                  <button
-                                    key={c.id}
-                                    onClick={() => handleToggleStudentCourse(student.id, c.id)}
-                                    title={hasAccess ? `Revoke ${c.title}` : `Grant ${c.title}`}
-                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
-                                      hasAccess
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
-                                        : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700'
-                                    }`}
-                                  >
-                                    {c.id === 'course-1' ? 'Physics' : c.id === 'course-2' ? 'Class 10' : 'Web Dev'}:{' '}
-                                    {hasAccess ? 'Active ✓' : 'Lock 🔒'}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {data.students
+                        .filter((s) => {
+                          if (!studentSearchQuery.trim()) return true;
+                          const q = studentSearchQuery.toLowerCase();
+                          return (
+                            s.name.toLowerCase().includes(q) ||
+                            s.phone.includes(q) ||
+                            s.email.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((student: User) => (
+                          <tr key={student.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-4 px-5">
+                              <div className="font-bold text-slate-900">{student.name}</div>
+                              <div className="text-[11px] text-slate-400 font-mono">{student.email}</div>
+                            </td>
+                            <td className="py-4 px-5 font-mono font-bold text-slate-800">
+                              {student.phone}
+                            </td>
+                            <td className="py-4 px-5 text-xs font-bold text-amber-700">
+                              {student.streakDays || 5} Days 🔥
+                            </td>
+                            <td className="py-4 px-5">
+                              <div className="flex flex-wrap gap-1">
+                                {student.enrolledCourseIds.length === 0 ? (
+                                  <span className="text-xs text-slate-400 italic">No active batch</span>
+                                ) : (
+                                  student.enrolledCourseIds.map((cId) => (
+                                    <span
+                                      key={cId}
+                                      className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
+                                    >
+                                      {cId === 'course-1' ? 'Physics' : cId === 'course-2' ? 'Class 10' : 'Web Dev'}
+                                    </span>
+                                  ))
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-5 text-right">
+                              <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
+                                {data.courses.map((c) => {
+                                  const hasAccess = student.enrolledCourseIds.includes(c.id);
+                                  return (
+                                    <button
+                                      key={c.id}
+                                      onClick={() => handleToggleStudentCourse(student.id, c.id)}
+                                      title={hasAccess ? `Revoke ${c.title}` : `Grant ${c.title}`}
+                                      className={`px-2 py-1 rounded-lg text-xs font-bold transition-all border ${
+                                        hasAccess
+                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
+                                          : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700'
+                                      }`}
+                                    >
+                                      {c.id === 'course-1' ? 'Physics' : c.id === 'course-2' ? 'Class 10' : 'Web Dev'}:{' '}
+                                      {hasAccess ? '✓' : '🔒'}
+                                    </button>
+                                  );
+                                })}
+
+                                <button
+                                  onClick={() => setEditingStudent(student)}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                                  title="Edit Student"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+
+                                <button
+                                  onClick={() => handleDeleteStudent(student.id)}
+                                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200"
+                                  title="Delete Student"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+
+              {/* Add Student Modal */}
+              {isAddingStudent && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-blue-600" /> Register New Student
+                      </h3>
+                      <button
+                        onClick={() => setIsAddingStudent(false)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCreateStudent} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Student Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={newStudent.name}
+                          onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                          placeholder="e.g. Vikas Kumar"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Mobile Number *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newStudent.phone}
+                            onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
+                            placeholder="9876543210"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Email ID</label>
+                          <input
+                            type="email"
+                            value={newStudent.email}
+                            onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                            placeholder="vikas@gmail.com"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Login Password *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newStudent.password}
+                            onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
+                            placeholder="student123"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Initial Streak Days</label>
+                          <input
+                            type="number"
+                            value={newStudent.streakDays}
+                            onChange={(e) => setNewStudent({ ...newStudent, streakDays: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-2">Enroll In Batches</label>
+                        <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                          {data.courses.map((course) => {
+                            const isEnrolled = newStudent.enrolledCourseIds.includes(course.id);
+                            return (
+                              <label key={course.id} className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-800">
+                                <input
+                                  type="checkbox"
+                                  checked={isEnrolled}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setNewStudent({
+                                        ...newStudent,
+                                        enrolledCourseIds: [...newStudent.enrolledCourseIds, course.id],
+                                      });
+                                    } else {
+                                      setNewStudent({
+                                        ...newStudent,
+                                        enrolledCourseIds: newStudent.enrolledCourseIds.filter((id) => id !== course.id),
+                                      });
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded text-blue-600"
+                                />
+                                <span>{course.title} (₹{course.price})</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingStudent(false)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Save &amp; Register Student
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Student Modal */}
+              {editingStudent && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Student Details
+                      </h3>
+                      <button
+                        onClick={() => setEditingStudent(null)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleUpdateStudent} className="space-y-3 text-xs sm:text-sm">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Student Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editingStudent.name}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Mobile Number *</label>
+                          <input
+                            type="text"
+                            required
+                            value={editingStudent.phone}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Email ID</label>
+                          <input
+                            type="email"
+                            value={editingStudent.email}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Login Password</label>
+                          <input
+                            type="text"
+                            value={editingStudent.password || 'student123'}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, password: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Streak Days</label>
+                          <input
+                            type="number"
+                            value={editingStudent.streakDays || 5}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, streakDays: Number(e.target.value) })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-2">Enrolled Batches</label>
+                        <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                          {data.courses.map((course) => {
+                            const isEnrolled = editingStudent.enrolledCourseIds.includes(course.id);
+                            return (
+                              <label key={course.id} className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-800">
+                                <input
+                                  type="checkbox"
+                                  checked={isEnrolled}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setEditingStudent({
+                                        ...editingStudent,
+                                        enrolledCourseIds: [...editingStudent.enrolledCourseIds, course.id],
+                                      });
+                                    } else {
+                                      setEditingStudent({
+                                        ...editingStudent,
+                                        enrolledCourseIds: editingStudent.enrolledCourseIds.filter((id) => id !== course.id),
+                                      });
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded text-blue-600"
+                                />
+                                <span>{course.title} (₹{course.price})</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingStudent(null)}
+                          className="px-4 py-2 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
+                        >
+                          Save Changes
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
