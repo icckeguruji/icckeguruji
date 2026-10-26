@@ -42,7 +42,7 @@ export default function ForgotPasswordModal({
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) {
-      setError('Kripya valid email address enter karein.');
+      setError('Please enter a valid email address.');
       return;
     }
 
@@ -65,12 +65,12 @@ export default function ForgotPasswordModal({
         setExpectedOtp(data.otp);
         setStep('verify');
         if (data.via === 'google-apps-script') {
-          setNotice(`✅ Reset code aapke email (${email}) par bhej diya gaya hai via Gmail!`);
+          setNotice(`✅ Reset code has been sent to your email (${email}) via Gmail!`);
         } else {
           setNotice(`✅ OTP sent to ${email}! (Test Mode OTP: ${data.otp})`);
         }
       } else {
-        setError(data.error || 'Email bhejne me samasya aayi. Kripya punah prayas karein.');
+        setError(data.error || 'Failed to send email. Please try again.');
       }
     } catch (err) {
       // Fallback local OTP simulation
@@ -89,12 +89,12 @@ export default function ForgotPasswordModal({
     setError('');
 
     if (enteredOtp.trim() !== expectedOtp.trim() && enteredOtp.trim() !== '123456') {
-      setError('Galat OTP! Kripya sahi 6-digit OTP enter karein.');
+      setError('Invalid OTP! Please enter the correct 6-digit OTP.');
       return;
     }
 
     if (!newPassword || newPassword.length < 6) {
-      setError('Naya password kam se kam 6 characters ka hona chahiye.');
+      setError('New password must be at least 6 characters long.');
       return;
     }
 
@@ -104,7 +104,7 @@ export default function ForgotPasswordModal({
       const res = resetUserPassword(email, newPassword);
 
       if (res.success && res.user) {
-        setNotice('🎉 Password successfully change ho gaya hai! Logging you in...');
+        setNotice('🎉 Password successfully updated! Logging you in...');
         setTimeout(() => {
           if (onSuccessReset) {
             onSuccessReset(res.user!);
@@ -112,7 +112,7 @@ export default function ForgotPasswordModal({
           onClose();
         }, 800);
       } else {
-        setError(res.error || 'Password update karne me samasya aayi.');
+        setError(res.error || 'Failed to update password. Please try again.');
         setLoading(false);
       }
     }, 400);
@@ -159,7 +159,7 @@ export default function ForgotPasswordModal({
         {step === 'request' ? (
           <form onSubmit={handleSendOtp} className="space-y-4 text-xs sm:text-sm">
             <p className="text-xs text-slate-600 leading-relaxed">
-              Apna registered email address enter karein. Hum aapko Gmail se 6-digit OTP code bhejenge:
+              Enter your registered email address. We will send a 6-digit OTP code to your inbox:
             </p>
 
             <div>
@@ -212,7 +212,7 @@ export default function ForgotPasswordModal({
                 className="w-full px-4 py-2.5 bg-slate-50 border border-blue-400 rounded-xl text-sm font-mono font-bold tracking-widest text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
               />
               <span className="text-[10px] text-slate-400 mt-1 block">
-                Email par aaya 6-digit code yahan daalein.
+                Enter the 6-digit verification code sent to your email.
               </span>
             </div>
 

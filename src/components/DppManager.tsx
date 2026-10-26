@@ -292,7 +292,7 @@ export default function DppManager({
                 <div className="text-right">
                   <button
                     onClick={() => {
-                      if (confirm('Kya aap naya solution resubmit karna chahte hain?')) {
+                      if (confirm('Do you want to clear and resubmit a new solution?')) {
                         setAnswerText(currentSubmission.answerText);
                         const updated = submissions.filter((s) => s.id !== currentSubmission.id);
                         saveStoredData('DPP_SUBMISSIONS', updated);
@@ -322,7 +322,7 @@ export default function DppManager({
                     required
                     value={answerText}
                     onChange={(e) => setAnswerText(e.target.value)}
-                    placeholder="Apna step-by-step numerical solution yahan type karein ya final answers likhein...&#10;Jaise:&#10;Q1: Formula used F = kq1q2/r^2 => Answer = 1.6 x 10^-14 N&#10;Q2: Zero due to symmetry"
+                    placeholder="Type your step-by-step numerical solution or final answers here...&#10;Example:&#10;Q1: Formula used F = kq1q2/r^2 => Answer = 1.6 x 10^-14 N&#10;Q2: Zero due to symmetry"
                     className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-mono text-xs sm:text-sm text-slate-800 resize-y"
                   />
                 </div>
@@ -336,7 +336,7 @@ export default function DppManager({
                       type="text"
                       value={attachmentName}
                       onChange={(e) => setAttachmentName(e.target.value)}
-                      placeholder="e.g. Rahul_Notes.pdf ya Google Drive link"
+                      placeholder="e.g. Rahul_Notes.pdf or Google Drive link"
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                     />
                   </div>
@@ -351,7 +351,7 @@ export default function DppManager({
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
-                          Submit to Guruji for Review
+                          Submit for Guruji's Review
                         </>
                       )}
                     </button>
@@ -361,7 +361,7 @@ export default function DppManager({
                 {successMsg && (
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    Shabash! Aapka solution successfully Guruji tak pahunch gaya hai. Evaluated marks jaldi update honge.
+                    Great work! Your solution has been submitted for Guruji's evaluation. Your evaluated marks and feedback will be posted shortly.
                   </div>
                 )}
               </form>

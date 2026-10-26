@@ -51,11 +51,11 @@ export default function UpiPaymentModal({
 
     const cleanUtr = utrNumber.trim();
     if (!cleanUtr || cleanUtr.length < 6) {
-      setError('Kripya valid 12-digit UTR ya Transaction Reference Number dalein.');
+      setError('Please enter a valid 12-digit UTR or Transaction Reference Number.');
       return;
     }
     if (!studentName.trim() || !studentPhone.trim()) {
-      setError('Apna Name aur Mobile Number enter karein.');
+      setError('Please enter your Name and Mobile Number.');
       return;
     }
 
@@ -100,7 +100,7 @@ export default function UpiPaymentModal({
       setSubmitted(true);
     } catch (err) {
       console.error(err);
-      setError('Submission error. Kripya dobara try karein.');
+      setError('Submission error. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -189,8 +189,8 @@ export default function UpiPaymentModal({
             </div>
 
             <p className="text-slate-600 text-sm max-w-md mx-auto">
-              Aapka UTR verify hote hi membership activate ho jayegi.
-              Aap Admin panel par jakar turant 1-Click mein Approve kar sakte hain.
+              Your membership will be activated as soon as your UTR is verified.
+              You can also approve it instantly via the Admin Panel in 1-Click for demo testing.
             </p>
 
             <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
@@ -275,7 +275,7 @@ export default function UpiPaymentModal({
               <div>
                 <h4 className="font-bold text-slate-900 text-base mb-1">Step 2: Enter Payment Details</h4>
                 <p className="text-xs text-slate-500 mb-3">
-                  Payment hone ke baad aapke UPI app receipt par 12-digit **UTR / Reference ID** milega. Use yahan enter karein.
+                  After completing the payment, locate the 12-digit **UTR / Reference ID** on your UPI receipt and enter it below.
                 </p>
 
                 {error && (
@@ -327,7 +327,7 @@ export default function UpiPaymentModal({
                       maxLength={20}
                       className="w-full px-3.5 py-2 bg-slate-50 border border-blue-400 rounded-xl text-sm font-mono font-bold text-slate-900 tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all"
                     />
-                    <span className="text-[11px] text-slate-400 mt-0.5 block">PhonePe/GPay receipt par "UPI Transaction ID" ya "UTR" likha hota hai.</span>
+                    <span className="text-[11px] text-slate-400 mt-0.5 block">Look for "UPI Transaction ID" or "UTR" on your PhonePe/GPay/Paytm receipt.</span>
                   </div>
                 </div>
               </div>

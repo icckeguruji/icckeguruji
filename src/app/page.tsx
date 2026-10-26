@@ -147,7 +147,7 @@ export default function HomePage() {
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 max-w-4xl mx-auto leading-tight">
             {data.config.heroHeadline || (
               <>
-                Apne Career Ka Lakshya Haasil Karein with{' '}
+                Achieve Your Academic &amp; Career Goals with{' '}
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
                   {data.config.coachingName}
                 </span>
@@ -157,7 +157,7 @@ export default function HomePage() {
 
           {/* Hero Subheadline from CMS */}
           <p className="text-slate-600 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            {data.config.heroSubheadline || "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji aur paid Telegram group alerts."}
+            {data.config.heroSubheadline || "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji, and Telegram group alerts."}
           </p>
 
           {/* CTA Buttons */}
@@ -460,10 +460,10 @@ export default function HomePage() {
               Daily Practice Problem (DPP)
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
-              Aaj Ka Free Practice Question
+              Daily Free Practice Question
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Try karein aur dekhein kaise hamara system instantly solution aur Guruji explanation dikhata hai.
+              Try this problem and see how our system instantly delivers step-by-step solutions and explanations.
             </p>
           </div>
 
@@ -476,13 +476,13 @@ export default function HomePage() {
             </div>
 
             <h4 className="text-base sm:text-lg font-black text-slate-900 mb-4">
-              {data.config.homeQuizQuestion || "Agar do static charges ke beech ki distance ko half (r/2) kar diya jaye, toh unke beech lagne wala electrostatic force kitna ho jayega?"}
+              {data.config.homeQuizQuestion || "If the distance between two static point charges is halved (r/2), what happens to the electrostatic force between them?"}
             </h4>
 
             {(() => {
               const options = (data.config.homeQuizOptions && data.config.homeQuizOptions.length === 4)
                 ? data.config.homeQuizOptions
-                : ['2 Guna (Double)', '4 Guna (4 Times)', 'Aadha (Half)', '1/4th (One-Fourth)'];
+                : ['Double (2x)', '4 Times (4x)', 'Half (0.5x)', 'One-Fourth (0.25x)'];
               const correctIdx = data.config.homeQuizCorrectIndex ?? 1;
 
               return (
@@ -517,7 +517,7 @@ export default function HomePage() {
                   Guruji Solution:
                 </span>
                 <p className="leading-relaxed">
-                  {data.config.homeQuizExplanation || "Correct Answer: B (4 Guna)! Coulomb's law ke mutabiq F ∝ 1/r². Jab distance aadhi (r/2) hogi, toh force 4 guna badh jayega. Sabhi batches mein aise chapter-wise mock tests available hain!"}
+                  {data.config.homeQuizExplanation || "Correct Answer: B (4 Times)! According to Coulomb's Law, F ∝ 1/r². When distance is halved (r/2), the force increases by a factor of 4. Comprehensive chapter-wise mock tests and drills are included in all batches!"}
                 </p>
               </div>
             )}
@@ -548,7 +548,7 @@ export default function HomePage() {
                 Study Guides, Derivations &amp; Exam Tips
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Board exams aur competitive exams me top score karne ke liye secret study strategies.
+                Proven study techniques and derivation breakdowns to excel in board and competitive exams.
               </p>
             </div>
 
@@ -597,10 +597,10 @@ export default function HomePage() {
                 Hall of Fame &amp; Results
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
-                Hamare Toppers Ki Zubani
+                Words from Our Toppers &amp; Achievers
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Hazaron students ne ICC KE GURUJI se padhkar board aur competitive exams me top ranks score ki hain.
+                Thousands of students have secured top ranks in board and entrance exams through ICC KE GURUJI.
               </p>
             </div>
 

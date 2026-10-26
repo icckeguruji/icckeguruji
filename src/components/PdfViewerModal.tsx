@@ -67,7 +67,7 @@ export default function PdfViewerModal({ note, user, onClose }: PdfViewerModalPr
 
           {/* Fallback Overlay banner */}
           <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-            <span>Agar PDF preview load nahi ho raha hai:</span>
+            <span>If the PDF preview does not load:</span>
             <a
               href={note.fileUrl}
               target="_blank"

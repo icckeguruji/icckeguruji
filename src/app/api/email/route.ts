@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       otp: generatedOtp,
       recipient: to,
       type: payload.type,
-      message: `Demo Mode: Password reset OTP for ${to} is ${generatedOtp}. Real email bhejne ke liye Admin Settings me script.new Web App URL paste karein.`,
+      message: `Demo Mode: Password reset OTP for ${to} is ${generatedOtp}. To dispatch real emails via Gmail, paste your script.new Web App URL in Admin Settings.`,
     });
 
   } catch (err: unknown) {

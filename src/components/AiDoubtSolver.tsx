@@ -21,7 +21,7 @@ export default function AiDoubtSolver({ course, studentName }: AiDoubtSolverProp
     {
       id: 'm1',
       sender: 'ai',
-      text: `Namaste ${studentName}! Main **ICC KE GURUJI** ka 24/7 AI Doubt Assistant hun. Aap "${course.title}" ke kisi bhi topic, formula ya numerical ka doubt mujhse pooch sakte hain!`,
+      text: `Hello ${studentName}! I am your 24/7 AI Doubt Assistant for **ICC KE GURUJI**. Feel free to ask any question, formula clarification, or numerical problem related to "${course.title}"!`,
       time: 'Just now',
     },
   ]);
@@ -29,9 +29,9 @@ export default function AiDoubtSolver({ course, studentName }: AiDoubtSolverProp
   const [loading, setLoading] = useState(false);
 
   const quickPrompts = [
-    "Coulomb's Law with formula samjhaiye",
-    "Gauss Law ke imp applications",
-    "Exam ke liye numerical revision shortcuts",
+    "Explain Coulomb's Law with formula",
+    "Important applications of Gauss's Law",
+    "Shortcuts for numerical problem solving",
   ];
 
   const handleSend = async (queryText?: string) => {
@@ -61,7 +61,7 @@ export default function AiDoubtSolver({ course, studentName }: AiDoubtSolverProp
       });
 
       const data = await res.json();
-      const aiReply = data.answer || 'Maaf kijiyega, answer generate karne me dikkat aayi. Kripya dobara poochiye.';
+      const aiReply = data.answer || 'Sorry, unable to generate an answer right now. Please try asking again.';
 
       setMessages((prev) => [
         ...prev,
@@ -79,7 +79,7 @@ export default function AiDoubtSolver({ course, studentName }: AiDoubtSolverProp
         {
           id: `ai-${Date.now()}`,
           sender: 'ai',
-          text: 'Network error. Kripya apna internet connection check karein.',
+          text: 'Network error. Please check your internet connection.',
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -147,7 +147,7 @@ export default function AiDoubtSolver({ course, studentName }: AiDoubtSolverProp
         {loading && (
           <div className="flex items-center gap-2 text-indigo-600 text-xs py-2 bg-indigo-50 p-3 rounded-xl border border-indigo-100 font-medium w-fit">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Guruji solution soch rahe hain...</span>
+            <span>Thinking and formulating solution...</span>
           </div>
         )}
       </div>
@@ -175,7 +175,7 @@ export default function AiDoubtSolver({ course, studentName }: AiDoubtSolverProp
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Apna doubt ya sawal yahan type karein..."
+          placeholder="Type your question or doubt here..."
           className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all"
         />
         <button

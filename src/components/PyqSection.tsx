@@ -48,7 +48,7 @@ export default function PyqSection({ papers }: PyqSectionProps) {
             Previous Years Question Papers &amp; Guruji Solutions
           </h2>
           <p className="text-blue-100 text-xs sm:text-sm mt-2 leading-relaxed">
-            Guruji ka secret mantra: Last 5 saal ke solved question papers solve karne se 90%+ score confirm ho jata hai. Saare standard question papers aur model answer keys bilkul free download karein!
+            Guruji's proven methodology: Solving the last 5 years' papers guarantees a 90%+ score. Download comprehensive question papers and model answer keys completely free!
           </p>
         </div>
       </div>

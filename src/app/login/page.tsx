@@ -45,15 +45,15 @@ export default function LoginPage() {
         const isGuruji = res.user.role === 'admin';
         setSuccess(
           isGuruji
-            ? `Pranam Guruji! Admin Dashboard open ho raha hai...`
-            : `Swagat hai, ${res.user.name}! Classroom open ho raha hai...`
+            ? `Welcome Guruji! Opening Admin Dashboard...`
+            : `Welcome, ${res.user.name}! Opening your classroom...`
         );
 
         setTimeout(() => {
           router.push(res.redirectTo || (isGuruji ? '/admin' : '/course/course-1'));
         }, 600);
       } else {
-        setError(res.error || 'Email ya Password galat hai.');
+        setError(res.error || 'Invalid Email ID or Password.');
         setLoading(false);
       }
     }, 350);
@@ -104,7 +104,7 @@ export default function LoginPage() {
             Sign In to ICC KE GURUJI
           </h1>
           <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
-            Student ho ya Guruji Admin, apna Email ya Mobile aur Password daalein. Aapka portal automatic open ho jayega.
+            Students and Admin can enter their registered Email or Mobile and Password to sign in to their dedicated portal.
           </p>
         </div>
 
@@ -269,7 +269,7 @@ export default function LoginPage() {
           initialEmail={identifier.includes('@') ? identifier : ''}
           onClose={() => setShowForgotModal(false)}
           onSuccessReset={(user) => {
-            setSuccess(`Swagat hai, ${user.name}! Naya password set ho gaya.`);
+            setSuccess(`Welcome, ${user.name}! Password updated successfully.`);
             setTimeout(() => {
               router.push(user.role === 'admin' ? '/admin' : '/course/course-1');
             }, 600);

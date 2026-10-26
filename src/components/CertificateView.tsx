@@ -53,7 +53,7 @@ export default function CertificateView({
   };
 
   const handleShareWhatsApp = () => {
-    const text = `Maine "ICC KE GURUJI" se apna "${course.title}" course successfully complete kar liya hai! 🎉 Mera Verified Certificate ID: ${certId}. Check here: https://icckeguruji.com/verify/${certId}`;
+    const text = `I have successfully completed "${course.title}" from "ICC KE GURUJI"! 🎉 My Verified Certificate ID is ${certId}. Check it here: https://icckeguruji.com/verify/${certId}`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 

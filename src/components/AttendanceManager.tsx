@@ -46,7 +46,7 @@ export default function AttendanceManager({
   React.useEffect(() => {
     try {
       setFormattedDateText(
-        new Date(selectedDate).toLocaleDateString('hi-IN', {
+        new Date(selectedDate).toLocaleDateString('en-US', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
@@ -165,7 +165,7 @@ export default function AttendanceManager({
     const rawDigits = student.phone.replace(/[^0-9]/g, '');
     const cleanPhone = rawDigits.length === 10 ? `91${rawDigits}` : rawDigits;
     const msg = encodeURIComponent(
-      `आदरणीय अभिभावक,\n\nआपका बच्चा *${student.name}* (Roll: ${student.rollNo || 'N/A'}) आज दिनांक *${selectedDate}* को *ICC KE GURUJI* कोचिंग में अनुपस्थित (Absent) रहा है।\n\nकृपया बच्चे से कारण पूछें और नियमित उपस्थिति सुनिश्चित करें।\n\nधन्यवाद,\n*ICC KE GURUJI*\nहेल्पलाइन: +91 98765 43210`
+      `Dear Parent,\n\nThis is an official update that your ward *${student.name}* (Roll: ${student.rollNo || 'N/A'}) was marked *Absent* today (${selectedDate}) at *ICC KE GURUJI* Coaching Institute.\n\nPlease ensure regular attendance for optimal academic progress.\n\nWarm regards,\n*ICC KE GURUJI*\nHelpline: +91 98765 43210`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
   };
@@ -188,10 +188,10 @@ export default function AttendanceManager({
         <div>
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
             <Calendar className="w-6 h-6 text-blue-600" />
-            दैनिक हाजिरी रजिस्टर (Daily Attendance)
+            Daily Attendance Register
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            तारीख और बैच चुनें, हाजिरी लगाएं और अनुपस्थित छात्रों के अभिभावकों को WhatsApp भेजें।
+            Select date and batch, mark attendance, and send instant WhatsApp alerts to parents of absent students.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export default function AttendanceManager({
           {savedSuccess && (
             <span className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 animate-fadeIn">
               <Check className="w-4 h-4 text-emerald-600" />
-              हाजिरी सेव हो गई!
+              Attendance Saved!
             </span>
           )}
           <button
@@ -207,7 +207,7 @@ export default function AttendanceManager({
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
           >
             <CheckCircle className="w-4 h-4" />
-            <span>सभी को उपस्थित (Present) करें</span>
+            <span>Mark All Present</span>
           </button>
         </div>
       </div>
@@ -217,7 +217,7 @@ export default function AttendanceManager({
         {/* Date Selector */}
         <div>
           <label className="block text-[11px] font-black uppercase text-slate-500 mb-1">
-            तारीख चुनें (Select Date)
+            Select Date
           </label>
           <input
             type="date"
@@ -230,7 +230,7 @@ export default function AttendanceManager({
         {/* Batch Selector */}
         <div>
           <label className="block text-[11px] font-black uppercase text-slate-500 mb-1">
-            बैच / कक्षा चुनें (Select Batch)
+            Select Batch / Class
           </label>
           <select
             value={selectedCourseId}
@@ -248,13 +248,13 @@ export default function AttendanceManager({
         {/* Student Search */}
         <div>
           <label className="block text-[11px] font-black uppercase text-slate-500 mb-1">
-            छात्र खोजें (Search Student)
+            Search Student
           </label>
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="नाम, रोल नंबर या मोबाइल..."
+              placeholder="Name, Roll No, or Phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -267,19 +267,19 @@ export default function AttendanceManager({
       <div className="grid grid-cols-4 gap-3 text-center">
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl">
           <div className="text-xl font-black text-blue-900">{batchStudents.length}</div>
-          <div className="text-[11px] font-bold text-blue-700">कुल छात्र (Total)</div>
+          <div className="text-[11px] font-bold text-blue-700">Total Students</div>
         </div>
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
           <div className="text-xl font-black text-emerald-800">{presentCount}</div>
-          <div className="text-[11px] font-bold text-emerald-700">उपस्थित (Present)</div>
+          <div className="text-[11px] font-bold text-emerald-700">Present</div>
         </div>
         <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl">
           <div className="text-xl font-black text-rose-800">{absentCount}</div>
-          <div className="text-[11px] font-bold text-rose-700">अनुपस्थित (Absent)</div>
+          <div className="text-[11px] font-bold text-rose-700">Absent</div>
         </div>
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl">
           <div className="text-xl font-black text-amber-800">{leaveCount}</div>
-          <div className="text-[11px] font-bold text-amber-700">छुट्टी (Leave)</div>
+          <div className="text-[11px] font-bold text-amber-700">On Leave</div>
         </div>
       </div>
 
@@ -287,7 +287,7 @@ export default function AttendanceManager({
       <div className="bg-white border border-slate-200 rounded-3xl shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
           <span className="font-extrabold text-xs text-slate-700">
-            बैच: {courses.find((c) => c.id === selectedCourseId)?.title || 'Selected Batch'} ({filteredStudents.length} छात्र)
+            Batch: {courses.find((c) => c.id === selectedCourseId)?.title || 'Selected Batch'} ({filteredStudents.length} Students)
           </span>
           <span className="text-[11px] text-slate-500 font-mono">
             {formattedDateText}
@@ -296,7 +296,7 @@ export default function AttendanceManager({
 
         {filteredStudents.length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-xs font-medium">
-            इस बैच में कोई छात्र नहीं मिला।
+            No students found in this batch.
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -324,7 +324,7 @@ export default function AttendanceManager({
                       </div>
                       <div className="text-xs text-slate-500 flex items-center gap-2">
                         {student.fatherName && (
-                          <span>पिता: {student.fatherName} • </span>
+                          <span>Father: {student.fatherName} • </span>
                         )}
                         <span>{student.phone}</span>
                       </div>
@@ -343,7 +343,7 @@ export default function AttendanceManager({
                       }`}
                     >
                       <CheckCircle className="w-3.5 h-3.5" />
-                      <span>उपस्थित (P)</span>
+                      <span>Present (P)</span>
                     </button>
 
                     {/* Absent Button */}
@@ -356,7 +356,7 @@ export default function AttendanceManager({
                       }`}
                     >
                       <XCircle className="w-3.5 h-3.5" />
-                      <span>अनुपस्थित (A)</span>
+                      <span>Absent (A)</span>
                     </button>
 
                     {/* Leave Button */}
@@ -369,7 +369,7 @@ export default function AttendanceManager({
                       }`}
                     >
                       <Clock className="w-3.5 h-3.5" />
-                      <span>छुट्टी (L)</span>
+                      <span>Leave (L)</span>
                     </button>
 
                     {/* WhatsApp Alert Button for Absent */}
@@ -377,10 +377,10 @@ export default function AttendanceManager({
                       <button
                         onClick={() => handleSendAbsentWhatsApp(student)}
                         className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1 animate-pulse"
-                        title="अभिभावक को WhatsApp पर सूचना भेजें"
+                        title="Send WhatsApp alert to parent"
                       >
                         <Send className="w-3 h-3" />
-                        <span className="hidden sm:inline">WhatsApp भेजें</span>
+                        <span className="hidden sm:inline">WhatsApp Alert</span>
                       </button>
                     )}
                   </div>

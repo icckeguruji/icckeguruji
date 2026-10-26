@@ -40,8 +40,8 @@ export default function WhatsAppBotHub({ config, courses }: WhatsAppBotHubProps)
       id: '1',
       studentName: 'Amit Verma (Patna)',
       studentPhone: '+91 98711 22334',
-      message: 'Sir Class 12 Physics batch ki fee kitni hai aur live class kab hoti hai?',
-      aiReply: 'Namaste Amit ji! 🙏 ICC KE GURUJI Class 12 Physics Complete Mastery batch ki fee abhi discount offer mein sirf ₹999 hai. Daily shaam 7:00 PM ko YouTube Live par interactive class hoti hai + handwritten PDF notes aur 24/7 AI Guruji support milta hai. Direct UPI icckeguruji@okaxis par pay karke UTR submit karein!',
+      message: 'Sir, what is the fee for the Class 12 Physics batch and when are live classes conducted?',
+      aiReply: 'Hello Amit! 🙏 The ICC KE GURUJI Class 12 Physics Complete Mastery batch is currently on offer at just ₹999. Interactive live classes run daily at 7:00 PM on YouTube Live, supplemented with handwritten PDF notes and 24/7 AI tutor support. You can pay directly via UPI to icckeguruji@okaxis and submit your UTR!',
       timestamp: '11:42 AM',
       status: 'auto-replied'
     },
@@ -49,8 +49,8 @@ export default function WhatsAppBotHub({ config, courses }: WhatsAppBotHubProps)
       id: '2',
       studentName: 'Sunita (Parent)',
       studentPhone: '+91 94150 99881',
-      message: 'Kya Class 10th board ke sample paper aur solutions milenge?',
-      aiReply: 'Ji bilkul Sunita ji! Class 10th Super 100 Batch mein last 10 saal ke Board PYQ papers with Guruji step-by-step video solutions aur Formula Cheat sheets included hain. Fee sirf ₹499 hai.',
+      message: 'Are Class 10th Board sample papers and solutions included?',
+      aiReply: 'Yes, absolutely Sunita! The Class 10th Super 100 Batch includes the last 10 years of Board PYQ papers with Guruji step-by-step video solutions and Formula Cheat sheets. Course fee is only ₹499.',
       timestamp: '11:50 AM',
       status: 'auto-replied'
     },
@@ -58,8 +58,8 @@ export default function WhatsAppBotHub({ config, courses }: WhatsAppBotHubProps)
       id: '3',
       studentName: 'Vikram Singh',
       studentPhone: '+91 91234 56789',
-      message: 'Maine ₹999 pay kar diya hai UPI se. UTR: 629182739102. Please batch activate karein.',
-      aiReply: 'Dhanyawad Vikram! Aapka UTR: 629182739102 Guruji ke Telegram Command Center par receive ho chuka hai. Guruji 1-click se verify karke 5 minute ke andar aapka batch activate kar denge. Welcome to ICC KE GURUJI!',
+      message: 'I have paid ₹999 via UPI. UTR: 629182739102. Please activate my batch.',
+      aiReply: 'Thank you Vikram! Your UTR: 629182739102 has been received on Guruji\'s Telegram Command Center. Guruji will verify and activate your batch access within 5 minutes. Welcome to ICC KE GURUJI!',
       timestamp: '12:05 PM',
       status: 'payment-logged'
     }
@@ -75,14 +75,14 @@ export default function WhatsAppBotHub({ config, courses }: WhatsAppBotHubProps)
     setSimulating(true);
 
     const q = testInput.trim().toLowerCase();
-    let reply = `Namaste! Main ICC KE GURUJI ka AI Assistant hun. Aapki help ke liye 24/7 active hun. Batches join karne ke liye UPI ID: ${config.upiId} par pay karein.`;
+    let reply = `Hello! I am the AI Assistant for ICC KE GURUJI, available 24/7 to help you. To enroll in our batches, complete your payment to UPI ID: ${config.upiId}.`;
 
-    if (q.includes('fee') || q.includes('price') || q.includes('kitna')) {
-      reply = `Hamare batches ke discounted rates:\n1. Class 12 Physics: ₹999 (6 Months)\n2. Class 10 Board: ₹499 (Crash Course)\n3. Full-Stack Web Dev: ₹1,499\nDirect UPI ${config.upiId} par 0% commission se pay kar sakte hain.`;
+    if (q.includes('fee') || q.includes('price') || q.includes('cost') || q.includes('kitna')) {
+      reply = `Our batches offer discounted tuition:\n1. Class 12 Physics: ₹999 (6 Months)\n2. Class 10 Board: ₹499 (Crash Course)\n3. Full-Stack Web Dev: ₹1,499\nPay directly to UPI ${config.upiId} with 0% transaction fee.`;
     } else if (q.includes('utr') || q.includes('pay') || q.includes('screenshot')) {
-      reply = `Aapka payment UTR Guruji tak pahunch gaya hai. Guruji Telegram bot se verify karke 5 min me aapka classroom unlock kar denge!`;
-    } else if (q.includes('live') || q.includes('time') || q.includes('kab')) {
-      reply = `Class 12 Physics: Mon-Sat 07:00 PM Live\nClass 10 Maths: Mon-Sat 05:00 PM Live.\nLive class YouTube unlisted stream par student ke moving watermark ke sath chalti hai.`;
+      reply = `Your payment UTR has been delivered to Guruji. Guruji will verify it and unlock your classroom within 5 minutes!`;
+    } else if (q.includes('live') || q.includes('time') || q.includes('schedule') || q.includes('kab')) {
+      reply = `Class 12 Physics: Mon-Sat 07:00 PM Live\nClass 10 Maths: Mon-Sat 05:00 PM Live.\nLive classes stream on unlisted links with tamper-proof student watermarks.`;
     }
 
     setTimeout(() => {
@@ -129,7 +129,7 @@ const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysocket
             WhatsApp AI Assistant (24/7 Auto-Counselor)
           </h2>
           <p className="text-xs sm:text-sm text-emerald-100 max-w-2xl leading-relaxed">
-            Aapka personal WhatsApp number QR scan karke linked rehta hai. Jab bhi koi student ya parent aapke number par inquiry ya doubt bhejega, Google Gemini AI turant Hindi/Hinglish mein step-by-step jawab dega!
+            Link your WhatsApp number via QR code. Whenever a student or parent sends an inquiry or question, Google Gemini AI instantly responds with detailed explanations and guidance!
           </p>
         </div>
 
@@ -190,11 +190,11 @@ const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysocket
                 <textarea
                   rows={5}
                   readOnly
-                  value={`Aap 'ICC KE GURUJI' coaching institute ke official WhatsApp AI Counselor hain.
-- Language: Polite & encouraging Hinglish (Hindi + English).
+                  value={`You are the official WhatsApp AI Counselor for 'ICC KE GURUJI' coaching institute.
+- Tone: Polite, supportive, and professional English.
 - Batches: Physics Mastery (₹999), Class 10 Board (₹499), Web Dev (₹1499).
 - Payment: Direct UPI ID icckeguruji@okaxis (0% commission).
-- Agar koi UTR bhejta hai, toh confirm karein ki Guruji Telegram Command Center se turant verify kar rahe hain.`}
+- Verification: If a student submits a UTR, confirm that Guruji will verify and activate access via the Command Center within minutes.`}
                   className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-mono text-[11px] leading-relaxed resize-none"
                 />
               </div>
@@ -235,7 +235,7 @@ const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysocket
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              WhatsApp ka official connection banaye rakhne ke liye humne ek standalone script <code className="text-emerald-400">scripts/whatsapp-baileys-bot.js</code> ready kar di hai. Ise aap apne computer par ya kisi bhi free cloud worker par chala sakte hain!
+              To maintain an active background connection, a standalone script is available at <code className="text-emerald-400">scripts/whatsapp-baileys-bot.js</code>. Run it on your computer or any free cloud server!
             </p>
 
             <div className="p-3 bg-slate-950 rounded-xl font-mono text-[11px] text-emerald-400 border border-slate-800">
@@ -313,7 +313,7 @@ const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysocket
               type="text"
               value={testInput}
               onChange={(e) => setTestInput(e.target.value)}
-              placeholder="Test what happens if a student asks: 'Fee kitni hai?' or 'Maine pay kar diya'..."
+              placeholder="Test what happens if a student asks: 'What is the course fee?' or 'I have paid via UPI'..."
               className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
             />
             <button
@@ -352,7 +352,7 @@ const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysocket
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Apne mobile par <strong>WhatsApp</strong> open karein ➜ <strong>Settings</strong> ya <strong>3-Dots</strong> par tap karein ➜ <strong>Linked Devices</strong> ➜ <strong>Link a Device</strong> chunein aur niche diye gaye QR code ko scan karein:
+              Open <strong>WhatsApp</strong> on your mobile device ➜ tap <strong>Settings</strong> or <strong>Menu (3-Dots)</strong> ➜ <strong>Linked Devices</strong> ➜ tap <strong>Link a Device</strong> and point your camera to scan this QR code:
             </p>
 
             <div className="p-5 bg-emerald-50 rounded-2xl border-2 border-dashed border-emerald-300 inline-block">

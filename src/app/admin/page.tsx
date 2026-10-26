@@ -164,13 +164,13 @@ export default function AdminDashboardPage() {
 
   // Homepage Daily Quiz CMS form state
   const [homeQuizForm, setHomeQuizForm] = useState({
-    question: data.config.homeQuizQuestion || "Agar do static charges ke beech ki distance ko half (r/2) kar diya jaye, toh unke beech lagne wala electrostatic force kitna ho jayega?",
-    optionA: data.config.homeQuizOptions?.[0] || '2 Guna (Double)',
-    optionB: data.config.homeQuizOptions?.[1] || '4 Guna (4 Times)',
-    optionC: data.config.homeQuizOptions?.[2] || 'Aadha (Half)',
-    optionD: data.config.homeQuizOptions?.[3] || '1/4th (One-Fourth)',
+    question: data.config.homeQuizQuestion || "If the distance between two static point charges is halved (r/2), what happens to the electrostatic force between them?",
+    optionA: data.config.homeQuizOptions?.[0] || 'Double (2x)',
+    optionB: data.config.homeQuizOptions?.[1] || '4 Times (4x)',
+    optionC: data.config.homeQuizOptions?.[2] || 'Half (0.5x)',
+    optionD: data.config.homeQuizOptions?.[3] || 'One-Fourth (0.25x)',
     correctIndex: data.config.homeQuizCorrectIndex ?? 1,
-    explanation: data.config.homeQuizExplanation || "Correct Answer: B (4 Guna)! Coulomb's law ke mutabiq F ∝ 1/r². Jab distance aadhi (r/2) hogi, toh force 4 guna badh jayega. Sabhi batches mein aise chapter-wise mock tests available hain!",
+    explanation: data.config.homeQuizExplanation || "Correct Answer: B (4 Times)! According to Coulomb's Law, F ∝ 1/r². When distance is halved (r/2), the force increases by a factor of 4. Comprehensive chapter-wise mock tests and drills are included in all batches!",
   });
   const [homeQuizSaved, setHomeQuizSaved] = useState(false);
 
@@ -191,7 +191,7 @@ export default function AdminDashboardPage() {
     title: '',
     youtubeId: '',
     isLive: true,
-    scheduledAt: 'Aaj shaam 7:00 PM',
+    scheduledAt: 'Today at 7:00 PM',
     duration: '1 hr 30 min',
     chapterNumber: 1,
     description: '',
@@ -276,7 +276,7 @@ export default function AdminDashboardPage() {
   // DPP Management state
   const [gradingSubmission, setGradingSubmission] = useState<DppSubmission | null>(null);
   const [marksInput, setMarksInput] = useState<number>(18);
-  const [feedbackInput, setFeedbackInput] = useState<string>('Shabash beta! Bahut accha prayas.');
+  const [feedbackInput, setFeedbackInput] = useState<string>('Well done! Excellent effort and neat steps.');
   const [newDpp, setNewDpp] = useState({
     courseId: data.courses[0]?.id || 'course-1',
     title: '',
@@ -454,7 +454,7 @@ export default function AdminDashboardPage() {
 
   // Delete Course
   const handleDeleteCourse = (courseId: string) => {
-    if (!confirm('Kya aap is course ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this course?')) return;
     const updated = data.courses.filter((c) => c.id !== courseId);
     saveStoredData('COURSES', updated);
     refreshState();
@@ -501,7 +501,7 @@ export default function AdminDashboardPage() {
       title: '',
       youtubeId: '',
       isLive: true,
-      scheduledAt: 'Aaj shaam 7:00 PM',
+      scheduledAt: 'Today at 7:00 PM',
       duration: '1 hr 30 min',
       chapterNumber: 1,
       description: '',
@@ -540,7 +540,7 @@ export default function AdminDashboardPage() {
 
   // Delete Lecture
   const handleDeleteLecture = (lessonId: string) => {
-    if (!confirm('Kya aap is lecture ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this lecture?')) return;
     const updated = data.lessons.filter((les) => les.id !== lessonId);
     saveStoredData('LESSONS', updated);
     refreshState();
@@ -586,7 +586,7 @@ export default function AdminDashboardPage() {
 
   // Delete Note
   const handleDeleteNote = (noteId: string) => {
-    if (!confirm('Kya aap is PDF note ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this PDF note?')) return;
     const updated = data.notes.filter((n) => n.id !== noteId);
     saveStoredData('NOTES', updated);
     refreshState();
@@ -673,7 +673,7 @@ export default function AdminDashboardPage() {
 
   // Delete Timetable slot
   const handleDeleteTimetableSlot = (slotId: string) => {
-    if (!confirm('Kya aap is timetable slot ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this timetable slot?')) return;
     const updated = data.timetable.filter((s) => s.id !== slotId);
     saveStoredData('TIMETABLE', updated);
     refreshState();
@@ -726,7 +726,7 @@ export default function AdminDashboardPage() {
 
   // Delete Announcement
   const handleDeleteAnnouncement = (annId: string) => {
-    if (!confirm('Kya aap is notice ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this announcement?')) return;
     const updated = data.announcements.filter((a) => a.id !== annId);
     saveStoredData('ANNOUNCEMENTS', updated);
     refreshState();
@@ -774,7 +774,7 @@ export default function AdminDashboardPage() {
 
   // Delete Article
   const handleDeleteArticle = (articleId: string) => {
-    if (!confirm('Kya aap is article ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this article?')) return;
     const updated = data.articles.filter((a) => a.id !== articleId);
     saveStoredData('ARTICLES', updated);
     refreshState();
@@ -819,7 +819,7 @@ export default function AdminDashboardPage() {
 
   // Delete Testimonial
   const handleDeleteTestimonial = (testimonialId: string) => {
-    if (!confirm('Kya aap is topper review ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this student review?')) return;
     const updated = data.testimonials.filter((t) => t.id !== testimonialId);
     saveStoredData('TESTIMONIALS', updated);
     refreshState();
@@ -858,7 +858,7 @@ export default function AdminDashboardPage() {
 
   // Delete FAQ
   const handleDeleteFaq = (faqId: string) => {
-    if (!confirm('Kya aap is FAQ ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this FAQ item?')) return;
     const updated = data.faqs.filter((f) => f.id !== faqId);
     saveStoredData('FAQS', updated);
     refreshState();
@@ -950,7 +950,7 @@ export default function AdminDashboardPage() {
           success: true,
           message: result.via === 'google-apps-script'
             ? `✅ Test email successfully sent to ${configForm.contactEmail || 'admin@icckeguruji.com'} via Google Apps Script (Gmail)!`
-            : `⚠️ Webhook URL configure nahi hai (Simulator Mode). Real email bhejne ke liye script.new Web App URL paste karke Save karein.`
+            : `⚠️ Webhook URL is not configured (Simulator Mode). Paste and save your script.new Web App URL to dispatch real emails.`
         });
       } else {
         setTestEmailResult({
@@ -1017,7 +1017,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteDpp = (id: string) => {
-    if (!confirm('Kya aap is DPP ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this DPP?')) return;
     const updated = (data.dpps || []).filter((d) => d.id !== id);
     saveStoredData('DPPS', updated);
     refreshState();
@@ -1054,7 +1054,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeletePyq = (id: string) => {
-    if (!confirm('Kya aap is PYQ paper ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this PYQ paper?')) return;
     const updated = (data.pyqPapers || []).filter((p) => p.id !== id);
     saveStoredData('PYQS', updated);
     refreshState();
@@ -1154,7 +1154,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteStudent = (studentId: string) => {
-    if (!confirm('Kya aap is student ko permanently delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to permanently delete this student?')) return;
     const updated = data.students.filter((s) => s.id !== studentId);
     saveStoredData('STUDENTS', updated);
     refreshState();
@@ -1197,14 +1197,14 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteQuiz = (quizId: string) => {
-    if (!confirm('Kya aap is pure Mock Test ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this entire mock test?')) return;
     const updated = data.quizzes.filter((q) => q.id !== quizId);
     saveStoredData('QUIZZES', updated);
     refreshState();
   };
 
   const handleDeleteQuizQuestion = (quizId: string, questionId: string) => {
-    if (!confirm('Kya aap is question ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this question?')) return;
     const updated = data.quizzes.map((q) => {
       if (q.id === quizId) {
         return {
@@ -1278,7 +1278,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeletePost = (postId: string) => {
-    if (!confirm('Kya aap is discussion doubt ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this discussion post?')) return;
     const updated = (data.communityPosts || []).filter((p) => p.id !== postId);
     saveStoredData('COMMUNITY_POSTS', updated);
     refreshState();
@@ -1362,7 +1362,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeletePayment = (paymentId: string) => {
-    if (!confirm('Kya aap is payment record ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this payment record?')) return;
     const updated = data.payments.filter((p: PaymentRequest) => p.id !== paymentId);
     saveStoredData('PAYMENTS', updated);
     refreshState();
@@ -1392,53 +1392,53 @@ export default function AdminDashboardPage() {
 
   const navSections: Array<{ title: string; items: NavItem[] }> = [
     {
-      title: 'दैनिक कोचिंग कार्य (Daily Operations)',
+      title: 'Daily Operations',
       items: [
-        { id: 'overview', label: 'डैशबोर्ड (Overview)', icon: LayoutDashboard },
+        { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
         {
           id: 'attendance',
-          label: 'दैनिक हाजिरी (Attendance)',
+          label: 'Daily Attendance',
           icon: Calendar,
           badge: `${todayPresent}/${data.students.length}`,
           badgeColor: 'bg-emerald-500 text-white font-black'
         },
         {
           id: 'fees',
-          label: 'फीस व बाकी हिसाब (Fees & Dues)',
+          label: 'Fees & Dues Register',
           icon: CreditCard,
           badge: totalDueStudents > 0 ? `₹${totalDueAmount}` : null,
           badgeColor: 'bg-rose-500 text-white font-black'
         },
         {
           id: 'weekly_tests',
-          label: 'साप्ताहिक टेस्ट रिजल्ट (Tests)',
+          label: 'Weekly Test Results',
           icon: Award,
           count: (data.weeklyTests || []).length
         },
         {
           id: 'students',
-          label: 'छात्र सूची व दाखिला (Students)',
+          label: 'Student Directory',
           icon: Users,
           count: data.students.length
         },
       ]
     },
     {
-      title: 'अध्ययन व कक्षाएं (Classes & Study Material)',
+      title: 'Classes & Study Material',
       items: [
-        { id: 'courses', label: 'बैच व कक्षाएं (Batches)', icon: BookOpen, count: data.courses.length },
-        { id: 'lectures', label: 'वीडियो क्लास (YouTube & Live)', icon: Radio, count: data.lessons.length },
-        { id: 'notes', label: 'PDF स्टडी नोट्स (Notes)', icon: FileText, count: data.notes.length },
-        { id: 'dpp', label: 'गृहकार्य (DPP & Homework)', icon: CheckCircle2, count: (data.dpps || []).length },
-        { id: 'pyq', label: 'PYQ पुराने प्रश्न पत्र (PYQs)', icon: Download, count: (data.pyqPapers || []).length },
-        { id: 'timetable', label: 'साप्ताहिक टाइमटेबल (Routine)', icon: Clock, count: data.timetable.length },
+        { id: 'courses', label: 'Courses & Batches', icon: BookOpen, count: data.courses.length },
+        { id: 'lectures', label: 'Live & Video Classes', icon: Radio, count: data.lessons.length },
+        { id: 'notes', label: 'PDF Study Notes', icon: FileText, count: data.notes.length },
+        { id: 'dpp', label: 'DPP & Homework', icon: CheckCircle2, count: (data.dpps || []).length },
+        { id: 'pyq', label: 'Previous Year Papers', icon: Download, count: (data.pyqPapers || []).length },
+        { id: 'timetable', label: 'Weekly Timetable', icon: Clock, count: data.timetable.length },
       ]
     },
     {
-      title: 'सूचना व सेटिंग्स (Notices & Settings)',
+      title: 'Notices & Settings',
       items: [
-        { id: 'notices', label: 'सूचना पट्ट (Notice Board)', icon: Bell, count: data.announcements.length },
-        { id: 'settings', label: 'कोचिंग सेटिंग्स (Settings)', icon: Settings },
+        { id: 'notices', label: 'Notice Board', icon: Bell, count: data.announcements.length },
+        { id: 'settings', label: 'Institute Settings', icon: Settings },
       ]
     }
   ];
@@ -1576,20 +1576,20 @@ export default function AdminDashboardPage() {
             </button>
             <div>
               <h2 className="font-black text-slate-900 text-base sm:text-lg capitalize flex items-center gap-2">
-                {activeTab === 'overview' && 'डैशबोर्ड व कोचिंग समरी (Dashboard)'}
-                {activeTab === 'attendance' && 'दैनिक हाजिरी रजिस्टर (Daily Attendance)'}
-                {activeTab === 'fees' && 'फीस व बाकी हिसाब (Fees & Dues Register)'}
-                {activeTab === 'weekly_tests' && 'साप्ताहिक टेस्ट रिजल्ट व रैंक (Weekly Tests & Marksheet)'}
-                {activeTab === 'students' && 'छात्र सूची व नया दाखिला (Student Directory)'}
-                {activeTab === 'courses' && 'बैच व कक्षाएं (Batches & Courses)'}
-                {activeTab === 'lectures' && 'यूट्यूब वीडियो क्लास (YouTube & Live Classes)'}
-                {activeTab === 'notes' && 'PDF स्टडी नोट्स (Golden Study Notes)'}
-                {activeTab === 'dpp' && 'दैनिक गृहकार्य (DPP & Homework Assignments)'}
-                {activeTab === 'pyq' && 'PYQ पुराने प्रश्न पत्र (Previous Years Questions)'}
-                {activeTab === 'timetable' && 'साप्ताहिक टाइमटेबल व रूटीन (Weekly Timetable)'}
-                {activeTab === 'notices' && 'सूचना पट्ट (Notice Board & Announcements)'}
-                {activeTab === 'settings' && 'कोचिंग सेटिंग्स व संपर्क (Coaching Settings)'}
-                {activeTab === 'payments' && 'ऑनलाइन UPI पेमेंट्स (Online UPI Requests)'}
+                {activeTab === 'overview' && 'Dashboard Overview'}
+                {activeTab === 'attendance' && 'Daily Attendance Register'}
+                {activeTab === 'fees' && 'Fees & Dues Register'}
+                {activeTab === 'weekly_tests' && 'Weekly Test Results & Marksheets'}
+                {activeTab === 'students' && 'Student Directory & Admissions'}
+                {activeTab === 'courses' && 'Courses & Batches'}
+                {activeTab === 'lectures' && 'Live & Video Classes'}
+                {activeTab === 'notes' && 'PDF Study Notes'}
+                {activeTab === 'dpp' && 'DPP & Homework Assignments'}
+                {activeTab === 'pyq' && 'Previous Year Question Papers'}
+                {activeTab === 'timetable' && 'Weekly Timetable & Schedule'}
+                {activeTab === 'notices' && 'Notice Board & Announcements'}
+                {activeTab === 'settings' && 'Institute Settings & Profile'}
+                {activeTab === 'payments' && 'Online UPI Payment Requests'}
               </h2>
               <p className="text-[11px] text-slate-400 hidden sm:block">
                 ICC KE GURUJI Coaching Management System • Free Server Architecture
@@ -1622,47 +1622,47 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
                   <div className="flex items-center justify-between text-blue-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">कुल नामांकित छात्र</span>
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Total Students</span>
                     <Users className="w-5 h-5" />
                   </div>
                   <div className="text-3xl font-black text-slate-900">{data.students.length}</div>
                   <div className="text-[11px] text-blue-700 mt-1 font-semibold flex items-center gap-1">
-                    सक्रिय विद्यार्थी नामांकित
+                    Active Enrolled Learners
                   </div>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
                   <div className="flex items-center justify-between text-emerald-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">आज की हाजिरी</span>
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Today's Attendance</span>
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div className="text-3xl font-black text-slate-900">
                     {todayPresent} / {data.students.length}
                   </div>
                   <div className="text-[11px] text-emerald-700 mt-1 font-semibold">
-                    {data.students.length - todayPresent} छात्र आज अनुपस्थित हैं
+                    {data.students.length - todayPresent} students marked absent today
                   </div>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
                   <div className="flex items-center justify-between text-rose-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">कुल बकाया फीस</span>
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Total Outstanding Dues</span>
                     <AlertCircle className="w-5 h-5" />
                   </div>
                   <div className="text-3xl font-black text-rose-700">₹{totalDueAmount.toLocaleString('en-IN')}</div>
                   <div className="text-[11px] text-rose-600 mt-1 font-semibold">
-                    {totalDueStudents} छात्रों की फीस बाकी है
+                    {totalDueStudents} students have pending dues
                   </div>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
                   <div className="flex items-center justify-between text-amber-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">साप्ताहिक टेस्ट</span>
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Weekly Offline Tests</span>
                     <Award className="w-5 h-5" />
                   </div>
                   <div className="text-3xl font-black text-slate-900">{(data.weeklyTests || []).length}</div>
                   <div className="text-[11px] text-amber-700 mt-1 font-semibold">
-                    रविवार ऑफलाइन टेस्ट आयोजित
+                    Sunday Tests Conducted
                   </div>
                 </div>
               </div>
@@ -1672,7 +1672,7 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    त्वरित कार्य (Quick Actions)
+                    Quick Actions
                   </span>
                   <span className="text-[11px] text-slate-400 font-semibold">1-Click Fast Access</span>
                 </div>
@@ -1682,42 +1682,42 @@ export default function AdminDashboardPage() {
                     className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
                     <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>+ दैनिक हाजिरी</span>
+                    <span>+ Daily Attendance</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('fees')}
                     className="p-2.5 rounded-2xl bg-blue-50/70 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
                     <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-                    <span>+ फीस जमा करें</span>
+                    <span>+ Record Fee</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('weekly_tests')}
                     className="p-2.5 rounded-2xl bg-amber-50/70 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
                     <Award className="w-3.5 h-3.5 text-amber-600" />
-                    <span>+ साप्ताहिक टेस्ट</span>
+                    <span>+ Weekly Test</span>
                   </button>
                   <button
                     onClick={() => { setActiveTab('students'); setIsAddingStudent(true); }}
                     className="p-2.5 rounded-2xl bg-purple-50/70 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
                     <Users className="w-3.5 h-3.5 text-purple-600" />
-                    <span>+ नया छात्र</span>
+                    <span>+ Add Student</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('courses')}
                     className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
                     <BookOpen className="w-3.5 h-3.5 text-slate-600" />
-                    <span>+ नया बैच</span>
+                    <span>+ New Batch</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('notes')}
                     className="p-2.5 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
                     <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>+ PDF नोट्स</span>
+                    <span>+ PDF Notes</span>
                   </button>
                 </div>
               </div>
@@ -1740,7 +1740,7 @@ export default function AdminDashboardPage() {
 
                   {pendingPayments.length === 0 ? (
                     <div className="p-8 text-center text-slate-400 text-xs">
-                      Sabhi payments verify ho chuki hain!
+                      All pending payments have been verified!
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1776,19 +1776,19 @@ export default function AdminDashboardPage() {
                       Quick Notice Broadcast
                     </h3>
                     <p className="text-xs text-slate-500 mb-4">
-                      Direct students ke dashboard aur Telegram par naya notice publish karein.
+                      Broadcast a live announcement to the student dashboard and Telegram community.
                     </p>
 
                     {broadcastSent && (
                       <div className="p-3 mb-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold">
-                        Notice student dashboard aur Telegram group par live broadcast ho gaya!
+                        Notice successfully broadcasted to student dashboard and Telegram group!
                       </div>
                     )}
 
                     <textarea
                       value={broadcastMsg}
                       onChange={(e) => setBroadcastMsg(e.target.value)}
-                      placeholder="e.g. Aaj ki live class shaam 7:00 PM par shuru hogi..."
+                      placeholder="e.g. 🔴 LIVE CLASS: Today's masterclass will start at 7:00 PM..."
                       rows={3}
                       className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
                     />
@@ -1894,10 +1894,10 @@ export default function AdminDashboardPage() {
                 <div>
                   <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
                     <Bell className="w-5 h-5 text-blue-600" />
-                    सूचना पट्ट (Notice Board & Announcements)
+                    Notice Board & Announcements
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    छुट्टी, टेस्ट, नए बैच या कोई भी आवश्यक सूचना यहाँ से प्रकाशित करें। यह वेबसाइट के टॉप पर और छात्र डैशबोर्ड पर दिखाई देगी।
+                    Publish holiday alerts, exam schedules, new batch announcements, or important updates. These appear on the homepage and student dashboards.
                   </p>
                 </div>
               </div>
@@ -1907,41 +1907,41 @@ export default function AdminDashboardPage() {
                 <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
                   <h4 className="font-black text-slate-900 text-sm mb-3 flex items-center gap-2">
                     <Plus className="w-4 h-4 text-blue-600" />
-                    नया नोटिस प्रकाशित करें
+                    Publish New Announcement
                   </h4>
                   <form onSubmit={handleCreateAnnouncement} className="space-y-3 text-xs">
                     <div>
-                      <label className="block text-slate-700 font-bold mb-1">शीर्षक (Headline) *</label>
+                      <label className="block text-slate-700 font-bold mb-1">Headline / Title *</label>
                       <input
                         type="text"
                         required
                         value={newAnnouncement.title}
                         onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                        placeholder="उदा. 🔴 कल रविवार को कोचिंग बंद रहेगी"
+                        placeholder="e.g. 🔴 Sunday Weekly Offline Test starts at 8:00 AM"
                         className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-700 font-bold mb-1">विवरण संदेश (Details Message)</label>
+                      <label className="block text-slate-700 font-bold mb-1">Detailed Message</label>
                       <textarea
                         rows={3}
                         value={newAnnouncement.message}
                         onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
-                        placeholder="पूरा विवरण यहाँ लिखें..."
+                        placeholder="Write detailed notice message here..."
                         className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-700 font-bold mb-1">श्रेणी (Category)</label>
+                      <label className="block text-slate-700 font-bold mb-1">Category</label>
                       <select
                         value={newAnnouncement.category}
                         onChange={(e) => setNewAnnouncement({ ...newAnnouncement, category: e.target.value as Announcement['category'] })}
                         className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
                       >
-                        <option value="general">📢 सामान्य सूचना (General Notice)</option>
-                        <option value="exam_alert">⚡ टेस्ट / परीक्षा सूचना (Test Alert)</option>
-                        <option value="live_class">🔴 लाइव क्लास सूचना (Class Alert)</option>
-                        <option value="notes_alert">📚 नोट्स सूचना (Notes Alert)</option>
+                        <option value="general">📢 General Notice</option>
+                        <option value="exam_alert">⚡ Exam & Test Alert</option>
+                        <option value="live_class">🔴 Live Class Alert</option>
+                        <option value="notes_alert">📚 Study Notes Alert</option>
                       </select>
                     </div>
                     <button
@@ -1949,7 +1949,7 @@ export default function AdminDashboardPage() {
                       className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>नोटिस जारी करें</span>
+                      <span>Publish Notice</span>
                     </button>
                   </form>
                 </div>
@@ -1957,7 +1957,7 @@ export default function AdminDashboardPage() {
                 {/* Right: Published Notices List */}
                 <div className="lg:col-span-2 space-y-3">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-500 px-1">
-                    <span>कुल जारी नोटिस: {data.announcements.length}</span>
+                    <span>Total Published Notices: {data.announcements.length}</span>
                   </div>
 
                   {data.announcements.map((ann) => (
@@ -2023,8 +2023,8 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>
-                    Students apne UPI App se payment karke 12-digit UTR submit karte hain.
-                    Aap <strong>"Approve"</strong> par click karenge toh course access instant unlock ho jayega!
+                    Students submit their 12-digit UTR upon paying through any UPI App.
+                    Clicking <strong>"Approve"</strong> instantly unlocks full classroom access for the student!
                   </span>
                 </div>
                 <button
@@ -2232,7 +2232,7 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800">
-                        ✅ Submit karne par student ka account auto-create ho jayega aur batch turant unlock ho jayega!
+                        ✅ Upon submission, the student's account is created automatically and their selected batch is unlocked immediately!
                       </div>
 
                       <div className="flex items-center justify-end gap-2 pt-2">
@@ -2584,10 +2584,10 @@ export default function AdminDashboardPage() {
                       required
                       value={newLecture.youtubeId}
                       onChange={(e) => setNewLecture({ ...newLecture, youtubeId: e.target.value })}
-                      placeholder="e.g. jfKfPfyJRdk ya poora URL"
+                      placeholder="e.g. jfKfPfyJRdk or full YouTube URL"
                       className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:bg-white focus:border-blue-600 focus:outline-none"
                     />
-                    <span className="text-[11px] text-slate-400">YouTube Studio se unlisted stream link paste karein.</span>
+                    <span className="text-[11px] text-slate-400">Paste unlisted YouTube stream or video link.</span>
                   </div>
 
                   <div className="flex items-center gap-2 pt-1">
@@ -2609,7 +2609,7 @@ export default function AdminDashboardPage() {
                       type="text"
                       value={newLecture.scheduledAt}
                       onChange={(e) => setNewLecture({ ...newLecture, scheduledAt: e.target.value })}
-                      placeholder="e.g. Aaj shaam 7:00 PM"
+                      placeholder="e.g. Today at 7:00 PM"
                       className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
                     />
                   </div>
@@ -2841,7 +2841,7 @@ export default function AdminDashboardPage() {
                       placeholder="https://... (Cloudflare R2 / Supabase Storage URL)"
                       className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:bg-white focus:border-blue-600 focus:outline-none"
                     />
-                    <span className="text-[11px] text-slate-400">Direct cloud storage link yahan dalein.</span>
+                    <span className="text-[11px] text-slate-400">Enter direct cloud storage or PDF link here.</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -3111,7 +3111,7 @@ export default function AdminDashboardPage() {
                         rows={2}
                         value={newDpp.description}
                         onChange={(e) => setNewDpp({ ...newDpp, description: e.target.value })}
-                        placeholder="Numericals step-by-step solve karein..."
+                        placeholder="Solve all numerical problems step-by-step..."
                         className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-hidden"
                       />
                     </div>
@@ -3841,7 +3841,7 @@ export default function AdminDashboardPage() {
                           required
                           value={newPost.question}
                           onChange={(e) => setNewPost({ ...newPost, question: e.target.value })}
-                          placeholder="Topic ka detail ya problem statement yahan likhein..."
+                          placeholder="Describe the topic details or problem statement here..."
                           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
                         />
                       </div>
@@ -3950,7 +3950,7 @@ export default function AdminDashboardPage() {
                     Chapter Quizzes &amp; Mock Test Engine ({data.quizzes.length} Tests)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Naye mock tests create karein, questions edit ya delete karein aur answers verify karein.
+                    Create new mock tests, edit or delete questions, and configure answer keys.
                   </p>
                 </div>
                 <button
@@ -4690,7 +4690,7 @@ export default function AdminDashboardPage() {
                     Enrolled Students Directory ({data.students.length} Students)
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Naye students add karein, details edit karein ya course access 1-Click mein Unlock/Lock karein.
+                    Add new students, update personal details, or grant and revoke course access in 1-Click.
                   </p>
                 </div>
 
@@ -5077,7 +5077,7 @@ export default function AdminDashboardPage() {
                     Website Content Management System (CMS)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Hero headline, admission badge, daily practice question, notice board, articles, toppers aur FAQs ko live edit karein.
+                    Manage hero headline, admission badge, daily practice problem, announcements, articles, toppers, and FAQs in real time.
                   </p>
                 </div>
 
@@ -5187,7 +5187,7 @@ export default function AdminDashboardPage() {
                           required
                           value={configForm.heroHeadline || ''}
                           onChange={(e) => setConfigForm({ ...configForm, heroHeadline: e.target.value })}
-                          placeholder="e.g. Apne Career Ka Lakshya Haasil Karein with ICC KE GURUJI"
+                          placeholder="e.g. Achieve Your Academic & Career Goals with ICC KE GURUJI"
                           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
                         />
                       </div>
@@ -5299,7 +5299,7 @@ export default function AdminDashboardPage() {
                         </span>
 
                         <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
-                          {configForm.heroHeadline || 'Apne Career Ka Lakshya Haasil Karein'}
+                          {configForm.heroHeadline || 'Achieve Your Academic & Career Goals'}
                         </h2>
 
                         <p className="text-xs text-slate-600 max-w-md mx-auto line-clamp-3">
@@ -5501,7 +5501,7 @@ export default function AdminDashboardPage() {
                           required
                           value={newAnnouncement.title}
                           onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                          placeholder="e.g. 🔴 Aaj Shaam 7 PM Live Numerical Class"
+                          placeholder="e.g. 🔴 Live Numerical Class Today at 7:00 PM"
                           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
                         />
                       </div>
@@ -6083,7 +6083,7 @@ export default function AdminDashboardPage() {
                     Telegram Guruji Bot — Complete Mobile Dashboard Control
                   </h2>
                   <p className="text-xs sm:text-sm text-sky-100 leading-relaxed">
-                    Aapko laptop kholne ki zarurat nahi hai! Guruji apne phone par Telegram bot ko message karke ya buttons tap karke UPI payments approve kar sakte hain, live stats dekh sakte hain, aur students ke liye urgent broadcast alerts post kar sakte hain.
+                    No laptop needed! Guruji can message the Telegram bot or tap action buttons directly on mobile to approve UPI payments, view live revenue statistics, and post urgent broadcast alerts to students.
                   </p>
                 </div>
               </div>
@@ -6103,7 +6103,7 @@ export default function AdminDashboardPage() {
                         /pending
                       </span>
                       <p className="text-slate-700">
-                        Pending UPI payments ki list dikhata hai. Har payment ke niche <strong>[✅ Approve]</strong> aur <strong>[❌ Reject]</strong> ke buttons aate hain jinhe 1-tap me approve kiya ja sakta hai.
+                        Displays the list of pending UPI payments. Each payment includes <strong>[✅ Approve]</strong> and <strong>[❌ Reject]</strong> action buttons for instant 1-tap verification.
                       </p>
                     </div>
 
@@ -6112,7 +6112,7 @@ export default function AdminDashboardPage() {
                         /stats
                       </span>
                       <p className="text-slate-700">
-                        Total Enrolled Students, Aaj ki Direct UPI Revenue, aur Active Batches ka live summary.
+                        Shows a live summary of Total Enrolled Students, Today's Direct UPI Revenue, and Active Batches.
                       </p>
                     </div>
 
@@ -6121,7 +6121,7 @@ export default function AdminDashboardPage() {
                         /broadcast &lt;msg&gt;
                       </span>
                       <p className="text-slate-700">
-                        Website ke live notice ticker aur student dashboard par instant notification publish karta hai.
+                        Instantly publishes a notification to the website's live notice ticker and student dashboard.
                       </p>
                     </div>
 
@@ -6130,7 +6130,7 @@ export default function AdminDashboardPage() {
                         /timetable
                       </span>
                       <p className="text-slate-700">
-                        Aaj ki sabhi scheduled live classes aur faculty timing dikhata hai.
+                        Displays today's scheduled live classes, subjects, and faculty timings.
                       </p>
                     </div>
 
@@ -6139,7 +6139,7 @@ export default function AdminDashboardPage() {
                         /dpp
                       </span>
                       <p className="text-slate-700">
-                        Students ki pending homework aur numerical submissions review ke liye dikhata hai.
+                        Displays students' pending homework and numerical submissions waiting for evaluation.
                       </p>
                     </div>
                   </div>
@@ -6154,7 +6154,7 @@ export default function AdminDashboardPage() {
                       Telegram Bot Webhook Endpoint
                     </h3>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Telegram par commands receive karne ke liye aapka webhook endpoint 100% ready hai:
+                      Your webhook endpoint is ready to receive Telegram commands:
                     </p>
 
                     <div className="p-3 bg-slate-50 rounded-xl font-mono text-xs text-slate-800 border border-slate-200 break-all select-all">
@@ -6162,7 +6162,7 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div className="text-[11px] text-slate-500 bg-blue-50 p-3 rounded-xl border border-blue-200 space-y-1">
-                      <span className="font-bold text-blue-900">Webhook Set Karne Ka 1-Click Link:</span>
+                      <span className="font-bold text-blue-900">1-Click Link to Set Webhook:</span>
                       <p className="font-mono break-all text-[10px] text-blue-800">
                         https://api.telegram.org/bot&lt;BOT_TOKEN&gt;/setWebhook?url=https://icckeguruji.vercel.app/api/telegram/webhook
                       </p>
@@ -6179,7 +6179,7 @@ export default function AdminDashboardPage() {
                     {broadcastSent && (
                       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                        Notice student dashboard aur Telegram group par live broadcast ho gaya!
+                        Notice successfully broadcasted to student dashboard and Telegram group!
                       </div>
                     )}
 
@@ -6189,7 +6189,7 @@ export default function AdminDashboardPage() {
                         required
                         value={broadcastMsg}
                         onChange={(e) => setBroadcastMsg(e.target.value)}
-                        placeholder="e.g. 🔴 LIVE CLASS: Aaj shaam 7:00 PM Electrostatics masterclass shuru hogi!"
+                        placeholder="e.g. 🔴 LIVE CLASS: Today at 7:00 PM Electrostatics masterclass will begin!"
                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                       />
 
@@ -6218,13 +6218,13 @@ export default function AdminDashboardPage() {
                 Institute &amp; Payment Configuration
               </h3>
               <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-                Yahan aap apna UPI ID, Telegram group link aur WhatsApp helpline number change kar sakte hain. Ye changes real-time me QR modal aur student dashboard par reflect honge.
+                Configure your institute's UPI ID, Telegram group link, and WhatsApp helpline number. These settings update across all student screens and payment QR modals in real time.
               </p>
 
               {settingsSaved && (
                 <div className="p-3 mb-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2">
                   <Check className="w-4 h-4 shrink-0 stroke-[3]" />
-                  <span>Settings successfully save ho gayi hain!</span>
+                  <span>Settings saved successfully!</span>
                 </div>
               )}
 
@@ -6252,7 +6252,7 @@ export default function AdminDashboardPage() {
                       placeholder="e.g. icckeguruji@okaxis"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-blue-400 rounded-xl text-slate-900 font-mono font-bold"
                     />
-                    <span className="text-[11px] text-slate-400">QR Code is UPI ID ke liye generate hoga.</span>
+                    <span className="text-[11px] text-slate-400">QR Code is dynamically generated for this UPI ID.</span>
                   </div>
 
                   <div>
@@ -6310,7 +6310,7 @@ export default function AdminDashboardPage() {
                     placeholder="contact@icckeguruji.com"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
                   />
-                  <span className="text-[11px] text-slate-400">Payment alerts aur test emails is email par aayenge.</span>
+                  <span className="text-[11px] text-slate-400">Payment notifications and test alerts will be sent to this email address.</span>
                 </div>
 
                 {/* Google Apps Script (script.new) Email Dispatcher Integration */}
@@ -6328,7 +6328,7 @@ export default function AdminDashboardPage() {
                           </span>
                         </h3>
                         <p className="text-[11px] text-slate-600">
-                          Personal Gmail se automated Password Reset OTP aur Payment Receipts bhejein (Zero Monthly Fees).
+                          Dispatch automated Password Reset OTPs and Payment Receipts directly via your personal Gmail (Zero Monthly Fees).
                         </p>
                       </div>
                     </div>
@@ -6367,9 +6367,9 @@ export default function AdminDashboardPage() {
                   <div className="p-3 bg-white/80 border border-blue-100 rounded-xl text-[11px] text-slate-600 space-y-1">
                     <p className="font-bold text-slate-800">⚡ 30-Second Setup Guide:</p>
                     <ol className="list-decimal list-inside space-y-0.5 text-slate-600 pl-1">
-                      <li>Upar <b>&quot;Copy Script Code&quot;</b> par click karein aur <b>&quot;Open script.new&quot;</b> kholiye.</li>
-                      <li>Wahan pura code paste karein aur top right <b>Deploy ➜ New deployment ➜ Web app</b> chuniye.</li>
-                      <li><b>Execute as: Me</b> aur <b>Who has access: Anyone</b> select karke Deploy karein aur Web app URL copy karke yahan paste karein:</li>
+                      <li>Click <b>&quot;Copy Script Code&quot;</b> above and open <b>&quot;script.new&quot;</b>.</li>
+                      <li>Paste the code, then click top-right <b>Deploy ➜ New deployment ➜ Web app</b>.</li>
+                      <li>Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b>, click Deploy, and paste the generated Web app URL below:</li>
                     </ol>
                   </div>
 
@@ -6405,7 +6405,7 @@ export default function AdminDashboardPage() {
                       </button>
                     </div>
                     <span className="text-[11px] text-slate-400 mt-1 block">
-                      Jab tak Web App URL add nahi hoga, system instant Demo Simulator mode me OTP display karega.
+                      Until a live Web App URL is provided, the system safely operates in Demo Simulator mode with instant OTP display.
                     </span>
                   </div>
 

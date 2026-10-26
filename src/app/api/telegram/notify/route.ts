@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     if (!token || !targetChat) {
       return NextResponse.json({
         success: false,
-        message: 'Telegram BOT_TOKEN ya CHAT_ID environment variables me set nahi hain. (Demo mode logged).',
+        message: 'Telegram BOT_TOKEN or CHAT_ID environment variables are not set. (Demo mode logged).',
         preview: message
       });
     }

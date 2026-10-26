@@ -24,9 +24,9 @@ export default function LiveInteractiveWidget({ lesson, currentUser }: LiveInter
   const [selectedPollOption, setSelectedPollOption] = useState<number | null>(null);
   const [pollVoted, setPollVoted] = useState(false);
   const [chatMessages, setChatMessages] = useState([
-    { id: '1', name: 'Aman Patel', text: 'Guruji numerical 2 ka trick mindblowing tha! 🙏', time: '11:04 AM' },
-    { id: '2', name: 'Neha Sharma', text: 'Sign convention me jo left to right rule bataya, ab doubt clear hai sir.', time: '11:06 AM' },
-    { id: '3', name: 'Rohan Mehra', text: 'Option A 100% correct hai!', time: '11:08 AM' },
+    { id: '1', name: 'Aman Patel', text: 'Guruji, the shortcut trick for numerical 2 was mind-blowing! 🙏', time: '11:04 AM' },
+    { id: '2', name: 'Neha Sharma', text: 'The sign convention rule explained today cleared my doubts completely.', time: '11:06 AM' },
+    { id: '3', name: 'Rohan Mehra', text: 'Option A is 100% correct!', time: '11:08 AM' },
   ]);
   const [newMsg, setNewMsg] = useState('');
   const [reactionCount, setReactionCount] = useState(48);

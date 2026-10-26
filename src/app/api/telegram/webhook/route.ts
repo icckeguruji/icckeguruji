@@ -152,14 +152,14 @@ export async function POST(req: NextRequest) {
       // /start or /help
       if (text === '/start' || text === '/help') {
         const welcomeMsg =
-          `🙏 <b>Pranam Guruji! Welcome to ICC KE GURUJI Command Center.</b>\n\n` +
-          `Aap apne mobile se Telegram par hi pure coaching platform ko manage kar sakte hain:\n\n` +
+          `🙏 <b>Welcome Guruji to the ICC KE GURUJI Command Center.</b>\n\n` +
+          `You can manage your coaching platform directly from Telegram:\n\n` +
           `• <b>/stats</b> - Total students, active batches & revenue\n` +
           `• <b>/pending</b> - Pending UPI payments with 1-Click Approve buttons\n` +
-          `• <b>/broadcast &lt;message&gt;</b> - Website ticker par alert bhejne ke liye\n` +
-          `• <b>/timetable</b> - Aaj ki live classes routine\n` +
+          `• <b>/broadcast &lt;message&gt;</b> - Broadcast instant alerts to website & students\n` +
+          `• <b>/timetable</b> - Today's live classes routine\n` +
           `• <b>/dpp</b> - Pending student homework submissions\n\n` +
-          `<i>Niche diye gaye buttons par tap karke shuru karein:</i>`;
+          `<i>Tap any button below to get started:</i>`;
 
         await sendTelegramMessage(botToken, chatId, welcomeMsg, mainKeyboard);
         return NextResponse.json({ ok: true });
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
           await sendTelegramMessage(
             botToken,
             chatId,
-            `🎉 <b>Sabhi payments verify ho chuki hain!</b>\nAbhi koi pending UPI approval nahi hai.`,
+            `🎉 <b>All payments have been verified!</b>\nNo pending UPI approvals at the moment.`,
             mainKeyboard
           );
           return NextResponse.json({ ok: true });
@@ -240,8 +240,8 @@ export async function POST(req: NextRequest) {
             botToken,
             chatId,
             `📢 <b>Live Broadcast Command Usage:</b>\n\n` +
-            `Aapko jo message website ticker aur students ke notice board par lagana hai, aise type karein:\n\n` +
-            `<code>/broadcast Aaj shaam 7 baje Physics live class shuru hogi!</code>`,
+            `Type your broadcast message like this:\n\n` +
+            `<code>/broadcast 🔴 LIVE CLASS: Electrostatics masterclass begins at 7:00 PM!</code>`,
             mainKeyboard
           );
           return NextResponse.json({ ok: true });
@@ -263,7 +263,7 @@ export async function POST(req: NextRequest) {
           botToken,
           chatId,
           `✅ <b>Broadcast Published!</b>\n\n` +
-          `Aapka message website header notice ticker aur student dashboard par live ho chuka hai:\n` +
+          `Your announcement is now live on the website marquee ticker and student dashboard:\n` +
           `<i>"${msgContent}"</i>`,
           mainKeyboard
         );
@@ -280,7 +280,7 @@ export async function POST(req: NextRequest) {
         let ttMsg = `📅 <b>Timetable for Today (${todayDay}):</b>\n━━━━━━━━━━━━━━━━━━━━\n`;
 
         if (todaySlots.length === 0) {
-          ttMsg += `Aaj koi scheduled class nahi hai (Self Study Day).`;
+          ttMsg += `No scheduled classes for today (Self Study Day).`;
         } else {
           todaySlots.forEach((slot, i) => {
             ttMsg += `${i + 1}. <b>${slot.subject}</b>\n`;
@@ -302,7 +302,7 @@ export async function POST(req: NextRequest) {
           await sendTelegramMessage(
             botToken,
             chatId,
-            `✅ <b>Sabhi DPP homework checked hain!</b>\nAbhi koi pending student submission nahi hai.`,
+            `✅ <b>All DPP submissions have been evaluated!</b>\nNo pending student submissions waiting for review.`,
             mainKeyboard
           );
         } else {
@@ -312,7 +312,7 @@ export async function POST(req: NextRequest) {
             dppMsg += `   Submitted: ${s.submittedAt}\n`;
             dppMsg += `   Answer Preview: <i>"${s.answerText.slice(0, 80)}..."</i>\n\n`;
           });
-          dppMsg += `<i>Aap website admin panel par jaakar marks aur feedback de sakte hain.</i>`;
+          dppMsg += `<i>Log in to the Admin Dashboard to grade submissions and provide remarks.</i>`;
 
           await sendTelegramMessage(botToken, chatId, dppMsg, mainKeyboard);
         }
@@ -339,8 +339,8 @@ export async function POST(req: NextRequest) {
       await sendTelegramMessage(
         botToken,
         chatId,
-        `🤖 Guruji, maine aapka message read kiya: "<i>${text}</i>"\n\n` +
-        `Menu options use karne ke liye /stats ya /pending type karein.`,
+        `🤖 Guruji, received your message: "<i>${text}</i>"\n\n` +
+        `Use menu commands such as /stats or /pending to manage your portal.`,
         mainKeyboard
       );
     }

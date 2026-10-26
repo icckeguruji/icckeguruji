@@ -68,30 +68,32 @@ Instructions:
 
     if (qLower.includes('coulomb') || qLower.includes('force')) {
       fallbackAnswer = `**Coulomb's Law Explanation:**\n\n` +
-        `Coulomb's Law do static point charges ke beech lagne wale electrostatic force ko define karta hai.\n\n` +
+        `Coulomb's Law quantifies the electrostatic force between two stationary electric point charges.\n\n` +
         `**Formula:**\n` +
         `$$F = \\frac{1}{4\\pi\\varepsilon_0} \\cdot \\frac{|q_1 q_2|}{r^2}$$\n\n` +
-        `Jahan:\n` +
-        `- $q_1, q_2$: Charges ki value in Coulombs (C)\n` +
-        `- $r$: Dono charges ke beech ki distance (meters)\n` +
+        `Where:\n` +
+        `- $q_1, q_2$: Magnitudes of the charges in Coulombs (C)\n` +
+        `- $r$: Separation distance between the two charges in meters (m)\n` +
         `- $\\frac{1}{4\\pi\\varepsilon_0} \\approx 9 \\times 10^9 \\text{ N}\\cdot\\text{m}^2/\\text{C}^2$\n\n` +
-        `💡 **Teacher's Tip:** Agar distance half ($r/2$) ho jaye, toh force **4 times** increase ho jata hai!\n\n` +
-        `**Quick Practice Question:** Agar do identical 1C charges 1 meter door rakhe hain, toh unke beech kitna force lagega? (Answer: $9 \\times 10^9$ N)`;
+        `💡 **Teacher's Tip:** When the distance between charges is halved ($r/2$), the electrostatic force increases by a factor of **4**!\n\n` +
+        `**Quick Practice Question:** If two identical 1 C charges are placed 1 meter apart in a vacuum, what is the force between them? (Answer: $9 \\times 10^9$ N)`;
     } else if (qLower.includes('gauss') || qLower.includes('flux')) {
       fallbackAnswer = `**Gauss's Law Summary:**\n\n` +
-        `Kisi bhi closed surface se nikalne wala total electric flux $\\Phi$, us closed surface ke andar band total charge ($q_{in}$) ka $\\frac{1}{\\varepsilon_0}$ times hota hai.\n\n` +
+        `The total electric flux $\\Phi$ passing through any closed surface is equal to $\\frac{1}{\\varepsilon_0}$ times the net electric charge ($q_{enclosed}$) enclosed within that surface.\n\n` +
         `**Formula:**\n` +
         `$$\\Phi = \\oint \\vec{E} \\cdot d\\vec{A} = \\frac{q_{enclosed}}{\\varepsilon_0}$$\n\n` +
-        `🎯 **Board Exam Imp Points:**\n` +
-        `1. Surface hamesha closed (Gaussian surface) honi chahiye.\n` +
-        `2. Outside charges flux mein contribute nahi karte.`;
+        `🎯 **Key Exam Highlights:**\n` +
+        `1. The surface must be completely closed (Gaussian surface).\n` +
+        `2. Charges located outside the closed surface do not contribute to the net flux.`;
     } else {
-      fallbackAnswer = `**Namaste! Aapke doubt ka solution:**\n\n` +
-        `Aapne pucha: "${question}"\n\n` +
-        `1. **Core Concept:** Is topic ko samajhne ke liye pehle basic definition aur given variables ko identify karein.\n` +
+      fallbackAnswer = `**Solution & Clarification:**\n\n` +
+        `You asked: "${question}"\n\n` +
+        `1. **Core Concept:** Break down the problem statement and identify the given variables and standard units.\n` +
         `2. **Step-by-Step Approach:**\n` +
-        `   - Step 1: Formulas aur standard units (SI Units) check karein.\n` +
-        `💡 *Real Gemini API key add karne ke liye '.env.local' mein 'GEMINI_API_KEY=your_key' set karein (Google AI Studio se 100% free milti hai).*`;
+        `   - Step 1: Identify the relevant governing formula.\n` +
+        `   - Step 2: Substitute values with consistent SI units.\n` +
+        `   - Step 3: Compute the final numerical value and specify appropriate units.\n\n` +
+        `💡 *To enable live AI generation, set 'GEMINI_API_KEY=your_key' in your '.env.local' file (free from Google AI Studio).*`;
     }
 
     return NextResponse.json({

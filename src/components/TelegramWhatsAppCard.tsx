@@ -11,7 +11,7 @@ interface TelegramWhatsAppCardProps {
 
 export default function TelegramWhatsAppCard({ config, courseTitle }: TelegramWhatsAppCardProps) {
   const cleanPhone = config.whatsappNumber.replace(/[^0-9]/g, '');
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Namaste Sir! Maine "${courseTitle}" course enroll kiya hai aur mujhe guidance chahiye.`)}`;
+  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello Sir! I am enrolled in "${courseTitle}" and need guidance.`)}`;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -34,13 +34,13 @@ export default function TelegramWhatsAppCard({ config, courseTitle }: TelegramWh
           </div>
 
           <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-            Har live class shuru hone se 10 minute pehle Telegram bot aapko direct notification bhejega aur naye PDF notes group me share honge.
+            Get instant alerts 10 minutes before every live class begins, plus direct study materials and PDF notes shared straight to your Telegram group.
           </p>
 
           <div className="space-y-2 text-xs text-slate-700 bg-white p-3.5 rounded-2xl border border-sky-100 mb-5 shadow-xs">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Live Class alert 10 min pehle</span>
+              <span>Live class alerts 10 minutes prior</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -83,7 +83,7 @@ export default function TelegramWhatsAppCard({ config, courseTitle }: TelegramWh
           </div>
 
           <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-            Agar payment verification ya live class link mein koi bhi samasya aaye, toh hamare WhatsApp helpline par turant message karein.
+            For any queries regarding payment verification, course access, or class schedules, reach out directly to our WhatsApp helpline.
           </p>
 
           <div className="space-y-2 text-xs text-slate-700 bg-white p-3.5 rounded-2xl border border-emerald-100 mb-5 shadow-xs">

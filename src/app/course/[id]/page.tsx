@@ -231,10 +231,10 @@ function CourseClassroomContent() {
                   Restricted Classroom Content
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
-                  Ye Course Sirf Paid Members Ke Liye Available Hai
+                  This Course is Available for Enrolled Members Only
                 </h2>
                 <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-xl mx-auto leading-relaxed">
-                  Daily YouTube Live sessions, golden handwritten PDF notes, chapter mock tests, 24/7 AI Doubt Guruji aur Telegram private community access karne ke liye membership unlock karein.
+                  Unlock full access to daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, weekly mock tests, 24/7 AI Doubt Guruji, and private Telegram group alerts.
                 </p>
               </div>
 
@@ -242,13 +242,13 @@ function CourseClassroomContent() {
                 <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 text-left max-w-lg mx-auto flex items-start gap-3 shadow-xs">
                   <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                   <div className="text-xs text-amber-900">
-                    <p className="font-black text-amber-950">Aapka Payment Request Under Review Hai!</p>
+                    <p className="font-black text-amber-950">Your Payment Request is Under Review!</p>
                     <p className="mt-0.5 text-slate-700">
                       UTR: <span className="font-mono font-bold text-indigo-700">{pendingPayment.utrNumber}</span>.
-                      Admin verification ke baad turant unlock ho jayega.
+                      Access will be unlocked immediately upon admin verification.
                     </p>
                     <p className="mt-2 text-indigo-700 font-bold">
-                      💡 Self-Testing ke liye aap Admin Panel par jakar 1-Click mein Approve kar sakte hain.
+                      💡 For demo testing, you can approve this request in 1-Click from the Admin Panel.
                     </p>
                   </div>
                 </div>
@@ -302,7 +302,7 @@ function CourseClassroomContent() {
               </div>
             ) : (
               <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-xs">
-                <p className="text-slate-500 font-medium">Is course me abhi koi lecture schedule nahi hai.</p>
+                <p className="text-slate-500 font-medium">No lectures are scheduled for this course yet.</p>
               </div>
             )}
 
@@ -353,7 +353,7 @@ function CourseClassroomContent() {
                 }`}
               >
                 <Award className="w-4 h-4 text-amber-500" />
-                साप्ताहिक टेस्ट रिजल्ट ({myTestResults.length})
+                Weekly Test Results ({myTestResults.length})
               </button>
 
               <button
@@ -365,7 +365,7 @@ function CourseClassroomContent() {
                 }`}
               >
                 <Calendar className="w-4 h-4 text-emerald-500" />
-                मेरी हाजिरी ({myAttendancePercent}%)
+                My Attendance ({myAttendancePercent}%)
               </button>
 
               <button
@@ -377,7 +377,7 @@ function CourseClassroomContent() {
                 }`}
               >
                 <AlertCircle className={`w-4 h-4 ${(currentStudentRecord.feesDue ?? 0) > 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
-                मेरी फीस स्थिति {(currentStudentRecord.feesDue ?? 0) > 0 ? `(₹${currentStudentRecord.feesDue} बाकी)` : '(जमा)'}
+                My Fee Status {(currentStudentRecord.feesDue ?? 0) > 0 ? `(₹${currentStudentRecord.feesDue} Due)` : '(Cleared)'}
               </button>
 
               <button
@@ -389,7 +389,7 @@ function CourseClassroomContent() {
                 }`}
               >
                 <Bot className="w-4 h-4 text-amber-500" />
-                AI गुरुजी 24/7
+                AI Guruji 24/7
               </button>
             </div>
 
@@ -452,7 +452,7 @@ function CourseClassroomContent() {
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between text-xs text-indigo-900 font-medium shadow-xs">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Saare PDF notes aapke mobile number ke sath watermarked aur secured hain.</span>
+                    <span>All PDF study notes are encrypted and watermarked with your registered phone number.</span>
                   </div>
                 </div>
 
@@ -511,13 +511,13 @@ function CourseClassroomContent() {
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900 font-medium shadow-xs">
                   <div className="flex items-center gap-2">
                     <Award className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>आपके सभी रविवार ऑफलाइन टेस्ट के प्राप्तांक और रैंक यहाँ प्रदर्शित हैं।</span>
+                    <span>Your official Sunday offline test scores, ranks, and teacher feedback are displayed below.</span>
                   </div>
                 </div>
 
                 {myTestResults.length === 0 ? (
                   <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 text-xs">
-                    अभी तक आपका कोई टेस्ट परिणाम दर्ज नहीं हुआ है।
+                    No test results have been published for your profile yet.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -540,20 +540,20 @@ function CourseClassroomContent() {
 
                           <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between">
                             <div>
-                              <div className="text-[10px] text-slate-400 font-bold uppercase">प्राप्तांक (Marks)</div>
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">Marks Obtained</div>
                               <div className="text-xl font-black text-blue-700">
                                 {result.marksObtained} <span className="text-xs text-slate-400 font-normal">/ {test.totalMarks}</span>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-[10px] text-slate-400 font-bold uppercase">प्रतिशत (Score)</div>
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">Percentage</div>
                               <div className="text-lg font-black text-emerald-600">{percent}%</div>
                             </div>
                           </div>
 
                           {result.feedback && (
                             <div className="text-xs text-slate-600 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
-                              <span className="font-bold text-amber-900">गुरुजी की टिप्पणी: </span>
+                              <span className="font-bold text-amber-900">Guruji's Remarks: </span>
                               {result.feedback}
                             </div>
                           )}
@@ -571,42 +571,42 @@ function CourseClassroomContent() {
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
                     <div className="text-2xl font-black text-blue-900">{myAttendance.length}</div>
-                    <div className="text-xs font-bold text-slate-500">कुल कक्षाएं</div>
+                    <div className="text-xs font-bold text-slate-500">Total Classes</div>
                   </div>
                   <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-xs">
                     <div className="text-2xl font-black text-emerald-800">{myPresentDays}</div>
-                    <div className="text-xs font-bold text-emerald-700">उपस्थित दिन</div>
+                    <div className="text-xs font-bold text-emerald-700">Days Present</div>
                   </div>
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl shadow-xs">
                     <div className="text-2xl font-black text-blue-700">{myAttendancePercent}%</div>
-                    <div className="text-xs font-bold text-blue-700">हाजिरी प्रतिशत</div>
+                    <div className="text-xs font-bold text-blue-700">Attendance %</div>
                   </div>
                 </div>
 
                 <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3">
-                  <h4 className="font-black text-sm text-slate-900">दैनिक उपस्थिति इतिहास (Daily Log)</h4>
+                  <h4 className="font-black text-sm text-slate-900">Daily Attendance History (Log)</h4>
                   {myAttendance.length === 0 ? (
-                    <p className="text-xs text-slate-400">अभी तक कोई हाजिरी रिकॉर्ड नहीं है।</p>
+                    <p className="text-xs text-slate-400">No attendance records logged yet.</p>
                   ) : (
                     <div className="divide-y divide-slate-100">
                       {myAttendance.map((att) => (
                         <div key={att.id} className="py-2.5 flex items-center justify-between text-xs">
                           <div>
                             <div className="font-bold text-slate-800">{att.date}</div>
-                            <div className="text-[10px] text-slate-400">{att.courseTitle || 'कक्षा बैच'}</div>
+                            <div className="text-[10px] text-slate-400">{att.courseTitle || 'Class Session'}</div>
                           </div>
                           <div>
                             {att.status === 'present' ? (
                               <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
-                                ✓ उपस्थित (Present)
+                                ✓ Present
                               </span>
                             ) : att.status === 'absent' ? (
                               <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[11px]">
-                                ✗ अनुपस्थित (Absent)
+                                ✗ Absent
                               </span>
                             ) : (
                               <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">
-                                ◷ छुट्टी (Leave)
+                                ◷ Leave
                               </span>
                             )}
                           </div>
@@ -623,42 +623,42 @@ function CourseClassroomContent() {
               <div className="space-y-4 max-w-4xl mx-auto">
                 <div className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h3 className="font-black text-base text-slate-900">मेरी फीस स्थिति (Fee Balance)</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">मासिक फीस और रसीद विवरण</p>
+                    <h3 className="font-black text-base text-slate-900">My Fee Status (Fee Balance)</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Monthly fee payments and official receipts</p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     {(currentStudentRecord.feesDue ?? 0) > 0 ? (
                       <span className="px-3 py-1.5 rounded-full bg-rose-100 text-rose-800 font-black text-xs">
-                        ₹{currentStudentRecord.feesDue} बकाया (Due)
+                        ₹{currentStudentRecord.feesDue} Due
                       </span>
                     ) : (
                       <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
-                        ✓ पूरी फीस जमा है
+                        ✓ All Fees Cleared
                       </span>
                     )}
                   </div>
                 </div>
 
                 <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3">
-                  <h4 className="font-black text-sm text-slate-900">भुगतान की गई फीस रसीदें</h4>
+                  <h4 className="font-black text-sm text-slate-900">Payment Receipts History</h4>
                   {myFeeRecords.length === 0 ? (
-                    <p className="text-xs text-slate-400">अभी तक कोई फीस रसीद जारी नहीं हुई है।</p>
+                    <p className="text-xs text-slate-400">No fee receipts issued yet.</p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {myFeeRecords.map((rec) => (
                         <div key={rec.id} className="p-3.5 border border-slate-200 rounded-2xl bg-slate-50/70 space-y-1.5 text-xs">
                           <div className="flex justify-between font-mono text-[10px] text-slate-400">
-                            <span>रसीद: {rec.receiptNo}</span>
+                            <span>Receipt: {rec.receiptNo}</span>
                             <span>{rec.date}</span>
                           </div>
-                          <div className="font-bold text-slate-900">माह: {rec.month}</div>
+                          <div className="font-bold text-slate-900">Month: {rec.month}</div>
                           <div className="text-emerald-700 font-black text-sm">
-                            ₹{rec.amountPaid.toLocaleString('en-IN')} जमा ({rec.paymentMode})
+                            ₹{rec.amountPaid.toLocaleString('en-IN')} Paid ({rec.paymentMode})
                           </div>
                           {rec.dueRemaining > 0 && (
                             <div className="text-rose-600 text-[11px] font-bold">
-                              बाकी: ₹{rec.dueRemaining}
+                              Remaining Due: ₹{rec.dueRemaining}
                             </div>
                           )}
                         </div>
@@ -676,7 +676,7 @@ function CourseClassroomContent() {
                   <QuizEngine quiz={quizzes[0]} studentName={currentUser.name} />
                 ) : (
                   <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500">
-                    Is batch ke liye abhi koi mock test active nahi hai.
+                    No mock tests are active for this batch right now.
                   </div>
                 )}
               </div>
@@ -688,7 +688,7 @@ function CourseClassroomContent() {
                 <div className="text-center max-w-xl mx-auto">
                   <h3 className="font-black text-slate-900 text-lg">Formula Flashcards &amp; Memory Shortcuts</h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Exam revision ke liye formulas ko tap karke flip karein aur derivation recall karein.
+                    Tap any card to flip and review formulas, units, and derivation shortcuts for exam revision.
                   </p>
                 </div>
                 <FormulaFlashcards cards={flashcards} />

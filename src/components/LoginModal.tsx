@@ -47,8 +47,8 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
         const isGuruji = res.user.role === 'admin';
         setSuccess(
           isGuruji
-            ? 'Pranam Guruji! Admin Dashboard open ho raha hai...'
-            : `Swagat hai, ${res.user.name}!`
+            ? 'Welcome Guruji! Opening Admin Dashboard...'
+            : `Welcome, ${res.user.name}!`
         );
         onLoginSuccess(res.user);
 
@@ -59,7 +59,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
           }
         }, 500);
       } else {
-        setError(res.error || 'Email ya Password galat hai.');
+        setError(res.error || 'Invalid Email ID or Password.');
         setLoading(false);
       }
     }, 300);

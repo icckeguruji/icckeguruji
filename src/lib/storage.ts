@@ -24,7 +24,7 @@ import {
 
 export const DEFAULT_CONFIG: CoachingConfig = {
   coachingName: "ICC KE GURUJI",
-  tagline: "क्लास 9th से 12th एवं बोर्ड परीक्षा स्पेशल कोचिंग",
+  tagline: "Class 9th to 12th & Board Exam Special Coaching",
   upiId: "icckeguruji@okaxis",
   merchantName: "ICC KE GURUJI",
   whatsappNumber: "+919876543210",
@@ -32,22 +32,22 @@ export const DEFAULT_CONFIG: CoachingConfig = {
   telegramBotUsername: "IccKeGurujiBot",
   contactEmail: "contact@icckeguruji.com",
   googleAppsScriptEmailUrl: "https://script.google.com/macros/s/AKfycbzGhBvMJerQBuiuyibRoQh4RRQXZhxuyIryMWLC4vjnb43loVXvhJXxb1pKEYzHwSrA/exec",
-  heroHeadline: "ICC KE GURUJI कोचिंग संस्थान में आपका स्वागत है",
-  heroSubheadline: "कक्षा 9वीं, 10वीं, 11वीं और 12वीं बोर्ड परीक्षा की पक्की तैयारी। दैनिक क्लास, हस्तलिखित नोट्स, दैनिक हाजिरी और हर रविवार टेस्ट।",
-  admissionBadgeText: "नया शैक्षणिक सत्र 2026 में दाखिला प्रारंभ • सीमित सीटें उपलब्ध",
-  marqueeNotice: "🔴 सूचना: आगामी रविवार का साप्ताहिक टेस्ट सुबह 8:00 AM से होगा। सभी छात्र समय पर उपस्थित रहें।",
+  heroHeadline: "Welcome to ICC KE GURUJI Coaching Institute",
+  heroSubheadline: "Complete preparation for Classes 9th, 10th, 11th & 12th Board Exams. Daily live classes, handwritten notes, daily attendance, and weekly Sunday tests.",
+  admissionBadgeText: "Admissions Open for Academic Session 2026 • Limited Seats Available",
+  marqueeNotice: "🔴 Notice: Upcoming Sunday Weekly Offline Test will begin at 8:00 AM sharp. All students must arrive on time.",
   stat1Value: "250+",
-  stat1Label: "सक्रिय छात्र",
+  stat1Label: "Active Students",
   stat2Value: "98.4%",
-  stat2Label: "सर्वोच्च बोर्ड अंक",
-  stat3Value: "हर रविवार",
-  stat3Label: "साप्ताहिक टेस्ट",
-  stat4Value: "नकद / UPI",
-  stat4Label: "आसान फीस व्यवस्था",
-  homeQuizQuestion: "अगर दो static charges के बीच की दूरी को आधी (r/2) कर दिया जाए, तो उनके बीच लगने वाला बल (Force) कितना हो जाएगा?",
-  homeQuizOptions: ["2 गुना (Double)", "4 गुना (4 Times)", "आधा (Half)", "1/4th (One-Fourth)"],
+  stat2Label: "Top Board Score",
+  stat3Value: "Every Sunday",
+  stat3Label: "Weekly Tests",
+  stat4Value: "Cash / UPI",
+  stat4Label: "Easy Fee Options",
+  homeQuizQuestion: "If the distance between two static charges is reduced to half (r/2), what will happen to the electrostatic force between them?",
+  homeQuizOptions: ["Doubled (2x)", "Quadrupled (4x)", "Halved (1/2)", "One-Fourth (1/4)"],
   homeQuizCorrectIndex: 1,
-  homeQuizExplanation: "सही उत्तर: B (4 गुना)! Coulomb's law के अनुसार F ∝ 1/r²। जब दूरी आधी होगी, तो बल 4 गुना बढ़ जाएगा।",
+  homeQuizExplanation: "Correct Answer: B (Quadrupled)! According to Coulomb's Law, F ∝ 1/r². When distance is halved, the force increases by 4 times.",
 };
 
 export const INITIAL_COURSES: Course[] = [
@@ -55,21 +55,21 @@ export const INITIAL_COURSES: Course[] = [
     id: "course-1",
     title: "Class 12 & NEET/JEE: Physics Complete Mastery 2026",
     subtitle: "Complete NCERT + Advanced Concepts, Daily Live Classes & Formula Notes",
-    description: "Ye course specially un students ke liye design kiya gaya hai jo Physics mein 95%+ score karna chahte hain. Isme Mechanics, Electrodynamics, Optics aur Modern Physics deep concepts ke sath cover kiye gaye hain.",
+    description: "Specially designed for students aiming for 95%+ in Class 12 Board & Competitive exams. Covers Mechanics, Electrodynamics, Optics, and Modern Physics with deep conceptual clarity.",
     category: "Competitive Exams",
     price: 999,
     originalPrice: 3499,
     thumbnail: "https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=800&q=80",
     instructorName: "Er. Alok Sharma (IIT Kanpur)",
     instructorRole: "Senior Physics Faculty (12+ Yrs Exp)",
-    language: "Hinglish (Hindi + English)",
+    language: "English / Bilingual",
     duration: "6 Months • 120+ Hours",
     features: [
-      "Daily YouTube Live Interactive Sessions",
+      "Daily Interactive Live Classroom Sessions",
       "Chapter-wise Colored Handwritten PDF Notes",
       "24/7 AI Guruji Doubt Solver Support",
       "Chapter-wise Mock Tests & Formula Flashcards",
-      "Paid Students Secret Telegram Group Access"
+      "Exclusive Enrolled Students Telegram Group Access"
     ],
     lessonsCount: 42,
     notesCount: 28,
@@ -79,20 +79,20 @@ export const INITIAL_COURSES: Course[] = [
     id: "course-2",
     title: "Class 10 Board Exam Super 100 Batch",
     subtitle: "Science, Maths & Social Science Complete Crash Course + Sample Papers",
-    description: "Class 10th Boards ke liye ultimate score booster course. Saare imp formulas, theorems aur previous 10 years question papers ka live solution.",
+    description: "The ultimate score booster batch for Class 10th Boards. Includes all essential formulas, theorems, and live step-by-step solutions of the last 10 years board question papers.",
     category: "Board Exams",
     price: 499,
     originalPrice: 1999,
     thumbnail: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80",
     instructorName: "Neha Verma & Team",
     instructorRole: "Board Exam Specialist Mentors",
-    language: "Hindi",
+    language: "English / Bilingual",
     duration: "3 Months • 75+ Hours",
     features: [
       "Targeted Board Questions & Live Solutions",
       "Quick Revision Mind Maps & PDF Notes",
       "Formula Cheat Sheets & Mock Tests",
-      "WhatsApp Instant Doubt Support",
+      "Instant WhatsApp Doubt Support",
       "Weekly Model Answer Key Evaluation"
     ],
     lessonsCount: 30,
@@ -103,21 +103,21 @@ export const INITIAL_COURSES: Course[] = [
     id: "course-3",
     title: "Class 11 & 12: Chemistry & Science Foundation 2026",
     subtitle: "Organic, Inorganic & Physical Chemistry Complete NCERT + Board PYQ",
-    description: "Chemistry mein high score karne ke liye chemical reactions, periodic table aur formulas ke special handwritten notes aur live numerical solution.",
+    description: "Master Chemical Reactions, Periodic Table trends, and numerical problems with exclusive handwritten golden notes and live interactive problem-solving.",
     category: "Board Exams",
     price: 799,
     originalPrice: 2499,
     thumbnail: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80",
     instructorName: "Alok Sharma (Guruji)",
     instructorRole: "Senior Science Faculty",
-    language: "Hindi",
+    language: "English / Bilingual",
     duration: "6 Months • 100+ Hours",
     features: [
       "Daily Live & YouTube Classroom Sessions",
       "Chapter-wise Handwritten PDF Notes",
       "Chemical Reaction Shortcut Charts",
       "Weekly Sunday Test & Marksheet",
-      "WhatsApp Instant Doubt Support"
+      "Instant WhatsApp Doubt Support"
     ],
     lessonsCount: 36,
     notesCount: 25,
@@ -130,10 +130,10 @@ export const INITIAL_LESSONS: Lesson[] = [
     id: "les-1",
     courseId: "course-1",
     title: "🔴 LIVE CLASS: Electrostatics - Electric Charges & Coulomb's Law",
-    description: "Aaj ki live class mein hum Coulomb's Law in Vector form, Principle of Superposition aur previous year questions solve karenge.",
+    description: "In today's live lecture, we will cover Coulomb's Law in Vector form, Principle of Superposition, and previous year board questions.",
     youtubeId: "jfKfPfyJRdk",
     isLive: true,
-    scheduledAt: "Aaj shaam 7:00 PM",
+    scheduledAt: "Today at 7:00 PM",
     duration: "1 hr 30 min",
     chapterNumber: 1
   },
@@ -141,7 +141,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     id: "les-2",
     courseId: "course-1",
     title: "Lecture 02: Electric Field & Electric Dipole Derivations",
-    description: "Axial and Equatorial points par electric field intensity ka step-by-step derivation for board and competitive exams.",
+    description: "Step-by-step derivation of electric field intensity on Axial and Equatorial lines for board and competitive exams.",
     youtubeId: "dQw4w9WgXcQ",
     isLive: false,
     duration: "1 hr 15 min",
@@ -151,7 +151,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     id: "les-3",
     courseId: "course-1",
     title: "Lecture 03: Gauss's Law Applications & Numerical Shortcuts",
-    description: "Gauss theorem ke top 5 most important board derivations aur IIT-JEE numerical shortcuts.",
+    description: "Top 5 most important board derivations of Gauss's Law along with competitive exam numerical shortcuts.",
     youtubeId: "M7lc1UVf-VE",
     isLive: false,
     duration: "1 hr 20 min",
@@ -161,21 +161,21 @@ export const INITIAL_LESSONS: Lesson[] = [
     id: "les-4",
     courseId: "course-2",
     title: "🔴 LIVE: Class 10 Science - Chemical Reactions & Equations Fast Revision",
-    description: "Balancing chemical equations, types of reactions aur board exam ke favorite questions.",
+    description: "Balancing chemical equations, types of chemical reactions, and high-probability board exam questions.",
     youtubeId: "jfKfPfyJRdk",
     isLive: true,
-    scheduledAt: "Aaj shaam 5:00 PM",
+    scheduledAt: "Today at 5:00 PM",
     duration: "1 hr",
     chapterNumber: 1
   },
   {
     id: "les-5",
     courseId: "course-3",
-    title: "🔴 LIVE: Modern Full-Stack Architecture & Next.js Deep Dive",
-    description: "Client vs Server components, Next.js routing, server actions aur real-world state management.",
+    title: "🔴 LIVE: Chemistry - Organic Reaction Mechanisms & Conversions",
+    description: "Fundamental organic mechanisms, nomenclature rules, and high-frequency board reaction conversions.",
     youtubeId: "jfKfPfyJRdk",
     isLive: true,
-    scheduledAt: "Kal subah 11:00 AM",
+    scheduledAt: "Tomorrow at 11:00 AM",
     duration: "2 hr",
     chapterNumber: 1
   }
@@ -186,7 +186,7 @@ export const INITIAL_NOTES: PdfNote[] = [
     id: "note-1",
     courseId: "course-1",
     title: "Electrostatics & Coulomb's Law - Handwritten Golden Notes",
-    description: "Detailed handwritten formula sheet, derivations with colored diagrams aur solved examples.",
+    description: "Detailed handwritten formula sheet, derivations with colored diagrams, and solved numerical examples.",
     fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     fileSize: "4.8 MB",
     pageCount: 24,
@@ -196,7 +196,7 @@ export const INITIAL_NOTES: PdfNote[] = [
     id: "note-2",
     courseId: "course-1",
     title: "Gauss Law & Electric Potential - Top 50 PYQs with Solutions",
-    description: "Last 10 years ke solved board questions with step marking guide.",
+    description: "Solved board questions from the last 10 years with official step marking guide.",
     fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     fileSize: "6.2 MB",
     pageCount: 38,
@@ -206,7 +206,7 @@ export const INITIAL_NOTES: PdfNote[] = [
     id: "note-3",
     courseId: "course-2",
     title: "Science All Chemical Equations & Balancing Cheat Sheet",
-    description: "1-page quick formula revision sheet for Board exam morning revision.",
+    description: "1-page quick formula revision sheet for morning board exam review.",
     fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     fileSize: "2.1 MB",
     pageCount: 12,
@@ -215,8 +215,8 @@ export const INITIAL_NOTES: PdfNote[] = [
   {
     id: "note-4",
     courseId: "course-3",
-    title: "Next.js App Router Architecture & Production Cheatsheet",
-    description: "Clean code best practices, caching strategies and Supabase integration blueprint.",
+    title: "Organic Chemistry Reactions & Reagents Quick Blueprint",
+    description: "Key reaction pathways, reagent reference tables, and common organic synthesis roadmap.",
     fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     fileSize: "3.5 MB",
     pageCount: 18,
@@ -374,31 +374,31 @@ export const INITIAL_QUIZZES: Quiz[] = [
     questions: [
       {
         id: "q-1",
-        question: "Agar do charges ke beech ki distance ko aadhi (r/2) kar diya jaye, toh unke beech electrostatic force kitna ho jayega?",
+        question: "If the distance between two charges is halved (r/2), what will be the new electrostatic force between them?",
         options: ["2 times", "4 times", "Half (1/2)", "1/4th"],
         correctIndex: 1,
-        explanation: "Coulomb's Law ke anusaar F ∝ 1/r^2 hota hai. Jab distance r/2 hogi, toh F' = 1/(r/2)^2 = 4F ho jayega (4 guna increase)."
+        explanation: "According to Coulomb's Law, F ∝ 1/r². When distance becomes r/2, F' = 1/(r/2)² = 4F (4 times increase)."
       },
       {
         id: "q-2",
-        question: "Electric flux ki SI Unit kya hoti hai?",
+        question: "What is the SI unit of electric flux?",
         options: ["N / C", "Volt × meter (V·m)", "Coulomb / meter", "Joule / Coulomb"],
         correctIndex: 1,
-        explanation: "Electric flux Φ = E·A hota hai. E = V/m aur A = m^2, isliye unit Volt × meter (V·m) ya N·m^2/C hoti hai."
+        explanation: "Electric flux Φ = E·A. Since E is in V/m and A is in m², the unit is Volt × meter (V·m) or N·m²/C."
       },
       {
         id: "q-3",
-        question: "Ek uniformly charged spherical shell ke andar electric field intensity kitni hoti hai?",
-        options: ["Zero", "Infinity", "Surface ke barabar", "Distance ke proportional"],
+        question: "What is the electric field intensity inside a uniformly charged spherical shell?",
+        options: ["Zero", "Infinity", "Equal to surface field", "Proportional to distance"],
         correctIndex: 0,
-        explanation: "Gauss's law ke anusaar shell ke andar koi charge enclosed nahi hota (qin = 0), isliye E_inside = 0 hota hai."
+        explanation: "According to Gauss's law, no charge is enclosed inside the shell (q_enclosed = 0), therefore E_inside = 0."
       },
       {
         id: "q-4",
-        question: "Electric dipole moment ki direction kya hoti hai?",
-        options: ["Positive se Negative charge", "Negative se Positive charge", "Perpendicular to axis", "Random"],
+        question: "What is the direction of an electric dipole moment?",
+        options: ["Positive to negative charge", "Negative to positive charge", "Perpendicular to axis", "Random"],
         correctIndex: 1,
-        explanation: "Physics convention ke mutabiq electric dipole moment vector p ki direction hamesha -q se +q ki taraf hoti hai."
+        explanation: "By standard physics convention, the electric dipole moment vector p points from negative charge (-q) to positive charge (+q)."
       }
     ]
   },
@@ -412,17 +412,17 @@ export const INITIAL_QUIZZES: Quiz[] = [
     questions: [
       {
         id: "q-201",
-        question: "Fe2O3 + 2Al -> Al2O3 + 2Fe - Ye kis prakar ki reaction hai?",
+        question: "Fe2O3 + 2Al -> Al2O3 + 2Fe - What type of chemical reaction is this?",
         options: ["Combination reaction", "Double displacement reaction", "Displacement reaction", "Decomposition reaction"],
         correctIndex: 2,
-        explanation: "Aluminium, Iron (Fe) se zyada reactive hota hai isliye wo use displace kar deta hai. Isliye ye Displacement reaction hai."
+        explanation: "Aluminium is more reactive than iron (Fe), so it displaces iron from its oxide. Hence, it is a displacement reaction."
       },
       {
         id: "q-202",
-        question: "Respiration kis type ki reaction hoti hai?",
+        question: "What type of reaction is respiration considered?",
         options: ["Endothermic", "Exothermic", "Decomposition", "Neutralization"],
         correctIndex: 1,
-        explanation: "Respiration mein glucose oxygen ke sath milkar carbon dioxide, water aur heat energy release karta hai, isliye ye Exothermic reaction hai."
+        explanation: "During respiration, glucose reacts with oxygen to produce carbon dioxide, water, and releases energy in the form of heat, making it an exothermic reaction."
       }
     ]
   }
@@ -467,9 +467,9 @@ export const INITIAL_TIMETABLE: TimetableSlot[] = [
     id: "tt-4",
     day: "Thursday",
     time: "11:00 AM - 01:00 PM",
-    subject: "Full-Stack Dev",
-    topic: "Next.js Server Actions & Database CRUD",
-    faculty: "Rohan Singhania",
+    subject: "Chemistry Special",
+    topic: "Organic Reaction Mechanisms & Shortcuts",
+    faculty: "Er. Alok Sharma",
     isLiveNow: false,
     courseId: "course-3"
   },
@@ -537,24 +537,24 @@ export const INITIAL_FLASHCARDS: Flashcard[] = [
 export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   {
     id: "ann-1",
-    title: "🔴 Aaj Shaam 7:00 PM: Electrostatics Live Numerical Masterclass",
-    message: "Sabhi enrolled students time par join karein. Formula sheet sath lekar baithein.",
+    title: "🔴 Today at 7:00 PM: Electrostatics Live Numerical Masterclass",
+    message: "All enrolled students should join on time with their formula sheet ready.",
     category: "live_class",
-    date: "Aaj",
+    date: "Today",
     isPinned: true
   },
   {
     id: "ann-2",
     title: "📄 Physics Chapter 1 & 2 Handwritten Golden Notes Uploaded",
-    message: "PDF Notes section mein jakar view aur download karein.",
+    message: "Visit the PDF Notes section to view and download your study notes.",
     category: "notes_alert",
-    date: "Kal",
+    date: "Yesterday",
     isPinned: true
   },
   {
     id: "ann-3",
-    title: "🏆 Sunday Mega Mock Test Scheduled for Class 10 & 12",
-    message: "Exam pattern ke exact format mein full length test paper Sunday 10 AM live hoga.",
+    title: "🏆 Sunday Mega Mock Test Scheduled for Classes 10 & 12",
+    message: "Full-length offline test in official board pattern starts this Sunday at 8:00 AM.",
     category: "exam_alert",
     date: "24 Oct 2026",
     isPinned: false
@@ -564,9 +564,9 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
 export const INITIAL_ARTICLES: Article[] = [
   {
     id: "art-1",
-    title: "Class 12th Physics me 95%+ Marks Kaise Layein? (Guruji's Proven Strategy)",
-    excerpt: "NCERT derivations, formula flashcards aur previous 10 years papers solve karne ka right approach.",
-    content: "Physics mein score karne ka sabse bada secret hai derivations ko bina dekhe 3 baar likhna. Formulas ke short notes har chapter ke start mein banayein...",
+    title: "How to Score 95%+ in Class 12 Physics (Guruji's Proven Strategy)",
+    excerpt: "The proven approach to mastering NCERT derivations, formula flashcards, and 10-year previous papers.",
+    content: "The biggest secret to high scores in Physics is writing derivations 3 times without looking. Prepare short formula notes at the beginning of each chapter...",
     author: "Guruji Alok Sharma",
     readTime: "4 min read",
     date: "20 Oct 2026",
@@ -575,8 +575,8 @@ export const INITIAL_ARTICLES: Article[] = [
   {
     id: "art-2",
     title: "Last 3 Months Revision Blueprint for Board & Competitive Exams",
-    excerpt: "Time table kaise manage karein taaki burnout na ho aur syllabus 2 baar revise ho jaye.",
-    content: "Roz 2 ghante revision aur 1 ghanta question practice ko fix karein. Naya topic padhne se pehle purane chapters ka 20 min quick recap karein...",
+    excerpt: "How to manage your timetable to prevent burnout and complete two full rounds of syllabus revision.",
+    content: "Dedicate 2 hours daily to revision and 1 hour to problem practice. Before starting any new topic, do a 20-minute recap of previous chapters...",
     author: "Team ICC",
     readTime: "5 min read",
     date: "18 Oct 2026",
@@ -590,7 +590,7 @@ export const INITIAL_TESTIMONIALS: Testimonial[] = [
     studentName: "Aditya Prakash",
     examRank: "AIR 248 (JEE Advanced)",
     examName: "JEE Advanced 2025",
-    review: "ICC KE GURUJI ke live lectures aur handwritten notes ne meri physics ki foundation itni strong kar di ki numericals easily solve hone lage!",
+    review: "The live lectures and handwritten notes from ICC KE GURUJI built a rock-solid foundation in physics. Solving complex numericals became effortless!",
     rating: 5
   },
   {
@@ -598,15 +598,15 @@ export const INITIAL_TESTIMONIALS: Testimonial[] = [
     studentName: "Sneha Mukherjee",
     examRank: "98.4% in CBSE Boards",
     examName: "Class 12 Boards",
-    review: "24/7 AI Doubt solver raat ko padhai karte waqt bohot helpful tha. Kisi bhi formula ka step-by-step derivation turant mil jata tha.",
+    review: "The 24/7 AI Doubt solver was incredibly helpful during late-night study sessions. I got step-by-step derivations and clarifications instantly.",
     rating: 5
   },
   {
     id: "test-3",
     studentName: "Mohit Chauhan",
-    examRank: "Full Stack Engineer @ MNC",
-    examName: "Web Dev Placement Batch",
-    review: "Zero coding background se start kiya tha. Live screen share aur doubt clearing sessions ke karan aaj 12 LPA ki job crack hui.",
+    examRank: "97.2% in State Boards",
+    examName: "Class 10 Board Topper",
+    review: "Weekly offline tests and direct guidance from Guruji helped me overcome exam anxiety and achieve top marks in science and mathematics.",
     rating: 5
   }
 ];
@@ -614,23 +614,23 @@ export const INITIAL_TESTIMONIALS: Testimonial[] = [
 export const INITIAL_FAQS: FaqItem[] = [
   {
     id: "faq-1",
-    question: "Payment karne ke baad course kab tak unlock hota hai?",
-    answer: "Aap jaise hi UPI payment karke 12-digit UTR submit karte hain, Admin use verify karke 5-15 minute mein approve kar dete hain. Self-testing ke liye aap Admin panel se 1-Click mein approve kar sakte hain."
+    question: "How soon is the course unlocked after making the payment?",
+    answer: "As soon as you complete the UPI payment and submit the 12-digit UTR reference number, the admin verifies and activates access within 5 to 15 minutes. For demo purposes, you can also approve instantly from the Admin Panel."
   },
   {
     id: "faq-2",
-    question: "Agar live class miss ho jaye toh kya recording milti hai?",
-    answer: "Haan! YouTube Live khatam hote hi lecture automatic recorded form mein aapke classroom me save ho jata hai jise aap kitni bhi baar revision ke liye dekh sakte hain."
+    question: "If I miss a live class, can I watch the recording later?",
+    answer: "Yes! Every live class is automatically saved in your classroom library right after the session ends. You can watch and revise as many times as you like."
   },
   {
     id: "faq-3",
-    question: "AI Doubt Guruji kaise kaam karta hai?",
-    answer: "Classroom ke andar AI Tutor 24/7 available rehta hai. Aap koi bhi formula, sawal ya theory ka doubt type karenge toh Guruji step-by-step Hindi/English mein samjhate hain."
+    question: "How does the AI Doubt Guruji work?",
+    answer: "The AI Tutor is available 24/7 inside your classroom. Type any formula, question, or conceptual doubt, and Guruji provides clear, step-by-step explanations in English."
   },
   {
     id: "faq-4",
-    question: "Direct UPI QR payment ka kya fayda hai?",
-    answer: "Direct UPI se 100% paise bina kisi payment gateway ke 2% commission karke seedha coaching bank account mein jate hain, jisse students ko affordable price par batch mil pata hai."
+    question: "What are the benefits of direct UPI payment?",
+    answer: "Direct UPI payments go directly to the institute's bank account without any third-party gateway deductions, keeping batch enrollment fees affordable for students."
   }
 ];
 
@@ -644,7 +644,7 @@ export const INITIAL_DPPS: DppAssignment[] = [
     totalMarks: 20,
     questionCount: 8,
     pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    description: "In 8 numericals ko solve karke step-by-step hand-written sheet upload ya text me answer likhein. Sign convention par vishesh dhyan dein."
+    description: "Solve these 8 numerical problems step-by-step on paper and upload, or submit your answers directly. Pay close attention to sign conventions."
   },
   {
     id: "dpp-2",
@@ -655,7 +655,7 @@ export const INITIAL_DPPS: DppAssignment[] = [
     totalMarks: 25,
     questionCount: 10,
     pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    description: "Dipole on axial & equatorial line numericals along with short answer conceptual questions."
+    description: "Numericals on axial and equatorial dipole fields along with short conceptual questions."
   },
   {
     id: "dpp-3",
@@ -666,18 +666,18 @@ export const INITIAL_DPPS: DppAssignment[] = [
     totalMarks: 20,
     questionCount: 8,
     pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    description: "Standard NCERT Exemplar & Board PYQ problems. Simplify LHS to RHS cleanly."
+    description: "Standard NCERT Exemplar & Board PYQ problems. Simplify LHS to RHS clearly."
   },
   {
     id: "dpp-4",
     courseId: "course-3",
-    title: "Assignment 01: Interactive Counter with Tailwind CSS & LocalStorage",
-    chapter: "Module 2: React Core Concepts",
+    title: "Assignment 01: Chemical Bonding & Molecular Orbital Theory",
+    chapter: "Chapter 4: Chemical Bonding",
     dueDate: "02 Nov 2026",
     totalMarks: 50,
     questionCount: 5,
     pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-    description: "Create a React functional component using useState, useEffect and persist count across tab reloads."
+    description: "Draw molecular orbital energy level diagrams for O2 and N2, and calculate bond orders."
   }
 ];
 
@@ -693,7 +693,7 @@ export const INITIAL_DPP_SUBMISSIONS: DppSubmission[] = [
     answerText: "Q1. F = 1.6 x 10^-14 N attractive.\nQ2. Net force at center = 0 due to symmetry.\nQ3. Ratio of electrostatic to gravitational force = 2.27 x 10^39.\nQ4. Torque max = pE when theta = 90 deg.\nDetailed step derivation attached in sheet.",
     status: "graded",
     marksAwarded: 19,
-    feedback: "Shabash Rahul! Bahut sundar calculation ki hai. Q4 ka vector unit dhyan rakhein, baki sab 100% perfect hai. Keep it up!",
+    feedback: "Well done, Rahul! Excellent step-by-step calculations. Remember to specify vector units in Q4, otherwise perfect work. Keep it up!",
     attachmentName: "Rahul_Kumar_DPP01_Solutions.pdf"
   },
   {
@@ -775,8 +775,8 @@ export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
     courseTitle: "Class 12 & NEET/JEE: Physics Complete Mastery",
     authorName: "Amit Verma",
     authorPhone: "+91 97722 33445",
-    title: "Gauss Law non-symmetric closed surface par directly apply ho sakta hai kya?",
-    question: "Guruji, agar closed surface cube ya sphere na hoke irregular shape ho, tab bhi kya total flux q_enclosed / epsilon_0 hi hoga? Ya geometry change hone se formula badal jayega?",
+    title: "Can Gauss's Law be applied directly to non-symmetric closed surfaces?",
+    question: "Guruji, if a closed surface is irregular rather than a symmetrical cube or sphere, is total flux still q_enclosed / epsilon_0? Or does the formula change with geometry?",
     tags: ["Electrostatics", "GaussLaw", "Class12"],
     createdAt: "Yesterday, 07:15 PM",
     upvotes: 14,
@@ -786,7 +786,7 @@ export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
         id: "ans-1",
         authorName: "Er. Alok Sharma (ICC KE GURUJI)",
         authorRole: "guruji",
-        text: "Bahut accha sawal beta! Gauss Law ka basic principle geometry-independent hai. Total flux hamesha q_in / epsilon_0 hi rahega chahe surface ka shape kaisa bhi ho! Bas electric field E calculate karne ke liye hume symmetry chahiye hoti hai.",
+        text: "Great question! The fundamental principle of Gauss's Law is completely geometry-independent. Total electric flux is always q_in / epsilon_0 regardless of shape. However, to evaluate electric field E directly, we need spatial symmetry.",
         createdAt: "Yesterday, 08:00 PM",
         upvotes: 21
       },
@@ -794,7 +794,7 @@ export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
         id: "ans-2",
         authorName: "Rahul Kumar",
         authorRole: "student",
-        text: "Thanks Guruji! Mujhe bhi isme confusion tha, ab clear ho gaya.",
+        text: "Thank you, Guruji! That clarifies the concept completely.",
         createdAt: "Yesterday, 08:30 PM",
         upvotes: 4
       }
@@ -806,8 +806,8 @@ export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
     courseTitle: "Class 10 Board Exam Super 100 Batch",
     authorName: "Pooja Gupta",
     authorPhone: "+91 91234 56780",
-    title: "Trigonometric identities me (1 + tan^2 theta) wale questions solve karne ki trick?",
-    question: "Jab questions me tan theta aur sec theta dono mix hote hain to LHS se RHS jane me steps lengthy ho jate hain. Koi quick simplification method hai?",
+    title: "Tips for simplifying trigonometric identity proofs involving sec θ and tan θ?",
+    question: "Whenever questions have both tan θ and sec θ terms mixed, simplifying LHS to RHS becomes very lengthy. Is there a faster algebraic method?",
     tags: ["Maths", "Class10", "Trigonometry"],
     createdAt: "2 days ago",
     upvotes: 8,
@@ -817,7 +817,7 @@ export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
         id: "ans-3",
         authorName: "Neha Verma (ICC KE GURUJI)",
         authorRole: "guruji",
-        text: "Golden Rule beta: Hamesha check karo kya identity sec²θ - tan²θ = (secθ - tanθ)(secθ + tanθ) = 1 factorize ho sakti hai? 90% Board questions is factorization se 2 line me solve ho jate hain!",
+        text: "Golden Rule: Always check if the identity sec²θ - tan²θ = (secθ - tanθ)(secθ + tanθ) = 1 can be factored. Many board exam identity questions resolve in just 2 lines using this factorization!",
         createdAt: "2 days ago",
         upvotes: 18
       }
@@ -846,7 +846,7 @@ export const INITIAL_CERTIFICATES: CertificateRecord[] = [
 export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   {
     id: "att-1",
-    date: new Date().toISOString().split('T')[0],
+    date: "2026-10-26",
     courseId: "course-1",
     courseTitle: "Class 12 Physics Mastery 2026",
     studentId: "student-101",
@@ -858,7 +858,7 @@ export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   },
   {
     id: "att-2",
-    date: new Date().toISOString().split('T')[0],
+    date: "2026-10-26",
     courseId: "course-1",
     courseTitle: "Class 12 Physics Mastery 2026",
     studentId: "student-104",
@@ -893,13 +893,13 @@ export const INITIAL_FEE_RECORDS: FeeRecord[] = [
     studentName: "Aman Gupta",
     studentPhone: "+91 99222 33445",
     fatherName: "Shri Suresh Gupta",
-    courseTitle: "Full-Stack Web Development",
+    courseTitle: "Class 11 & 12 Chemistry",
     month: "October 2026",
     amountPaid: 600,
     dueRemaining: 600,
     paymentMode: "PhonePe / GPay",
     date: "2026-10-25",
-    remarks: "Part payment via PhonePe. Remaining due: Rs 600"
+    remarks: "Part payment via PhonePe. Remaining balance: Rs 600"
   }
 ];
 
@@ -920,7 +920,7 @@ export const INITIAL_WEEKLY_TESTS: WeeklyTest[] = [
         rollNo: "ICC-101",
         marksObtained: 48,
         rank: 1,
-        feedback: "Shandar pradarshan! Numericals me pure number mile."
+        feedback: "Outstanding performance! Full score in numerical derivations."
       },
       {
         studentId: "student-104",
@@ -929,7 +929,7 @@ export const INITIAL_WEEKLY_TESTS: WeeklyTest[] = [
         rollNo: "ICC-104",
         marksObtained: 38,
         rank: 2,
-        feedback: "Derivations par thoda aur dhyan dein."
+        feedback: "Good attempt. Pay more attention to formula notations."
       }
     ]
   }
@@ -1117,10 +1117,10 @@ export function authenticateUser(
   const digitsOnly = cleanId.replace(/[^0-9]/g, '');
 
   if (!cleanId) {
-    return { success: false, error: 'Kripya apna Email ID ya Mobile Number enter karein.' };
+    return { success: false, error: 'Please enter your Email ID or Mobile Number.' };
   }
   if (!cleanPass) {
-    return { success: false, error: 'Kripya apna Password enter karein.' };
+    return { success: false, error: 'Please enter your Password.' };
   }
 
   // 1. Check Guruji Admin Login
@@ -1144,7 +1144,7 @@ export function authenticateUser(
       saveStoredData('USER', admin);
       return { success: true, user: admin, redirectTo: '/admin' };
     }
-    return { success: false, error: 'Admin password galat hai! Default: "admin123"' };
+    return { success: false, error: 'Incorrect admin password! Default: "admin123"' };
   }
 
   // 2. Check Existing Registered Students (by Email OR Phone)
@@ -1159,12 +1159,12 @@ export function authenticateUser(
       saveStoredData('USER', existingStudent);
       return { success: true, user: existingStudent, redirectTo: '/course/course-1' };
     }
-    return { success: false, error: 'Galat password! Demo accounts ke liye "student123" use karein.' };
+    return { success: false, error: 'Incorrect password! For demo accounts, use "student123".' };
   }
 
   // 3. New Student Instant Registration on first login
   if (cleanPass.length < 6) {
-    return { success: false, error: 'Password kam se kam 6 characters ka hona chahiye.' };
+    return { success: false, error: 'Password must be at least 6 characters long.' };
   }
 
   const nameFromEmail = cleanId.includes('@')
@@ -1201,8 +1201,8 @@ export function resetUserPassword(
   const cleanId = (identifier || '').trim().toLowerCase();
   const digitsOnly = cleanId.replace(/[^0-9]/g, '');
 
-  if (!cleanId) return { success: false, error: 'Email ya Phone required hai.' };
-  if (!newPassword || newPassword.length < 6) return { success: false, error: 'Naya password kam se kam 6 characters ka hona chahiye.' };
+  if (!cleanId) return { success: false, error: 'Email or Phone is required.' };
+  if (!newPassword || newPassword.length < 6) return { success: false, error: 'New password must be at least 6 characters long.' };
 
   // Check admin
   if (cleanId === 'admin@icckeguruji.com' || cleanId === 'admin') {
@@ -1237,6 +1237,6 @@ export function resetUserPassword(
     return { success: true, user: student };
   }
 
-  return { success: false, error: 'Account nahi mila. Kripya valid registered email enter karein.' };
+  return { success: false, error: 'Account not found. Please enter a valid registered email or phone.' };
 }
 
