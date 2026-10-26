@@ -41,7 +41,13 @@ import {
   Eye,
   Mail,
   Copy,
-  Loader2
+  Loader2,
+  Image as ImageIcon,
+  Globe,
+  MapPin,
+  Phone,
+  Share2,
+  Building2
 } from 'lucide-react';
 import {
   Course,
@@ -318,6 +324,19 @@ export default function AdminDashboardPage() {
     window.addEventListener('coaching_storage_updated', handleStorageUpdate);
     return () => window.removeEventListener('coaching_storage_updated', handleStorageUpdate);
   }, []);
+
+  useEffect(() => {
+    if (data.config?.faviconUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = data.config.faviconUrl;
+    }
+  }, [data.config?.faviconUrl]);
 
   // 1-Click Approve UPI Payment
   const handleApprovePayment = (payment: PaymentRequest) => {
@@ -1457,7 +1476,7 @@ export default function AdminDashboardPage() {
           {/* Logo Header */}
           <div className="h-18 px-5 border-b border-slate-200 flex items-center justify-between shrink-0">
             <Link href="/" className="hover:opacity-90 transition-opacity">
-              <Logo size="sm" />
+              <Logo size="sm" logoUrl={configForm?.logoUrl || data.config?.logoUrl} />
             </Link>
             <button
               onClick={() => setMobileSidebarOpen(false)}
@@ -6204,121 +6223,420 @@ export default function AdminDashboardPage() {
               11. SETTINGS TAB
           ===================================================================== */}
           {activeTab === 'settings' && (
-            <div className="max-w-2xl bg-white border border-slate-200 p-8 rounded-3xl shadow-xs">
-              <h3 className="font-black text-slate-900 text-lg mb-2 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-blue-600" />
-                Institute &amp; Payment Configuration
-              </h3>
-              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-                Configure your institute's UPI ID, Telegram group link, and WhatsApp helpline number. These settings update across all student screens and payment QR modals in real time.
-              </p>
-
-              {settingsSaved && (
-                <div className="p-3 mb-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2">
-                  <Check className="w-4 h-4 shrink-0 stroke-[3]" />
-                  <span>Settings saved successfully!</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSaveSettings} className="space-y-4 text-xs sm:text-sm">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Coaching Institute Name</label>
-                  <input
-                    type="text"
-                    value={configForm.coachingName}
-                    onChange={(e) => setConfigForm({ ...configForm, coachingName: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="max-w-4xl space-y-6">
+              {/* Header */}
+              <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">
-                      Your Personal/Business UPI ID *
+                    <h3 className="font-black text-slate-900 text-xl flex items-center gap-2.5">
+                      <Settings className="w-6 h-6 text-blue-600" />
+                      Institute Settings &amp; Branding
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                      Configure your coaching logo, browser favicon, center address, contact numbers, social media links, and direct UPI payment gateway.
+                    </p>
+                  </div>
+                  {settingsSaved && (
+                    <div className="px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2 shrink-0 animate-in fade-in duration-200">
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>Settings saved!</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                {/* 1. Institute Identity & Branding Assets */}
+                <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xs space-y-6">
+                  <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                      <ImageIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base">Institute Branding &amp; Visual Assets</h4>
+                      <p className="text-xs text-slate-500">Manage coaching logo, favicon icon, tagline and official seal</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="sm:col-span-2">
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Coaching Institute Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={configForm.coachingName || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, coachingName: e.target.value })}
+                        placeholder="e.g. ICC KE GURUJI"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Institute Tagline / Slogan
+                      </label>
+                      <input
+                        type="text"
+                        value={configForm.tagline || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, tagline: e.target.value })}
+                        placeholder="e.g. Class 9th to 12th & Board Exam Special Coaching"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                    </div>
+
+                    {/* Logo URL with Live Preview */}
+                    <div className="sm:col-span-2 p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-slate-800 font-bold text-xs">
+                          Institute Logo URL (Navbar, Footer, Certificates &amp; Login)
+                        </label>
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                          Recommended: PNG / SVG / JPG
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <input
+                          type="url"
+                          value={configForm.logoUrl || ''}
+                          onChange={(e) => setConfigForm({ ...configForm, logoUrl: e.target.value })}
+                          placeholder="https://example.com/logo.png (or leave blank for default emblem)"
+                          className="flex-1 w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {configForm.logoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setConfigForm({ ...configForm, logoUrl: '' })}
+                            className="px-3 py-2 text-xs font-bold text-slate-500 hover:text-rose-600 border border-slate-200 rounded-xl hover:bg-white shrink-0 transition-colors"
+                          >
+                            Reset to Default
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Live Logo Preview Box */}
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center gap-3">
+                        <div className="text-xs font-bold text-slate-500 shrink-0">Live Logo Preview:</div>
+                        <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
+                          <Logo size="md" logoUrl={configForm.logoUrl} />
+                          <span className="text-[11px] text-slate-400">
+                            {configForm.logoUrl ? '✓ Custom Logo Loaded' : '✓ Default Geometric Emblem Active'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Favicon URL with Live Preview */}
+                    <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-slate-800 font-bold text-xs">
+                          Browser Favicon URL (.ico / .png)
+                        </label>
+                        <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                          Browser Tab Icon
+                        </span>
+                      </div>
+
+                      <input
+                        type="url"
+                        value={configForm.faviconUrl || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, faviconUrl: e.target.value })}
+                        placeholder="https://example.com/favicon.ico"
+                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+
+                      <div className="flex items-center gap-3 pt-1">
+                        <span className="text-xs font-bold text-slate-500">Preview:</span>
+                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center p-1 overflow-hidden shadow-xs">
+                          {configForm.faviconUrl ? (
+                            <img src={configForm.faviconUrl} alt="Favicon" className="w-full h-full object-contain" />
+                          ) : (
+                            <Globe className="w-4 h-4 text-slate-400" />
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          {configForm.faviconUrl ? 'Custom Favicon Active' : 'Default Browser Icon'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Official Stamp / Seal URL */}
+                    <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-slate-800 font-bold text-xs">
+                          Institute Official Stamp / Seal URL
+                        </label>
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Marksheets &amp; Receipts
+                        </span>
+                      </div>
+
+                      <input
+                        type="url"
+                        value={configForm.instituteStampUrl || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, instituteStampUrl: e.target.value })}
+                        placeholder="https://example.com/stamp.png"
+                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+
+                      <div className="flex items-center gap-3 pt-1">
+                        <span className="text-xs font-bold text-slate-500">Stamp Preview:</span>
+                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center p-1 overflow-hidden shadow-xs">
+                          {configForm.instituteStampUrl ? (
+                            <img src={configForm.instituteStampUrl} alt="Stamp" className="w-full h-full object-contain" />
+                          ) : (
+                            <Award className="w-4 h-4 text-slate-400" />
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          {configForm.instituteStampUrl ? 'Custom Stamp Ready' : 'Optional Seal'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Established Year
+                      </label>
+                      <input
+                        type="text"
+                        value={configForm.establishedYear || '2020'}
+                        onChange={(e) => setConfigForm({ ...configForm, establishedYear: e.target.value })}
+                        placeholder="e.g. 2020"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Physical Address & Center Location */}
+                <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base">Center Address &amp; Location</h4>
+                      <p className="text-xs text-slate-500">Physical coaching center location displayed in footer and receipts</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                      Coaching Center Physical Address
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={configForm.upiId}
-                      onChange={(e) => setConfigForm({ ...configForm, upiId: e.target.value })}
-                      placeholder="e.g. icckeguruji@okaxis"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-blue-400 rounded-xl text-slate-900 font-mono font-bold"
+                    <textarea
+                      rows={2}
+                      value={configForm.address || ''}
+                      onChange={(e) => setConfigForm({ ...configForm, address: e.target.value })}
+                      placeholder="e.g. Station Road, Main Market, Ward No. 4"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
                     />
-                    <span className="text-[11px] text-slate-400">QR Code is dynamically generated for this UPI ID.</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Merchant / Payee Name</label>
-                    <input
-                      type="text"
-                      value={configForm.merchantName}
-                      onChange={(e) => setConfigForm({ ...configForm, merchantName: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                    />
+                    <span className="text-[11px] text-slate-400 block mt-1">
+                      Appears in the website footer directory and on fee receipts.
+                    </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">WhatsApp Helpline Number</label>
-                    <input
-                      type="text"
-                      value={configForm.whatsappNumber}
-                      onChange={(e) => setConfigForm({ ...configForm, whatsappNumber: e.target.value })}
-                      placeholder="+919876543210"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                    />
+                {/* 3. Communication & Contact Helplines */}
+                <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base">Helpline &amp; Communication Channels</h4>
+                      <p className="text-xs text-slate-500">Direct WhatsApp support, alternate contact helpline, and student alert email</p>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Telegram Bot Username</label>
-                    <input
-                      type="text"
-                      value={configForm.telegramBotUsername}
-                      onChange={(e) => setConfigForm({ ...configForm, telegramBotUsername: e.target.value })}
-                      placeholder="IccKeGurujiBot"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Primary WhatsApp Helpline Number *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={configForm.whatsappNumber || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, whatsappNumber: e.target.value })}
+                        placeholder="+919876543210"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">Used for direct 1-click WhatsApp counseling links.</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Alternate Phone / Student Helpline
+                      </label>
+                      <input
+                        type="text"
+                        value={configForm.alternatePhone || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, alternatePhone: e.target.value })}
+                        placeholder="+91 9934215013"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">Secondary student calling helpline.</span>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Official Contact &amp; Alert Email
+                      </label>
+                      <input
+                        type="email"
+                        value={configForm.contactEmail || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, contactEmail: e.target.value })}
+                        placeholder="contact@icckeguruji.com"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">Payment notifications and test alerts are sent to this address.</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Telegram Bot Username
+                      </label>
+                      <input
+                        type="text"
+                        value={configForm.telegramBotUsername || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, telegramBotUsername: e.target.value })}
+                        placeholder="IccKeGurujiBot"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Paid Telegram Group / Channel Link
+                      </label>
+                      <input
+                        type="url"
+                        value={configForm.telegramGroupLink || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, telegramGroupLink: e.target.value })}
+                        placeholder="https://t.me/icckeguruji_official"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Paid Telegram Group Link</label>
-                  <input
-                    type="url"
-                    value={configForm.telegramGroupLink}
-                    onChange={(e) => setConfigForm({ ...configForm, telegramGroupLink: e.target.value })}
-                    placeholder="https://t.me/icckeguruji_official"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                  />
+                {/* 4. Social Media Channels */}
+                <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center font-bold">
+                      <Share2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base">Official Social Media Channels</h4>
+                      <p className="text-xs text-slate-500">Connect YouTube, Instagram, and Facebook profiles</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        YouTube Channel URL
+                      </label>
+                      <input
+                        type="url"
+                        value={configForm.youtubeChannelUrl || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, youtubeChannelUrl: e.target.value })}
+                        placeholder="https://youtube.com/@icckeguruji"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Instagram Profile URL
+                      </label>
+                      <input
+                        type="url"
+                        value={configForm.instagramUrl || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, instagramUrl: e.target.value })}
+                        placeholder="https://instagram.com/icckeguruji"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Facebook Page URL
+                      </label>
+                      <input
+                        type="url"
+                        value={configForm.facebookUrl || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, facebookUrl: e.target.value })}
+                        placeholder="https://facebook.com/icckeguruji"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Official Contact & Alert Email</label>
-                  <input
-                    type="email"
-                    value={configForm.contactEmail || ''}
-                    onChange={(e) => setConfigForm({ ...configForm, contactEmail: e.target.value })}
-                    placeholder="contact@icckeguruji.com"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                  />
-                  <span className="text-[11px] text-slate-400">Payment notifications and test alerts will be sent to this email address.</span>
+                {/* 5. Payment & UPI Gateway */}
+                <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base">Direct UPI Payment Gateway (0% Commission)</h4>
+                      <p className="text-xs text-slate-500">Student fees transfer directly to your personal UPI ID / bank</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Your Personal / Business UPI ID *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={configForm.upiId || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, upiId: e.target.value })}
+                        placeholder="e.g. icckeguruji@okaxis"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-blue-400 rounded-xl text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">Dynamic QR code generated automatically for all course checkouts.</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Merchant / Payee Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={configForm.merchantName || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, merchantName: e.target.value })}
+                        placeholder="e.g. ICC KE GURUJI"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">Name shown on Google Pay, PhonePe, and Paytm screens.</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Google Apps Script (script.new) Email Dispatcher Integration */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/50 border-2 border-blue-200 space-y-4">
+                {/* 6. Google Apps Script Email Alerts */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/50 border-2 border-blue-200 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
                         <Mail className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+                        <h4 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
                           Google Apps Script Email Alerts (script.new)
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
                             100% FREE
                           </span>
-                        </h3>
+                        </h4>
                         <p className="text-[11px] text-slate-600">
                           Dispatch automated Password Reset OTPs and Payment Receipts directly via your personal Gmail (Zero Monthly Fees).
                         </p>
@@ -6330,7 +6648,7 @@ export default function AdminDashboardPage() {
                         href="https://script.new"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-xs transition-all"
                       >
                         <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
                         <span>Open script.new</span>
@@ -6338,7 +6656,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="button"
                         onClick={handleCopyGasScript}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
                       >
                         {copyGasSuccess ? (
                           <>
@@ -6381,7 +6699,7 @@ export default function AdminDashboardPage() {
                         type="button"
                         onClick={handleTestEmail}
                         disabled={testEmailLoading}
-                        className="px-4 py-2.5 bg-slate-900 hover:bg-black disabled:opacity-60 text-white rounded-xl text-xs font-bold shrink-0 flex items-center justify-center gap-2 shadow-sm transition-all"
+                        className="px-4 py-2.5 bg-slate-900 hover:bg-black disabled:opacity-60 text-white rounded-xl text-xs font-bold shrink-0 flex items-center justify-center gap-2 shadow-xs transition-all"
                       >
                         {testEmailLoading ? (
                           <>
@@ -6419,12 +6737,16 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
 
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition-all"
-                >
-                  Save Settings
-                </button>
+                {/* Save Button */}
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm rounded-2xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 flex items-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Save All Settings</span>
+                  </button>
+                </div>
               </form>
             </div>
           )}

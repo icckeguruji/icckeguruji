@@ -95,7 +95,7 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <Link href="/" className="hover:opacity-95 transition-opacity shrink-0">
-              <Logo size="md" />
+              <Logo size="md" logoUrl={config?.logoUrl} />
             </Link>
           </div>
 

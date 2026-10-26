@@ -167,12 +167,21 @@ export interface FaqItem {
 export interface CoachingConfig {
   coachingName: string;
   tagline: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  address?: string;
+  establishedYear?: string;
   upiId: string;
   merchantName: string;
   whatsappNumber: string;
+  alternatePhone?: string;
+  contactEmail: string;
   telegramGroupLink: string;
   telegramBotUsername: string;
-  contactEmail: string;
+  youtubeChannelUrl?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  instituteStampUrl?: string;
   googleAppsScriptEmailUrl?: string;
   heroHeadline?: string;
   heroSubheadline?: string;

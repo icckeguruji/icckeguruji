@@ -67,6 +67,19 @@ export default function HomePage() {
     return () => window.removeEventListener('coaching_storage_updated', handleStorageUpdate);
   }, []);
 
+  useEffect(() => {
+    if (data.config?.faviconUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = data.config.faviconUrl;
+    }
+  }, [data.config?.faviconUrl]);
+
   const toggleRole = () => {
     const nextRole = currentUser.role === 'student' ? 'admin' : 'student';
     const updatedUser = { ...currentUser, role: nextRole as 'student' | 'admin' };
@@ -690,17 +703,31 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             {/* Column 1: Institute Branding & Info */}
             <div className="space-y-4">
-              <Logo size="md" />
+              <Logo size="md" logoUrl={data.config.logoUrl} />
               <p className="text-slate-500 text-xs leading-relaxed">
-                {data.config.tagline || "Live Classes, Smart Notes & 24/7 AI Guruji"}. India's dedicated learning platform for Board exams and competitive exams with 0% gateway commission.
+                {data.config.tagline || "Live Classes, Smart Notes & 24/7 AI Guruji"}. India's dedicated learning platform for Board exams and competitive exams.
               </p>
               <div className="space-y-1.5 text-[11px] text-slate-600">
+                {data.config.address && (
+                  <div className="flex items-start gap-1.5">
+                    <span className="font-bold text-slate-800">Address:</span>
+                    <span className="text-slate-600">{data.config.address}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-800">Helpline:</span>
                   <a href={`tel:${data.config.whatsappNumber}`} className="hover:text-blue-600 font-mono">
                     {data.config.whatsappNumber}
                   </a>
                 </div>
+                {data.config.alternatePhone && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800">Student Helpline:</span>
+                    <a href={`tel:${data.config.alternatePhone}`} className="hover:text-blue-600 font-mono">
+                      {data.config.alternatePhone}
+                    </a>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-800">Official UPI ID:</span>
                   <span className="font-mono bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200 font-bold">
@@ -840,20 +867,33 @@ export default function HomePage() {
           </div>
 
           {/* Bottom Copyright Bar */}
-          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-[11px]">
-            <div>
-              © 2026 {data.config.coachingName}. All Rights Reserved.
+          {/* Bottom Copyright & Developer Info - Prominent & Centered */}
+          <div className="pt-8 border-t border-slate-200 flex flex-col items-center justify-center text-center gap-3">
+            <div className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              © 2026 {data.config.coachingName || 'ICC KE GURUJI'}. All Rights Reserved.
             </div>
-            <div className="flex items-center gap-4 font-semibold text-slate-600">
-              <a href="#faqs" className="hover:text-blue-600">Privacy &amp; Terms</a>
+
+            <div className="text-sm sm:text-base font-medium text-slate-700 flex flex-wrap items-center justify-center gap-2">
+              <span>Developed by <strong className="text-slate-950 font-bold">Muzaffar Iqbal Ishaati</strong></span>
+              <span className="hidden sm:inline text-slate-300">•</span>
+              <a
+                href="tel:9934215013"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold transition-all border border-blue-200 shadow-xs"
+              >
+                <span>📞 +91 9934215013</span>
+              </a>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm font-semibold text-slate-500 pt-1">
+              <a href="#faqs" className="hover:text-blue-600 transition-colors">Privacy &amp; Terms</a>
               <span>•</span>
-              <a href="#courses-section" className="hover:text-blue-600">All Batches</a>
+              <a href="#courses-section" className="hover:text-blue-600 transition-colors">All Batches</a>
               <span>•</span>
               <a
                 href={`https://wa.me/${(data.config.whatsappNumber || '+919876543210').replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noreferrer"
-                className="hover:text-emerald-600"
+                className="hover:text-emerald-600 transition-colors"
               >
                 Help &amp; Support
               </a>
