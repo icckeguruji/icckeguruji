@@ -27,7 +27,7 @@ import {
   TrendingUp,
   Smartphone,
   MessageCircle,
-  ShieldAlert
+  LogIn
 } from 'lucide-react';
 import { Course, User, CoachingConfig, Announcement, Article, Testimonial, FaqItem, TimetableSlot } from '@/types';
 import { getStoredData, saveStoredData } from '@/lib/storage';
@@ -826,13 +826,13 @@ export default function HomePage() {
                 </a>
 
                 <Link
-                  href="/admin"
-                  className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-2.5 transition-colors"
+                  href="/login"
+                  className="p-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-2.5 transition-colors"
                 >
-                  <ShieldAlert className="w-4 h-4 text-purple-600 shrink-0" />
+                  <LogIn className="w-4 h-4 text-blue-600 shrink-0" />
                   <div>
-                    <div className="font-bold text-xs">Guruji Admin Console (CMS)</div>
-                    <div className="text-[10px] text-purple-600">Manage Batches, UPI &amp; Content</div>
+                    <div className="font-bold text-xs">Student &amp; Faculty Portal</div>
+                    <div className="text-[10px] text-blue-600">Sign in with Email or Mobile</div>
                   </div>
                 </Link>
               </div>
@@ -842,17 +842,21 @@ export default function HomePage() {
           {/* Bottom Copyright Bar */}
           <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-[11px]">
             <div>
-              © 2026 {data.config.coachingName}. All Rights Reserved. Free Hosting Architecture (Next.js &amp; Vercel).
+              © 2026 {data.config.coachingName}. All Rights Reserved.
             </div>
             <div className="flex items-center gap-4 font-semibold text-slate-600">
-              <span className="flex items-center gap-1 text-emerald-700">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Zero Commission UPI Active
-              </span>
-              <span>•</span>
               <a href="#faqs" className="hover:text-blue-600">Privacy &amp; Terms</a>
               <span>•</span>
-              <Link href="/admin" className="hover:text-purple-600">Admin Login</Link>
+              <a href="#courses-section" className="hover:text-blue-600">All Batches</a>
+              <span>•</span>
+              <a
+                href={`https://wa.me/${(data.config.whatsappNumber || '+919876543210').replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-emerald-600"
+              >
+                Help &amp; Support
+              </a>
             </div>
           </div>
         </div>

@@ -174,7 +174,7 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
 
             {/* WhatsApp 1-Click Helpline */}
             <a
-              href={`https://wa.me/${(config.whatsappNumber || '+919876543210').replace(/[^0-9]/g, '')}?text=Namaste%20Guruji,%20mujhe%20admission%20ke%20bare%20me%20jankari%20chahiye`}
+              href={`https://wa.me/${(config.whatsappNumber || '+919876543210').replace(/[^0-9]/g, '')}?text=Hello%20Guruji,%20I%20would%20like%20information%20about%20course%20admissions.`}
               target="_blank"
               rel="noreferrer"
               className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold transition-all shadow-xs shrink-0"
