@@ -53,9 +53,9 @@ function CourseClassroomContent() {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
-  // Active Tab: 'lectures' | 'notes' | 'dpp' | 'quizzes' | 'flashcards' | 'forum' | 'certificate' | 'ai' | 'community'
+  // Active Tab: 'lectures' | 'notes' | 'dpp' | 'tests' | 'attendance' | 'fees' | 'ai' | 'quizzes' | 'flashcards' | 'forum' | 'certificate' | 'community'
   const [activeTab, setActiveTab] = useState<
-    'lectures' | 'notes' | 'dpp' | 'quizzes' | 'flashcards' | 'forum' | 'certificate' | 'ai' | 'community'
+    'lectures' | 'notes' | 'dpp' | 'tests' | 'attendance' | 'fees' | 'ai' | 'quizzes' | 'flashcards' | 'forum' | 'certificate' | 'community'
   >('lectures');
 
   // Modals
@@ -106,6 +106,38 @@ function CourseClassroomContent() {
   const pendingPayment = data.payments.find(
     (p: PaymentRequest) => p.courseId === course.id && p.userId === currentUser.id && p.status === 'pending'
   );
+
+  // Student's personal attendance
+  const myAttendance = (data.attendance || []).filter(
+    (a) =>
+      a.studentId === currentUser.id ||
+      a.studentPhone === currentUser.phone ||
+      (a.studentName && currentUser.name && a.studentName.toLowerCase() === currentUser.name.toLowerCase())
+  );
+  const myPresentDays = myAttendance.filter((a) => a.status === 'present').length;
+  const myAttendancePercent = myAttendance.length > 0 ? ((myPresentDays / myAttendance.length) * 100).toFixed(0) : '100';
+
+  // Student's personal fee status & receipts
+  const currentStudentRecord = data.students.find((s) => s.id === currentUser.id || s.phone === currentUser.phone) || currentUser;
+  const myFeeRecords = (data.feeRecords || []).filter(
+    (f) =>
+      f.studentId === currentUser.id ||
+      f.studentPhone === currentUser.phone ||
+      (f.studentName && currentUser.name && f.studentName.toLowerCase() === currentUser.name.toLowerCase())
+  );
+
+  // Student's personal test results
+  const myTestResults = (data.weeklyTests || [])
+    .map((test) => {
+      const result = test.results.find(
+        (r) =>
+          r.studentId === currentUser.id ||
+          r.studentPhone === currentUser.phone ||
+          (r.studentName && currentUser.name && r.studentName.toLowerCase() === currentUser.name.toLowerCase())
+      );
+      return { test, result };
+    })
+    .filter((item): item is { test: typeof item.test; result: NonNullable<typeof item.result> } => item.result !== undefined);
 
   const toggleRole = () => {
     const nextRole = currentUser.role === 'student' ? 'admin' : 'student';
@@ -313,51 +345,39 @@ function CourseClassroomContent() {
               </button>
 
               <button
-                onClick={() => setActiveTab('quizzes')}
+                onClick={() => setActiveTab('tests')}
                 className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                  activeTab === 'quizzes'
+                  activeTab === 'tests'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 <Award className="w-4 h-4 text-amber-500" />
-                Chapter Mock Tests ({quizzes.length})
+                साप्ताहिक टेस्ट रिजल्ट ({myTestResults.length})
               </button>
 
               <button
-                onClick={() => setActiveTab('flashcards')}
+                onClick={() => setActiveTab('attendance')}
                 className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                  activeTab === 'flashcards'
+                  activeTab === 'attendance'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
-                <Zap className="w-4 h-4 text-indigo-500" />
-                Formula Flashcards ({flashcards.length})
+                <Calendar className="w-4 h-4 text-emerald-500" />
+                मेरी हाजिरी ({myAttendancePercent}%)
               </button>
 
               <button
-                onClick={() => setActiveTab('forum')}
+                onClick={() => setActiveTab('fees')}
                 className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                  activeTab === 'forum'
+                  activeTab === 'fees'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
-                <MessageSquare className="w-4 h-4 text-blue-500" />
-                Doubt Forum
-              </button>
-
-              <button
-                onClick={() => setActiveTab('certificate')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                  activeTab === 'certificate'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <GraduationCap className="w-4 h-4 text-emerald-500" />
-                Certificate 🎓
+                <AlertCircle className={`w-4 h-4 ${(currentStudentRecord.feesDue ?? 0) > 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
+                मेरी फीस स्थिति {(currentStudentRecord.feesDue ?? 0) > 0 ? `(₹${currentStudentRecord.feesDue} बाकी)` : '(जमा)'}
               </button>
 
               <button
@@ -369,19 +389,7 @@ function CourseClassroomContent() {
                 }`}
               >
                 <Bot className="w-4 h-4 text-amber-500" />
-                AI Guruji 24/7
-              </button>
-
-              <button
-                onClick={() => setActiveTab('community')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
-                  activeTab === 'community'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Send className="w-4 h-4 text-sky-500" />
-                Telegram &amp; WhatsApp Bot
+                AI गुरुजी 24/7
               </button>
             </div>
 
@@ -495,6 +503,170 @@ function CourseClassroomContent() {
                 currentUser={currentUser}
                 onRefresh={refreshState}
               />
+            )}
+
+            {/* Tab 2.7: Student's Weekly Offline Test Results & Marksheet */}
+            {activeTab === 'tests' && (
+              <div className="space-y-4 max-w-4xl mx-auto">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900 font-medium shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>आपके सभी रविवार ऑफलाइन टेस्ट के प्राप्तांक और रैंक यहाँ प्रदर्शित हैं।</span>
+                  </div>
+                </div>
+
+                {myTestResults.length === 0 ? (
+                  <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 text-xs">
+                    अभी तक आपका कोई टेस्ट परिणाम दर्ज नहीं हुआ है।
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {myTestResults.map(({ test, result }) => {
+                      const percent = ((result.marksObtained / test.totalMarks) * 100).toFixed(1);
+                      return (
+                        <div key={test.id} className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                              {test.subject} • {test.testDate}
+                            </span>
+                            {result.rank && (
+                              <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs">
+                                Rank #{result.rank} 🏆
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 className="font-extrabold text-sm text-slate-900">{test.testTitle}</h4>
+
+                          <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between">
+                            <div>
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">प्राप्तांक (Marks)</div>
+                              <div className="text-xl font-black text-blue-700">
+                                {result.marksObtained} <span className="text-xs text-slate-400 font-normal">/ {test.totalMarks}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-[10px] text-slate-400 font-bold uppercase">प्रतिशत (Score)</div>
+                              <div className="text-lg font-black text-emerald-600">{percent}%</div>
+                            </div>
+                          </div>
+
+                          {result.feedback && (
+                            <div className="text-xs text-slate-600 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
+                              <span className="font-bold text-amber-900">गुरुजी की टिप्पणी: </span>
+                              {result.feedback}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 2.8: Student's Attendance Record */}
+            {activeTab === 'attendance' && (
+              <div className="space-y-4 max-w-4xl mx-auto">
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
+                    <div className="text-2xl font-black text-blue-900">{myAttendance.length}</div>
+                    <div className="text-xs font-bold text-slate-500">कुल कक्षाएं</div>
+                  </div>
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-xs">
+                    <div className="text-2xl font-black text-emerald-800">{myPresentDays}</div>
+                    <div className="text-xs font-bold text-emerald-700">उपस्थित दिन</div>
+                  </div>
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl shadow-xs">
+                    <div className="text-2xl font-black text-blue-700">{myAttendancePercent}%</div>
+                    <div className="text-xs font-bold text-blue-700">हाजिरी प्रतिशत</div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3">
+                  <h4 className="font-black text-sm text-slate-900">दैनिक उपस्थिति इतिहास (Daily Log)</h4>
+                  {myAttendance.length === 0 ? (
+                    <p className="text-xs text-slate-400">अभी तक कोई हाजिरी रिकॉर्ड नहीं है।</p>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {myAttendance.map((att) => (
+                        <div key={att.id} className="py-2.5 flex items-center justify-between text-xs">
+                          <div>
+                            <div className="font-bold text-slate-800">{att.date}</div>
+                            <div className="text-[10px] text-slate-400">{att.courseTitle || 'कक्षा बैच'}</div>
+                          </div>
+                          <div>
+                            {att.status === 'present' ? (
+                              <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                                ✓ उपस्थित (Present)
+                              </span>
+                            ) : att.status === 'absent' ? (
+                              <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[11px]">
+                                ✗ अनुपस्थित (Absent)
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-[11px]">
+                                ◷ छुट्टी (Leave)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2.9: Student's Fee Status */}
+            {activeTab === 'fees' && (
+              <div className="space-y-4 max-w-4xl mx-auto">
+                <div className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-black text-base text-slate-900">मेरी फीस स्थिति (Fee Balance)</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">मासिक फीस और रसीद विवरण</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {(currentStudentRecord.feesDue ?? 0) > 0 ? (
+                      <span className="px-3 py-1.5 rounded-full bg-rose-100 text-rose-800 font-black text-xs">
+                        ₹{currentStudentRecord.feesDue} बकाया (Due)
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
+                        ✓ पूरी फीस जमा है
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs space-y-3">
+                  <h4 className="font-black text-sm text-slate-900">भुगतान की गई फीस रसीदें</h4>
+                  {myFeeRecords.length === 0 ? (
+                    <p className="text-xs text-slate-400">अभी तक कोई फीस रसीद जारी नहीं हुई है।</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {myFeeRecords.map((rec) => (
+                        <div key={rec.id} className="p-3.5 border border-slate-200 rounded-2xl bg-slate-50/70 space-y-1.5 text-xs">
+                          <div className="flex justify-between font-mono text-[10px] text-slate-400">
+                            <span>रसीद: {rec.receiptNo}</span>
+                            <span>{rec.date}</span>
+                          </div>
+                          <div className="font-bold text-slate-900">माह: {rec.month}</div>
+                          <div className="text-emerald-700 font-black text-sm">
+                            ₹{rec.amountPaid.toLocaleString('en-IN')} जमा ({rec.paymentMode})
+                          </div>
+                          {rec.dueRemaining > 0 && (
+                            <div className="text-rose-600 text-[11px] font-bold">
+                              बाकी: ₹{rec.dueRemaining}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
             {/* Tab 3: Interactive Mock Test / Quizzes */}

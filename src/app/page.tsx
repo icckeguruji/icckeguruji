@@ -90,7 +90,7 @@ export default function HomePage() {
     return matchesCategory && matchesSearch;
   });
 
-  const categories = ['All', 'Competitive Exams', 'Board Exams', 'Coding & Tech'];
+  const categories = ['All', 'Board Exams', 'Competitive Exams', 'Special Batches'];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white w-full max-w-full overflow-x-hidden pb-20 md:pb-0">

@@ -11,6 +11,11 @@ export interface User {
   joinedDate?: string;
   avatar?: string;
   streakDays?: number;
+  rollNo?: string;
+  fatherName?: string;
+  address?: string;
+  monthlyFee?: number;
+  feesDue?: number;
 }
 
 export interface Lesson {
@@ -276,5 +281,59 @@ export interface CertificateRecord {
   grade: 'A+' | 'A' | 'B+';
   scorePercent: number;
   instructorName: string;
+}
+
+// =========================================================================
+// SMALL COACHING ESSENTIALS: ATTENDANCE, FEES & WEEKLY TESTS
+// =========================================================================
+
+export interface AttendanceRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  courseId: string;
+  courseTitle?: string;
+  studentId: string;
+  studentName: string;
+  studentPhone: string;
+  rollNo?: string;
+  status: 'present' | 'absent' | 'leave';
+  markedAt?: string;
+}
+
+export interface FeeRecord {
+  id: string;
+  receiptNo: string;
+  studentId: string;
+  studentName: string;
+  studentPhone: string;
+  fatherName?: string;
+  courseTitle: string;
+  month: string; // e.g. "October 2026"
+  amountPaid: number;
+  dueRemaining: number;
+  paymentMode: 'Cash' | 'PhonePe / GPay' | 'Paytm' | 'Bank Transfer';
+  date: string;
+  remarks?: string;
+}
+
+export interface WeeklyTestStudentResult {
+  studentId: string;
+  studentName: string;
+  studentPhone: string;
+  rollNo?: string;
+  marksObtained: number;
+  rank?: number;
+  feedback?: string;
+}
+
+export interface WeeklyTest {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  testTitle: string; // e.g. "Sunday Offline Test - Physics Ch 1"
+  subject: string;
+  totalMarks: number;
+  testDate: string;
+  results: WeeklyTestStudentResult[];
 }
 

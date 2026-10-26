@@ -68,6 +68,9 @@ import Logo from '@/components/Logo';
 import WhatsAppBotHub from '@/components/WhatsAppBotHub';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { GOOGLE_APPS_SCRIPT_CODE } from '@/lib/gasScript';
+import AttendanceManager from '@/components/AttendanceManager';
+import FeeRegisterManager from '@/components/FeeRegisterManager';
+import WeeklyTestManager from '@/components/WeeklyTestManager';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState(getStoredData());
@@ -75,7 +78,25 @@ export default function AdminDashboardPage() {
   
   // Left Sidebar active tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'payments' | 'courses' | 'lectures' | 'notes' | 'dpp' | 'pyq' | 'forum' | 'whatsapp' | 'students' | 'quizzes' | 'timetable' | 'cms' | 'broadcast' | 'settings'
+    | 'overview'
+    | 'attendance'
+    | 'fees'
+    | 'weekly_tests'
+    | 'students'
+    | 'courses'
+    | 'lectures'
+    | 'notes'
+    | 'dpp'
+    | 'pyq'
+    | 'timetable'
+    | 'notices'
+    | 'settings'
+    | 'payments'
+    | 'cms'
+    | 'forum'
+    | 'quizzes'
+    | 'whatsapp'
+    | 'broadcast'
   >('overview');
 
   // CMS Sub-tabs: 'hero' | 'daily_quiz' | 'announcements' | 'articles' | 'testimonials' | 'faqs'
@@ -288,8 +309,11 @@ export default function AdminDashboardPage() {
     setConfigForm(fresh.config);
   };
 
+  const [todayStr, setTodayStr] = useState('2026-10-26');
+
   useEffect(() => {
     refreshState();
+    setTodayStr(new Date().toISOString().split('T')[0]);
     const handleStorageUpdate = () => refreshState();
     window.addEventListener('coaching_storage_updated', handleStorageUpdate);
     return () => window.removeEventListener('coaching_storage_updated', handleStorageUpdate);
@@ -1361,48 +1385,60 @@ export default function AdminDashboardPage() {
     highlight?: boolean;
   }
 
+  const todayRecords = (data.attendance || []).filter((a) => a.date === todayStr);
+  const todayPresent = todayRecords.filter((a) => a.status === 'present').length;
+  const totalDueAmount = (data.students || []).reduce((acc, s) => acc + (s.feesDue ?? 0), 0);
+  const totalDueStudents = (data.students || []).filter((s) => (s.feesDue ?? 0) > 0).length;
+
   const navSections: Array<{ title: string; items: NavItem[] }> = [
     {
-      title: 'Academics & Batches',
+      title: 'दैनिक कोचिंग कार्य (Daily Operations)',
       items: [
-        { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
-        { id: 'courses', label: 'Courses & Batches', icon: BookOpen, count: data.courses.length },
-        { id: 'lectures', label: 'Live & YouTube', icon: Radio, count: data.lessons.length },
-        { id: 'notes', label: 'PDF Study Notes', icon: FileText, count: data.notes.length },
+        { id: 'overview', label: 'डैशबोर्ड (Overview)', icon: LayoutDashboard },
         {
-          id: 'dpp',
-          label: 'DPP & Homework',
-          icon: CheckCircle2,
-          badge: pendingDpps.length > 0 ? pendingDpps.length : null,
-          badgeColor: 'bg-emerald-500 text-white font-black',
-          count: (data.dpps || []).length
+          id: 'attendance',
+          label: 'दैनिक हाजिरी (Attendance)',
+          icon: Calendar,
+          badge: `${todayPresent}/${data.students.length}`,
+          badgeColor: 'bg-emerald-500 text-white font-black'
         },
-        { id: 'pyq', label: 'PYQ Papers', icon: Download, count: (data.pyqPapers || []).length },
-        { id: 'quizzes', label: 'Quizzes & Mock Tests', icon: Award, count: data.quizzes.length },
-        { id: 'timetable', label: 'Weekly Timetable', icon: Calendar, count: data.timetable.length },
-      ]
-    },
-    {
-      title: 'Students & Finance',
-      items: [
         {
-          id: 'payments',
-          label: 'UPI Approvals',
+          id: 'fees',
+          label: 'फीस व बाकी हिसाब (Fees & Dues)',
           icon: CreditCard,
-          badge: pendingPayments.length > 0 ? pendingPayments.length : null,
-          badgeColor: 'bg-amber-500 text-slate-950 font-black'
+          badge: totalDueStudents > 0 ? `₹${totalDueAmount}` : null,
+          badgeColor: 'bg-rose-500 text-white font-black'
         },
-        { id: 'students', label: 'Student Directory', icon: Users, count: data.students.length },
-        { id: 'forum', label: 'Doubt Forum', icon: MessageSquare, count: (data.communityPosts || []).length },
+        {
+          id: 'weekly_tests',
+          label: 'साप्ताहिक टेस्ट रिजल्ट (Tests)',
+          icon: Award,
+          count: (data.weeklyTests || []).length
+        },
+        {
+          id: 'students',
+          label: 'छात्र सूची व दाखिला (Students)',
+          icon: Users,
+          count: data.students.length
+        },
       ]
     },
     {
-      title: 'Tools & Settings',
+      title: 'अध्ययन व कक्षाएं (Classes & Study Material)',
       items: [
-        { id: 'whatsapp', label: 'WhatsApp AI Bot (QR)', icon: MessageSquare, highlight: true },
-        { id: 'broadcast', label: 'Telegram Guruji Bot', icon: Send, highlight: true },
-        { id: 'cms', label: 'CMS (Content Manager)', icon: PenTool },
-        { id: 'settings', label: 'Institute Settings', icon: Settings },
+        { id: 'courses', label: 'बैच व कक्षाएं (Batches)', icon: BookOpen, count: data.courses.length },
+        { id: 'lectures', label: 'वीडियो क्लास (YouTube & Live)', icon: Radio, count: data.lessons.length },
+        { id: 'notes', label: 'PDF स्टडी नोट्स (Notes)', icon: FileText, count: data.notes.length },
+        { id: 'dpp', label: 'गृहकार्य (DPP & Homework)', icon: CheckCircle2, count: (data.dpps || []).length },
+        { id: 'pyq', label: 'PYQ पुराने प्रश्न पत्र (PYQs)', icon: Download, count: (data.pyqPapers || []).length },
+        { id: 'timetable', label: 'साप्ताहिक टाइमटेबल (Routine)', icon: Clock, count: data.timetable.length },
+      ]
+    },
+    {
+      title: 'सूचना व सेटिंग्स (Notices & Settings)',
+      items: [
+        { id: 'notices', label: 'सूचना पट्ट (Notice Board)', icon: Bell, count: data.announcements.length },
+        { id: 'settings', label: 'कोचिंग सेटिंग्स (Settings)', icon: Settings },
       ]
     }
   ];
@@ -1540,21 +1576,20 @@ export default function AdminDashboardPage() {
             </button>
             <div>
               <h2 className="font-black text-slate-900 text-base sm:text-lg capitalize flex items-center gap-2">
-                {activeTab === 'overview' && 'Overview Analytics'}
-                {activeTab === 'payments' && 'Direct UPI Payment Approvals'}
-                {activeTab === 'courses' && 'Courses & Batches Management'}
-                {activeTab === 'lectures' && 'Live YouTube Classes Schedule'}
-                {activeTab === 'notes' && 'PDF Golden Notes Manager'}
-                {activeTab === 'dpp' && 'Daily Practice Problems (DPP) & Homework Review'}
-                {activeTab === 'pyq' && 'Previous Years Question Papers (PYQ) Hub'}
-                {activeTab === 'forum' && 'Student Doubt Discussion Forum Moderator'}
-                {activeTab === 'whatsapp' && 'WhatsApp 24/7 AI Counselor & QR Connect'}
-                {activeTab === 'broadcast' && 'Telegram Guruji Bot (Command Center & Dashboard Control)'}
-                {activeTab === 'quizzes' && 'Chapter Quizzes & Mock Test Engine'}
-                {activeTab === 'timetable' && 'Weekly Live Timetable & Routine'}
-                {activeTab === 'students' && 'Enrolled Students Directory'}
-                {activeTab === 'cms' && 'CMS (Content Management System)'}
-                {activeTab === 'settings' && 'Institute Configuration'}
+                {activeTab === 'overview' && 'डैशबोर्ड व कोचिंग समरी (Dashboard)'}
+                {activeTab === 'attendance' && 'दैनिक हाजिरी रजिस्टर (Daily Attendance)'}
+                {activeTab === 'fees' && 'फीस व बाकी हिसाब (Fees & Dues Register)'}
+                {activeTab === 'weekly_tests' && 'साप्ताहिक टेस्ट रिजल्ट व रैंक (Weekly Tests & Marksheet)'}
+                {activeTab === 'students' && 'छात्र सूची व नया दाखिला (Student Directory)'}
+                {activeTab === 'courses' && 'बैच व कक्षाएं (Batches & Courses)'}
+                {activeTab === 'lectures' && 'यूट्यूब वीडियो क्लास (YouTube & Live Classes)'}
+                {activeTab === 'notes' && 'PDF स्टडी नोट्स (Golden Study Notes)'}
+                {activeTab === 'dpp' && 'दैनिक गृहकार्य (DPP & Homework Assignments)'}
+                {activeTab === 'pyq' && 'PYQ पुराने प्रश्न पत्र (Previous Years Questions)'}
+                {activeTab === 'timetable' && 'साप्ताहिक टाइमटेबल व रूटीन (Weekly Timetable)'}
+                {activeTab === 'notices' && 'सूचना पट्ट (Notice Board & Announcements)'}
+                {activeTab === 'settings' && 'कोचिंग सेटिंग्स व संपर्क (Coaching Settings)'}
+                {activeTab === 'payments' && 'ऑनलाइन UPI पेमेंट्स (Online UPI Requests)'}
               </h2>
               <p className="text-[11px] text-slate-400 hidden sm:block">
                 ICC KE GURUJI Coaching Management System • Free Server Architecture
@@ -1586,101 +1621,103 @@ export default function AdminDashboardPage() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between text-emerald-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Total Revenue</span>
-                    <DollarSign className="w-5 h-5" />
-                  </div>
-                  <div className="text-3xl font-black text-slate-900">₹{totalRevenue.toLocaleString('en-IN')}</div>
-                  <div className="text-[11px] text-emerald-700 mt-1 font-semibold flex items-center gap-1">
-                    <TrendingUp className="w-3.5 h-3.5" /> 0% Commission • 100% Direct Bank
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between text-amber-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Pending Approvals</span>
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div className="text-3xl font-black text-slate-900">{pendingPayments.length}</div>
-                  <div className="text-[11px] text-amber-700 mt-1 font-semibold">
-                    Action required in UPI tab
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
                   <div className="flex items-center justify-between text-blue-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Total Students</span>
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">कुल नामांकित छात्र</span>
                     <Users className="w-5 h-5" />
                   </div>
                   <div className="text-3xl font-black text-slate-900">{data.students.length}</div>
-                  <div className="text-[11px] text-blue-700 mt-1 font-semibold">
-                    Registered &amp; Enrolled
+                  <div className="text-[11px] text-blue-700 mt-1 font-semibold flex items-center gap-1">
+                    सक्रिय विद्यार्थी नामांकित
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
+                  <div className="flex items-center justify-between text-emerald-600 mb-2">
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">आज की हाजिरी</span>
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-black text-slate-900">
+                    {todayPresent} / {data.students.length}
+                  </div>
+                  <div className="text-[11px] text-emerald-700 mt-1 font-semibold">
+                    {data.students.length - todayPresent} छात्र आज अनुपस्थित हैं
                   </div>
                 </div>
 
                 <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
                   <div className="flex items-center justify-between text-rose-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Live Lectures</span>
-                    <Radio className="w-5 h-5" />
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">कुल बकाया फीस</span>
+                    <AlertCircle className="w-5 h-5" />
                   </div>
-                  <div className="text-3xl font-black text-slate-900">{data.lessons.length}</div>
-                  <div className="text-[11px] text-rose-700 mt-1 font-semibold">
-                    YouTube Stream Sessions
+                  <div className="text-3xl font-black text-rose-700">₹{totalDueAmount.toLocaleString('en-IN')}</div>
+                  <div className="text-[11px] text-rose-600 mt-1 font-semibold">
+                    {totalDueStudents} छात्रों की फीस बाकी है
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
+                  <div className="flex items-center justify-between text-amber-600 mb-2">
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">साप्ताहिक टेस्ट</span>
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-black text-slate-900">{(data.weeklyTests || []).length}</div>
+                  <div className="text-[11px] text-amber-700 mt-1 font-semibold">
+                    रविवार ऑफलाइन टेस्ट आयोजित
                   </div>
                 </div>
               </div>
 
-              {/* Quick Actions Shortcuts ("seplify karo") */}
+              {/* Quick Actions Shortcuts */}
               <div className="p-4 bg-white border border-slate-200 rounded-3xl shadow-xs">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    Quick Actions &amp; New Entries
+                    त्वरित कार्य (Quick Actions)
                   </span>
                   <span className="text-[11px] text-slate-400 font-semibold">1-Click Fast Access</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                   <button
-                    onClick={() => setActiveTab('courses')}
-                    className="p-2.5 rounded-2xl bg-blue-50/70 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    onClick={() => setActiveTab('attendance')}
+                    className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ Course</span>
+                    <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>+ दैनिक हाजिरी</span>
                   </button>
                   <button
-                    onClick={() => setActiveTab('lectures')}
-                    className="p-2.5 rounded-2xl bg-rose-50/70 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    onClick={() => setActiveTab('fees')}
+                    className="p-2.5 rounded-2xl bg-blue-50/70 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <Radio className="w-3.5 h-3.5" />
-                    <span>+ Live Stream</span>
+                    <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                    <span>+ फीस जमा करें</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('weekly_tests')}
+                    className="p-2.5 rounded-2xl bg-amber-50/70 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Award className="w-3.5 h-3.5 text-amber-600" />
+                    <span>+ साप्ताहिक टेस्ट</span>
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab('students'); setIsAddingStudent(true); }}
+                    className="p-2.5 rounded-2xl bg-purple-50/70 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Users className="w-3.5 h-3.5 text-purple-600" />
+                    <span>+ नया छात्र</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('courses')}
+                    className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-slate-600" />
+                    <span>+ नया बैच</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('notes')}
                     className="p-2.5 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>+ PDF Notes</span>
-                  </button>
-                  <button
-                    onClick={() => { setActiveTab('students'); setIsAddingStudent(true); }}
-                    className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>+ Add Student</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('dpp')}
-                    className="p-2.5 rounded-2xl bg-amber-50/70 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>+ DPP Task</span>
-                  </button>
-                  <button
-                    onClick={() => { setActiveTab('quizzes'); setIsAddingQuiz(true); }}
-                    className="p-2.5 rounded-2xl bg-purple-50/70 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
-                  >
-                    <Award className="w-3.5 h-3.5" />
-                    <span>+ Mock Test</span>
+                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>+ PDF नोट्स</span>
                   </button>
                 </div>
               </div>
@@ -1807,6 +1844,171 @@ export default function AdminDashboardPage() {
                       ))}
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =====================================================================
+              1.1. DAILY ATTENDANCE TAB
+          ===================================================================== */}
+          {activeTab === 'attendance' && (
+            <AttendanceManager
+              students={data.students}
+              courses={data.courses}
+              initialAttendance={data.attendance || []}
+              onUpdate={refreshState}
+            />
+          )}
+
+          {/* =====================================================================
+              1.2. FEES & DUES REGISTER TAB
+          ===================================================================== */}
+          {activeTab === 'fees' && (
+            <FeeRegisterManager
+              students={data.students}
+              courses={data.courses}
+              feeRecords={data.feeRecords || []}
+              onUpdate={refreshState}
+            />
+          )}
+
+          {/* =====================================================================
+              1.3. WEEKLY OFFLINE TESTS & RESULTS TAB
+          ===================================================================== */}
+          {activeTab === 'weekly_tests' && (
+            <WeeklyTestManager
+              students={data.students}
+              courses={data.courses}
+              weeklyTests={data.weeklyTests || []}
+              onUpdate={refreshState}
+            />
+          )}
+
+          {/* =====================================================================
+              1.4. NOTICE BOARD & ANNOUNCEMENTS TAB
+          ===================================================================== */}
+          {activeTab === 'notices' && (
+            <div className="space-y-6">
+              <div className="p-5 bg-white border border-slate-200 rounded-3xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-blue-600" />
+                    सूचना पट्ट (Notice Board & Announcements)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    छुट्टी, टेस्ट, नए बैच या कोई भी आवश्यक सूचना यहाँ से प्रकाशित करें। यह वेबसाइट के टॉप पर और छात्र डैशबोर्ड पर दिखाई देगी।
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left: Add Notice Form */}
+                <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
+                  <h4 className="font-black text-slate-900 text-sm mb-3 flex items-center gap-2">
+                    <Plus className="w-4 h-4 text-blue-600" />
+                    नया नोटिस प्रकाशित करें
+                  </h4>
+                  <form onSubmit={handleCreateAnnouncement} className="space-y-3 text-xs">
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">शीर्षक (Headline) *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newAnnouncement.title}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                        placeholder="उदा. 🔴 कल रविवार को कोचिंग बंद रहेगी"
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">विवरण संदेश (Details Message)</label>
+                      <textarea
+                        rows={3}
+                        value={newAnnouncement.message}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
+                        placeholder="पूरा विवरण यहाँ लिखें..."
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">श्रेणी (Category)</label>
+                      <select
+                        value={newAnnouncement.category}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, category: e.target.value as Announcement['category'] })}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                      >
+                        <option value="general">📢 सामान्य सूचना (General Notice)</option>
+                        <option value="exam_alert">⚡ टेस्ट / परीक्षा सूचना (Test Alert)</option>
+                        <option value="live_class">🔴 लाइव क्लास सूचना (Class Alert)</option>
+                        <option value="notes_alert">📚 नोट्स सूचना (Notes Alert)</option>
+                      </select>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>नोटिस जारी करें</span>
+                    </button>
+                  </form>
+                </div>
+
+                {/* Right: Published Notices List */}
+                <div className="lg:col-span-2 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-500 px-1">
+                    <span>कुल जारी नोटिस: {data.announcements.length}</span>
+                  </div>
+
+                  {data.announcements.map((ann) => (
+                    <div
+                      key={ann.id}
+                      className="p-4 bg-white border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs hover:border-blue-200 transition-colors"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                            {ann.category} • {ann.date}
+                          </span>
+                          {ann.isPinned && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                              📌 Pinned
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-extrabold text-sm text-slate-900">{ann.title}</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed">{ann.message}</p>
+                      </div>
+
+                      <div className="flex items-center gap-1 self-end sm:self-auto shrink-0">
+                        <button
+                          onClick={() => handleTogglePinAnnouncement(ann.id)}
+                          title={ann.isPinned ? "Unpin" : "Pin on top"}
+                          className={`p-1.5 rounded-lg border text-xs font-bold ${
+                            ann.isPinned
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-600'
+                          }`}
+                        >
+                          📌
+                        </button>
+                        <button
+                          onClick={() => setEditingAnnouncement(ann)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                          title="Edit Notice"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAnnouncement(ann.id)}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200"
+                          title="Delete Notice"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

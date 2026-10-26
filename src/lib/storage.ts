@@ -17,11 +17,14 @@ import {
   PyqPaper,
   CommunityPost,
   CertificateRecord,
+  AttendanceRecord,
+  FeeRecord,
+  WeeklyTest,
 } from '@/types';
 
 export const DEFAULT_CONFIG: CoachingConfig = {
   coachingName: "ICC KE GURUJI",
-  tagline: "Live Classes, Smart Notes & 24/7 AI Guruji",
+  tagline: "क्लास 9th से 12th एवं बोर्ड परीक्षा स्पेशल कोचिंग",
   upiId: "icckeguruji@okaxis",
   merchantName: "ICC KE GURUJI",
   whatsappNumber: "+919876543210",
@@ -29,22 +32,22 @@ export const DEFAULT_CONFIG: CoachingConfig = {
   telegramBotUsername: "IccKeGurujiBot",
   contactEmail: "contact@icckeguruji.com",
   googleAppsScriptEmailUrl: "https://script.google.com/macros/s/AKfycbzGhBvMJerQBuiuyibRoQh4RRQXZhxuyIryMWLC4vjnb43loVXvhJXxb1pKEYzHwSrA/exec",
-  heroHeadline: "Apne Career Ka Lakshya Haasil Karein with ICC KE GURUJI",
-  heroSubheadline: "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji aur paid Telegram group alerts.",
-  admissionBadgeText: "New Academic Session 2026 Admissions Open • Direct UPI Zero Commission",
-  marqueeNotice: "🔴 Aaj Shaam 7:00 PM Live Numerical Class & Formula Revision! Sabhi students time par join karein.",
-  stat1Value: "10,000+",
-  stat1Label: "Enrolled Students",
+  heroHeadline: "ICC KE GURUJI कोचिंग संस्थान में आपका स्वागत है",
+  heroSubheadline: "कक्षा 9वीं, 10वीं, 11वीं और 12वीं बोर्ड परीक्षा की पक्की तैयारी। दैनिक क्लास, हस्तलिखित नोट्स, दैनिक हाजिरी और हर रविवार टेस्ट।",
+  admissionBadgeText: "नया शैक्षणिक सत्र 2026 में दाखिला प्रारंभ • सीमित सीटें उपलब्ध",
+  marqueeNotice: "🔴 सूचना: आगामी रविवार का साप्ताहिक टेस्ट सुबह 8:00 AM से होगा। सभी छात्र समय पर उपस्थित रहें।",
+  stat1Value: "250+",
+  stat1Label: "सक्रिय छात्र",
   stat2Value: "98.4%",
-  stat2Label: "Highest Board Score",
-  stat3Value: "24/7",
-  stat3Label: "AI Guruji Doubt Tutor",
-  stat4Value: "0% Fee",
-  stat4Label: "Direct UPI Transfer",
-  homeQuizQuestion: "Agar do static charges ke beech ki distance ko half (r/2) kar diya jaye, toh unke beech lagne wala electrostatic force kitna ho jayega?",
-  homeQuizOptions: ["2 Guna (Double)", "4 Guna (4 Times)", "Aadha (Half)", "1/4th (One-Fourth)"],
+  stat2Label: "सर्वोच्च बोर्ड अंक",
+  stat3Value: "हर रविवार",
+  stat3Label: "साप्ताहिक टेस्ट",
+  stat4Value: "नकद / UPI",
+  stat4Label: "आसान फीस व्यवस्था",
+  homeQuizQuestion: "अगर दो static charges के बीच की दूरी को आधी (r/2) कर दिया जाए, तो उनके बीच लगने वाला बल (Force) कितना हो जाएगा?",
+  homeQuizOptions: ["2 गुना (Double)", "4 गुना (4 Times)", "आधा (Half)", "1/4th (One-Fourth)"],
   homeQuizCorrectIndex: 1,
-  homeQuizExplanation: "Correct Answer: B (4 Guna)! Coulomb's law ke mutabiq F ∝ 1/r². Jab distance aadhi (r/2) hogi, toh force 4 guna badh jayega. Sabhi batches mein aise chapter-wise mock tests available hain!",
+  homeQuizExplanation: "सही उत्तर: B (4 गुना)! Coulomb's law के अनुसार F ∝ 1/r²। जब दूरी आधी होगी, तो बल 4 गुना बढ़ जाएगा।",
 };
 
 export const INITIAL_COURSES: Course[] = [
@@ -98,26 +101,26 @@ export const INITIAL_COURSES: Course[] = [
   },
   {
     id: "course-3",
-    title: "Full-Stack Web Development: Zero to Hero (Placement Batch)",
-    subtitle: "Master React, Next.js, Node.js, Databases & AI App Building",
-    description: "Practical project-based software engineering course jisme aap 5 real-world live projects banayenge aur internship/job preparation karenge.",
-    category: "Coding & Tech",
-    price: 1499,
-    originalPrice: 5999,
-    thumbnail: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80",
-    instructorName: "Rohan Singhania",
-    instructorRole: "Ex-Google Software Engineer",
-    language: "Hinglish",
-    duration: "4 Months • 90+ Hours",
+    title: "Class 11 & 12: Chemistry & Science Foundation 2026",
+    subtitle: "Organic, Inorganic & Physical Chemistry Complete NCERT + Board PYQ",
+    description: "Chemistry mein high score karne ke liye chemical reactions, periodic table aur formulas ke special handwritten notes aur live numerical solution.",
+    category: "Board Exams",
+    price: 799,
+    originalPrice: 2499,
+    thumbnail: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80",
+    instructorName: "Alok Sharma (Guruji)",
+    instructorRole: "Senior Science Faculty",
+    language: "Hindi",
+    duration: "6 Months • 100+ Hours",
     features: [
-      "Live Coding & Screen Share Classes",
-      "All Source Code & Lecture Notes Included",
-      "Portfolio & Resume Review",
-      "AI Tools & Chatbot Development Integration",
-      "Certificate of Completion"
+      "Daily Live & YouTube Classroom Sessions",
+      "Chapter-wise Handwritten PDF Notes",
+      "Chemical Reaction Shortcut Charts",
+      "Weekly Sunday Test & Marksheet",
+      "WhatsApp Instant Doubt Support"
     ],
-    lessonsCount: 50,
-    notesCount: 35,
+    lessonsCount: 36,
+    notesCount: 25,
     isPopular: true
   }
 ];
@@ -247,47 +250,67 @@ export const ADMIN_USER: User = {
 export const INITIAL_STUDENTS: User[] = [
   {
     id: "student-101",
+    rollNo: "ICC-101",
     name: "Rahul Kumar",
+    fatherName: "Shri Ramesh Kumar",
     phone: "+91 98765 43210",
     email: "rahul.student@gmail.com",
     password: "student123",
     role: "student",
     enrolledCourseIds: ["course-1"],
     joinedDate: "15 Oct 2026",
-    streakDays: 7
+    streakDays: 7,
+    address: "Station Road, Ward No. 4",
+    monthlyFee: 1000,
+    feesDue: 0
   },
   {
     id: "student-102",
+    rollNo: "ICC-102",
     name: "Priya Sharma",
+    fatherName: "Shri Rajesh Sharma",
     phone: "+91 98111 22334",
     email: "priya.sharma99@gmail.com",
     password: "student123",
     role: "student",
     enrolledCourseIds: ["course-2"],
     joinedDate: "18 Oct 2026",
-    streakDays: 4
+    streakDays: 4,
+    address: "Gandhi Chowk, Near Post Office",
+    monthlyFee: 800,
+    feesDue: 800
   },
   {
     id: "student-103",
+    rollNo: "ICC-103",
     name: "Aman Gupta",
+    fatherName: "Shri Suresh Gupta",
     phone: "+91 99222 33445",
     email: "amangupta.dev@gmail.com",
     password: "student123",
     role: "student",
     enrolledCourseIds: ["course-3"],
     joinedDate: "20 Oct 2026",
-    streakDays: 9
+    streakDays: 9,
+    address: "Main Bazar",
+    monthlyFee: 1200,
+    feesDue: 600
   },
   {
     id: "student-104",
+    rollNo: "ICC-104",
     name: "Vikas Yadav",
+    fatherName: "Shri Ramakant Yadav",
     phone: "+91 98333 44556",
     email: "vikas.yadav@gmail.com",
     password: "student123",
     role: "student",
     enrolledCourseIds: ["course-1", "course-2"],
     joinedDate: "22 Oct 2026",
-    streakDays: 3
+    streakDays: 3,
+    address: "Shivaji Nagar",
+    monthlyFee: 1000,
+    feesDue: 500
   }
 ];
 
@@ -812,7 +835,103 @@ export const INITIAL_CERTIFICATES: CertificateRecord[] = [
     issueDate: "24 October 2026",
     grade: "A+",
     scorePercent: 94.5,
-    instructorName: "Er. Alok Sharma (IIT Kanpur) • ICC KE GURUJI"
+    instructorName: "Er. Alok Sharma • ICC KE GURUJI"
+  }
+];
+
+// =========================================================================
+// LOCAL COACHING INITIAL DATA: ATTENDANCE, FEES & WEEKLY TESTS
+// =========================================================================
+
+export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
+  {
+    id: "att-1",
+    date: new Date().toISOString().split('T')[0],
+    courseId: "course-1",
+    courseTitle: "Class 12 Physics Mastery 2026",
+    studentId: "student-101",
+    studentName: "Rahul Kumar",
+    studentPhone: "+91 98765 43210",
+    rollNo: "ICC-101",
+    status: "present",
+    markedAt: "07:05 AM"
+  },
+  {
+    id: "att-2",
+    date: new Date().toISOString().split('T')[0],
+    courseId: "course-1",
+    courseTitle: "Class 12 Physics Mastery 2026",
+    studentId: "student-104",
+    studentName: "Vikas Yadav",
+    studentPhone: "+91 98333 44556",
+    rollNo: "ICC-104",
+    status: "absent",
+    markedAt: "07:10 AM"
+  }
+];
+
+export const INITIAL_FEE_RECORDS: FeeRecord[] = [
+  {
+    id: "fee-1",
+    receiptNo: "REC-2026-001",
+    studentId: "student-101",
+    studentName: "Rahul Kumar",
+    studentPhone: "+91 98765 43210",
+    fatherName: "Shri Ramesh Kumar",
+    courseTitle: "Class 12 Physics Mastery 2026",
+    month: "October 2026",
+    amountPaid: 1000,
+    dueRemaining: 0,
+    paymentMode: "Cash",
+    date: "2026-10-24",
+    remarks: "Full October Fee Paid (Cash)"
+  },
+  {
+    id: "fee-2",
+    receiptNo: "REC-2026-002",
+    studentId: "student-103",
+    studentName: "Aman Gupta",
+    studentPhone: "+91 99222 33445",
+    fatherName: "Shri Suresh Gupta",
+    courseTitle: "Full-Stack Web Development",
+    month: "October 2026",
+    amountPaid: 600,
+    dueRemaining: 600,
+    paymentMode: "PhonePe / GPay",
+    date: "2026-10-25",
+    remarks: "Part payment via PhonePe. Remaining due: Rs 600"
+  }
+];
+
+export const INITIAL_WEEKLY_TESTS: WeeklyTest[] = [
+  {
+    id: "wtest-1",
+    courseId: "course-1",
+    courseTitle: "Class 12 Physics",
+    testTitle: "Sunday Offline Test 01: Electrostatics & Numerical Mastery",
+    subject: "Physics",
+    totalMarks: 50,
+    testDate: "2026-10-19",
+    results: [
+      {
+        studentId: "student-101",
+        studentName: "Rahul Kumar",
+        studentPhone: "+91 98765 43210",
+        rollNo: "ICC-101",
+        marksObtained: 48,
+        rank: 1,
+        feedback: "Shandar pradarshan! Numericals me pure number mile."
+      },
+      {
+        studentId: "student-104",
+        studentName: "Vikas Yadav",
+        studentPhone: "+91 98333 44556",
+        rollNo: "ICC-104",
+        marksObtained: 38,
+        rank: 2,
+        feedback: "Derivations par thoda aur dhyan dein."
+      }
+    ]
   }
 ];
 
@@ -837,6 +956,9 @@ const STORAGE_KEYS = {
   PYQS: 'coaching_pyqs_v5',
   COMMUNITY_POSTS: 'coaching_community_v5',
   CERTIFICATES: 'coaching_certificates_v5',
+  ATTENDANCE: 'coaching_attendance_v6',
+  FEE_RECORDS: 'coaching_fee_records_v6',
+  WEEKLY_TESTS: 'coaching_weekly_tests_v6',
 };
 
 export interface StoredData {
@@ -859,6 +981,9 @@ export interface StoredData {
   pyqPapers: PyqPaper[];
   communityPosts: CommunityPost[];
   certificates: CertificateRecord[];
+  attendance: AttendanceRecord[];
+  feeRecords: FeeRecord[];
+  weeklyTests: WeeklyTest[];
 }
 
 export const getStoredData = (): StoredData => {
@@ -883,6 +1008,9 @@ export const getStoredData = (): StoredData => {
       pyqPapers: INITIAL_PYQS,
       communityPosts: INITIAL_COMMUNITY_POSTS,
       certificates: INITIAL_CERTIFICATES,
+      attendance: INITIAL_ATTENDANCE,
+      feeRecords: INITIAL_FEE_RECORDS,
+      weeklyTests: INITIAL_WEEKLY_TESTS,
     };
   }
 
@@ -907,6 +1035,9 @@ export const getStoredData = (): StoredData => {
     const pyqPapers: PyqPaper[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.PYQS) || 'null') || INITIAL_PYQS;
     const communityPosts: CommunityPost[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS) || 'null') || INITIAL_COMMUNITY_POSTS;
     const certificates: CertificateRecord[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.CERTIFICATES) || 'null') || INITIAL_CERTIFICATES;
+    const attendance: AttendanceRecord[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ATTENDANCE) || 'null') || INITIAL_ATTENDANCE;
+    const feeRecords: FeeRecord[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.FEE_RECORDS) || 'null') || INITIAL_FEE_RECORDS;
+    const weeklyTests: WeeklyTest[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WEEKLY_TESTS) || 'null') || INITIAL_WEEKLY_TESTS;
 
     return {
       courses,
@@ -928,6 +1059,9 @@ export const getStoredData = (): StoredData => {
       pyqPapers,
       communityPosts,
       certificates,
+      attendance,
+      feeRecords,
+      weeklyTests,
     };
   } catch (err) {
     console.error("Storage error:", err);
@@ -951,6 +1085,9 @@ export const getStoredData = (): StoredData => {
       pyqPapers: INITIAL_PYQS,
       communityPosts: INITIAL_COMMUNITY_POSTS,
       certificates: INITIAL_CERTIFICATES,
+      attendance: INITIAL_ATTENDANCE,
+      feeRecords: INITIAL_FEE_RECORDS,
+      weeklyTests: INITIAL_WEEKLY_TESTS,
     };
   }
 };
