@@ -140,7 +140,7 @@ export default function HomePage() {
           {/* Admission / Promo Badge from CMS */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-xs">
             <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-            <span>{data.config.admissionBadgeText || "New Academic Session 2026 Admissions Open • Direct UPI Zero Commission"}</span>
+            <span>{data.config.admissionBadgeText || "Admissions Open for Academic Session 2026"}</span>
           </div>
 
           {/* Hero Headline from CMS */}
@@ -252,15 +252,15 @@ export default function HomePage() {
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">{data.config.stat3Value || "24/7"}</div>
-              <div className="text-xs font-bold text-amber-600">{data.config.stat3Label || "AI Guruji Doubt Tutor"}</div>
-              <div className="text-[11px] text-slate-400">Step-by-step solutions</div>
+              <div className="text-2xl font-black text-slate-900">{data.config.stat3Value || "Every Sunday"}</div>
+              <div className="text-xs font-bold text-amber-600">{data.config.stat3Label || "Weekly Tests"}</div>
+              <div className="text-[11px] text-slate-400">Offline &amp; Results</div>
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">{data.config.stat4Value || "0% Fee"}</div>
-              <div className="text-xs font-bold text-purple-600">{data.config.stat4Label || "Direct UPI Transfer"}</div>
-              <div className="text-[11px] text-slate-400">Zero Gateway Commission</div>
+              <div className="text-2xl font-black text-slate-900">{data.config.stat4Value || "Cash / UPI"}</div>
+              <div className="text-xs font-bold text-purple-600">{data.config.stat4Label || "Easy Fee Options"}</div>
+              <div className="text-[11px] text-slate-400">Instant Receipts</div>
             </div>
           </div>
         </div>

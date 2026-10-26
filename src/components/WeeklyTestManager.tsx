@@ -213,7 +213,7 @@ export default function WeeklyTestManager({
         <div>
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
             <Trophy className="w-6 h-6 text-amber-500" />
-            Weekly Tests & Marksheets
+            Weekly Tests
           </h2>
           <p className="text-xs text-slate-500 mt-1">
             Record Sunday offline test marks, view ranks, and send report cards to parents via WhatsApp.
@@ -225,7 +225,7 @@ export default function WeeklyTestManager({
           className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Add New Weekly Test</span>
+          <span>+ New Test</span>
         </button>
       </div>
 

@@ -174,7 +174,7 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
                         className="w-full flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-semibold transition-colors"
                       >
                         <ShieldAlert className="w-4 h-4 text-purple-600" />
-                        <span>Admin Console (CMS)</span>
+                        <span>Admin Dashboard</span>
                       </Link>
                     ) : (
                       <Link

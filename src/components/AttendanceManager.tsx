@@ -188,7 +188,7 @@ export default function AttendanceManager({
         <div>
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
             <Calendar className="w-6 h-6 text-blue-600" />
-            Daily Attendance Register
+            Attendance
           </h2>
           <p className="text-xs text-slate-500 mt-1">
             Select date and batch, mark attendance, and send instant WhatsApp alerts to parents of absent students.

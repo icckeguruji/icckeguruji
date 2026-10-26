@@ -166,7 +166,7 @@ export default function FeeRegisterManager({
         <div>
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-blue-600" />
-            Fees & Dues Register
+            Fees & Dues
           </h2>
           <p className="text-xs text-slate-500 mt-1">
             Manage student monthly fees, outstanding dues, print official receipts, and send instant WhatsApp reminders.

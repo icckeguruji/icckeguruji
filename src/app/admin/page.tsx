@@ -1392,53 +1392,53 @@ export default function AdminDashboardPage() {
 
   const navSections: Array<{ title: string; items: NavItem[] }> = [
     {
-      title: 'Daily Operations',
+      title: 'Operations',
       items: [
-        { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
+        { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
         {
           id: 'attendance',
-          label: 'Daily Attendance',
+          label: 'Attendance',
           icon: Calendar,
           badge: `${todayPresent}/${data.students.length}`,
           badgeColor: 'bg-emerald-500 text-white font-black'
         },
         {
           id: 'fees',
-          label: 'Fees & Dues Register',
+          label: 'Fees & Dues',
           icon: CreditCard,
           badge: totalDueStudents > 0 ? `₹${totalDueAmount}` : null,
           badgeColor: 'bg-rose-500 text-white font-black'
         },
         {
           id: 'weekly_tests',
-          label: 'Weekly Test Results',
+          label: 'Weekly Tests',
           icon: Award,
           count: (data.weeklyTests || []).length
         },
         {
           id: 'students',
-          label: 'Student Directory',
+          label: 'Students',
           icon: Users,
           count: data.students.length
         },
       ]
     },
     {
-      title: 'Classes & Study Material',
+      title: 'Study Material',
       items: [
-        { id: 'courses', label: 'Courses & Batches', icon: BookOpen, count: data.courses.length },
+        { id: 'courses', label: 'Batches', icon: BookOpen, count: data.courses.length },
         { id: 'lectures', label: 'Live & Video Classes', icon: Radio, count: data.lessons.length },
-        { id: 'notes', label: 'PDF Study Notes', icon: FileText, count: data.notes.length },
+        { id: 'notes', label: 'PDF Notes', icon: FileText, count: data.notes.length },
         { id: 'dpp', label: 'DPP & Homework', icon: CheckCircle2, count: (data.dpps || []).length },
-        { id: 'pyq', label: 'Previous Year Papers', icon: Download, count: (data.pyqPapers || []).length },
-        { id: 'timetable', label: 'Weekly Timetable', icon: Clock, count: data.timetable.length },
+        { id: 'pyq', label: 'PYQ Papers', icon: Download, count: (data.pyqPapers || []).length },
+        { id: 'timetable', label: 'Timetable', icon: Clock, count: data.timetable.length },
       ]
     },
     {
-      title: 'Notices & Settings',
+      title: 'Settings',
       items: [
-        { id: 'notices', label: 'Notice Board', icon: Bell, count: data.announcements.length },
-        { id: 'settings', label: 'Institute Settings', icon: Settings },
+        { id: 'notices', label: 'Notices', icon: Bell, count: data.announcements.length },
+        { id: 'settings', label: 'Settings', icon: Settings },
       ]
     }
   ];
@@ -1534,11 +1534,11 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
-                G
+                <ShieldCheck className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="font-bold text-xs text-slate-900 leading-tight">Guruji (Admin)</div>
-                <div className="text-[10px] text-slate-500">Master Teacher Access</div>
+                <div className="font-bold text-xs text-slate-900 leading-tight">Admin Console</div>
+                <div className="text-[10px] text-slate-500">Teacher &amp; Management</div>
               </div>
             </div>
           </div>
@@ -1547,7 +1547,7 @@ export default function AdminDashboardPage() {
             href="/"
             className="w-full py-2 px-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors shadow-xs"
           >
-            <span>Exit to Student Site</span>
+            <span>View Website</span>
             <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
           </Link>
         </div>
@@ -1576,38 +1576,39 @@ export default function AdminDashboardPage() {
             </button>
             <div>
               <h2 className="font-black text-slate-900 text-base sm:text-lg capitalize flex items-center gap-2">
-                {activeTab === 'overview' && 'Dashboard Overview'}
-                {activeTab === 'attendance' && 'Daily Attendance Register'}
-                {activeTab === 'fees' && 'Fees & Dues Register'}
-                {activeTab === 'weekly_tests' && 'Weekly Test Results & Marksheets'}
-                {activeTab === 'students' && 'Student Directory & Admissions'}
-                {activeTab === 'courses' && 'Courses & Batches'}
+                {activeTab === 'overview' && 'Dashboard'}
+                {activeTab === 'attendance' && 'Attendance'}
+                {activeTab === 'fees' && 'Fees & Dues'}
+                {activeTab === 'weekly_tests' && 'Weekly Tests'}
+                {activeTab === 'students' && 'Students'}
+                {activeTab === 'courses' && 'Batches'}
                 {activeTab === 'lectures' && 'Live & Video Classes'}
-                {activeTab === 'notes' && 'PDF Study Notes'}
-                {activeTab === 'dpp' && 'DPP & Homework Assignments'}
-                {activeTab === 'pyq' && 'Previous Year Question Papers'}
-                {activeTab === 'timetable' && 'Weekly Timetable & Schedule'}
-                {activeTab === 'notices' && 'Notice Board & Announcements'}
-                {activeTab === 'settings' && 'Institute Settings & Profile'}
-                {activeTab === 'payments' && 'Online UPI Payment Requests'}
+                {activeTab === 'notes' && 'PDF Notes'}
+                {activeTab === 'dpp' && 'DPP & Homework'}
+                {activeTab === 'pyq' && 'PYQ Papers'}
+                {activeTab === 'timetable' && 'Timetable'}
+                {activeTab === 'notices' && 'Notices'}
+                {activeTab === 'settings' && 'Settings'}
+                {activeTab === 'payments' && 'Payments'}
+                {activeTab === 'cms' && 'Website Content'}
+                {activeTab === 'forum' && 'Doubt Forum'}
+                {activeTab === 'quizzes' && 'Quizzes'}
+                {activeTab === 'whatsapp' && 'WhatsApp Assistant'}
+                {activeTab === 'broadcast' && 'Broadcast'}
               </h2>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                ICC KE GURUJI Coaching Management System • Free Server Architecture
+                ICC KE GURUJI Coaching Management
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-              Live Server Active
-            </span>
             <Link
-              href="/course/course-1"
+              href="/"
               className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 flex items-center gap-1.5 transition-colors"
             >
-              <Radio className="w-3.5 h-3.5 text-rose-600" />
-              <span>Live Classroom</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+              <span>View Website</span>
             </Link>
           </div>
         </header>
@@ -1808,10 +1809,10 @@ export default function AdminDashboardPage() {
                     <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
                       <span>Recent Notices ({data.announcements.length})</span>
                       <button
-                        onClick={() => { setActiveTab('cms'); setCmsSubTab('announcements'); }}
+                        onClick={() => setActiveTab('notices')}
                         className="text-blue-600 hover:underline"
                       >
-                        Manage in CMS ➜
+                        View All ➜
                       </button>
                     </div>
                     <div className="space-y-1.5 max-h-36 overflow-y-auto">
@@ -2414,7 +2415,7 @@ export default function AdminDashboardPage() {
                   <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                       <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Course CMS
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Course
                       </h3>
                       <button
                         onClick={() => setEditingCourse(null)}
@@ -2692,7 +2693,7 @@ export default function AdminDashboardPage() {
                   <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                       <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                        <Pencil className="w-4 h-4 text-rose-600" /> Edit YouTube Lecture CMS
+                        <Pencil className="w-4 h-4 text-rose-600" /> Edit Lecture
                       </h3>
                       <button
                         onClick={() => setEditingLecture(null)}
@@ -2923,7 +2924,7 @@ export default function AdminDashboardPage() {
                   <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                       <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                        <Pencil className="w-4 h-4 text-blue-600" /> Edit PDF Note CMS
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit PDF Note
                       </h3>
                       <button
                         onClick={() => setEditingNote(null)}
@@ -4576,7 +4577,7 @@ export default function AdminDashboardPage() {
                   <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                       <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Timetable Slot CMS
+                        <Pencil className="w-4 h-4 text-blue-600" /> Edit Timetable Slot
                       </h3>
                       <button
                         onClick={() => setEditingTimetableSlot(null)}
@@ -5074,7 +5075,7 @@ export default function AdminDashboardPage() {
                 <div>
                   <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
                     <PenTool className="w-4 h-4 text-blue-600" />
-                    Website Content Management System (CMS)
+                    Website Content Management
                   </h3>
                   <p className="text-xs text-slate-500">
                     Manage hero headline, admission badge, daily practice problem, announcements, articles, toppers, and FAQs in real time.
@@ -5155,7 +5156,7 @@ export default function AdminDashboardPage() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-amber-500" />
-                        Homepage Hero Text &amp; Statistics Counter CMS
+                        Homepage Banner &amp; Statistics
                       </h4>
                       {settingsSaved && (
                         <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
@@ -5173,7 +5174,7 @@ export default function AdminDashboardPage() {
                           type="text"
                           value={configForm.admissionBadgeText || ''}
                           onChange={(e) => setConfigForm({ ...configForm, admissionBadgeText: e.target.value })}
-                          placeholder="e.g. New Academic Session 2026 Admissions Open • Direct UPI Zero Commission"
+                          placeholder="e.g. New Academic Session 2026 Admissions Open"
                           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
                         />
                       </div>
@@ -5253,7 +5254,7 @@ export default function AdminDashboardPage() {
                             />
                             <input
                               type="text"
-                              value={configForm.stat3Label || 'AI Guruji Doubt Tutor'}
+                              value={configForm.stat3Label || 'AI Doubt Tutor'}
                               onChange={(e) => setConfigForm({ ...configForm, stat3Label: e.target.value })}
                               className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[10px] text-slate-600"
                             />
@@ -5281,7 +5282,7 @@ export default function AdminDashboardPage() {
                         type="submit"
                         className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 font-bold text-white rounded-xl shadow-xs transition-colors mt-2"
                       >
-                        Save Hero &amp; Branding CMS
+                        Save Changes
                       </button>
                     </form>
                   </div>
@@ -5347,7 +5348,7 @@ export default function AdminDashboardPage() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        Homepage Practice MCQ CMS
+                        Homepage Practice MCQ
                       </h4>
                       {homeQuizSaved && (
                         <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
@@ -5588,7 +5589,7 @@ export default function AdminDashboardPage() {
                       <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                           <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Notice CMS
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Notice
                           </h3>
                           <button onClick={() => setEditingAnnouncement(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
                             <X className="w-5 h-5" />
@@ -5732,7 +5733,7 @@ export default function AdminDashboardPage() {
                       <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                           <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Article CMS
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Article
                           </h3>
                           <button onClick={() => setEditingArticle(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
                             <X className="w-5 h-5" />
@@ -5888,7 +5889,7 @@ export default function AdminDashboardPage() {
                       <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                           <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Topper Review CMS
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit Review
                           </h3>
                           <button onClick={() => setEditingTestimonial(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
                             <X className="w-5 h-5" />
@@ -6010,7 +6011,7 @@ export default function AdminDashboardPage() {
                       <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                           <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                            <Pencil className="w-4 h-4 text-blue-600" /> Edit FAQ CMS
+                            <Pencil className="w-4 h-4 text-blue-600" /> Edit FAQ
                           </h3>
                           <button onClick={() => setEditingFaq(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
                             <X className="w-5 h-5" />
