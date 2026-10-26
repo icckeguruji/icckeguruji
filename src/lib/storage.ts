@@ -224,6 +224,16 @@ export const INITIAL_NOTES: PdfNote[] = [
   }
 ];
 
+export const GUEST_USER: User = {
+  id: '',
+  name: '',
+  phone: '',
+  email: '',
+  role: 'student',
+  enrolledCourseIds: [],
+  joinedDate: '',
+};
+
 export const INITIAL_USER: User = {
   id: "student-101",
   name: "Rahul Kumar",
@@ -942,7 +952,7 @@ const STORAGE_KEYS = {
   NOTES: 'coaching_notes_v5',
   PAYMENTS: 'coaching_payments_v5',
   CONFIG: 'coaching_config_v5',
-  USER: 'coaching_user_v5',
+  USER: 'coaching_user_v6',
   STUDENTS: 'coaching_students_v5',
   ANNOUNCEMENTS: 'coaching_announcements_v5',
   ARTICLES: 'coaching_articles_v5',
@@ -994,7 +1004,7 @@ export const getStoredData = (): StoredData => {
       notes: INITIAL_NOTES,
       payments: INITIAL_PAYMENTS,
       config: DEFAULT_CONFIG,
-      user: INITIAL_USER,
+      user: GUEST_USER,
       students: INITIAL_STUDENTS,
       announcements: INITIAL_ANNOUNCEMENTS,
       articles: INITIAL_ARTICLES,
@@ -1021,7 +1031,7 @@ export const getStoredData = (): StoredData => {
     const payments: PaymentRequest[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.PAYMENTS) || 'null') || INITIAL_PAYMENTS;
     const rawConfig = JSON.parse(localStorage.getItem(STORAGE_KEYS.CONFIG) || 'null');
     const config: CoachingConfig = rawConfig ? { ...DEFAULT_CONFIG, ...rawConfig } : DEFAULT_CONFIG;
-    const user: User = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null') || INITIAL_USER;
+    const user: User = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER) || 'null') || GUEST_USER;
     const students: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.STUDENTS) || 'null') || INITIAL_STUDENTS;
     const announcements: Announcement[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS) || 'null') || INITIAL_ANNOUNCEMENTS;
     const articles: Article[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ARTICLES) || 'null') || INITIAL_ARTICLES;
@@ -1071,7 +1081,7 @@ export const getStoredData = (): StoredData => {
       notes: INITIAL_NOTES,
       payments: INITIAL_PAYMENTS,
       config: DEFAULT_CONFIG,
-      user: INITIAL_USER,
+      user: GUEST_USER,
       students: INITIAL_STUDENTS,
       announcements: INITIAL_ANNOUNCEMENTS,
       articles: INITIAL_ARTICLES,
