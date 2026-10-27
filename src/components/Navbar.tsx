@@ -82,7 +82,7 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs transition-colors">
+      <header className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-xs transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
           
           {/* Brand Logo: ICC KE GURUJI (Guaranteed never to wrap or shrink) */}
@@ -99,13 +99,13 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
             </Link>
           </div>
 
-          {/* Desktop Navigation Links - Clean, Spacious, Professional */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-xs font-bold text-slate-600">
+          {/* Desktop Navigation Links - Modern Frosted Capsule */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-xs font-semibold text-slate-600">
             {primaryLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="px-2.5 py-1.5 rounded-xl hover:text-blue-600 hover:bg-blue-50 transition-colors whitespace-nowrap"
+                className="px-3 py-1.5 rounded-xl hover:text-blue-600 hover:bg-slate-100/80 transition-all whitespace-nowrap active:scale-95"
               >
                 {link.label}
               </a>
@@ -116,7 +116,7 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
               <button
                 onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
                 onBlur={() => setTimeout(() => setMoreDropdownOpen(false), 200)}
-                className="px-2.5 py-1.5 rounded-xl hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-1 whitespace-nowrap"
+                className="px-3 py-1.5 rounded-xl hover:text-blue-600 hover:bg-slate-100/80 transition-all flex items-center gap-1 whitespace-nowrap active:scale-95 cursor-pointer"
               >
                 <span>More</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />

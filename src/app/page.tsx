@@ -149,21 +149,28 @@ export default function HomePage() {
       )}
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10 pb-16 bg-gradient-to-b from-white via-blue-50/30 to-slate-50 border-b border-slate-200 w-full max-w-full">
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-full max-w-[750px] h-[380px] bg-gradient-to-tr from-blue-400/10 via-indigo-400/10 to-violet-400/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Modern Hero Section */}
+      <section className="relative overflow-hidden pt-12 pb-20 bg-gradient-to-b from-white via-blue-50/40 to-slate-50 border-b border-slate-200/80 w-full max-w-full">
+        {/* Modern Ambient Mesh Lighting */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-4xl h-80 bg-gradient-to-tr from-blue-400/15 via-indigo-400/15 to-violet-400/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-12 right-10 w-72 h-72 bg-blue-300/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-6">
-          {/* Admission / Promo Badge from CMS */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold shadow-xs">
-            <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+          {/* Admission / Promo Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-blue-200 text-blue-700 text-xs font-bold shadow-xs hover:border-blue-300 transition-all">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+            </span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
             <span>{data.config.admissionBadgeText || "Admissions Open for Academic Session 2026"}</span>
           </div>
 
-          {/* Hero Headline from CMS */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 max-w-4xl mx-auto leading-tight">
+          {/* Hero Headline */}
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 max-w-4xl mx-auto leading-[1.15]">
             {data.config.heroHeadline || (
               <>
-                Achieve Your Academic &amp; Career Goals with{' '}
+                Achieve Academic Excellence with{' '}
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
                   {data.config.coachingName}
                 </span>
@@ -171,16 +178,16 @@ export default function HomePage() {
             )}
           </h1>
 
-          {/* Hero Subheadline from CMS */}
-          <p className="text-slate-600 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
+          {/* Hero Subheadline */}
+          <p className="text-slate-600 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed font-normal">
             {data.config.heroSubheadline || "Daily YouTube Live interactive classes, chapter-wise handwritten PDF notes, 24/7 AI Doubt Guruji, and Telegram group alerts."}
           </p>
 
-          {/* CTA Buttons */}
+          {/* Modern CTA Buttons */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <a
               href="#courses-section"
-              className="px-6 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white font-bold rounded-2xl text-sm shadow-lg shadow-blue-500/25 flex items-center gap-2 transition-all hover:scale-[1.02]"
+              className="px-6 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white font-bold rounded-2xl text-sm shadow-md shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 flex items-center gap-2 transition-all active:scale-95"
             >
               <BookOpen className="w-4 h-4" />
               <span>Explore All Batches</span>
@@ -188,26 +195,30 @@ export default function HomePage() {
 
             <Link
               href="/course/course-1"
-              className="px-6 py-3.5 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-2xl text-sm border border-slate-300 shadow-xs flex items-center gap-2 transition-all"
+              className="px-6 py-3.5 bg-white/90 backdrop-blur-md hover:bg-white text-slate-800 font-bold rounded-2xl text-sm border border-slate-200/90 shadow-xs hover:shadow-md flex items-center gap-2 transition-all active:scale-95"
             >
-              <Radio className="w-4 h-4 text-rose-600 animate-pulse" />
-              <span>Watch Live Classroom Demo</span>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
+              </span>
+              <Radio className="w-4 h-4 text-rose-600" />
+              <span>Live Classroom Demo</span>
             </Link>
 
             <a
               href={`https://wa.me/${(data.config.whatsappNumber || '+919876543210').replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noreferrer"
-              className="px-5 py-3.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-2xl text-sm border border-emerald-200 shadow-xs flex items-center gap-2 transition-all"
+              className="px-5 py-3.5 bg-emerald-50/90 hover:bg-emerald-100/90 text-emerald-800 font-bold rounded-2xl text-sm border border-emerald-200/90 shadow-xs hover:shadow-md flex items-center gap-2 transition-all active:scale-95"
             >
-              <Sparkles className="w-4 h-4 text-emerald-600" />
+              <MessageCircle className="w-4 h-4 text-emerald-600" />
               <span>Ask Guruji on WhatsApp</span>
             </a>
           </div>
 
-          {/* Quick Jump Directory Bar */}
+          {/* Floating Navigation Capsule */}
           <div className="pt-4 max-w-4xl mx-auto">
-            <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-xs">
+            <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-xs">
               <a
                 href="#courses-section"
                 className="px-3 py-1.5 rounded-xl hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
@@ -253,30 +264,50 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Quick Metrics from CMS */}
+          {/* Modern Elevated Stat Cards */}
           <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">{data.config.stat1Value || "10,000+"}</div>
-              <div className="text-xs font-bold text-blue-600">{data.config.stat1Label || "Enrolled Students"}</div>
-              <div className="text-[11px] text-slate-400">Trusted all over India</div>
+            <div className="group p-5 rounded-3xl bg-white/90 backdrop-blur-xs border border-slate-200/80 shadow-xs hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-blue-600">{data.config.stat1Label || "Enrolled Students"}</span>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{data.config.stat1Value || "10,000+"}</div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium">Verified Active Learners</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">{data.config.stat2Value || "98.4%"}</div>
-              <div className="text-xs font-bold text-emerald-600">{data.config.stat2Label || "Highest Board Score"}</div>
-              <div className="text-[11px] text-slate-400">CBSE &amp; State Boards</div>
+            <div className="group p-5 rounded-3xl bg-white/90 backdrop-blur-xs border border-slate-200/80 shadow-xs hover:border-emerald-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-emerald-600">{data.config.stat2Label || "Highest Board Score"}</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{data.config.stat2Value || "98.4%"}</div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium">CBSE &amp; State Boards</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">{data.config.stat3Value || "Every Sunday"}</div>
-              <div className="text-xs font-bold text-amber-600">{data.config.stat3Label || "Weekly Tests"}</div>
-              <div className="text-[11px] text-slate-400">Offline &amp; Results</div>
+            <div className="group p-5 rounded-3xl bg-white/90 backdrop-blur-xs border border-slate-200/80 shadow-xs hover:border-amber-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-amber-600">{data.config.stat3Label || "Weekly Tests"}</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                  <Calendar className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{data.config.stat3Value || "Every Sunday"}</div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium">Offline Drill &amp; Marksheet</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-200 transition-colors">
-              <div className="text-2xl font-black text-slate-900">{data.config.stat4Value || "Cash / UPI"}</div>
-              <div className="text-xs font-bold text-purple-600">{data.config.stat4Label || "Easy Fee Options"}</div>
-              <div className="text-[11px] text-slate-400">Instant Receipts</div>
+            <div className="group p-5 rounded-3xl bg-white/90 backdrop-blur-xs border border-slate-200/80 shadow-xs hover:border-purple-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-purple-600">{data.config.stat4Label || "Easy Fee Options"}</span>
+                <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{data.config.stat4Value || "Cash / UPI"}</div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium">Direct UPI &amp; Instant Receipts</div>
             </div>
           </div>
         </div>
@@ -335,7 +366,7 @@ export default function HomePage() {
             return (
               <div
                 key={course.id}
-                className="group relative bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-xl hover:border-blue-300 transition-all duration-300 flex flex-col justify-between"
+                className="group relative bg-white/95 backdrop-blur-xs border border-slate-200/80 rounded-3xl overflow-hidden shadow-xs hover:shadow-xl hover:border-blue-400/50 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
@@ -344,28 +375,28 @@ export default function HomePage() {
                       alt={course.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
 
                     <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/90 backdrop-blur-md text-slate-800 shadow-xs">
+                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/95 backdrop-blur-md text-slate-800 shadow-xs border border-white/40">
                         {course.category}
                       </span>
                     </div>
 
                     {course.isPopular && (
-                      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-400 text-slate-950 flex items-center gap-1 shadow-sm">
+                      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 flex items-center gap-1 shadow-sm">
                         <Sparkles className="w-3 h-3 fill-slate-950" />
                         Bestseller
                       </div>
                     )}
 
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white font-semibold">
-                      <span className="flex items-center gap-1 bg-black/40 px-2.5 py-1 rounded-lg backdrop-blur-xs">
+                      <span className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-xl backdrop-blur-md border border-white/10">
                         <Clock className="w-3.5 h-3.5 text-amber-300" />
                         {course.duration}
                       </span>
-                      <span className="flex items-center gap-1 bg-black/40 px-2.5 py-1 rounded-lg backdrop-blur-xs">
-                        <Radio className="w-3.5 h-3.5 text-rose-400" />
+                      <span className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-xl backdrop-blur-md border border-white/10">
+                        <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
                         YouTube Live
                       </span>
                     </div>
@@ -373,21 +404,21 @@ export default function HomePage() {
 
                   <div className="p-6 space-y-4">
                     <div>
-                      <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                      <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 tracking-tight">
                         {course.title}
                       </h3>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed font-normal">
                         {course.subtitle}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <div className="flex items-center gap-3 text-xs text-slate-700 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
                         {course.instructorName[0]}
                       </div>
-                      <div>
-                        <div className="font-bold text-slate-900">{course.instructorName}</div>
-                        <div className="text-[10px] text-slate-500">{course.instructorRole}</div>
+                      <div className="truncate">
+                        <div className="font-extrabold text-slate-900 truncate">{course.instructorName}</div>
+                        <div className="text-[10px] text-slate-500 font-medium truncate">{course.instructorRole}</div>
                       </div>
                     </div>
 
@@ -395,7 +426,7 @@ export default function HomePage() {
                       {course.features.slice(0, 3).map((f, i) => (
                         <div key={i} className="flex items-center gap-2">
                           <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                          <span className="line-clamp-1">{f}</span>
+                          <span className="line-clamp-1 font-medium">{f}</span>
                         </div>
                       ))}
                     </div>
@@ -405,10 +436,10 @@ export default function HomePage() {
                 <div className="p-6 pt-0">
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-between mb-4">
                     <div>
-                      <div className="text-2xl font-black text-slate-900">₹{course.price}</div>
-                      <div className="text-xs text-slate-400 line-through">₹{course.originalPrice}</div>
+                      <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">₹{course.price}</div>
+                      <div className="text-xs text-slate-400 line-through font-mono">₹{course.originalPrice}</div>
                     </div>
-                    <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <div className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/80">
                       {Math.round(((course.originalPrice - course.price) / course.originalPrice) * 100)}% OFF
                     </div>
                   </div>
@@ -416,7 +447,7 @@ export default function HomePage() {
                   {isEnrolled ? (
                     <Link
                       href={`/course/${course.id}`}
-                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all"
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98"
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span>Membership Active • Go to Classroom</span>
@@ -437,13 +468,13 @@ export default function HomePage() {
                     <div className="grid grid-cols-2 gap-2">
                       <Link
                         href={`/course/${course.id}`}
-                        className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center transition-colors border border-slate-200"
+                        className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center transition-colors border border-slate-200 active:scale-95"
                       >
                         Details
                       </Link>
                       <button
                         onClick={() => setSelectedCourseForPayment(course)}
-                        className="py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                        className="py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
                       >
                         <QrCode className="w-3.5 h-3.5" />
                         <span>Pay via UPI</span>
@@ -483,15 +514,18 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-md">
-            <div className="flex items-center justify-between mb-3 text-xs text-slate-400 font-bold">
-              <span>Guruji Live Daily Numerical Drill</span>
-              <span className="text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+          <div className="relative overflow-hidden bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-xs hover:border-blue-300 transition-all">
+            <div className="flex items-center justify-between mb-4 text-xs font-bold">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                Live Daily Numerical Drill
+              </span>
+              <span className="text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80 text-[11px] font-extrabold">
                 +4 Marks
               </span>
             </div>
 
-            <h4 className="text-base sm:text-lg font-black text-slate-900 mb-4">
+            <h4 className="text-base sm:text-lg font-extrabold text-slate-900 mb-5 leading-snug">
               {data.config.homeQuizQuestion || "If the distance between two static point charges is halved (r/2), what happens to the electrostatic force between them?"}
             </h4>
 
@@ -502,37 +536,52 @@ export default function HomePage() {
               const correctIdx = data.config.homeQuizCorrectIndex ?? 1;
 
               return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                  {options.map((opt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setSampleQuizAnswer(i);
-                        setShowSampleResult(true);
-                      }}
-                      className={`p-3.5 rounded-2xl border text-left text-xs sm:text-sm font-bold transition-all flex items-center justify-between ${
-                        sampleQuizAnswer === i
-                          ? i === correctIdx
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20'
-                            : 'bg-rose-50 border-rose-500 text-rose-900'
-                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <span>{String.fromCharCode(65 + i)}. {opt}</span>
-                      {showSampleResult && i === correctIdx && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                  {options.map((opt, i) => {
+                    const isSelected = sampleQuizAnswer === i;
+                    const isCorrect = i === correctIdx;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setSampleQuizAnswer(i);
+                          setShowSampleResult(true);
+                        }}
+                        className={`group p-3.5 rounded-2xl border text-left text-xs sm:text-sm font-bold transition-all flex items-center justify-between active:scale-[0.99] cursor-pointer ${
+                          isSelected
+                            ? isCorrect
+                              ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20 shadow-xs'
+                              : 'bg-rose-50 border-rose-500 text-rose-900 shadow-xs'
+                            : 'bg-slate-50/80 hover:bg-slate-100 hover:border-slate-300 border-slate-200/80 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+                            isSelected
+                              ? isCorrect
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-rose-600 text-white'
+                              : 'bg-white text-slate-700 border border-slate-200 group-hover:bg-blue-50 group-hover:text-blue-600'
+                          }`}>
+                            {String.fromCharCode(65 + i)}
+                          </span>
+                          <span>{opt}</span>
+                        </div>
+                        {showSampleResult && isCorrect && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
+                      </button>
+                    );
+                  })}
                 </div>
               );
             })()}
 
             {showSampleResult && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-slate-700 space-y-1 animate-in fade-in duration-200">
-                <span className="font-bold text-blue-800 flex items-center gap-1.5">
+              <div className="p-4.5 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/60 border border-blue-200/90 rounded-2xl text-xs text-slate-700 space-y-1.5 animate-in fade-in duration-200 shadow-xs">
+                <span className="font-extrabold text-blue-900 flex items-center gap-1.5 text-xs sm:text-sm">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  Guruji Solution:
+                  Guruji Concept Explanation:
                 </span>
-                <p className="leading-relaxed">
+                <p className="leading-relaxed text-slate-600">
                   {data.config.homeQuizExplanation || "Correct Answer: B (4 Times)! According to Coulomb's Law, F ∝ 1/r². When distance is halved (r/2), the force increases by a factor of 4. Comprehensive chapter-wise mock tests and drills are included in all batches!"}
                 </p>
               </div>
@@ -572,26 +621,26 @@ export default function HomePage() {
               {data.articles.map((art) => (
                 <div
                   key={art.id}
-                  className="p-6 rounded-3xl bg-slate-50 border border-slate-200 hover:border-blue-200 hover:shadow-md transition-all flex flex-col justify-between"
+                  className="p-6 rounded-3xl bg-white border border-slate-200/80 hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70">
                         {art.category}
                       </span>
                       <span className="text-xs text-slate-400 font-medium">• {art.readTime}</span>
                     </div>
-                    <h3 className="font-black text-slate-900 text-base mb-2 hover:text-blue-600 transition-colors">
+                    <h3 className="font-extrabold text-slate-900 text-base mb-2 hover:text-blue-600 transition-colors tracking-tight">
                       {art.title}
                     </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-slate-600 leading-relaxed font-normal">
                       {art.excerpt}
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700">By {art.author}</span>
-                    <span className="text-blue-600 font-bold flex items-center gap-1">
+                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span className="font-bold text-slate-800">By {art.author}</span>
+                    <span className="text-blue-600 font-extrabold flex items-center gap-1 group-hover:gap-2 transition-all">
                       Read Full Guide <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
@@ -606,16 +655,17 @@ export default function HomePage() {
           CMS: TOPPERS & TESTIMONIALS (HALL OF FAME)
       ========================================================================= */}
       {data.testimonials.length > 0 && (
-        <section id="toppers" className="py-16 bg-slate-50 border-b border-slate-200 scroll-mt-20">
+        <section id="toppers" className="py-16 bg-slate-50/70 border-b border-slate-200/80 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center max-w-2xl mx-auto">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center justify-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-amber-600" />
                 Hall of Fame &amp; Results
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">
                 Words from Our Toppers &amp; Achievers
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
                 Thousands of students have secured top ranks in board and entrance exams through ICC KE GURUJI.
               </p>
             </div>
@@ -624,25 +674,25 @@ export default function HomePage() {
               {data.testimonials.map((t) => (
                 <div
                   key={t.id}
-                  className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between"
+                  className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-amber-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center gap-1 text-amber-400 mb-3">
+                    <div className="flex items-center gap-1 text-amber-400 mb-3.5">
                       {[...Array(t.rating || 5)].map((_, i) => (
                         <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <p className="text-xs text-slate-600 italic leading-relaxed mb-4">
-                      "{t.review}"
+                    <p className="text-xs text-slate-600 italic leading-relaxed mb-5 font-normal">
+                      &quot;{t.review}&quot;
                     </p>
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                     <div>
-                      <div className="font-black text-slate-900 text-sm">{t.studentName}</div>
-                      <div className="text-[10px] text-slate-400">{t.examName}</div>
+                      <div className="font-extrabold text-slate-900 text-sm tracking-tight">{t.studentName}</div>
+                      <div className="text-[10px] text-slate-400 font-medium">{t.examName}</div>
                     </div>
-                    <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
+                    <span className="text-xs font-extrabold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/80 shadow-xs">
                       {t.examRank}
                     </span>
                   </div>
@@ -657,13 +707,13 @@ export default function HomePage() {
           CMS: FREQUENTLY ASKED QUESTIONS (FAQ)
       ========================================================================= */}
       {data.faqs.length > 0 && (
-        <section id="faqs" className="py-16 bg-white border-b border-slate-200 scroll-mt-20">
+        <section id="faqs" className="py-16 bg-white border-b border-slate-200/80 scroll-mt-20">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center">
               <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
                 Got Questions?
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">
                 Frequently Asked Questions (FAQ)
               </h2>
             </div>
@@ -674,19 +724,23 @@ export default function HomePage() {
                 return (
                   <div
                     key={faq.id}
-                    className="border border-slate-200 rounded-2xl overflow-hidden transition-all bg-slate-50"
+                    className={`border rounded-2xl overflow-hidden transition-all duration-200 ${
+                      isOpen
+                        ? 'border-blue-400/80 bg-blue-50/20 shadow-xs'
+                        : 'border-slate-200/80 bg-slate-50/60 hover:bg-slate-50'
+                    }`}
                   >
                     <button
                       onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                      className="w-full p-4.5 text-left font-bold text-sm text-slate-900 flex items-center justify-between gap-4"
+                      className="w-full p-4.5 text-left font-bold text-sm text-slate-900 flex items-center justify-between gap-4 cursor-pointer"
                     >
-                      <span>{faq.question}</span>
-                      <ChevronDown
-                        className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180 text-blue-600' : ''}`}
-                      />
+                      <span className="tracking-tight">{faq.question}</span>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 ${isOpen ? 'bg-blue-600 text-white rotate-180' : 'bg-slate-200/60 text-slate-500'}`}>
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
                     </button>
                     {isOpen && (
-                      <div className="px-4.5 pb-4.5 text-xs text-slate-600 leading-relaxed border-t border-slate-200/60 pt-3 bg-white">
+                      <div className="px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3 bg-white/60">
                         {faq.answer}
                       </div>
                     )}

@@ -307,89 +307,150 @@ function CourseClassroomContent() {
             )}
 
             {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar">
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-200/90 pb-3.5 overflow-x-auto no-scrollbar">
               <button
                 onClick={() => setActiveTab('lectures')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
                   activeTab === 'lectures'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
                 }`}
               >
                 <Play className="w-4 h-4" />
-                All Lectures &amp; Live ({lessons.length})
+                <span>All Lectures ({lessons.length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('notes')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
                   activeTab === 'notes'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
                 }`}
               >
                 <FileText className="w-4 h-4" />
-                PDF Golden Notes ({notes.length})
+                <span>PDF Notes ({notes.length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('dpp')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
                   activeTab === 'dpp'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
                 }`}
               >
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                DPP &amp; Homework ({(data.dpps || []).filter((d) => d.courseId === course.id).length})
+                <span>DPP &amp; HW ({(data.dpps || []).filter((d) => d.courseId === course.id).length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('tests')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
                   activeTab === 'tests'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
                 }`}
               >
                 <Award className="w-4 h-4 text-amber-500" />
-                Weekly Test Results ({myTestResults.length})
+                <span>Test Results ({myTestResults.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('quizzes')}
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
+                  activeTab === 'quizzes'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4 text-purple-500" />
+                <span>Mock Tests ({quizzes.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('flashcards')}
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
+                  activeTab === 'flashcards'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+                }`}
+              >
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>Flashcards ({flashcards.length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('attendance')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
                   activeTab === 'attendance'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
                 }`}
               >
                 <Calendar className="w-4 h-4 text-emerald-500" />
-                My Attendance ({myAttendancePercent}%)
+                <span>Attendance ({myAttendancePercent}%)</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('fees')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
                   activeTab === 'fees'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
                 }`}
               >
                 <AlertCircle className={`w-4 h-4 ${(currentStudentRecord.feesDue ?? 0) > 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
-                My Fee Status {(currentStudentRecord.feesDue ?? 0) > 0 ? `(₹${currentStudentRecord.feesDue} Due)` : '(Cleared)'}
+                <span>Fee Status {(currentStudentRecord.feesDue ?? 0) > 0 ? `(₹${currentStudentRecord.feesDue} Due)` : '(Cleared)'}</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ai')}
-                className={`px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 ${
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
                   activeTab === 'ai'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
                 }`}
               >
                 <Bot className="w-4 h-4 text-amber-500" />
-                AI Guruji 24/7
+                <span>AI Guruji 24/7</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('forum')}
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
+                  activeTab === 'forum'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4 text-indigo-500" />
+                <span>Doubt Forum</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('certificate')}
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
+                  activeTab === 'certificate'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+                }`}
+              >
+                <GraduationCap className="w-4 h-4 text-emerald-500" />
+                <span>Certificate</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('community')}
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shrink-0 active:scale-95 cursor-pointer ${
+                  activeTab === 'community'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+                }`}
+              >
+                <Radio className="w-4 h-4 text-blue-500" />
+                <span>Groups &amp; Alerts</span>
               </button>
             </div>
 
@@ -402,42 +463,43 @@ function CourseClassroomContent() {
                     <div
                       key={lesson.id}
                       onClick={() => setActiveLesson(lesson)}
-                      className={`p-5 rounded-3xl cursor-pointer border transition-all text-left flex flex-col justify-between ${
+                      className={`p-5 rounded-3xl cursor-pointer border transition-all text-left flex flex-col justify-between group active:scale-[0.99] ${
                         isActive
                           ? 'bg-blue-50/70 border-blue-500 shadow-md ring-2 ring-blue-500/20'
-                          : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-md'
+                          : 'bg-white border-slate-200/90 hover:border-blue-300 hover:shadow-md'
                       }`}
                     >
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-mono text-slate-500 font-bold">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <span className="text-[10px] uppercase font-mono text-slate-500 font-extrabold bg-slate-100 px-2 py-0.5 rounded-md">
                             Chapter {lesson.chapterNumber}
                           </span>
                           {lesson.isLive ? (
-                            <span className="flex items-center gap-1 text-[10px] bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full font-bold border border-rose-300 animate-pulse">
-                              <Radio className="w-3 h-3" /> LIVE NOW
+                            <span className="flex items-center gap-1.5 text-[10px] bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full font-extrabold border border-rose-200 animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                              LIVE NOW
                             </span>
                           ) : (
-                            <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
+                            <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-semibold">
                               Recorded
                             </span>
                           )}
                         </div>
-                        <h4 className="font-bold text-slate-900 text-sm line-clamp-2 mb-1">
+                        <h4 className="font-extrabold text-slate-900 text-sm line-clamp-2 mb-1 tracking-tight group-hover:text-blue-600 transition-colors">
                           {lesson.title}
                         </h4>
-                        <p className="text-xs text-slate-500 line-clamp-2">
+                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
                           {lesson.description}
                         </p>
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
                           {lesson.duration || '60 min'}
                         </span>
-                        <span className={`font-bold flex items-center gap-1 text-[11px] ${isActive ? 'text-blue-600' : 'text-slate-600'}`}>
-                          {isActive ? 'Currently Watching' : 'Click to Play'}
+                        <span className={`font-bold flex items-center gap-1 text-[11px] ${isActive ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'}`}>
+                          {isActive ? '● Watching' : 'Play Lecture ➜'}
                         </span>
                       </div>
                     </div>
@@ -460,31 +522,33 @@ function CourseClassroomContent() {
                   {notes.map((note) => (
                     <div
                       key={note.id}
-                      className="p-5 rounded-3xl bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 flex flex-col justify-between transition-all"
+                      className="p-5 rounded-3xl bg-white border border-slate-200/90 hover:shadow-lg hover:border-blue-300 hover:-translate-y-0.5 flex flex-col justify-between transition-all duration-300 shadow-xs group"
                     >
                       <div>
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200/80 shadow-xs group-hover:scale-105 transition-transform">
                             <FileText className="w-5 h-5" />
                           </div>
-                          <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full font-bold">
+                          <span className="text-[11px] font-mono text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full font-bold">
                             {note.fileSize}
                           </span>
                         </div>
-                        <h4 className="font-bold text-slate-900 text-sm mb-1">{note.title}</h4>
-                        <p className="text-xs text-slate-500 mb-3">{note.description}</p>
+                        <h4 className="font-extrabold text-slate-900 text-base mb-1 tracking-tight group-hover:text-blue-600 transition-colors">
+                          {note.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 mb-3 leading-relaxed">{note.description}</p>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-400">
+                      <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400 font-medium">
                           {note.pageCount ? `${note.pageCount} Pages • ` : ''}Uploaded {note.uploadedAt}
                         </span>
                         <button
                           onClick={() => setSelectedNote(note)}
-                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
                         >
                           <FileText className="w-3.5 h-3.5" />
-                          View Notes
+                          <span>View Notes</span>
                         </button>
                       </div>
                     </div>

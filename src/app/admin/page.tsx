@@ -1505,8 +1505,8 @@ export default function AdminDashboardPage() {
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                         isActive
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 active:scale-[0.98]'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
@@ -1576,48 +1576,59 @@ export default function AdminDashboardPage() {
       ========================================================================= */}
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden">
         {/* Top Navbar */}
-        <header className="h-18 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+        {/* Modern Top Header */}
+        <header className="h-18 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900"
+              className="lg:hidden p-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="font-black text-slate-900 text-base sm:text-lg capitalize flex items-center gap-2">
-                {activeTab === 'overview' && 'Dashboard'}
-                {activeTab === 'attendance' && 'Attendance'}
-                {activeTab === 'fees' && 'Fees & Dues'}
-                {activeTab === 'weekly_tests' && 'Weekly Tests'}
-                {activeTab === 'students' && 'Students'}
-                {activeTab === 'courses' && 'Batches'}
-                {activeTab === 'lectures' && 'Live & Video Classes'}
-                {activeTab === 'notes' && 'PDF Notes'}
-                {activeTab === 'dpp' && 'DPP & Homework'}
-                {activeTab === 'pyq' && 'PYQ Papers'}
-                {activeTab === 'timetable' && 'Timetable'}
-                {activeTab === 'notices' && 'Notices'}
-                {activeTab === 'settings' && 'Settings'}
-                {activeTab === 'payments' && 'Payments'}
-                {activeTab === 'cms' && 'Website Content'}
-                {activeTab === 'forum' && 'Doubt Forum'}
-                {activeTab === 'quizzes' && 'Quizzes'}
-                {activeTab === 'whatsapp' && 'WhatsApp Assistant'}
-                {activeTab === 'broadcast' && 'Broadcast'}
-              </h2>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                ICC KE GURUJI Coaching Management
+              <div className="flex items-center gap-2">
+                <h2 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight capitalize flex items-center gap-2">
+                  {activeTab === 'overview' && 'Dashboard'}
+                  {activeTab === 'attendance' && 'Attendance'}
+                  {activeTab === 'fees' && 'Fees & Dues'}
+                  {activeTab === 'weekly_tests' && 'Weekly Tests'}
+                  {activeTab === 'students' && 'Students'}
+                  {activeTab === 'courses' && 'Batches'}
+                  {activeTab === 'lectures' && 'Live & Video Classes'}
+                  {activeTab === 'notes' && 'PDF Notes'}
+                  {activeTab === 'dpp' && 'DPP & Homework'}
+                  {activeTab === 'pyq' && 'PYQ Papers'}
+                  {activeTab === 'timetable' && 'Timetable'}
+                  {activeTab === 'notices' && 'Notices'}
+                  {activeTab === 'settings' && 'Settings'}
+                  {activeTab === 'payments' && 'Payments'}
+                  {activeTab === 'cms' && 'Website Content'}
+                  {activeTab === 'forum' && 'Doubt Forum'}
+                  {activeTab === 'quizzes' && 'Quizzes'}
+                  {activeTab === 'whatsapp' && 'WhatsApp Assistant'}
+                  {activeTab === 'broadcast' && 'Broadcast'}
+                </h2>
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  Admin Console
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
+                {data.config.coachingName || 'ICC KE GURUJI'} Management Portal
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-600">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>{todayStr}</span>
+            </div>
             <Link
               href="/"
-              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold border border-slate-200/90 shadow-xs flex items-center gap-1.5 transition-all active:scale-95"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+              <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
               <span>View Website</span>
             </Link>
           </div>
@@ -1630,146 +1641,179 @@ export default function AdminDashboardPage() {
           ===================================================================== */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Elevated Modern Metrics */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between text-blue-600 mb-2">
+                {/* Total Students */}
+                <div className="group p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Total Students</span>
-                    <Users className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shadow-xs">
+                      <Users className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className="text-3xl font-black text-slate-900">{data.students.length}</div>
-                  <div className="text-[11px] text-blue-700 mt-1 font-semibold flex items-center gap-1">
-                    Active Enrolled Learners
+                  <div className="text-3xl font-black text-slate-900 tracking-tight">{data.students.length}</div>
+                  <div className="mt-2 flex items-center justify-between text-[11px]">
+                    <span className="text-blue-700 font-semibold">Active Enrolled</span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold border border-blue-200">
+                      100% Verified
+                    </span>
                   </div>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between text-emerald-600 mb-2">
+                {/* Today's Attendance */}
+                <div className="group p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-emerald-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Today's Attendance</span>
-                    <CheckCircle2 className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shadow-xs">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className="text-3xl font-black text-slate-900">
-                    {todayPresent} / {data.students.length}
+                  <div className="text-3xl font-black text-slate-900 tracking-tight">
+                    {todayPresent} <span className="text-base text-slate-400 font-bold">/ {data.students.length}</span>
                   </div>
-                  <div className="text-[11px] text-emerald-700 mt-1 font-semibold">
-                    {data.students.length - todayPresent} students marked absent today
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between text-rose-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Total Outstanding Dues</span>
-                    <AlertCircle className="w-5 h-5" />
-                  </div>
-                  <div className="text-3xl font-black text-rose-700">₹{totalDueAmount.toLocaleString('en-IN')}</div>
-                  <div className="text-[11px] text-rose-600 mt-1 font-semibold">
-                    {totalDueStudents} students have pending dues
+                  <div className="mt-2 flex items-center justify-between text-[11px]">
+                    <span className="text-emerald-700 font-semibold">
+                      {data.students.length > 0 ? Math.round((todayPresent / data.students.length) * 100) : 0}% Present
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                      {data.students.length - todayPresent} Absent
+                    </span>
                   </div>
                 </div>
 
-                <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between text-amber-600 mb-2">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Weekly Offline Tests</span>
-                    <Award className="w-5 h-5" />
+                {/* Total Outstanding Dues */}
+                <div className="group p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-rose-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Pending Dues</span>
+                    <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold shadow-xs">
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className="text-3xl font-black text-slate-900">{(data.weeklyTests || []).length}</div>
-                  <div className="text-[11px] text-amber-700 mt-1 font-semibold">
-                    Sunday Tests Conducted
+                  <div className="text-3xl font-black text-rose-700 tracking-tight">₹{totalDueAmount.toLocaleString('en-IN')}</div>
+                  <div className="mt-2 flex items-center justify-between text-[11px]">
+                    <span className="text-rose-600 font-semibold">{totalDueStudents} Students Pending</span>
+                    <button
+                      onClick={() => setActiveTab('fees')}
+                      className="px-2 py-0.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold border border-rose-200 transition-colors"
+                    >
+                      Collect Dues ➜
+                    </button>
+                  </div>
+                </div>
+
+                {/* Weekly Offline Tests */}
+                <div className="group p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-amber-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Weekly Tests</span>
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shadow-xs">
+                      <Award className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-black text-slate-900 tracking-tight">{(data.weeklyTests || []).length}</div>
+                  <div className="mt-2 flex items-center justify-between text-[11px]">
+                    <span className="text-amber-700 font-semibold">Sunday Tests Held</span>
+                    <button
+                      onClick={() => setActiveTab('weekly_tests')}
+                      className="px-2 py-0.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition-colors"
+                    >
+                      + New Test
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Actions Shortcuts */}
-              <div className="p-4 bg-white border border-slate-200 rounded-3xl shadow-xs">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              {/* Modern Quick Action Bar */}
+              <div className="p-5 bg-white border border-slate-200/80 rounded-3xl shadow-xs">
+                <div className="flex items-center justify-between mb-3.5">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                     Quick Actions
                   </span>
-                  <span className="text-[11px] text-slate-400 font-semibold">1-Click Fast Access</span>
+                  <span className="text-[11px] text-slate-400 font-semibold">Instant 1-Click Operations</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                   <button
                     onClick={() => setActiveTab('attendance')}
-                    className="p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    className="p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>+ Daily Attendance</span>
+                    <Calendar className="w-4 h-4 text-emerald-600" />
+                    <span>Attendance</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('fees')}
-                    className="p-2.5 rounded-2xl bg-blue-50/70 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    className="p-3 rounded-2xl bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 text-blue-700 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-                    <span>+ Record Fee</span>
+                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <span>Record Fee</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('weekly_tests')}
-                    className="p-2.5 rounded-2xl bg-amber-50/70 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    className="p-3 rounded-2xl bg-amber-50/80 hover:bg-amber-100 border border-amber-200/80 text-amber-800 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    <Award className="w-3.5 h-3.5 text-amber-600" />
-                    <span>+ Weekly Test</span>
+                    <Award className="w-4 h-4 text-amber-600" />
+                    <span>Weekly Test</span>
                   </button>
                   <button
                     onClick={() => { setActiveTab('students'); setIsAddingStudent(true); }}
-                    className="p-2.5 rounded-2xl bg-purple-50/70 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    className="p-3 rounded-2xl bg-purple-50/80 hover:bg-purple-100 border border-purple-200/80 text-purple-700 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    <Users className="w-3.5 h-3.5 text-purple-600" />
-                    <span>+ Add Student</span>
+                    <Users className="w-4 h-4 text-purple-600" />
+                    <span>Add Student</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('courses')}
-                    className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    className="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    <BookOpen className="w-3.5 h-3.5 text-slate-600" />
-                    <span>+ New Batch</span>
+                    <BookOpen className="w-4 h-4 text-slate-600" />
+                    <span>New Batch</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('notes')}
-                    className="p-2.5 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    className="p-3 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/80 text-indigo-700 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
-                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>+ PDF Notes</span>
+                    <FileText className="w-4 h-4 text-indigo-600" />
+                    <span>PDF Notes</span>
                   </button>
                 </div>
               </div>
 
               {/* Quick Actions & Recent Pending */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs">
+                <div className="bg-white border border-slate-200/80 p-6 rounded-3xl shadow-xs">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                    <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-amber-500" />
                       Pending Payment Approvals ({pendingPayments.length})
                     </h3>
                     <button
                       onClick={() => setActiveTab('payments')}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-800"
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
                     >
-                      View All
+                      View All ➜
                     </button>
                   </div>
 
                   {pendingPayments.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400 text-xs">
-                      All pending payments have been verified!
+                    <div className="p-8 text-center text-slate-400 text-xs rounded-2xl bg-slate-50 border border-dashed border-slate-200">
+                      ✓ All pending student payments have been verified!
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {pendingPayments.map((p) => (
                         <div
                           key={p.id}
-                          className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 text-xs"
+                          className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-blue-200 flex items-center justify-between gap-3 text-xs transition-colors"
                         >
                           <div>
                             <div className="font-black text-slate-900">{p.userName}</div>
                             <div className="text-[11px] text-slate-500 font-mono">UTR: {p.utrNumber}</div>
                             <div className="text-[10px] text-blue-700 font-semibold">{p.courseTitle.slice(0, 30)}...</div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2.5">
                             <span className="font-black text-emerald-600 text-sm">₹{p.amount}</span>
                             <button
                               onClick={() => handleApprovePayment(p)}
-                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs"
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs active:scale-95 transition-all"
                             >
                               Approve
                             </button>
@@ -1780,19 +1824,19 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
 
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs flex flex-col justify-between">
+                <div className="bg-white border border-slate-200/80 p-6 rounded-3xl shadow-xs flex flex-col justify-between">
                   <div>
-                    <h3 className="font-black text-slate-900 text-base mb-1 flex items-center gap-2">
+                    <h3 className="font-extrabold text-slate-900 text-base mb-1 flex items-center gap-2">
                       <Send className="w-4 h-4 text-sky-500" />
                       Quick Notice Broadcast
                     </h3>
                     <p className="text-xs text-slate-500 mb-4">
-                      Broadcast a live announcement to the student dashboard and Telegram community.
+                      Broadcast a live announcement to the student dashboard and Telegram community in real-time.
                     </p>
 
                     {broadcastSent && (
-                      <div className="p-3 mb-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold">
-                        Notice successfully broadcasted to student dashboard and Telegram group!
+                      <div className="p-3 mb-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-bold animate-in fade-in duration-200">
+                        ✓ Notice broadcasted to students and Telegram group!
                       </div>
                     )}
 
@@ -1801,20 +1845,20 @@ export default function AdminDashboardPage() {
                       onChange={(e) => setBroadcastMsg(e.target.value)}
                       placeholder="e.g. 🔴 LIVE CLASS: Today's masterclass will start at 7:00 PM..."
                       rows={3}
-                      className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
+                      className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none transition-colors"
                     />
 
                     <button
                       onClick={handleSendBroadcast}
                       disabled={!broadcastMsg.trim()}
-                      className="w-full mt-3 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all"
+                      className="w-full mt-3 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>Instant Broadcast Notice</span>
                     </button>
                   </div>
 
-                  {/* Recent Published Broadcasts with Delete/Edit */}
+                  {/* Recent Published Broadcasts */}
                   <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
                     <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
                       <span>Recent Notices ({data.announcements.length})</span>
@@ -2355,45 +2399,56 @@ export default function AdminDashboardPage() {
 
               <div className="lg:col-span-2 space-y-4">
                 {data.courses.map((c: Course) => (
-                  <div key={c.id} className="p-5 bg-white border border-slate-200 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs hover:border-blue-200 transition-colors">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  <div
+                    key={c.id}
+                    className="p-5 bg-white border border-slate-200/90 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs hover:shadow-md hover:border-blue-200 transition-all duration-200"
+                  >
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80">
                           {c.category}
                         </span>
                         {c.isPopular && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                          <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-1">
                             <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> Bestseller
                           </span>
                         )}
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold">
+                          ID: {c.id}
+                        </span>
                       </div>
-                      <h4 className="font-black text-slate-900 text-base">{c.title}</h4>
+
+                      <h4 className="font-extrabold text-slate-900 text-base tracking-tight">{c.title}</h4>
                       <p className="text-xs text-slate-500 line-clamp-1">{c.subtitle}</p>
-                      <div className="flex items-center gap-3 text-xs text-slate-600 font-medium pt-1">
-                        <span>Price: <strong className="text-emerald-600">₹{c.price}</strong> <span className="line-through text-slate-400">₹{c.originalPrice}</span></span>
-                        <span>•</span>
-                        <span>Duration: {c.duration}</span>
-                        <span>•</span>
-                        <span>Mentor: {c.instructorName}</span>
+
+                      <div className="flex items-center gap-2.5 text-xs text-slate-600 font-semibold pt-1 flex-wrap">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-sm font-black text-emerald-600">₹{c.price.toLocaleString('en-IN')}</span>
+                          <span className="line-through text-slate-400 text-[11px]">₹{c.originalPrice.toLocaleString('en-IN')}</span>
+                        </div>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-500">{c.duration}</span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-700">Mentor: {c.instructorName}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto justify-end">
                       <button
                         onClick={() => handleTogglePopular(c.id)}
                         title="Toggle Homepage Bestseller Badge"
-                        className={`p-2 rounded-xl text-xs font-bold transition-colors border ${
+                        className={`p-2.5 rounded-xl text-xs font-bold transition-all border active:scale-95 cursor-pointer ${
                           c.isPopular
-                            ? 'bg-amber-50 border-amber-300 text-amber-800'
+                            ? 'bg-amber-50 border-amber-300 text-amber-800 shadow-xs'
                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-500'
                         }`}
                       >
-                        <Star className={`w-3.5 h-3.5 ${c.isPopular ? 'fill-amber-500 text-amber-500' : ''}`} />
+                        <Star className={`w-4 h-4 ${c.isPopular ? 'fill-amber-500 text-amber-500' : ''}`} />
                       </button>
 
                       <button
                         onClick={() => setEditingCourse(c)}
-                        className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 flex items-center gap-1.5 transition-colors"
+                        className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                         <span>Edit</span>
@@ -2401,7 +2456,7 @@ export default function AdminDashboardPage() {
 
                       <button
                         onClick={() => handleDeleteCourse(c.id)}
-                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 transition-colors"
+                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 transition-all active:scale-95 cursor-pointer"
                         title="Delete Course"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -2409,10 +2464,10 @@ export default function AdminDashboardPage() {
 
                       <Link
                         href={`/course/${c.id}`}
-                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 rounded-xl border border-slate-300 flex items-center gap-1.5 transition-colors"
+                        className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95"
                       >
                         <span>Classroom</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
                       </Link>
                     </div>
                   </div>
@@ -4694,11 +4749,35 @@ export default function AdminDashboardPage() {
           ===================================================================== */}
           {activeTab === 'students' && (
             <div className="space-y-6">
-              <div className="p-4 bg-white border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-700 shadow-xs">
+              {/* Quick Summary Pill Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+                  <div className="text-xs uppercase font-extrabold text-slate-400">Total Enrolled</div>
+                  <div className="text-2xl font-black text-slate-900 mt-0.5">{data.students.length}</div>
+                </div>
+                <div className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+                  <div className="text-xs uppercase font-extrabold text-slate-400">Batches Active</div>
+                  <div className="text-2xl font-black text-blue-600 mt-0.5">{data.courses.length}</div>
+                </div>
+                <div className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+                  <div className="text-xs uppercase font-extrabold text-slate-400">With Active Access</div>
+                  <div className="text-2xl font-black text-emerald-600 mt-0.5">
+                    {data.students.filter((s) => s.enrolledCourseIds && s.enrolledCourseIds.length > 0).length}
+                  </div>
+                </div>
+                <div className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+                  <div className="text-xs uppercase font-extrabold text-slate-400">Active Streaks</div>
+                  <div className="text-2xl font-black text-amber-500 mt-0.5">
+                    {data.students.filter((s) => (s.streakDays || 0) >= 3).length}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-5 bg-white border border-slate-200/90 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-700 shadow-xs">
                 <div>
-                  <h3 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2 tracking-tight">
                     <Users className="w-4 h-4 text-blue-600" />
-                    Enrolled Students Directory ({data.students.length} Students)
+                    Enrolled Students Directory ({data.students.length})
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Add new students, update personal details, or grant and revoke course access in 1-Click.
@@ -4713,13 +4792,13 @@ export default function AdminDashboardPage() {
                       value={studentSearchQuery}
                       onChange={(e) => setStudentSearchQuery(e.target.value)}
                       placeholder="Search name, phone, email..."
-                      className="pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="pl-8 pr-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                   </div>
 
                   <button
                     onClick={() => setIsAddingStudent(true)}
-                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-xs transition-all"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>+ Add Student</span>
@@ -4727,10 +4806,10 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
+              <div className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs sm:text-sm text-slate-700">
-                    <thead className="bg-slate-50 text-slate-500 uppercase font-mono text-[11px] border-b border-slate-200">
+                    <thead className="bg-slate-50/80 text-slate-500 uppercase font-mono text-[10px] tracking-wider border-b border-slate-200">
                       <tr>
                         <th className="py-3.5 px-5 font-bold">Student Name</th>
                         <th className="py-3.5 px-5 font-bold">Mobile Number</th>
@@ -4753,14 +4832,23 @@ export default function AdminDashboardPage() {
                         .map((student: User) => (
                           <tr key={student.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-4 px-5">
-                              <div className="font-bold text-slate-900">{student.name}</div>
-                              <div className="text-[11px] text-slate-400 font-mono">{student.email}</div>
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                  {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-extrabold text-slate-900 tracking-tight">{student.name}</div>
+                                  <div className="text-[11px] text-slate-400 font-mono truncate">{student.email}</div>
+                                </div>
+                              </div>
                             </td>
                             <td className="py-4 px-5 font-mono font-bold text-slate-800">
                               {student.phone}
                             </td>
-                            <td className="py-4 px-5 text-xs font-bold text-amber-700">
-                              {student.streakDays || 5} Days 🔥
+                            <td className="py-4 px-5 text-xs font-bold text-amber-600">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200/80">
+                                🔥 {student.streakDays || 5} Days
+                              </span>
                             </td>
                             <td className="py-4 px-5">
                               <div className="flex flex-wrap gap-1">
@@ -4787,7 +4875,7 @@ export default function AdminDashboardPage() {
                                       key={c.id}
                                       onClick={() => handleToggleStudentCourse(student.id, c.id)}
                                       title={hasAccess ? `Revoke ${c.title}` : `Grant ${c.title}`}
-                                      className={`px-2 py-1 rounded-lg text-xs font-bold transition-all border ${
+                                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border active:scale-95 cursor-pointer ${
                                         hasAccess
                                           ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
                                           : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700'
@@ -4801,7 +4889,7 @@ export default function AdminDashboardPage() {
 
                                 <button
                                   onClick={() => setEditingStudent(student)}
-                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 active:scale-95 cursor-pointer"
                                   title="Edit Student"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
@@ -4809,7 +4897,7 @@ export default function AdminDashboardPage() {
 
                                 <button
                                   onClick={() => handleDeleteStudent(student.id)}
-                                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200"
+                                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200 active:scale-95 cursor-pointer"
                                   title="Delete Student"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />

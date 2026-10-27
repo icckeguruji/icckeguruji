@@ -17,11 +17,12 @@ import {
   UserCheck
 } from 'lucide-react';
 import Logo from '@/components/Logo';
-import { authenticateUser } from '@/lib/storage';
+import { authenticateUser, getStoredData } from '@/lib/storage';
 import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [config] = useState(() => getStoredData().config);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -98,7 +99,7 @@ export default function LoginPage() {
         {/* Brand Header */}
         <div className="text-center space-y-2 mb-6">
           <div className="flex justify-center mb-2">
-            <Logo size="md" />
+            <Logo size="md" logoUrl={config?.logoUrl} />
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Sign In to ICC KE GURUJI
