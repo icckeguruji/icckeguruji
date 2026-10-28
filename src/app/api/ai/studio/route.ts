@@ -130,6 +130,79 @@ Only return raw JSON without markdown formatting.`;
         extracted.title = rawPrompt.split(/[:\n]/)[0].trim() || 'Important Coaching Notice';
         extracted.message = rawPrompt;
         extracted.category = 'general';
+      } else if (formType === 'course') {
+        const firstLine = rawPrompt.split(/[,;\n]/)[0].trim();
+        extracted.title = firstLine || 'New Intensive Coaching Batch';
+        extracted.subtitle = rawPrompt.toLowerCase().includes('live')
+          ? 'Live Interactive Sessions & Daily DPPs'
+          : 'Complete Syllabus Coverage with Guruji Notes';
+        const lower = rawPrompt.toLowerCase();
+        if (lower.includes('jee') || lower.includes('neet') || lower.includes('competitive')) {
+          extracted.category = 'Competitive Exams';
+        } else if (lower.includes('board') || lower.includes('10') || lower.includes('12')) {
+          extracted.category = 'Board Exams';
+        } else if (lower.includes('code') || lower.includes('web') || lower.includes('python')) {
+          extracted.category = 'Coding & Tech';
+        } else {
+          extracted.category = 'General';
+        }
+        if (!extracted.price) extracted.price = 999;
+        extracted.originalPrice = typeof extracted.price === 'number' ? extracted.price * 2 : 1999;
+        const durMatch = rawPrompt.match(/(\d+\s*(?:month|year|week|day|hr|hour)s?)/i);
+        extracted.duration = durMatch ? durMatch[0] : '3 Months';
+        const instrMatch = rawPrompt.match(/(?:by|instructor|faculty|teacher|sir)?\s*(Er\.|Dr\.|Prof\.)?\s*([A-Z][a-z]+ [A-Z][a-z]+)/);
+        extracted.instructorName = instrMatch ? instrMatch[0].replace(/^(?:by|instructor|faculty|teacher|sir)\s*/i, '').trim() : 'Er. Alok Sharma';
+        extracted.description = rawPrompt;
+      } else if (formType === 'quiz') {
+        const titleMatch = rawPrompt.split(/[:\n,]/)[0].trim();
+        const quizTitle = titleMatch || 'Physics & Math Quick Assessment';
+        extracted.title = quizTitle;
+        extracted.chapter = quizTitle;
+        const durMatch = rawPrompt.match(/(\d+)\s*(?:min|minute)s?/i);
+        extracted.durationMinutes = durMatch ? parseInt(durMatch[1], 10) : 15;
+        extracted.totalMarks = 20;
+        extracted.questions = [
+          {
+            id: `q-gen-${Date.now()}`,
+            question: rawPrompt.length > 20 && !rawPrompt.toLowerCase().includes('quiz') && !rawPrompt.toLowerCase().includes('test')
+              ? rawPrompt
+              : `What fundamental law governs the behavior described in ${quizTitle}?`,
+            options: [
+              'Newton\'s Laws of Motion & Conservation of Momentum',
+              'Ohm\'s Law & Kirchhoff\'s Voltage Rule',
+              'First Law of Thermodynamics',
+              'Boyle\'s and Charles\'s Law'
+            ],
+            correctIndex: 0,
+            explanation: 'Fundamental conservation and governing physical laws describe system mechanics.'
+          }
+        ];
+      } else if (formType === 'fee') {
+        const cleanName = rawPrompt
+          .replace(extracted.phone as string || '', '')
+          .replace(extracted.email as string || '', '')
+          .replace(/fee\s*\d+/i, '')
+          .replace(/\d+/g, '')
+          .split(/[,;\n]/)[0]
+          .trim();
+        extracted.studentName = cleanName || 'Student';
+        extracted.studentPhone = (extracted.phone as string) || '9876543210';
+        if (!extracted.amountPaid) extracted.amountPaid = 1000;
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const matchedMonth = monthNames.find((m) => rawPrompt.toLowerCase().includes(m.toLowerCase()));
+        extracted.month = matchedMonth ? `${matchedMonth} 2026` : `${monthNames[new Date().getMonth()]} 2026`;
+        const lower = rawPrompt.toLowerCase();
+        if (lower.includes('cash')) {
+          extracted.paymentMode = 'Cash';
+        } else if (lower.includes('phonepe')) {
+          extracted.paymentMode = 'PhonePe';
+        } else if (lower.includes('gpay') || lower.includes('google pay')) {
+          extracted.paymentMode = 'Google Pay';
+        } else if (lower.includes('paytm')) {
+          extracted.paymentMode = 'Paytm';
+        } else {
+          extracted.paymentMode = 'UPI (PhonePe/GPay)';
+        }
       }
 
       return NextResponse.json({ success: true, data: extracted, source: 'heuristic' });

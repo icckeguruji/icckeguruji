@@ -144,8 +144,21 @@ export default function UpiPaymentModal({
       enrolledCourseIds: Array.from(new Set([...currentUser.enrolledCourseIds, course.id])),
     };
 
+    const updatedStudents = (data.students || []).map((s) => {
+      if (s.id === currentUser.id || s.phone === currentUser.phone) {
+        return {
+          ...s,
+          name: studentName.trim() || s.name,
+          phone: studentPhone.trim() || s.phone,
+          enrolledCourseIds: Array.from(new Set([...(s.enrolledCourseIds || []), course.id])),
+        };
+      }
+      return s;
+    });
+
     saveStoredData('PAYMENTS', updatedPayments);
     saveStoredData('USER', updatedUser);
+    saveStoredData('STUDENTS', updatedStudents);
 
     onSuccess(updatedUser);
   };

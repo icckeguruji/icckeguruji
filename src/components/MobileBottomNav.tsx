@@ -9,7 +9,8 @@ import {
   PlayCircle,
   Sparkles,
   User,
-  ShieldCheck
+  ShieldCheck,
+  GraduationCap
 } from 'lucide-react';
 import { User as UserType } from '@/types';
 
@@ -24,6 +25,7 @@ export default function MobileBottomNav({ currentUser, onOpenLogin }: MobileBott
 
   const isHome = pathname === '/';
   const isAdmin = pathname.startsWith('/admin');
+  const isTeacher = pathname.startsWith('/teacher');
   const isCourse = pathname.startsWith('/course');
   const isLogin = pathname.startsWith('/login');
 
@@ -31,6 +33,8 @@ export default function MobileBottomNav({ currentUser, onOpenLogin }: MobileBott
     if (currentUser && currentUser.phone && currentUser.name) {
       if (currentUser.role === 'admin') {
         router.push('/admin');
+      } else if (currentUser.role === 'teacher') {
+        router.push('/teacher');
       } else {
         router.push('/course/course-1');
       }
@@ -106,7 +110,7 @@ export default function MobileBottomNav({ currentUser, onOpenLogin }: MobileBott
           <span className="text-[10px] mt-0.5 tracking-tight">Doubt AI</span>
         </Link>
 
-        {/* 5. Account / Admin Portal */}
+        {/* 5. Account / Admin / Teacher Portal */}
         {currentUser && currentUser.role === 'admin' ? (
           <Link
             href="/admin"
@@ -121,6 +125,21 @@ export default function MobileBottomNav({ currentUser, onOpenLogin }: MobileBott
               <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-purple-600" />
             </div>
             <span className="text-[10px] mt-0.5 tracking-tight">Admin</span>
+          </Link>
+        ) : currentUser && currentUser.role === 'teacher' ? (
+          <Link
+            href="/teacher"
+            className={`flex-1 flex flex-col items-center justify-center py-1 rounded-2xl transition-transform active:scale-95 ${
+              isTeacher
+                ? 'text-indigo-600 font-black'
+                : 'text-slate-500 hover:text-indigo-600 font-semibold'
+            }`}
+          >
+            <div className="relative">
+              <GraduationCap className={`w-5 h-5 ${isTeacher ? 'stroke-[2.5px] text-indigo-600' : 'stroke-2'}`} />
+              <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600" />
+            </div>
+            <span className="text-[10px] mt-0.5 tracking-tight">Faculty</span>
           </Link>
         ) : (
           <button

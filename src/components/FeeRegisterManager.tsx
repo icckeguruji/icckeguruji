@@ -15,7 +15,7 @@ import {
   Download
 } from 'lucide-react';
 import { User, Course, FeeRecord } from '@/types';
-import { saveStoredData } from '@/lib/storage';
+import { saveStoredData, getStoredData } from '@/lib/storage';
 
 interface FeeRegisterManagerProps {
   students: User[];
@@ -125,6 +125,14 @@ export default function FeeRegisterManager({
 
     saveStoredData('FEE_RECORDS', updatedRecords);
     saveStoredData('STUDENTS', updatedStudents);
+
+    const stored = getStoredData();
+    if (stored.user && (stored.user.id === student.id || stored.user.phone === student.phone)) {
+      saveStoredData('USER', {
+        ...stored.user,
+        feesDue: Number(newPayment.dueRemaining),
+      });
+    }
 
     setIsAddingPayment(false);
     onUpdate();

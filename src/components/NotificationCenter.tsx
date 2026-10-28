@@ -129,7 +129,7 @@ export default function NotificationCenter({ currentUser }: NotificationCenterPr
 
       {/* Notifications Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 sm:-right-4 mt-2 w-[92vw] sm:w-96 max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="fixed sm:absolute top-16 sm:top-full left-3 right-3 sm:left-auto sm:right-0 sm:-right-4 sm:mt-2 w-auto sm:w-96 max-w-sm mx-auto sm:mx-0 bg-white rounded-3xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           {/* Header */}
           <div className="p-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
             <div className="flex items-center gap-2">

@@ -1539,6 +1539,40 @@ export function resetUserPassword(
     return { success: true, user: admin };
   }
 
+  // Check teacher / faculty (by Faculty ID, email, or phone)
+  const teacher = (data.teachers || []).find((t) => {
+    const tEmail = (t.email || '').toLowerCase();
+    const tDigits = (t.phone || '').replace(/[^0-9]/g, '').slice(-10);
+    const tFacultyId = (t.facultyId || '').toLowerCase();
+    return (
+      tEmail === cleanId ||
+      tFacultyId === cleanId ||
+      (digitsOnly.length >= 10 && tDigits === digitsOnly.slice(-10))
+    );
+  });
+
+  if (teacher) {
+    teacher.password = newPassword;
+    saveStoredData('TEACHERS', data.teachers);
+    const teacherUser: User = {
+      id: teacher.id,
+      name: teacher.name,
+      phone: teacher.phone,
+      email: teacher.email,
+      password: newPassword,
+      role: 'teacher',
+      facultyId: teacher.facultyId,
+      avatar: teacher.avatar,
+      joinedDate: teacher.joiningDate,
+      address: teacher.address,
+      enrolledCourseIds: teacher.assignedBatches || [],
+    };
+    if (data.user.id === teacher.id || data.user.email === teacher.email) {
+      saveStoredData('USER', teacherUser);
+    }
+    return { success: true, user: teacherUser };
+  }
+
   // Check existing student
   const student = data.students.find((s) => {
     const sEmail = (s.email || '').toLowerCase();
