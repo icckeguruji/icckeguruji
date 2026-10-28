@@ -12,7 +12,9 @@ import {
   ArrowRight,
   ArrowLeft,
   HelpCircle,
-  Check
+  Check,
+  Bookmark,
+  Trash2
 } from 'lucide-react';
 
 interface QuizEngineProps {
@@ -23,6 +25,7 @@ interface QuizEngineProps {
 export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [markedForReview, setMarkedForReview] = useState<Record<number, boolean>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(quiz.durationMinutes * 60);
 
@@ -50,6 +53,23 @@ export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
     setSelectedAnswers((prev) => ({ ...prev, [currentIdx]: optIdx }));
   };
 
+  const handleClearResponse = () => {
+    if (isSubmitted) return;
+    setSelectedAnswers((prev) => {
+      const copy = { ...prev };
+      delete copy[currentIdx];
+      return copy;
+    });
+  };
+
+  const handleToggleReview = () => {
+    if (isSubmitted) return;
+    setMarkedForReview((prev) => ({
+      ...prev,
+      [currentIdx]: !prev[currentIdx],
+    }));
+  };
+
   const handleNext = () => {
     if (currentIdx < quiz.questions.length - 1) {
       setCurrentIdx((prev) => prev + 1);
@@ -68,6 +88,7 @@ export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
 
   const handleReset = () => {
     setSelectedAnswers({});
+    setMarkedForReview({});
     setCurrentIdx(0);
     setIsSubmitted(false);
     setTimeLeft(quiz.durationMinutes * 60);
@@ -227,23 +248,64 @@ export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
       ) : (
         /* Question Form */
         <div className="p-6 sm:p-8 space-y-6">
-          {/* Progress bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-              <span>Question {currentIdx + 1} of {quiz.questions.length}</span>
-              <span>{Math.round(((currentIdx + 1) / quiz.questions.length) * 100)}%</span>
+          {/* Question Palette & Exam Progress */}
+          <div className="space-y-3 pb-2 border-b border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500">
+              <span className="text-slate-800 font-extrabold flex items-center gap-1.5">
+                <span>Question {currentIdx + 1} of {quiz.questions.length}</span>
+                {markedForReview[currentIdx] && (
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[10px] font-black uppercase flex items-center gap-1">
+                    <Bookmark className="w-3 h-3 fill-purple-600 text-purple-600" /> Under Review
+                  </span>
+                )}
+              </span>
+              <div className="flex items-center gap-3 text-[11px]">
+                <span className="flex items-center gap-1 text-emerald-700 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  {Object.keys(selectedAnswers).length} Answered
+                </span>
+                <span className="flex items-center gap-1 text-purple-700 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-purple-500" />
+                  {Object.values(markedForReview).filter(Boolean).length} Review
+                </span>
+                <span className="flex items-center gap-1 text-slate-400 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-slate-300" />
+                  {quiz.questions.length - Object.keys(selectedAnswers).length} Left
+                </span>
+              </div>
             </div>
-            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300"
-                style={{ width: `${((currentIdx + 1) / quiz.questions.length) * 100}%` }}
-              />
+
+            {/* Question Quick Jump Palette */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+              {quiz.questions.map((_, qIndex) => {
+                const isCurrent = qIndex === currentIdx;
+                const isAnswered = selectedAnswers[qIndex] !== undefined;
+                const isReviewed = markedForReview[qIndex];
+
+                return (
+                  <button
+                    key={qIndex}
+                    onClick={() => setCurrentIdx(qIndex)}
+                    className={`w-8 h-8 rounded-xl font-bold text-xs shrink-0 flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                      isCurrent
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 ring-2 ring-blue-500/30'
+                        : isReviewed
+                        ? 'bg-purple-100 text-purple-800 border border-purple-300 font-extrabold'
+                        : isAnswered
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'
+                    }`}
+                  >
+                    {qIndex + 1}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Current Question */}
           <div className="space-y-4">
-            <h4 className="text-base sm:text-lg font-black text-slate-900 leading-relaxed">
+            <h4 className="text-base sm:text-lg font-black text-slate-900 leading-relaxed tracking-tight">
               {currentQ.question}
             </h4>
 
@@ -255,9 +317,9 @@ export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
                   <button
                     key={optIdx}
                     onClick={() => handleSelectOption(optIdx)}
-                    className={`w-full p-4 rounded-2xl border text-left text-xs sm:text-sm font-semibold transition-all flex items-center justify-between gap-3 ${
+                    className={`w-full p-4 rounded-2xl border text-left text-xs sm:text-sm font-semibold transition-all flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] ${
                       isSelected
-                        ? 'bg-blue-50 border-blue-600 text-blue-900 shadow-xs ring-2 ring-blue-500/20'
+                        ? 'bg-blue-50/80 border-blue-600 text-blue-900 shadow-xs ring-2 ring-blue-500/20'
                         : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
@@ -265,8 +327,8 @@ export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
                       <span
                         className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                           isSelected
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 text-slate-500'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         {String.fromCharCode(65 + optIdx)}
@@ -288,33 +350,60 @@ export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
           </div>
 
           {/* Navigation Controls */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-            <button
-              onClick={handlePrev}
-              disabled={currentIdx === 0}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Previous</span>
-            </button>
+          <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePrev}
+                disabled={currentIdx === 0}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Prev</span>
+              </button>
 
-            {currentIdx < quiz.questions.length - 1 ? (
               <button
-                onClick={handleNext}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all"
+                onClick={handleToggleReview}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all active:scale-95 cursor-pointer ${
+                  markedForReview[currentIdx]
+                    ? 'bg-purple-50 text-purple-700 border-purple-300'
+                    : 'bg-slate-50 hover:bg-purple-50 text-slate-600 hover:text-purple-700 border-slate-200'
+                }`}
               >
-                <span>Next Question</span>
-                <ArrowRight className="w-4 h-4" />
+                <Bookmark className={`w-3.5 h-3.5 ${markedForReview[currentIdx] ? 'fill-purple-600 text-purple-600' : ''}`} />
+                <span>{markedForReview[currentIdx] ? 'Marked' : 'Review'}</span>
               </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all"
-              >
-                <Check className="w-4 h-4 stroke-[3]" />
-                <span>Submit &amp; View Result</span>
-              </button>
-            )}
+
+              {selectedAnswers[currentIdx] !== undefined && (
+                <button
+                  onClick={handleClearResponse}
+                  className="px-3 py-2 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl text-xs font-bold border border-slate-200 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                  title="Clear selected option"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {currentIdx < quiz.questions.length - 1 ? (
+                <button
+                  onClick={handleNext}
+                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all active:scale-95 cursor-pointer"
+                >
+                  <span>Next Question</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Submit &amp; View Result</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

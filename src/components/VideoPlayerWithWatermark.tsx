@@ -18,6 +18,7 @@ export default function VideoPlayerWithWatermark({
   // Moving watermark coordinates
   const [watermarkPos, setWatermarkPos] = useState({ top: '15%', left: '15%' });
   const [currentTimeStr, setCurrentTimeStr] = useState('');
+  const [isTabInactive, setIsTabInactive] = useState(false);
 
   // Periodically change watermark position every 8 seconds to prevent recording & cropping
   useEffect(() => {
@@ -34,11 +35,37 @@ export default function VideoPlayerWithWatermark({
       updateTime();
     }, 8000);
 
-    return () => clearInterval(interval);
+    // Defensive: Detect tab switching or window blur to deter unauthorized screen recording
+    const handleVisibilityChange = () => {
+      setIsTabInactive(document.hidden);
+    };
+
+    // Deter inspect shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.ctrlKey && e.key === 'u')
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   return (
-    <div className="flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-md">
+    <div
+      onContextMenu={(e) => e.preventDefault()}
+      className="flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-md select-none"
+    >
       {/* Top Banner */}
       <div className="bg-slate-50/90 border-b border-slate-200 px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2">
@@ -95,6 +122,20 @@ export default function VideoPlayerWithWatermark({
         <div className="absolute bottom-3 right-4 pointer-events-none z-10 text-[10px] font-mono text-white/20 select-none hidden md:block">
           Secured for {user.phone}
         </div>
+
+        {/* Anti-Screen Recording Privacy Shield on Window Inactivity */}
+        {isTabInactive && (
+          <div className="absolute inset-0 z-30 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 select-none transition-all duration-300">
+            <ShieldAlert className="w-12 h-12 text-amber-400 mb-2 animate-bounce" />
+            <h4 className="font-extrabold text-white text-base tracking-tight">Classroom Protected Session</h4>
+            <p className="text-xs text-slate-300 max-w-sm mt-1">
+              Playback paused while another window is active to safeguard course contents. Return to this tab to resume.
+            </p>
+            <span className="mt-3 text-[10px] font-mono font-bold text-amber-300/80 bg-white/10 px-3 py-1 rounded-full border border-white/15">
+              Watermarked for: {user.name} ({user.phone || user.email})
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Lesson Details Footer */}

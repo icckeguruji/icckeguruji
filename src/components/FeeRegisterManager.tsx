@@ -12,7 +12,8 @@ import {
   AlertTriangle,
   Receipt,
   X,
-  DollarSign
+  DollarSign,
+  Download
 } from 'lucide-react';
 import { User, Course, FeeRecord } from '@/types';
 import { saveStoredData } from '@/lib/storage';
@@ -159,6 +160,34 @@ export default function FeeRegisterManager({
     }
   };
 
+  // Export Fee Ledger to CSV
+  const handleExportCSV = () => {
+    const headers = ['Roll No', 'Student Name', 'Mobile Number', 'Father Name', 'Monthly Fee', 'Due Remaining', 'Status'];
+    const rows = filteredStudents.map((s, idx) => {
+      const due = s.feesDue ?? 0;
+      const status = due === 0 ? 'PAID' : 'DUE';
+      return [
+        s.rollNo || idx + 1,
+        `"${s.name.replace(/"/g, '""')}"`,
+        s.phone,
+        `"${(s.fatherName || 'Parent / Guardian').replace(/"/g, '""')}"`,
+        s.monthlyFee || 1000,
+        due,
+        status,
+      ];
+    });
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Fee_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -173,13 +202,23 @@ export default function FeeRegisterManager({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddingPayment(true)}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Record Fee Payment</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={handleExportCSV}
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            title="Download Excel/CSV Fee Sheet"
+          >
+            <Download className="w-4 h-4 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={() => setIsAddingPayment(true)}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Record Fee Payment</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary Stat Cards */}
