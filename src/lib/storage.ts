@@ -20,6 +20,8 @@ import {
   AttendanceRecord,
   FeeRecord,
   WeeklyTest,
+  Teacher,
+  TeacherAttendanceRecord,
 } from '@/types';
 
 export const DEFAULT_CONFIG: CoachingConfig = {
@@ -954,6 +956,124 @@ export const INITIAL_WEEKLY_TESTS: WeeklyTest[] = [
   }
 ];
 
+export const INITIAL_TEACHERS: Teacher[] = [
+  {
+    id: "teacher-1",
+    name: "Er. Alok Sharma (Guruji)",
+    phone: "+91 99342 15013",
+    email: "alok.physics@icckeguruji.com",
+    subject: "Physics (Class 11, 12 & NEET/JEE)",
+    qualification: "M.Tech IIT Kanpur (Physics Gold Medalist)",
+    experience: "12+ Years",
+    salaryMonthly: 45000,
+    joiningDate: "2020-04-01",
+    assignedBatches: ["Class 12 Physics Complete Mastery", "NEET/JEE Foundation"],
+    status: "active",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    bio: "Founder & Lead Physics Faculty. Known for intuitive visual demonstrations and solving tough numericals in 30 seconds."
+  },
+  {
+    id: "teacher-2",
+    name: "Neha Verma",
+    phone: "+91 98765 43211",
+    email: "neha.maths@icckeguruji.com",
+    subject: "Mathematics (Class 10 & 12 Boards)",
+    qualification: "M.Sc. Mathematics, B.Ed. (Delhi University)",
+    experience: "8+ Years",
+    salaryMonthly: 35000,
+    joiningDate: "2021-07-15",
+    assignedBatches: ["Class 10 Board Super 100", "Class 12 Calculus Mastery"],
+    status: "active",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+    bio: "Board examination specialist with track record of mentoring 40+ students scoring 100/100 in Mathematics."
+  },
+  {
+    id: "teacher-3",
+    name: "Dr. R.K. Mishra",
+    phone: "+91 98111 22445",
+    email: "dr.mishra.chem@icckeguruji.com",
+    subject: "Chemistry (Organic & Physical)",
+    qualification: "Ph.D. Organic Chemistry (BHU)",
+    experience: "10+ Years",
+    salaryMonthly: 38000,
+    joiningDate: "2022-01-10",
+    assignedBatches: ["Class 11 & 12 Chemistry", "NEET Medical Chemistry"],
+    status: "active",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    bio: "Expert in organic reaction mechanisms and NCERT named reactions memory charts."
+  },
+  {
+    id: "teacher-4",
+    name: "Suman Singh",
+    phone: "+91 99222 55667",
+    email: "suman.bio@icckeguruji.com",
+    subject: "Biology & Botany (NEET / Class 10)",
+    qualification: "M.Sc. Zoology, CSIR-NET Qualified",
+    experience: "6+ Years",
+    salaryMonthly: 30000,
+    joiningDate: "2023-03-01",
+    assignedBatches: ["Class 10 Science", "NEET Biology Booster"],
+    status: "active",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80",
+    bio: "Passionate about diagrammatic NCERT biology and botanical taxonomy."
+  }
+];
+
+export const INITIAL_TEACHER_ATTENDANCE: TeacherAttendanceRecord[] = [
+  {
+    id: "tatt-1",
+    date: "2026-10-28",
+    teacherId: "teacher-1",
+    teacherName: "Er. Alok Sharma (Guruji)",
+    teacherPhone: "+91 99342 15013",
+    subject: "Physics",
+    status: "present",
+    inTime: "07:30 AM",
+    outTime: "02:00 PM",
+    markedAt: "07:35 AM",
+    remarks: "Morning Batch + Doubt Class"
+  },
+  {
+    id: "tatt-2",
+    date: "2026-10-28",
+    teacherId: "teacher-2",
+    teacherName: "Neha Verma",
+    teacherPhone: "+91 98765 43211",
+    subject: "Mathematics",
+    status: "present",
+    inTime: "08:00 AM",
+    outTime: "01:30 PM",
+    markedAt: "08:05 AM",
+    remarks: "Class 10 Revision Test"
+  },
+  {
+    id: "tatt-3",
+    date: "2026-10-28",
+    teacherId: "teacher-3",
+    teacherName: "Dr. R.K. Mishra",
+    teacherPhone: "+91 98111 22445",
+    subject: "Chemistry",
+    status: "present",
+    inTime: "08:15 AM",
+    outTime: "02:30 PM",
+    markedAt: "08:20 AM",
+    remarks: "Organic Lab & Numericals"
+  },
+  {
+    id: "tatt-4",
+    date: "2026-10-28",
+    teacherId: "teacher-4",
+    teacherName: "Suman Singh",
+    teacherPhone: "+91 99222 55667",
+    subject: "Biology & Botany",
+    status: "leave",
+    inTime: "--",
+    outTime: "--",
+    markedAt: "08:00 AM",
+    remarks: "Approved Personal Leave"
+  }
+];
+
 // Storage keys
 const STORAGE_KEYS = {
   COURSES: 'coaching_courses_v5',
@@ -978,6 +1098,8 @@ const STORAGE_KEYS = {
   ATTENDANCE: 'coaching_attendance_v6',
   FEE_RECORDS: 'coaching_fee_records_v6',
   WEEKLY_TESTS: 'coaching_weekly_tests_v6',
+  TEACHERS: 'coaching_teachers_v1',
+  TEACHER_ATTENDANCE: 'coaching_teacher_attendance_v1',
 };
 
 export interface StoredData {
@@ -1003,6 +1125,8 @@ export interface StoredData {
   attendance: AttendanceRecord[];
   feeRecords: FeeRecord[];
   weeklyTests: WeeklyTest[];
+  teachers: Teacher[];
+  teacherAttendance: TeacherAttendanceRecord[];
 }
 
 export const getStoredData = (): StoredData => {
@@ -1030,6 +1154,8 @@ export const getStoredData = (): StoredData => {
       attendance: INITIAL_ATTENDANCE,
       feeRecords: INITIAL_FEE_RECORDS,
       weeklyTests: INITIAL_WEEKLY_TESTS,
+      teachers: INITIAL_TEACHERS,
+      teacherAttendance: INITIAL_TEACHER_ATTENDANCE,
     };
   }
 
@@ -1057,6 +1183,8 @@ export const getStoredData = (): StoredData => {
     const attendance: AttendanceRecord[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ATTENDANCE) || 'null') || INITIAL_ATTENDANCE;
     const feeRecords: FeeRecord[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.FEE_RECORDS) || 'null') || INITIAL_FEE_RECORDS;
     const weeklyTests: WeeklyTest[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WEEKLY_TESTS) || 'null') || INITIAL_WEEKLY_TESTS;
+    const teachers: Teacher[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEACHERS) || 'null') || INITIAL_TEACHERS;
+    const teacherAttendance: TeacherAttendanceRecord[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEACHER_ATTENDANCE) || 'null') || INITIAL_TEACHER_ATTENDANCE;
 
     return {
       courses,
@@ -1081,6 +1209,8 @@ export const getStoredData = (): StoredData => {
       attendance,
       feeRecords,
       weeklyTests,
+      teachers,
+      teacherAttendance,
     };
   } catch (err) {
     console.error("Storage error:", err);
@@ -1107,6 +1237,8 @@ export const getStoredData = (): StoredData => {
       attendance: INITIAL_ATTENDANCE,
       feeRecords: INITIAL_FEE_RECORDS,
       weeklyTests: INITIAL_WEEKLY_TESTS,
+      teachers: INITIAL_TEACHERS,
+      teacherAttendance: INITIAL_TEACHER_ATTENDANCE,
     };
   }
 };

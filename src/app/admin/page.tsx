@@ -40,7 +40,8 @@ import {
   Globe,
   MapPin,
   Phone,
-  Share2
+  Share2,
+  UserCheck
 } from 'lucide-react';
 import {
   Course,
@@ -69,6 +70,8 @@ import { GOOGLE_APPS_SCRIPT_CODE } from '@/lib/gasScript';
 import AttendanceManager from '@/components/AttendanceManager';
 import FeeRegisterManager from '@/components/FeeRegisterManager';
 import WeeklyTestManager from '@/components/WeeklyTestManager';
+import TeacherManager from '@/components/TeacherManager';
+import TeacherAttendanceManager from '@/components/TeacherAttendanceManager';
 
 const emptySubscribe = () => () => {};
 const getClientToday = () => new Date().toISOString().split('T')[0];
@@ -84,6 +87,8 @@ function AdminDashboardContent() {
     | 'attendance'
     | 'fees'
     | 'weekly_tests'
+    | 'teachers'
+    | 'teacher_attendance'
     | 'students'
     | 'courses'
     | 'lectures'
@@ -1400,6 +1405,9 @@ function AdminDashboardContent() {
   const totalDueAmount = (data.students || []).reduce((acc, s) => acc + (s.feesDue ?? 0), 0);
   const totalDueStudents = (data.students || []).filter((s) => (s.feesDue ?? 0) > 0).length;
 
+  const todayTeacherRecords = (data.teacherAttendance || []).filter((a) => a.date === todayStr);
+  const todayPresentTeachers = todayTeacherRecords.filter((a) => a.status === 'present').length;
+
   const navSections: Array<{ title: string; items: NavItem[] }> = [
     {
       title: 'Operations',
@@ -1407,7 +1415,7 @@ function AdminDashboardContent() {
         { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
         {
           id: 'attendance',
-          label: 'Attendance',
+          label: 'Student Attendance',
           icon: Calendar,
           badge: `${todayPresent}/${data.students.length}`,
           badgeColor: 'bg-emerald-500 text-white font-black'
@@ -1430,6 +1438,24 @@ function AdminDashboardContent() {
           label: 'Students',
           icon: Users,
           count: data.students.length
+        },
+      ]
+    },
+    {
+      title: 'Faculty & Staff',
+      items: [
+        {
+          id: 'teachers',
+          label: 'Teachers Directory',
+          icon: GraduationCap,
+          count: (data.teachers || []).length
+        },
+        {
+          id: 'teacher_attendance',
+          label: 'Teacher Attendance',
+          icon: UserCheck,
+          badge: `${todayPresentTeachers}/${(data.teachers || []).length}`,
+          badgeColor: 'bg-indigo-500 text-white font-black'
         },
       ]
     },
@@ -1580,7 +1606,9 @@ function AdminDashboardContent() {
               <div className="flex items-center gap-2">
                 <h2 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight capitalize flex items-center gap-2">
                   {activeTab === 'overview' && 'Dashboard'}
-                  {activeTab === 'attendance' && 'Attendance'}
+                  {activeTab === 'attendance' && 'Student Attendance'}
+                  {activeTab === 'teacher_attendance' && 'Teacher Attendance'}
+                  {activeTab === 'teachers' && 'Teachers & Faculty Directory'}
                   {activeTab === 'fees' && 'Fees & Dues'}
                   {activeTab === 'weekly_tests' && 'Weekly Tests'}
                   {activeTab === 'students' && 'Students'}
@@ -1722,13 +1750,27 @@ function AdminDashboardContent() {
                   </span>
                   <span className="text-[11px] text-slate-400 font-semibold">Instant 1-Click Operations</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
                   <button
                     onClick={() => setActiveTab('attendance')}
                     className="p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
                   >
                     <Calendar className="w-4 h-4 text-emerald-600" />
-                    <span>Attendance</span>
+                    <span>Student Att.</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('teacher_attendance')}
+                    className="p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-700 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <UserCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Teacher Att.</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('teachers')}
+                    className="p-3 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/80 text-indigo-700 text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <GraduationCap className="w-4 h-4 text-indigo-600" />
+                    <span>Faculty</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('fees')}
@@ -1896,13 +1938,34 @@ function AdminDashboardContent() {
           )}
 
           {/* =====================================================================
-              1.1. DAILY ATTENDANCE TAB
+              1.1. DAILY STUDENT ATTENDANCE TAB
           ===================================================================== */}
           {activeTab === 'attendance' && (
             <AttendanceManager
               students={data.students}
               courses={data.courses}
               initialAttendance={data.attendance || []}
+              onUpdate={refreshState}
+            />
+          )}
+
+          {/* =====================================================================
+              1.1B. TEACHER ATTENDANCE REGISTER TAB
+          ===================================================================== */}
+          {activeTab === 'teacher_attendance' && (
+            <TeacherAttendanceManager
+              teachers={data.teachers || []}
+              initialAttendance={data.teacherAttendance || []}
+              onUpdate={refreshState}
+            />
+          )}
+
+          {/* =====================================================================
+              1.1C. TEACHERS & FACULTY DIRECTORY TAB
+          ===================================================================== */}
+          {activeTab === 'teachers' && (
+            <TeacherManager
+              teachers={data.teachers || []}
               onUpdate={refreshState}
             />
           )}

@@ -492,6 +492,72 @@ export default function HomePage() {
       </section>
 
       {/* =========================================================================
+          FEATURE: EXPERT FACULTY & TEACHERS SHOWCASE
+      ========================================================================= */}
+      {(data.teachers || []).length > 0 && (
+        <section id="faculty" className="py-16 bg-gradient-to-b from-white to-slate-50 border-b border-slate-200 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+                Meet Our Star Mentors
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                Learn from Bihar &amp; India&apos;s Finest Educators
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                Our faculty team brings decades of board examination, IIT-JEE, and NEET mentoring expertise to help you achieve 95%+ marks.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {(data.teachers || []).map((teacher) => (
+                <div
+                  key={teacher.id}
+                  className="p-5 rounded-3xl bg-white border border-slate-200/80 hover:border-indigo-300 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-black text-xl shadow-xs mb-4">
+                      {teacher.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')}
+                    </div>
+                    <h3 className="font-extrabold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                      {teacher.name}
+                    </h3>
+                    <p className="text-xs font-bold text-indigo-600 mt-0.5">{teacher.subject}</p>
+                    <p className="text-[11px] text-slate-500 font-semibold mt-1">
+                      {teacher.qualification} • {teacher.experience}
+                    </p>
+                    {teacher.bio && (
+                      <p className="text-xs text-slate-600 mt-3 line-clamp-3 leading-relaxed">
+                        &quot;{teacher.bio}&quot;
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                      ✓ Active Mentor
+                    </span>
+                    <a
+                      href={`https://wa.me/${(data.config.whatsappNumber || '').replace(/[^0-9]/g, '')}?text=Hello%20ICC%20KE%20GURUJI,%20I%20want%20to%20know%20about%20${encodeURIComponent(teacher.name)}%27s%20batch.`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-indigo-600 hover:text-indigo-800"
+                    >
+                      Inquire Batch ➜
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* =========================================================================
           FEATURE: INTERACTIVE DAILY PRACTICE MCQ PREVIEW
       ========================================================================= */}
       <section id="daily-practice" className="py-16 bg-gradient-to-b from-blue-50/50 to-white border-b border-slate-200 scroll-mt-20">

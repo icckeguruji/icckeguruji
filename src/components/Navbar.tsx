@@ -57,6 +57,7 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
 
   const primaryLinks = [
     { label: 'Batches', href: '/#courses-section' },
+    { label: 'Faculty', href: '/#faculty' },
     { label: 'Timetable', href: '/#timetable' },
     { label: 'Free PYQs', href: '/#pyq' },
     { label: 'Daily MCQ', href: '/#daily-practice' },
@@ -65,6 +66,7 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
 
   const allMobileLinks = [
     { label: 'Batches', href: '/#courses-section' },
+    { label: 'Faculty', href: '/#faculty' },
     { label: 'Timetable', href: '/#timetable' },
     { label: 'Free PYQs', href: '/#pyq' },
     { label: 'Daily MCQ', href: '/#daily-practice' },

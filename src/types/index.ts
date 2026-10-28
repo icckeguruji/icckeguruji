@@ -346,3 +346,40 @@ export interface WeeklyTest {
   results: WeeklyTestStudentResult[];
 }
 
+// =========================================================================
+// TEACHERS & FACULTY MANAGEMENT INTERFACES
+// =========================================================================
+
+export type TeacherAttendanceStatus = 'present' | 'absent' | 'half_day' | 'leave';
+
+export interface Teacher {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  subject: string;
+  qualification: string;
+  experience: string;
+  salaryMonthly: number;
+  joiningDate: string;
+  assignedBatches?: string[];
+  avatar?: string;
+  status: 'active' | 'on_leave' | 'inactive';
+  bio?: string;
+}
+
+export interface TeacherAttendanceRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  teacherId: string;
+  teacherName: string;
+  teacherPhone: string;
+  subject: string;
+  status: TeacherAttendanceStatus;
+  inTime?: string;
+  outTime?: string;
+  markedAt?: string;
+  remarks?: string;
+}
+
+
