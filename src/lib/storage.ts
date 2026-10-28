@@ -60,6 +60,8 @@ export const DEFAULT_CONFIG: CoachingConfig = {
   homeQuizOptions: ["Doubled (2x)", "Quadrupled (4x)", "Halved (1/2)", "One-Fourth (1/4)"],
   homeQuizCorrectIndex: 1,
   homeQuizExplanation: "Correct Answer: B (Quadrupled)! According to Coulomb's Law, F ∝ 1/r². When distance is halved, the force increases by 4 times.",
+  apkDownloadUrl: "https://github.com/icckeguruji/icckeguruji/releases/latest/download/icckeguruji.apk",
+  appVersion: "v1.0.0",
 };
 
 export const INITIAL_COURSES: Course[] = [

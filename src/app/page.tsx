@@ -25,7 +25,9 @@ import {
   MessageCircle,
   LogIn,
   Code2,
-  Phone
+  Phone,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { Course, User } from '@/types';
 import { getStoredData, saveStoredData } from '@/lib/storage';
@@ -37,11 +39,13 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import Logo from '@/components/Logo';
 import TimedQuizHub from '@/components/TimedQuizHub';
 import AiStudentProblemSolver from '@/components/AiStudentProblemSolver';
+import DownloadAppModal from '@/components/DownloadAppModal';
 
 export default function HomePage() {
   const [data, setData] = useState(() => getStoredData());
   const [currentUser, setCurrentUser] = useState<User>(() => getStoredData().user);
   const [selectedCourseForPayment, setSelectedCourseForPayment] = useState<Course | null>(null);
+  const [showDownloadApp, setShowDownloadApp] = useState(false);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -214,6 +218,14 @@ export default function HomePage() {
               <MessageCircle className="w-4 h-4 text-emerald-600" />
               <span>Ask Guruji on WhatsApp</span>
             </a>
+
+            <button
+              onClick={() => setShowDownloadApp(true)}
+              className="px-5 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-2xl text-sm shadow-md shadow-emerald-500/25 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+            >
+              <Smartphone className="w-4 h-4 text-emerald-200" />
+              <span>Get Android App (APK)</span>
+            </button>
           </div>
 
           {/* Floating Navigation Capsule */}
@@ -838,6 +850,62 @@ export default function HomePage() {
       )}
 
       {/* =========================================================================
+          OFFICIAL ANDROID APP DOWNLOAD BANNER
+      ========================================================================= */}
+      <section className="py-12 bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 text-white relative overflow-hidden border-t border-emerald-900/40">
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-6 sm:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+            <div className="space-y-4 max-w-2xl text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black uppercase tracking-wider">
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Now Available for Android</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                Study Anytime with the Official{' '}
+                <span className="bg-gradient-to-r from-emerald-300 to-teal-200 bg-clip-text text-transparent">
+                  ICC KE GURUJI Android App
+                </span>
+              </h2>
+              <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed">
+                Experience distraction-free live classes, full-screen notes reader, instant fee payment, and 24x7 AI doubt solving right from your Android phone!
+              </p>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-bold text-emerald-200">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" /> Version {data.config.appVersion || 'v1.0.0'}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" /> ~4.5 MB Lightweight
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" /> Zero Browser Ads
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-3 shrink-0">
+              <button
+                onClick={() => setShowDownloadApp(true)}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer"
+              >
+                <Download className="w-5 h-5 text-slate-950 animate-bounce" />
+                <span>Download Android APK</span>
+              </button>
+              <a
+                href={data.config.apkDownloadUrl || '/api/download-apk'}
+                download="icckeguruji-v1.0.0.apk"
+                className="text-xs text-emerald-300 hover:text-white font-bold flex items-center gap-1 underline underline-offset-4"
+              >
+                <span>Direct APK Download Link</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
           COMPREHENSIVE DIRECTORY FOOTER (4 COLUMNS + DIRECT LINKS)
       ========================================================================= */}
       <footer className="bg-white border-t border-slate-200 pt-14 pb-8 text-xs text-slate-600">
@@ -1107,6 +1175,15 @@ export default function HomePage() {
           isOpen={showAiProblemSolver}
           onClose={() => setShowAiProblemSolver(false)}
           studentName={currentUser.name || 'Student'}
+        />
+      )}
+
+      {/* Official Android App Download Modal */}
+      {showDownloadApp && (
+        <DownloadAppModal
+          isOpen={showDownloadApp}
+          onClose={() => setShowDownloadApp(false)}
+          config={data.config}
         />
       )}
 

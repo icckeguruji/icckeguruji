@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ICC KE GURUJI</string>
+    <string name="app_url">https://icckeguruji.vercel.app</string>
+    <string name="error_no_internet">No Internet Connection. Please check your network and pull down to refresh.</string>
+</resources>

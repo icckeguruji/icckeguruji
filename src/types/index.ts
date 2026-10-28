@@ -201,6 +201,8 @@ export interface CoachingConfig {
   homeQuizOptions?: string[];
   homeQuizCorrectIndex?: number;
   homeQuizExplanation?: string;
+  apkDownloadUrl?: string;
+  appVersion?: string;
 }
 
 // =========================================================================

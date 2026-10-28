@@ -17,7 +17,8 @@ import {
   Clock,
   Sparkles,
   Bot,
-  IdCard
+  IdCard,
+  Smartphone
 } from 'lucide-react';
 import { User as UserType, CoachingConfig } from '@/types';
 import Logo from '@/components/Logo';
@@ -26,6 +27,7 @@ import NotificationCenter from '@/components/NotificationCenter';
 import StudentProfileModal from '@/components/StudentProfileModal';
 import AiStudentProblemSolver from '@/components/AiStudentProblemSolver';
 import TimedQuizHub from '@/components/TimedQuizHub';
+import DownloadAppModal from '@/components/DownloadAppModal';
 import { saveStoredData } from '@/lib/storage';
 
 interface NavbarProps {
@@ -43,6 +45,7 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
   const [showStudentProfile, setShowStudentProfile] = useState(false);
   const [showAiSolver, setShowAiSolver] = useState(false);
   const [showTimedQuiz, setShowTimedQuiz] = useState(false);
+  const [showDownloadApp, setShowDownloadApp] = useState(false);
 
   const handleLoginSuccess = (user: UserType) => {
     if (onUserChange) {
@@ -170,6 +173,19 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
               <span>AI Solver</span>
+            </button>
+
+            {/* Android App Download Button */}
+            <button
+              onClick={() => setShowDownloadApp(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black shadow-xs shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
+              title="Download ICC KE GURUJI Android App (.APK)"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-emerald-200" />
+              <span className="hidden xs:inline">Get App</span>
+              <span className="px-1 py-0.2 rounded bg-white/20 text-[9px] font-black uppercase tracking-wider">
+                APK
+              </span>
             </button>
 
             {/* Personalized Role-Aware Notification Center */}
@@ -342,6 +358,28 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
               ))}
             </div>
 
+            {/* Download Android App Promo in Mobile Drawer */}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowDownloadApp(true);
+              }}
+              className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between shadow-sm active:scale-98 transition-transform cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Smartphone className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <span className="font-black text-xs block leading-tight">Official Android App</span>
+                  <span className="text-[10px] text-emerald-100 font-medium">Download APK • Fast &amp; Ad-Free</span>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-white text-emerald-800 text-[10px] font-black uppercase">
+                Download
+              </span>
+            </button>
+
             <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
               {isLoggedIn ? (
                 <>
@@ -445,6 +483,15 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
           isOpen={showTimedQuiz}
           onClose={() => setShowTimedQuiz(false)}
           studentName={currentUser.name || 'Student'}
+        />
+      )}
+
+      {/* Android APK Download Modal */}
+      {showDownloadApp && (
+        <DownloadAppModal
+          isOpen={showDownloadApp}
+          onClose={() => setShowDownloadApp(false)}
+          config={config}
         />
       )}
     </>

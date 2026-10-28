@@ -41,7 +41,8 @@ import {
   MapPin,
   Phone,
   Share2,
-  UserCheck
+  UserCheck,
+  Smartphone
 } from 'lucide-react';
 import {
   Course,
@@ -7126,6 +7127,50 @@ function AdminDashboardContent() {
                       <span>{testEmailResult.message}</span>
                     </div>
                   )}
+                </div>
+
+                {/* 7. Android App Distribution & APK Settings */}
+                <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base">Android App &amp; APK Distribution</h4>
+                      <p className="text-xs text-slate-500">Configure direct APK download links and release version for student app</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Direct Android APK Download URL
+                      </label>
+                      <input
+                        type="url"
+                        value={configForm.apkDownloadUrl || ''}
+                        onChange={(e) => setConfigForm({ ...configForm, apkDownloadUrl: e.target.value })}
+                        placeholder="https://github.com/icckeguruji/icckeguruji/releases/latest/download/icckeguruji.apk"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                      />
+                      <span className="text-[11px] text-slate-400 mt-1 block">
+                        Direct download link for students clicking &quot;Download Android APK&quot;. Defaults to latest GitHub Release APK.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-800 font-bold text-xs mb-1.5">
+                        Android App Version Badge
+                      </label>
+                      <input
+                        type="text"
+                        value={configForm.appVersion || 'v1.0.0'}
+                        onChange={(e) => setConfigForm({ ...configForm, appVersion: e.target.value })}
+                        placeholder="e.g. v1.0.0"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Save Button */}
