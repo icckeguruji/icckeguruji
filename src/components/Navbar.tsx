@@ -13,11 +13,19 @@ import {
   X,
   FileText,
   HelpCircle,
-  GraduationCap
+  GraduationCap,
+  Clock,
+  Sparkles,
+  Bot,
+  IdCard
 } from 'lucide-react';
 import { User as UserType, CoachingConfig } from '@/types';
 import Logo from '@/components/Logo';
 import LoginModal from '@/components/LoginModal';
+import NotificationCenter from '@/components/NotificationCenter';
+import StudentProfileModal from '@/components/StudentProfileModal';
+import AiStudentProblemSolver from '@/components/AiStudentProblemSolver';
+import TimedQuizHub from '@/components/TimedQuizHub';
 import { saveStoredData } from '@/lib/storage';
 
 interface NavbarProps {
@@ -32,6 +40,9 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showStudentProfile, setShowStudentProfile] = useState(false);
+  const [showAiSolver, setShowAiSolver] = useState(false);
+  const [showTimedQuiz, setShowTimedQuiz] = useState(false);
 
   const handleLoginSuccess = (user: UserType) => {
     if (onUserChange) {
@@ -62,7 +73,6 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
     { label: 'Timetable', href: '/#timetable' },
     { label: 'Free PYQs', href: '/#pyq' },
     { label: 'Daily MCQ', href: '/#daily-practice' },
-    { label: 'Toppers', href: '/#toppers' },
   ];
 
   const allMobileLinks = [
@@ -141,33 +151,94 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
             </div>
           </nav>
 
-          {/* Right Action Control: Clean User Auth / Login */}
+          {/* Right Action Control: NotificationCenter, AI & User Auth */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Quick Action Pills: Timed Quiz & AI Solver */}
+            <button
+              onClick={() => setShowTimedQuiz(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+              title="Launch Timed Mock Quiz"
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span>Timed Quiz</span>
+            </button>
+
+            <button
+              onClick={() => setShowAiSolver(true)}
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/80 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+              title="Ask Guruji AI Doubt Solver"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+              <span>AI Solver</span>
+            </button>
+
+            {/* Personalized Role-Aware Notification Center */}
+            <NotificationCenter currentUser={currentUser} />
+
             {isLoggedIn ? (
               <div className="relative shrink-0">
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all text-xs font-bold text-slate-800 shadow-xs"
+                  className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all text-xs font-bold text-slate-800 shadow-xs cursor-pointer"
                 >
-                  <User className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span className="truncate max-w-[100px]">{currentUser.name ? currentUser.name.split(' ')[0] : 'Account'}</span>
+                  {currentUser.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-5 h-5 rounded-lg object-cover ring-1 ring-blue-500 shrink-0"
+                    />
+                  ) : (
+                    <User className="w-4 h-4 text-blue-600 shrink-0" />
+                  )}
+                  <span className="truncate max-w-[90px] sm:max-w-[120px]">
+                    {currentUser.name ? currentUser.name.split(' ')[0] : 'Account'}
+                  </span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 </button>
 
                 {/* User Profile Dropdown Menu */}
                 {showUserDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 text-xs animate-in fade-in duration-150">
-                    <div className="p-3 border-b border-slate-100 mb-1">
-                      <div className="font-black text-slate-900">{currentUser.name}</div>
-                      <div className="text-[11px] text-slate-500 font-mono">{currentUser.phone}</div>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 capitalize">
-                        {currentUser.role === 'admin'
-                          ? 'Admin Portal'
-                          : currentUser.role === 'teacher'
-                          ? 'Faculty Portal'
-                          : `${currentUser.enrolledCourseIds?.length || 0} Courses Enrolled`}
-                      </span>
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-3xl shadow-xl border border-slate-200 p-2.5 z-50 text-xs animate-in fade-in duration-150">
+                    <div className="p-3 border-b border-slate-100 mb-1 flex items-center gap-3">
+                      {currentUser.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={currentUser.avatar}
+                          alt={currentUser.name}
+                          className="w-10 h-10 rounded-2xl object-cover ring-2 ring-blue-500 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white font-black text-sm flex items-center justify-center shrink-0">
+                          {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-black text-slate-900 truncate">{currentUser.name}</div>
+                        <div className="text-[11px] text-slate-500 font-mono truncate">{currentUser.phone}</div>
+                        <span className="inline-block mt-0.5 px-2 py-0.2 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 capitalize">
+                          {currentUser.role === 'admin'
+                            ? 'Admin Portal'
+                            : currentUser.role === 'teacher'
+                            ? 'Faculty Portal'
+                            : `${currentUser.enrolledCourseIds?.length || 0} Batches Enrolled`}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* Student Profile & Address Action */}
+                    {currentUser.role === 'student' && (
+                      <button
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          setShowStudentProfile(true);
+                        }}
+                        className="w-full flex items-center gap-2 p-2 rounded-xl text-blue-700 bg-blue-50/70 hover:bg-blue-100 font-bold transition-colors cursor-pointer mb-1"
+                      >
+                        <IdCard className="w-4 h-4 text-blue-600" />
+                        <span>My Profile &amp; Address</span>
+                      </button>
+                    )}
 
                     {currentUser.role === 'admin' ? (
                       <Link
@@ -198,12 +269,35 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
                       </Link>
                     )}
 
+                    {/* Quick Tools */}
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        setShowTimedQuiz(true);
+                      }}
+                      className="w-full flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-amber-50 hover:text-amber-800 font-semibold transition-colors cursor-pointer"
+                    >
+                      <Clock className="w-4 h-4 text-amber-500" />
+                      <span>Timed Mock Quizzes</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        setShowAiSolver(true);
+                      }}
+                      className="w-full flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-purple-50 hover:text-purple-800 font-semibold transition-colors cursor-pointer"
+                    >
+                      <Bot className="w-4 h-4 text-purple-600" />
+                      <span>Guruji AI Problem Solver</span>
+                    </button>
+
                     <button
                       onClick={() => {
                         setShowUserDropdown(false);
                         setShowLoginModal(true);
                       }}
-                      className="w-full flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold border-t border-slate-100 mt-1 transition-colors"
+                      className="w-full flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold border-t border-slate-100 mt-1 transition-colors cursor-pointer"
                     >
                       <User className="w-4 h-4 text-emerald-600" />
                       <span>Switch Account</span>
@@ -211,7 +305,7 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
 
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 p-2 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition-colors"
+                      className="w-full flex items-center gap-2 p-2 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition-colors cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-rose-500" />
                       <span>Log Out</span>
@@ -222,7 +316,7 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
             ) : (
               <button
                 onClick={() => setShowLoginModal(true)}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] shrink-0"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] shrink-0 cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Login</span>
@@ -321,6 +415,36 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
         <LoginModal
           onClose={() => setShowLoginModal(false)}
           onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+
+      {/* Student Profile & Address Modal */}
+      {showStudentProfile && (
+        <StudentProfileModal
+          isOpen={showStudentProfile}
+          onClose={() => setShowStudentProfile(false)}
+          currentUser={currentUser}
+          onUpdate={(updated) => {
+            if (onUserChange) onUserChange(updated);
+          }}
+        />
+      )}
+
+      {/* AI Doubt & Homework Problem Solver */}
+      {showAiSolver && (
+        <AiStudentProblemSolver
+          isOpen={showAiSolver}
+          onClose={() => setShowAiSolver(false)}
+          studentName={currentUser.name || 'Student'}
+        />
+      )}
+
+      {/* Timed Mock Quiz Hub */}
+      {showTimedQuiz && (
+        <TimedQuizHub
+          isOpen={showTimedQuiz}
+          onClose={() => setShowTimedQuiz(false)}
+          studentName={currentUser.name || 'Student'}
         />
       )}
     </>

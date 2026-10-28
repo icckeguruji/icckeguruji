@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Teacher } from '@/types';
 import { saveStoredData } from '@/lib/storage';
+import AiFormFiller from '@/components/AiFormFiller';
 
 interface TeacherManagerProps {
   teachers: Teacher[];
@@ -705,12 +706,18 @@ export default function TeacherManager({ teachers, onUpdate }: TeacherManagerPro
                   <p className="text-xs text-slate-500">ICC KE GURUJI Teaching Staff</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <AiFormFiller
+                  formType="teacher"
+                  onFill={(extracted) => setFormData((prev) => ({ ...prev, ...extracted }))}
+                />
+                <button
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSaveTeacher} className="space-y-3.5">

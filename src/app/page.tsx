@@ -35,6 +35,8 @@ import WeeklyTimetable from '@/components/WeeklyTimetable';
 import PyqSection from '@/components/PyqSection';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import Logo from '@/components/Logo';
+import TimedQuizHub from '@/components/TimedQuizHub';
+import AiStudentProblemSolver from '@/components/AiStudentProblemSolver';
 
 export default function HomePage() {
   const [data, setData] = useState(() => getStoredData());
@@ -51,6 +53,10 @@ export default function HomePage() {
   // Sample interactive quiz demo on homepage
   const [sampleQuizAnswer, setSampleQuizAnswer] = useState<number | null>(null);
   const [showSampleResult, setShowSampleResult] = useState(false);
+
+  // Timed Quiz & AI Problem Solver Modals
+  const [showTimedQuizModal, setShowTimedQuizModal] = useState(false);
+  const [showAiProblemSolver, setShowAiProblemSolver] = useState(false);
 
   const refreshState = () => {
     const fresh = getStoredData();
@@ -636,7 +642,7 @@ export default function HomePage() {
             })()}
 
             {showSampleResult && (
-              <div className="p-4.5 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/60 border border-blue-200/90 rounded-2xl text-xs text-slate-700 space-y-1.5 animate-in fade-in duration-200 shadow-xs">
+              <div className="p-4.5 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/60 border border-blue-200/90 rounded-2xl text-xs text-slate-700 space-y-1.5 animate-in fade-in duration-200 shadow-xs mb-4">
                 <span className="font-extrabold text-blue-900 flex items-center gap-1.5 text-xs sm:text-sm">
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   Guruji Concept Explanation:
@@ -646,6 +652,25 @@ export default function HomePage() {
                 </p>
               </div>
             )}
+
+            {/* Quick Action Buttons for Timed Quiz & AI Problem Solver */}
+            <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                onClick={() => setShowTimedQuizModal(true)}
+                className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+              >
+                <Clock className="w-4 h-4" />
+                <span>Take Full Timed Mock Quiz (Live Timer) ➜</span>
+              </button>
+
+              <button
+                onClick={() => setShowAiProblemSolver(true)}
+                className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm shadow-purple-500/20 active:scale-95 transition-all cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>Ask Guruji AI Problem Solver</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -1064,6 +1089,24 @@ export default function HomePage() {
           currentUser={currentUser}
           onClose={() => setSelectedCourseForPayment(null)}
           onSuccess={handleEnrollSuccess}
+        />
+      )}
+
+      {/* Timed Quiz Hub Modal */}
+      {showTimedQuizModal && (
+        <TimedQuizHub
+          isOpen={showTimedQuizModal}
+          onClose={() => setShowTimedQuizModal(false)}
+          studentName={currentUser.name || 'Student'}
+        />
+      )}
+
+      {/* Guruji AI Problem Solver Modal */}
+      {showAiProblemSolver && (
+        <AiStudentProblemSolver
+          isOpen={showAiProblemSolver}
+          onClose={() => setShowAiProblemSolver(false)}
+          studentName={currentUser.name || 'Student'}
         />
       )}
 

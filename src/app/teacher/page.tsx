@@ -11,11 +11,16 @@ import {
   DollarSign,
   LogOut,
   IdCard,
-  QrCode
+  QrCode,
+  Clock,
+  Sparkles
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { getStoredData, saveStoredData } from '@/lib/storage';
 import { Teacher, TeacherAttendanceRecord, User } from '@/types';
+import NotificationCenter from '@/components/NotificationCenter';
+import TimedQuizHub from '@/components/TimedQuizHub';
+import AiStudentProblemSolver from '@/components/AiStudentProblemSolver';
 
 const emptySubscribe = () => () => {};
 const getClientToday = () => new Date().toISOString().split('T')[0];
@@ -26,6 +31,8 @@ function TeacherDashboardContent() {
   const todayStr = useSyncExternalStore(emptySubscribe, getClientToday, getServerToday);
   const [data] = useState(() => getStoredData());
   const [currentUser, setCurrentUser] = useState<User>(() => data.user);
+  const [showTimedQuiz, setShowTimedQuiz] = useState(false);
+  const [showAiSolver, setShowAiSolver] = useState(false);
 
   // Find corresponding teacher profile
   const teacherProfile: Teacher =
@@ -97,7 +104,28 @@ function TeacherDashboardContent() {
           </div>
 
           {/* Teacher Profile & Logout */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setShowTimedQuiz(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+              title="Inspect Timed Quizzes"
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span>Quizzes</span>
+            </button>
+
+            <button
+              onClick={() => setShowAiSolver(true)}
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/80 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+              title="Ask Guruji AI"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+              <span>AI Solver</span>
+            </button>
+
+            {/* Notifications */}
+            <NotificationCenter currentUser={currentUser} />
+
             <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-2xl">
               {teacherProfile.avatar ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -524,6 +552,24 @@ function TeacherDashboardContent() {
           </div>
         )}
       </main>
+
+      {/* Timed Quiz Hub Modal */}
+      {showTimedQuiz && (
+        <TimedQuizHub
+          isOpen={showTimedQuiz}
+          onClose={() => setShowTimedQuiz(false)}
+          studentName={teacherProfile.name}
+        />
+      )}
+
+      {/* AI Problem Solver Modal */}
+      {showAiSolver && (
+        <AiStudentProblemSolver
+          isOpen={showAiSolver}
+          onClose={() => setShowAiSolver(false)}
+          studentName={teacherProfile.name}
+        />
+      )}
     </div>
   );
 }

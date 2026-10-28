@@ -72,6 +72,8 @@ import FeeRegisterManager from '@/components/FeeRegisterManager';
 import WeeklyTestManager from '@/components/WeeklyTestManager';
 import TeacherManager from '@/components/TeacherManager';
 import TeacherAttendanceManager from '@/components/TeacherAttendanceManager';
+import AiFormFiller from '@/components/AiFormFiller';
+import AiWebsiteCustomizer from '@/components/AiWebsiteCustomizer';
 
 const emptySubscribe = () => () => {};
 const getClientToday = () => new Date().toISOString().split('T')[0];
@@ -133,6 +135,12 @@ function AdminDashboardContent() {
     password: 'student123',
     enrolledCourseIds: [data.courses[0]?.id || 'course-1'],
     streakDays: 5,
+    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
+    address: 'Station Road, Ward No. 4, Bihar',
+    fatherName: '',
+    classGrade: 'Class 12 - PCM Foundation',
+    monthlyFee: 1000,
+    rollNo: '',
   });
 
   // New CRUD states for Quizzes
@@ -1136,6 +1144,7 @@ function AdminDashboardContent() {
 
     const studentObj: User = {
       id: `user-${Date.now()}`,
+      rollNo: newStudent.rollNo.trim() || `ICC-${100 + data.students.length + 1}`,
       name: newStudent.name.trim(),
       phone: newStudent.phone.trim(),
       email: newStudent.email.trim() || `${newStudent.phone.trim()}@student.local`,
@@ -1144,6 +1153,12 @@ function AdminDashboardContent() {
       enrolledCourseIds: newStudent.enrolledCourseIds,
       joinedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
       streakDays: Number(newStudent.streakDays) || 1,
+      avatar: newStudent.avatar.trim() || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
+      address: newStudent.address.trim() || 'Station Road, Ward No. 4, Bihar',
+      fatherName: newStudent.fatherName.trim() || '',
+      classGrade: newStudent.classGrade.trim() || 'Class 12 - PCM Foundation',
+      monthlyFee: Number(newStudent.monthlyFee) || 1000,
+      feesDue: 0
     };
 
     saveStoredData('STUDENTS', [studentObj, ...data.students]);
@@ -1155,6 +1170,12 @@ function AdminDashboardContent() {
       password: 'student123',
       enrolledCourseIds: [data.courses[0]?.id || 'course-1'],
       streakDays: 5,
+      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80',
+      address: 'Station Road, Ward No. 4, Bihar',
+      fatherName: '',
+      classGrade: 'Class 12 - PCM Foundation',
+      monthlyFee: 1000,
+      rollNo: '',
     });
     refreshState();
   };
@@ -2014,10 +2035,17 @@ function AdminDashboardContent() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left: Add Notice Form */}
                 <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
-                  <h4 className="font-black text-slate-900 text-sm mb-3 flex items-center gap-2">
-                    <Plus className="w-4 h-4 text-blue-600" />
-                    Publish New Announcement
-                  </h4>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-blue-600" />
+                      Publish New Announcement
+                    </h4>
+                    <AiFormFiller
+                      formType="announcement"
+                      buttonLabel="✨ AI Notice"
+                      onFill={(extracted) => setNewAnnouncement((prev) => ({ ...prev, ...extracted }))}
+                    />
+                  </div>
                   <form onSubmit={handleCreateAnnouncement} className="space-y-3 text-xs">
                     <div>
                       <label className="block text-slate-700 font-bold mb-1">Headline / Title *</label>
@@ -2372,9 +2400,16 @@ function AdminDashboardContent() {
           {activeTab === 'courses' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
-                <h3 className="font-black text-slate-900 text-base mb-3 flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-blue-600" /> Add New Course
-                </h3>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                    <Plus className="w-4 h-4 text-blue-600" /> Add New Course
+                  </h3>
+                  <AiFormFiller
+                    formType="course"
+                    buttonLabel="✨ Fill with AI"
+                    onFill={(extracted) => setNewCourse((prev) => ({ ...prev, ...extracted }))}
+                  />
+                </div>
                 <form onSubmit={handleCreateCourse} className="space-y-3 text-xs sm:text-sm">
                   <div>
                     <label className="block text-slate-700 font-bold mb-1">Course Title *</label>
@@ -4085,9 +4120,41 @@ function AdminDashboardContent() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Form to add MCQ */}
                 <div className="lg:col-span-1 bg-white border border-slate-200 p-6 rounded-3xl h-fit shadow-xs">
-                  <h3 className="font-black text-slate-900 text-base mb-3 flex items-center gap-2">
-                    <Plus className="w-4 h-4 text-blue-600" /> Add MCQ to Test
-                  </h3>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-blue-600" /> Add MCQ to Test
+                    </h3>
+                    <AiFormFiller
+                      formType="quiz"
+                      buttonLabel="✨ AI MCQ"
+                      onFill={(extracted) => {
+                        if (extracted.questions && extracted.questions[0]) {
+                          const q0 = extracted.questions[0];
+                          setNewQuizQ((prev) => ({
+                            ...prev,
+                            question: q0.question || prev.question,
+                            optionA: q0.options?.[0] || prev.optionA,
+                            optionB: q0.options?.[1] || prev.optionB,
+                            optionC: q0.options?.[2] || prev.optionC,
+                            optionD: q0.options?.[3] || prev.optionD,
+                            correctIndex: q0.correctIndex ?? prev.correctIndex,
+                            explanation: q0.explanation || prev.explanation,
+                          }));
+                        } else if (extracted.question) {
+                          setNewQuizQ((prev) => ({
+                            ...prev,
+                            question: extracted.question,
+                            optionA: extracted.options?.[0] || prev.optionA,
+                            optionB: extracted.options?.[1] || prev.optionB,
+                            optionC: extracted.options?.[2] || prev.optionC,
+                            optionD: extracted.options?.[3] || prev.optionD,
+                            correctIndex: extracted.correctIndex ?? prev.correctIndex,
+                            explanation: extracted.explanation || prev.explanation,
+                          }));
+                        }
+                      }}
+                    />
+                  </div>
                   <form onSubmit={handleAddQuizQuestion} className="space-y-3 text-xs sm:text-sm">
                     <div>
                       <label className="block text-slate-700 font-bold mb-1">Select Mock Test *</label>
@@ -4272,12 +4339,28 @@ function AdminDashboardContent() {
                 <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
                   <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                        <Plus className="w-4 h-4 text-amber-500" /> Create New Mock Test / Quiz
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                          <Plus className="w-4 h-4 text-amber-500" /> Create New Mock Test / Quiz
+                        </h3>
+                        <AiFormFiller
+                          formType="quiz"
+                          buttonLabel="✨ AI Test"
+                          onFill={(extracted) => {
+                            if (extracted.title) {
+                              setNewQuizMeta((prev) => ({
+                                ...prev,
+                                title: extracted.title,
+                                chapter: extracted.chapter || extracted.title,
+                                durationMinutes: extracted.durationMinutes || prev.durationMinutes,
+                              }));
+                            }
+                          }}
+                        />
+                      </div>
                       <button
                         onClick={() => setIsAddingQuiz(false)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
                         <X className="w-5 h-5" />
                       </button>
@@ -4887,12 +4970,37 @@ function AdminDashboardContent() {
                           <tr key={student.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-4 px-5">
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-xs">
-                                  {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
-                                </div>
+                                {student.avatar ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={student.avatar}
+                                    alt={student.name}
+                                    className="w-10 h-10 rounded-2xl object-cover ring-2 ring-blue-500/40 shrink-0 shadow-xs"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                    {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
+                                  </div>
+                                )}
                                 <div className="min-w-0">
-                                  <div className="font-extrabold text-slate-900 tracking-tight">{student.name}</div>
+                                  <div className="font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                                    <span>{student.name}</span>
+                                    {student.rollNo && (
+                                      <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 font-mono font-bold">
+                                        {student.rollNo}
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="text-[11px] text-slate-400 font-mono truncate">{student.email}</div>
+                                  {student.address && (
+                                    <div className="text-[10px] text-slate-500 truncate flex items-center gap-1 mt-0.5 font-medium">
+                                      <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                                      <span>{student.address}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -4970,28 +5078,71 @@ function AdminDashboardContent() {
                 <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
                   <div className="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                      <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
-                        <Plus className="w-4 h-4 text-blue-600" /> Register New Student
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                          <Plus className="w-4 h-4 text-blue-600" /> Register New Student
+                        </h3>
+                        <AiFormFiller
+                          formType="student"
+                          onFill={(extracted) => setNewStudent((prev) => ({ ...prev, ...extracted }))}
+                        />
+                      </div>
                       <button
                         onClick={() => setIsAddingStudent(false)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
                         <X className="w-5 h-5" />
                       </button>
                     </div>
 
                     <form onSubmit={handleCreateStudent} className="space-y-3 text-xs sm:text-sm">
-                      <div>
-                        <label className="block text-slate-700 font-bold mb-1">Student Full Name *</label>
-                        <input
-                          type="text"
-                          required
-                          value={newStudent.name}
-                          onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                          placeholder="e.g. Vikas Kumar"
-                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                        />
+                      {/* Photo & Name */}
+                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                        <div className="flex items-center gap-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={newStudent.avatar}
+                            alt="Student preview"
+                            className="w-12 h-12 rounded-xl object-cover ring-2 ring-blue-500 shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Profile Photo URL</label>
+                            <input
+                              type="url"
+                              value={newStudent.avatar}
+                              onChange={(e) => setNewStudent({ ...newStudent, avatar: e.target.value })}
+                              placeholder="https://... photo link"
+                              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Student Full Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newStudent.name}
+                            onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                            placeholder="e.g. Vikas Kumar"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Roll Number</label>
+                          <input
+                            type="text"
+                            value={newStudent.rollNo}
+                            onChange={(e) => setNewStudent({ ...newStudent, rollNo: e.target.value })}
+                            placeholder="ICC-105"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold"
+                          />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -5014,6 +5165,44 @@ function AdminDashboardContent() {
                             onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
                             placeholder="vikas@gmail.com"
                             className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Residential Address Input */}
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">
+                          Residential Address / Location *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newStudent.address}
+                          onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })}
+                          placeholder="e.g. Station Road, Ward No. 4, Bihar"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Father&apos;s Name</label>
+                          <input
+                            type="text"
+                            value={newStudent.fatherName}
+                            onChange={(e) => setNewStudent({ ...newStudent, fatherName: e.target.value })}
+                            placeholder="Shri ..."
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Class / Target Exam</label>
+                          <input
+                            type="text"
+                            value={newStudent.classGrade}
+                            onChange={(e) => setNewStudent({ ...newStudent, classGrade: e.target.value })}
+                            placeholder="Class 12 - PCM"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold"
                           />
                         </div>
                       </div>
@@ -5110,15 +5299,52 @@ function AdminDashboardContent() {
                     </div>
 
                     <form onSubmit={handleUpdateStudent} className="space-y-3 text-xs sm:text-sm">
-                      <div>
-                        <label className="block text-slate-700 font-bold mb-1">Student Full Name *</label>
-                        <input
-                          type="text"
-                          required
-                          value={editingStudent.name}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
-                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
-                        />
+                      {/* Photo Preview & URL */}
+                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                        <div className="flex items-center gap-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={editingStudent.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80'}
+                            alt="Student avatar"
+                            className="w-12 h-12 rounded-xl object-cover ring-2 ring-blue-500 shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80';
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Profile Photo URL</label>
+                            <input
+                              type="url"
+                              value={editingStudent.avatar || ''}
+                              onChange={(e) => setEditingStudent({ ...editingStudent, avatar: e.target.value })}
+                              placeholder="https://... photo link"
+                              className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Student Full Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={editingStudent.name}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1">Roll Number</label>
+                          <input
+                            type="text"
+                            value={editingStudent.rollNo || ''}
+                            onChange={(e) => setEditingStudent({ ...editingStudent, rollNo: e.target.value })}
+                            placeholder="ICC-101"
+                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono font-bold"
+                          />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -5141,6 +5367,20 @@ function AdminDashboardContent() {
                             className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono"
                           />
                         </div>
+                      </div>
+
+                      {/* Residential Address */}
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">
+                          Residential Address / Location
+                        </label>
+                        <input
+                          type="text"
+                          value={editingStudent.address || ''}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, address: e.target.value })}
+                          placeholder="e.g. Station Road, Patna"
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold"
+                        />
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -5223,6 +5463,15 @@ function AdminDashboardContent() {
           ===================================================================== */}
           {activeTab === 'cms' && (
             <div className="space-y-6">
+              {/* Universal AI Website Customizer Studio */}
+              <AiWebsiteCustomizer
+                currentConfig={data.config}
+                onUpdate={(cfg) => {
+                  setData((prev) => ({ ...prev, config: cfg }));
+                  refreshState();
+                }}
+              />
+
               <div className="bg-white border border-slate-200 p-4 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
                 <div>
                   <h3 className="font-black text-slate-900 text-base flex items-center gap-2">

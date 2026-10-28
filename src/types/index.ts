@@ -17,6 +17,7 @@ export interface User {
   address?: string;
   monthlyFee?: number;
   feesDue?: number;
+  classGrade?: string;
 }
 
 export interface Lesson {
@@ -387,6 +388,22 @@ export interface TeacherAttendanceRecord {
   outTime?: string;
   markedAt?: string;
   remarks?: string;
+}
+
+// =========================================================================
+// NOTIFICATIONS & ALERTS INTERFACE
+// =========================================================================
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  category: 'quiz' | 'attendance' | 'fee' | 'batch' | 'system' | 'doubt';
+  targetRole?: 'all' | 'student' | 'teacher' | 'admin';
+  targetUserId?: string;
+  isRead?: boolean;
+  link?: string;
 }
 
 

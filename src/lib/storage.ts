@@ -22,6 +22,7 @@ import {
   WeeklyTest,
   Teacher,
   TeacherAttendanceRecord,
+  NotificationItem,
 } from '@/types';
 
 export const DEFAULT_CONFIG: CoachingConfig = {
@@ -281,7 +282,9 @@ export const INITIAL_STUDENTS: User[] = [
     enrolledCourseIds: ["course-1"],
     joinedDate: "15 Oct 2026",
     streakDays: 7,
-    address: "Station Road, Ward No. 4",
+    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80",
+    address: "House 14, Station Road, Ward No. 4, Bihar",
+    classGrade: "Class 12 - PCM (Target JEE 2027)",
     monthlyFee: 1000,
     feesDue: 0
   },
@@ -297,7 +300,9 @@ export const INITIAL_STUDENTS: User[] = [
     enrolledCourseIds: ["course-2"],
     joinedDate: "18 Oct 2026",
     streakDays: 4,
-    address: "Gandhi Chowk, Near Post Office",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80",
+    address: "Flat 202, Gandhi Chowk, Near Central Post Office, Patna",
+    classGrade: "Class 10 Board Special Batch",
     monthlyFee: 800,
     feesDue: 800
   },
@@ -313,7 +318,9 @@ export const INITIAL_STUDENTS: User[] = [
     enrolledCourseIds: ["course-3"],
     joinedDate: "20 Oct 2026",
     streakDays: 9,
-    address: "Main Bazar",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+    address: "B-12, Main Bazar, Near City Hospital",
+    classGrade: "Full-Stack Web Dev & Coding Masterclass",
     monthlyFee: 1200,
     feesDue: 600
   },
@@ -329,9 +336,92 @@ export const INITIAL_STUDENTS: User[] = [
     enrolledCourseIds: ["course-1", "course-2"],
     joinedDate: "22 Oct 2026",
     streakDays: 3,
-    address: "Shivaji Nagar",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80",
+    address: "Lane 3, Shivaji Nagar, New Colony",
+    classGrade: "Class 12 - Physics + Math Foundation",
     monthlyFee: 1000,
     feesDue: 500
+  }
+];
+
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: 'notif-1',
+    title: '⏱️ New Timed Mock Quiz Available',
+    message: "Electrostatics & Coulomb's Law test is live with a 15-minute countdown. Test your speed now!",
+    timestamp: '15 Mins ago',
+    category: 'quiz',
+    targetRole: 'student',
+    link: '/#daily-practice',
+    isRead: false
+  },
+  {
+    id: 'notif-2',
+    title: '✅ Attendance Marked: Present',
+    message: "Your daily batch attendance was verified for today's session by Er. Alok Sharma.",
+    timestamp: '2 Hours ago',
+    category: 'attendance',
+    targetRole: 'student',
+    isRead: false
+  },
+  {
+    id: 'notif-3',
+    title: '📑 DPP-03 Solutions Uploaded',
+    message: 'Kinematics and vectors derivation PDF notes are available in your classroom resources.',
+    timestamp: '5 Hours ago',
+    category: 'batch',
+    targetRole: 'student',
+    link: '/course/course-1',
+    isRead: false
+  },
+  {
+    id: 'notif-4',
+    title: "📅 Today's Live Physics Shift",
+    message: 'Physics Mechanics lecture scheduled at 10:30 AM in Classroom A. 42 students enrolled.',
+    timestamp: '1 Hour ago',
+    category: 'batch',
+    targetRole: 'teacher',
+    link: '/teacher',
+    isRead: false
+  },
+  {
+    id: 'notif-5',
+    title: '✅ Faculty Check-in Logged',
+    message: 'Your biometric check-in at 09:45 AM was logged successfully in the Staff Register.',
+    timestamp: '3 Hours ago',
+    category: 'attendance',
+    targetRole: 'teacher',
+    link: '/teacher',
+    isRead: false
+  },
+  {
+    id: 'notif-6',
+    title: '🎉 New Student Registered',
+    message: 'Vikas Yadav enrolled in Physics Mastery Batch. Verified and fee slip generated.',
+    timestamp: '30 Mins ago',
+    category: 'system',
+    targetRole: 'admin',
+    link: '/admin',
+    isRead: false
+  },
+  {
+    id: 'notif-7',
+    title: '💳 UPI Fee Receipt Pending',
+    message: 'Payment received via UPI (UTR: 428938472910) for ₹999. Awaiting approval.',
+    timestamp: '1 Hour ago',
+    category: 'fee',
+    targetRole: 'admin',
+    link: '/admin',
+    isRead: false
+  },
+  {
+    id: 'notif-8',
+    title: '📢 Sunday Grand Offline Mock Test',
+    message: 'Class 10 & 12 Mega Test will begin at 8:00 AM this Sunday. Carry your admit slip.',
+    timestamp: 'Yesterday',
+    category: 'quiz',
+    targetRole: 'all',
+    isRead: false
   }
 ];
 
@@ -1138,6 +1228,7 @@ const STORAGE_KEYS = {
   WEEKLY_TESTS: 'coaching_weekly_tests_v6',
   TEACHERS: 'coaching_teachers_v1',
   TEACHER_ATTENDANCE: 'coaching_teacher_attendance_v1',
+  NOTIFICATIONS: 'coaching_notifications_v1',
 };
 
 export interface StoredData {
@@ -1165,6 +1256,7 @@ export interface StoredData {
   weeklyTests: WeeklyTest[];
   teachers: Teacher[];
   teacherAttendance: TeacherAttendanceRecord[];
+  notifications: NotificationItem[];
 }
 
 export const getStoredData = (): StoredData => {
@@ -1194,6 +1286,7 @@ export const getStoredData = (): StoredData => {
       weeklyTests: INITIAL_WEEKLY_TESTS,
       teachers: INITIAL_TEACHERS,
       teacherAttendance: INITIAL_TEACHER_ATTENDANCE,
+      notifications: INITIAL_NOTIFICATIONS,
     };
   }
 
@@ -1223,6 +1316,7 @@ export const getStoredData = (): StoredData => {
     const weeklyTests: WeeklyTest[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WEEKLY_TESTS) || 'null') || INITIAL_WEEKLY_TESTS;
     const teachers: Teacher[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEACHERS) || 'null') || INITIAL_TEACHERS;
     const teacherAttendance: TeacherAttendanceRecord[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.TEACHER_ATTENDANCE) || 'null') || INITIAL_TEACHER_ATTENDANCE;
+    const notifications: NotificationItem[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS) || 'null') || INITIAL_NOTIFICATIONS;
 
     return {
       courses,
@@ -1249,6 +1343,7 @@ export const getStoredData = (): StoredData => {
       weeklyTests,
       teachers,
       teacherAttendance,
+      notifications,
     };
   } catch (err) {
     console.error("Storage error:", err);
@@ -1277,6 +1372,7 @@ export const getStoredData = (): StoredData => {
       weeklyTests: INITIAL_WEEKLY_TESTS,
       teachers: INITIAL_TEACHERS,
       teacherAttendance: INITIAL_TEACHER_ATTENDANCE,
+      notifications: INITIAL_NOTIFICATIONS,
     };
   }
 };
