@@ -2,17 +2,12 @@
 
 import React, { useRef, useState } from 'react';
 import {
-  Award,
-  CheckCircle,
-  Download,
   Share2,
   Printer,
   Copy,
   Check,
   ShieldCheck,
-  Sparkles,
-  ExternalLink,
-  QrCode
+  Sparkles
 } from 'lucide-react';
 import { Course, User, CertificateRecord } from '@/types';
 import Logo from './Logo';

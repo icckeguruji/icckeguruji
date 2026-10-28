@@ -1,19 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Smartphone,
   QrCode,
   CheckCircle,
-  AlertCircle,
   Bot,
   Send,
   Sparkles,
-  RefreshCw,
-  Power,
-  ShieldCheck,
   MessageSquare,
-  Users,
   Terminal,
   Copy,
   Check
@@ -23,15 +17,15 @@ import { CoachingConfig, Course } from '@/types';
 
 interface WhatsAppBotHubProps {
   config: CoachingConfig;
-  courses: Course[];
+  courses?: Course[];
 }
 
-export default function WhatsAppBotHub({ config, courses }: WhatsAppBotHubProps) {
+export default function WhatsAppBotHub({ config }: WhatsAppBotHubProps) {
   const [isConnected, setIsConnected] = useState(true);
   const [connectedNumber, setConnectedNumber] = useState(config.whatsappNumber || '+91 98765 43210');
   const [aiEnabled, setAiEnabled] = useState(true);
   const [showQrModal, setShowQrModal] = useState(false);
-  const [qrString, setQrString] = useState(`2@ICC_KE_GURUJI_WA_${Date.now()},wX99m...`);
+  const [qrString, setQrString] = useState('2@ICC_KE_GURUJI_WA_SESSION_LINK,wX99m...');
   const [copiedScript, setCopiedScript] = useState(false);
 
   // Simulated live message chat logs between student and AI Bot

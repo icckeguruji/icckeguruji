@@ -12,11 +12,7 @@ import {
   Smartphone,
   Sparkles,
   QrCode,
-  Lock,
-  CheckCircle2,
-  ExternalLink,
-  HelpCircle,
-  Zap
+  CheckCircle2
 } from 'lucide-react';
 import { Course, CoachingConfig, PaymentRequest, User } from '@/types';
 import { getStoredData, saveStoredData } from '@/lib/storage';
@@ -41,7 +37,7 @@ export default function UpiPaymentModal({
   const [utrNumber, setUtrNumber] = useState('');
   const [studentName, setStudentName] = useState(currentUser.name || '');
   const [studentPhone, setStudentPhone] = useState(currentUser.phone || '');
-  const [studentEmail, setStudentEmail] = useState(currentUser.email || '');
+  const studentEmail = currentUser.email || '';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lesson, User } from '@/types';
-import { Radio, ShieldAlert, Sparkles, Volume2, ShieldCheck } from 'lucide-react';
+import { Radio, ShieldAlert, ShieldCheck } from 'lucide-react';
 
 interface VideoPlayerWithWatermarkProps {
   lesson: Lesson;

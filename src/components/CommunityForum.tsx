@@ -8,10 +8,8 @@ import {
   PlusCircle,
   Sparkles,
   Search,
-  UserCheck,
   Send,
-  HelpCircle,
-  Share2
+  HelpCircle
 } from 'lucide-react';
 import { CommunityPost, User, Course } from '@/types';
 import { saveStoredData } from '@/lib/storage';

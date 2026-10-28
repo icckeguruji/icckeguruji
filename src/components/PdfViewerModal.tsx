@@ -1,16 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   X,
   Download,
   FileText,
   Shield,
   ExternalLink,
-  Eye,
-  Maximize2,
   Lock,
-  Sparkles
 } from 'lucide-react';
 import { PdfNote, User } from '@/types';
 
@@ -21,12 +18,6 @@ interface PdfViewerModalProps {
 }
 
 export default function PdfViewerModal({ note, user, onClose }: PdfViewerModalProps) {
-  const [timestamp, setTimestamp] = useState('');
-
-  useEffect(() => {
-    setTimestamp(new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
-  }, []);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-200">
       <div className="relative w-full max-w-5xl h-[92vh] bg-white border border-slate-200 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 animate-in zoom-in-95 duration-200">

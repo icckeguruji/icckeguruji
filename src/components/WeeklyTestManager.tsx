@@ -8,10 +8,7 @@ import {
   Trash2,
   Send,
   Save,
-  CheckCircle,
-  FileText,
   Trophy,
-  Users,
   Search,
   X
 } from 'lucide-react';
@@ -40,22 +37,21 @@ export default function WeeklyTestManager({
   const [saveAlert, setSaveAlert] = useState(false);
 
   // New Test Form State
-  const [newTest, setNewTest] = useState({
-    courseId: courses[0]?.id || 'course-1',
-    testTitle: '',
-    subject: 'Physics',
-    totalMarks: 50,
-    testDate: '2026-10-26',
-  });
-
-  React.useEffect(() => {
+  const [newTest, setNewTest] = useState(() => {
+    let today = '2026-10-26';
     try {
-      const today = new Date().toISOString().split('T')[0];
-      setNewTest((prev) => ({ ...prev, testDate: today }));
+      today = new Date().toISOString().split('T')[0];
     } catch {
       // fallback
     }
-  }, []);
+    return {
+      courseId: courses[0]?.id || 'course-1',
+      testTitle: '',
+      subject: 'Physics',
+      totalMarks: 50,
+      testDate: today,
+    };
+  });
 
   const currentTest = weeklyTests.find((t) => t.id === activeTestId);
 

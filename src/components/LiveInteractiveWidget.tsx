@@ -2,13 +2,8 @@
 
 import React, { useState } from 'react';
 import {
-  BarChart3,
   CheckCircle,
-  Clock,
-  MessageSquare,
-  Sparkles,
   Send,
-  ThumbsUp,
   Flame,
   Award,
   Bookmark
@@ -78,7 +73,7 @@ export default function LiveInteractiveWidget({ lesson, currentUser }: LiveInter
             </span>
             <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
               <Award className="w-3.5 h-3.5 text-amber-600" />
-              Guruji Check
+              <span>{lesson?.title ? `${lesson.title.slice(0, 24)}...` : 'Guruji Check'}</span>
             </span>
           </div>
 

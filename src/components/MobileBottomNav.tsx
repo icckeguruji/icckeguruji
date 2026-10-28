@@ -9,8 +9,7 @@ import {
   PlayCircle,
   Sparkles,
   User,
-  ShieldCheck,
-  Calendar
+  ShieldCheck
 } from 'lucide-react';
 import { User as UserType } from '@/types';
 
@@ -66,13 +65,13 @@ export default function MobileBottomNav({ currentUser, onOpenLogin }: MobileBott
         </Link>
 
         {/* 2. Batches */}
-        <a
+        <Link
           href="/#courses-section"
           className="flex-1 flex flex-col items-center justify-center py-1 rounded-2xl text-slate-500 hover:text-blue-600 font-semibold transition-transform active:scale-95"
         >
           <BookOpen className="w-5 h-5 stroke-2" />
           <span className="text-[10px] mt-0.5 tracking-tight">Batches</span>
-        </a>
+        </Link>
 
         {/* 3. Live Classroom (Center Hero Button) */}
         <Link

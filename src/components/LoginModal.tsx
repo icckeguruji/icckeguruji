@@ -10,7 +10,6 @@ import {
   Eye,
   EyeOff,
   LogIn,
-  ShieldCheck,
   ExternalLink,
   AlertCircle,
   CheckCircle2

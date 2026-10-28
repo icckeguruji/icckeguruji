@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Quiz, QuizQuestion } from '@/types';
+import { Quiz } from '@/types';
 import {
   CheckCircle2,
   XCircle,
@@ -11,7 +11,6 @@ import {
   Sparkles,
   ArrowRight,
   ArrowLeft,
-  HelpCircle,
   Check,
   Bookmark,
   Trash2
@@ -226,7 +225,7 @@ export default function QuizEngine({ quiz, studentName }: QuizEngineProps) {
 
                   <div className="p-3 bg-white/80 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-1">
                     <span className="font-bold text-blue-700 flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" /> Guruji's Concept Explanation:
+                      <Sparkles className="w-3.5 h-3.5" /> Guruji&apos;s Concept Explanation:
                     </span>
                     <p className="leading-relaxed text-slate-600">{q.explanation}</p>
                   </div>

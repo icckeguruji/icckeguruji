@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Flashcard } from '@/types';
 import {
   Sparkles,
@@ -8,10 +8,8 @@ import {
   ArrowLeft,
   RotateCw,
   CheckCircle2,
-  Bookmark,
   Shuffle,
   Lightbulb,
-  Check,
   Zap
 } from 'lucide-react';
 
@@ -20,16 +18,12 @@ interface FormulaFlashcardsProps {
 }
 
 export default function FormulaFlashcards({ cards: initialCards }: FormulaFlashcardsProps) {
-  const [cards, setCards] = useState<Flashcard[]>(initialCards || []);
+  const [shuffledDeck, setShuffledDeck] = useState<Flashcard[] | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [masteredIds, setMasteredIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    setCards(initialCards || []);
-    setCurrentIdx(0);
-    setIsFlipped(false);
-  }, [initialCards]);
+  const cards = shuffledDeck || initialCards || [];
 
   if (!cards || cards.length === 0) {
     return (
@@ -70,7 +64,7 @@ export default function FormulaFlashcards({ cards: initialCards }: FormulaFlashc
   const handleShuffle = () => {
     setIsFlipped(false);
     const shuffled = [...cards].sort(() => Math.random() - 0.5);
-    setCards(shuffled);
+    setShuffledDeck(shuffled);
     setCurrentIdx(0);
   };
 

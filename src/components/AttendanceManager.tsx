@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Calendar,
   CheckCircle,
   XCircle,
   Clock,
   Send,
-  Save,
-  Users,
   Search,
   Check,
-  AlertCircle,
   Download
 } from 'lucide-react';
 import { User, Course, AttendanceRecord } from '@/types';
@@ -33,29 +30,21 @@ export default function AttendanceManager({
   const [selectedCourseId, setSelectedCourseId] = useState<string>(
     courses[0]?.id || 'course-1'
   );
-  const [selectedDate, setSelectedDate] = useState<string>('2026-10-26');
-  const [formattedDateText, setFormattedDateText] = useState<string>('2026-10-26');
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>(initialAttendance);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  React.useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    setSelectedDate(today);
-  }, []);
-
-  React.useEffect(() => {
+  const formattedDateText = useMemo(() => {
     try {
-      setFormattedDateText(
-        new Date(selectedDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-      );
+      return new Date(selectedDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
     } catch {
-      setFormattedDateText(selectedDate);
+      return selectedDate;
     }
   }, [selectedDate]);
 
@@ -83,50 +72,53 @@ export default function AttendanceManager({
   };
 
   // Toggle student attendance status
-  const handleSetStatus = (student: User, status: 'present' | 'absent' | 'leave') => {
-    const existingIndex = attendanceList.findIndex(
-      (a) =>
-        a.date === selectedDate &&
-        a.courseId === selectedCourseId &&
-        a.studentId === student.id
-    );
+  const handleSetStatus = useCallback(
+    (student: User, status: 'present' | 'absent' | 'leave') => {
+      const existingIndex = attendanceList.findIndex(
+        (a) =>
+          a.date === selectedDate &&
+          a.courseId === selectedCourseId &&
+          a.studentId === student.id
+      );
 
-    let updated: AttendanceRecord[];
-    const nowTime = new Date().toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+      let updated: AttendanceRecord[];
+      const nowTime = new Date().toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
 
-    if (existingIndex >= 0) {
-      updated = [...attendanceList];
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        status,
-        markedAt: nowTime,
-      };
-    } else {
-      const selectedCourse = courses.find((c) => c.id === selectedCourseId);
-      const newRecord: AttendanceRecord = {
-        id: `att-${Date.now()}-${student.id}`,
-        date: selectedDate,
-        courseId: selectedCourseId,
-        courseTitle: selectedCourse?.title || 'Batch',
-        studentId: student.id,
-        studentName: student.name,
-        studentPhone: student.phone,
-        rollNo: student.rollNo || 'ICC',
-        status,
-        markedAt: nowTime,
-      };
-      updated = [newRecord, ...attendanceList];
-    }
+      if (existingIndex >= 0) {
+        updated = [...attendanceList];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          status,
+          markedAt: nowTime,
+        };
+      } else {
+        const selectedCourse = courses.find((c) => c.id === selectedCourseId);
+        const newRecord: AttendanceRecord = {
+          id: `att-${selectedDate}-${selectedCourseId}-${student.id}`,
+          date: selectedDate,
+          courseId: selectedCourseId,
+          courseTitle: selectedCourse?.title || 'Batch',
+          studentId: student.id,
+          studentName: student.name,
+          studentPhone: student.phone,
+          rollNo: student.rollNo || 'ICC',
+          status,
+          markedAt: nowTime,
+        };
+        updated = [newRecord, ...attendanceList];
+      }
 
-    setAttendanceList(updated);
-    saveStoredData('ATTENDANCE', updated);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2000);
-    onUpdate();
-  };
+      setAttendanceList(updated);
+      saveStoredData('ATTENDANCE', updated);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2000);
+      onUpdate();
+    },
+    [attendanceList, selectedDate, selectedCourseId, courses, onUpdate]
+  );
 
   // Mark all students present with 1-click
   const handleMarkAllPresent = () => {

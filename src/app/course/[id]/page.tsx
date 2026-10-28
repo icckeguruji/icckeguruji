@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Lock,
   Play,
   FileText,
   Bot,
-  Send,
   CheckCircle,
   Radio,
   Clock,
@@ -23,7 +22,7 @@ import {
   GraduationCap,
   MessageSquare
 } from 'lucide-react';
-import { Course, Lesson, PdfNote, User, CoachingConfig, PaymentRequest, Quiz, Flashcard } from '@/types';
+import { Course, Lesson, PdfNote, User, PaymentRequest, Quiz, Flashcard } from '@/types';
 import { getStoredData, saveStoredData } from '@/lib/storage';
 import Navbar from '@/components/Navbar';
 import VideoPlayerWithWatermark from '@/components/VideoPlayerWithWatermark';
@@ -44,14 +43,38 @@ function CourseClassroomContent() {
   const router = useRouter();
   const courseId = (params?.id as string) || 'course-1';
 
-  const [data, setData] = useState(getStoredData());
-  const [currentUser, setCurrentUser] = useState<User>(data.user);
-  const [course, setCourse] = useState<Course | null>(null);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [notes, setNotes] = useState<PdfNote[]>([]);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  const [data, setData] = useState(() => getStoredData());
+  const [currentUser, setCurrentUser] = useState<User>(() => getStoredData().user);
+  const [course, setCourse] = useState<Course | null>(() => {
+    const d = getStoredData();
+    return d.courses.find((c: Course) => c.id === courseId) || d.courses[0];
+  });
+  const [lessons, setLessons] = useState<Lesson[]>(() => {
+    const d = getStoredData();
+    const foundCourse = d.courses.find((c: Course) => c.id === courseId) || d.courses[0];
+    return d.lessons.filter((l: Lesson) => l.courseId === foundCourse?.id);
+  });
+  const [notes, setNotes] = useState<PdfNote[]>(() => {
+    const d = getStoredData();
+    const foundCourse = d.courses.find((c: Course) => c.id === courseId) || d.courses[0];
+    return d.notes.filter((n: PdfNote) => n.courseId === foundCourse?.id);
+  });
+  const [quizzes, setQuizzes] = useState<Quiz[]>(() => {
+    const d = getStoredData();
+    const foundCourse = d.courses.find((c: Course) => c.id === courseId) || d.courses[0];
+    return d.quizzes.filter((q: Quiz) => q.courseId === foundCourse?.id || q.courseId === 'course-1');
+  });
+  const [flashcards, setFlashcards] = useState<Flashcard[]>(() => {
+    const d = getStoredData();
+    const foundCourse = d.courses.find((c: Course) => c.id === courseId) || d.courses[0];
+    return d.flashcards.filter((f: Flashcard) => f.courseId === foundCourse?.id || f.courseId === 'course-1');
+  });
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(() => {
+    const d = getStoredData();
+    const foundCourse = d.courses.find((c: Course) => c.id === courseId) || d.courses[0];
+    const ls = d.lessons.filter((l: Lesson) => l.courseId === foundCourse?.id);
+    return ls[0] || null;
+  });
 
   // Active Tab: 'lectures' | 'notes' | 'dpp' | 'tests' | 'attendance' | 'fees' | 'ai' | 'quizzes' | 'flashcards' | 'forum' | 'certificate' | 'community'
   const [activeTab, setActiveTab] = useState<
@@ -63,7 +86,7 @@ function CourseClassroomContent() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Reload data from local storage
-  const refreshState = () => {
+  const refreshState = useCallback(() => {
     const fresh = getStoredData();
     setData(fresh);
     setCurrentUser(fresh.user);
@@ -72,9 +95,7 @@ function CourseClassroomContent() {
 
     const courseLessons = fresh.lessons.filter((l: Lesson) => l.courseId === foundCourse?.id);
     setLessons(courseLessons);
-    if (courseLessons.length > 0 && !activeLesson) {
-      setActiveLesson(courseLessons[0]);
-    }
+    setActiveLesson((prev) => prev || courseLessons[0] || null);
 
     const courseNotes = fresh.notes.filter((n: PdfNote) => n.courseId === foundCourse?.id);
     setNotes(courseNotes);
@@ -84,15 +105,13 @@ function CourseClassroomContent() {
 
     const courseFlashcards = fresh.flashcards.filter((f: Flashcard) => f.courseId === foundCourse?.id || f.courseId === 'course-1');
     setFlashcards(courseFlashcards);
-  };
+  }, [courseId]);
 
   useEffect(() => {
-    refreshState();
-
     const handleStorageUpdate = () => refreshState();
     window.addEventListener('coaching_storage_updated', handleStorageUpdate);
     return () => window.removeEventListener('coaching_storage_updated', handleStorageUpdate);
-  }, [courseId]);
+  }, [refreshState]);
 
   if (!course) {
     return (
@@ -617,7 +636,7 @@ function CourseClassroomContent() {
 
                           {result.feedback && (
                             <div className="text-xs text-slate-600 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
-                              <span className="font-bold text-amber-900">Guruji's Remarks: </span>
+                              <span className="font-bold text-amber-900">Guruji&apos;s Remarks: </span>
                               {result.feedback}
                             </div>
                           )}

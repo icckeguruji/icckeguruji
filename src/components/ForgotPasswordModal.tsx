@@ -11,8 +11,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
-  ShieldCheck,
-  Sparkles
+  ShieldCheck
 } from 'lucide-react';
 import { resetUserPassword } from '@/lib/storage';
 import { User } from '@/types';
@@ -72,7 +71,7 @@ export default function ForgotPasswordModal({
       } else {
         setError(data.error || 'Failed to send email. Please try again.');
       }
-    } catch (err) {
+    } catch {
       // Fallback local OTP simulation
       const demoOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setExpectedOtp(demoOtp);

@@ -6,10 +6,8 @@ import {
   Download,
   Search,
   Filter,
-  CheckCircle,
   Sparkles,
-  BookOpen,
-  ArrowRight
+  BookOpen
 } from 'lucide-react';
 import { PyqPaper } from '@/types';
 
@@ -48,7 +46,7 @@ export default function PyqSection({ papers }: PyqSectionProps) {
             Previous Years Question Papers &amp; Guruji Solutions
           </h2>
           <p className="text-blue-100 text-xs sm:text-sm mt-2 leading-relaxed">
-            Guruji's proven methodology: Solving the last 5 years' papers guarantees a 90%+ score. Download comprehensive question papers and model answer keys completely free!
+            Guruji&apos;s proven methodology: Solving the last 5 years&apos; papers guarantees a 90%+ score. Download comprehensive question papers and model answer keys completely free!
           </p>
         </div>
       </div>

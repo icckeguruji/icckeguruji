@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Bot,
   Send,
@@ -10,9 +10,7 @@ import {
   Loader2,
   Copy,
   Check,
-  RotateCcw,
-  Zap,
-  BookOpen
+  RotateCcw
 } from 'lucide-react';
 import { Course } from '@/types';
 
@@ -74,59 +72,62 @@ export default function AiDoubtSolver({ course, studentName }: AiDoubtSolverProp
     ]);
   };
 
-  const handleSend = async (queryText?: string) => {
-    const textToSend = queryText || input;
-    if (!textToSend.trim() || loading) return;
+  const handleSend = useCallback(
+    async (queryText?: string) => {
+      const textToSend = queryText || input;
+      if (!textToSend.trim() || loading) return;
 
-    const userMsg: Message = {
-      id: `msg-${Date.now()}`,
-      sender: 'student',
-      text: textToSend.trim(),
-      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-    };
+      const userMsg: Message = {
+        id: `msg-${Date.now()}`,
+        sender: 'student',
+        text: textToSend.trim(),
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setLoading(true);
+      setMessages((prev) => [...prev, userMsg]);
+      setInput('');
+      setLoading(true);
 
-    try {
-      const res = await fetch('/api/ai/doubt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: textToSend,
-          courseTitle: course.title,
-          subject: course.category,
-        }),
-      });
+      try {
+        const res = await fetch('/api/ai/doubt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: textToSend,
+            courseTitle: course.title,
+            subject: course.category,
+          }),
+        });
 
-      const data = await res.json();
-      const aiReply = data.answer || 'I could not generate an answer right now. Please try asking again.';
+        const data = await res.json();
+        const aiReply = data.answer || 'I could not generate an answer right now. Please try asking again.';
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `ai-${Date.now()}`,
-          sender: 'ai',
-          text: aiReply,
-          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    } catch (e) {
-      console.error(e);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `ai-${Date.now()}`,
-          sender: 'ai',
-          text: 'Network error. Please check your internet connection and try again.',
-          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            sender: 'ai',
+            text: aiReply,
+            time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      } catch (e) {
+        console.error(e);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            sender: 'ai',
+            text: 'Network error. Please check your internet connection and try again.',
+            time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [input, loading, course]
+  );
 
   return (
     <div className="flex flex-col h-[560px] bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-lg">

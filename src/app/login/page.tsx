@@ -12,9 +12,7 @@ import {
   ShieldCheck,
   ArrowLeft,
   CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  UserCheck
+  AlertCircle
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { authenticateUser, getStoredData } from '@/lib/storage';

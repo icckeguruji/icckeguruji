@@ -7,7 +7,6 @@ import {
   BookOpen,
   Radio,
   FileText,
-  Bot,
   Send,
   CheckCircle,
   ShieldCheck,
@@ -22,17 +21,13 @@ import {
   Star,
   Award,
   Calendar,
-  Zap,
-  Flame,
   TrendingUp,
-  Smartphone,
   MessageCircle,
   LogIn,
   Code2,
-  Phone,
-  Heart
+  Phone
 } from 'lucide-react';
-import { Course, User, CoachingConfig, Announcement, Article, Testimonial, FaqItem, TimetableSlot } from '@/types';
+import { Course, User } from '@/types';
 import { getStoredData, saveStoredData } from '@/lib/storage';
 import Navbar from '@/components/Navbar';
 import UpiPaymentModal from '@/components/UpiPaymentModal';
@@ -42,8 +37,8 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import Logo from '@/components/Logo';
 
 export default function HomePage() {
-  const [data, setData] = useState(getStoredData());
-  const [currentUser, setCurrentUser] = useState<User>(data.user);
+  const [data, setData] = useState(() => getStoredData());
+  const [currentUser, setCurrentUser] = useState<User>(() => getStoredData().user);
   const [selectedCourseForPayment, setSelectedCourseForPayment] = useState<Course | null>(null);
 
   // Search & Filter
@@ -64,7 +59,6 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    refreshState();
     const handleStorageUpdate = () => refreshState();
     window.addEventListener('coaching_storage_updated', handleStorageUpdate);
     return () => window.removeEventListener('coaching_storage_updated', handleStorageUpdate);
@@ -607,7 +601,7 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-10 text-center max-w-2xl mx-auto">
               <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
-                Guruji's Free Learning Hub
+                Guruji&apos;s Free Learning Hub
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
                 Study Guides, Derivations &amp; Exam Tips
@@ -762,7 +756,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <Logo size="md" logoUrl={data.config.logoUrl} />
               <p className="text-slate-500 text-xs leading-relaxed">
-                {data.config.tagline || "Live Classes, Smart Notes & 24/7 AI Guruji"}. India's dedicated learning platform for Board exams and competitive exams.
+                {data.config.tagline || "Live Classes, Smart Notes & 24/7 AI Guruji"}. India&apos;s dedicated learning platform for Board exams and competitive exams.
               </p>
               <div className="space-y-1.5 text-[11px] text-slate-600">
                 {data.config.address && (

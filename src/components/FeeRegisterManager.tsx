@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   Receipt,
   X,
-  DollarSign,
   Download
 } from 'lucide-react';
 import { User, Course, FeeRecord } from '@/types';
@@ -40,23 +39,22 @@ export default function FeeRegisterManager({
   } | null>(null);
 
   // New Payment Form State
-  const [newPayment, setNewPayment] = useState({
-    studentId: students[0]?.id || '',
-    amountPaid: 1000,
-    dueRemaining: 0,
-    month: 'October 2026',
-    paymentMode: 'Cash' as 'Cash' | 'PhonePe / GPay' | 'Paytm' | 'Bank Transfer',
-    remarks: 'Regular monthly fee payment',
-  });
-
-  React.useEffect(() => {
+  const [newPayment, setNewPayment] = useState(() => {
+    let curMonth = 'October 2026';
     try {
-      const curMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      setNewPayment((prev) => ({ ...prev, month: curMonth }));
+      curMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     } catch {
       // fallback
     }
-  }, []);
+    return {
+      studentId: students[0]?.id || '',
+      amountPaid: 1000,
+      dueRemaining: 0,
+      month: curMonth,
+      paymentMode: 'Cash' as 'Cash' | 'PhonePe / GPay' | 'Paytm' | 'Bank Transfer',
+      remarks: 'Regular monthly fee payment',
+    };
+  });
 
   // Filter students based on fee status
   const filteredStudents = students.filter((student) => {
@@ -306,7 +304,7 @@ export default function FeeRegisterManager({
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase text-[10px]">
                 <th className="py-3 px-4">Roll / Student</th>
-                <th className="py-3 px-4">Father's Name & Phone</th>
+                <th className="py-3 px-4">Father&apos;s Name &amp; Phone</th>
                 <th className="py-3 px-4">Monthly Fee</th>
                 <th className="py-3 px-4">Outstanding Due</th>
                 <th className="py-3 px-4 text-right">Actions</th>
@@ -698,7 +696,7 @@ export default function FeeRegisterManager({
                   Helpline / WhatsApp: +91 98765 43210
                 </p>
                 <div className="inline-block mt-1 px-3 py-0.5 rounded-full bg-blue-100 text-blue-800 font-mono text-[10px] font-bold">
-                  Receipt No: {selectedStudentForSlip.record?.receiptNo || `ICC-${Date.now().toString().slice(-6)}`}
+                  Receipt No: {selectedStudentForSlip.record?.receiptNo || 'ICC-FEE-REC'}
                 </div>
               </div>
 
@@ -717,7 +715,7 @@ export default function FeeRegisterManager({
                   </div>
                 </div>
                 <div>
-                  <span className="text-slate-500 text-[11px]">Father's Name:</span>
+                  <span className="text-slate-500 text-[11px]">Father&apos;s Name:</span>
                   <div className="font-bold text-slate-800">
                     {selectedStudentForSlip.student.fatherName || 'Parent / Guardian'}
                   </div>
@@ -765,7 +763,7 @@ export default function FeeRegisterManager({
                 </div>
                 <div className="text-center">
                   <div className="w-24 border-b border-slate-400 mb-1" />
-                  <span className="font-bold text-slate-700">Guruji's Signature / Stamp</span>
+                  <span className="font-bold text-slate-700">Guruji&apos;s Signature / Stamp</span>
                 </div>
               </div>
             </div>

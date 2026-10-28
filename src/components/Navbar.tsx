@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import {
   BookOpen,
   ShieldAlert,
@@ -12,11 +11,8 @@ import {
   ChevronDown,
   Menu,
   X,
-  MessageCircle,
   FileText,
-  HelpCircle,
-  Award,
-  Sparkles
+  HelpCircle
 } from 'lucide-react';
 import { User as UserType, CoachingConfig } from '@/types';
 import Logo from '@/components/Logo';
@@ -26,12 +22,11 @@ import { saveStoredData } from '@/lib/storage';
 interface NavbarProps {
   currentUser: UserType;
   config: CoachingConfig;
-  onToggleRole: () => void;
+  onToggleRole?: () => void;
   onUserChange?: (user: UserType) => void;
 }
 
-export default function Navbar({ currentUser, config, onToggleRole, onUserChange }: NavbarProps) {
-  const pathname = usePathname();
+export default function Navbar({ currentUser, config, onUserChange }: NavbarProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
@@ -124,20 +119,20 @@ export default function Navbar({ currentUser, config, onToggleRole, onUserChange
 
               {moreDropdownOpen && (
                 <div className="absolute left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 text-xs animate-in fade-in duration-100">
-                  <a
+                  <Link
                     href="/#articles"
                     className="flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors"
                   >
                     <FileText className="w-4 h-4 text-blue-600" />
                     <span>Study Guides</span>
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/#faqs"
                     className="flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-700 font-semibold transition-colors"
                   >
                     <HelpCircle className="w-4 h-4 text-amber-600" />
                     <span>FAQs &amp; Help</span>
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { botToken, chatId, message, type } = await req.json();
+    const { botToken, chatId, message } = await req.json();
 
     const token = botToken || process.env.TELEGRAM_BOT_TOKEN;
     const targetChat = chatId || process.env.TELEGRAM_CHAT_ID;

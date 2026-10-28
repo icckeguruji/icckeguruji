@@ -8,10 +8,7 @@ import {
   Award,
   Send,
   Download,
-  AlertCircle,
-  HelpCircle,
   Sparkles,
-  ChevronRight,
   UserCheck
 } from 'lucide-react';
 import { DppAssignment, DppSubmission, User } from '@/types';
@@ -19,7 +16,7 @@ import { saveStoredData } from '@/lib/storage';
 
 interface DppManagerProps {
   courseId: string;
-  courseTitle: string;
+  courseTitle?: string;
   dpps: DppAssignment[];
   submissions: DppSubmission[];
   currentUser: User;
@@ -28,7 +25,6 @@ interface DppManagerProps {
 
 export default function DppManager({
   courseId,
-  courseTitle,
   dpps,
   submissions,
   currentUser,
@@ -351,7 +347,7 @@ export default function DppManager({
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
-                          Submit for Guruji's Review
+                          Submit for Guruji&apos;s Review
                         </>
                       )}
                     </button>
@@ -361,7 +357,7 @@ export default function DppManager({
                 {successMsg && (
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    Great work! Your solution has been submitted for Guruji's evaluation. Your evaluated marks and feedback will be posted shortly.
+                    Great work! Your solution has been submitted for Guruji&apos;s evaluation. Your evaluated marks and feedback will be posted shortly.
                   </div>
                 )}
               </form>

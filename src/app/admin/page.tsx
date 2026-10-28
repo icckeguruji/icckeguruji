@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -16,26 +16,20 @@ import {
   Check,
   X,
   Clock,
-  TrendingUp,
-  DollarSign,
   AlertCircle,
   ExternalLink,
   Trash2,
   Bell,
   MessageSquare,
   Sparkles,
-  ArrowRight,
   ShieldCheck,
   Search,
-  ChevronRight,
   Menu,
   GraduationCap,
   Award,
   Calendar,
-  Zap,
   CheckCircle2,
   Download,
-  ThumbsUp,
   Pencil,
   Star,
   Eye,
@@ -46,8 +40,7 @@ import {
   Globe,
   MapPin,
   Phone,
-  Share2,
-  Building2
+  Share2
 } from 'lucide-react';
 import {
   Course,
@@ -63,7 +56,6 @@ import {
   Quiz,
   QuizQuestion,
   TimetableSlot,
-  Flashcard,
   DppAssignment,
   DppSubmission,
   PyqPaper,
@@ -78,7 +70,11 @@ import AttendanceManager from '@/components/AttendanceManager';
 import FeeRegisterManager from '@/components/FeeRegisterManager';
 import WeeklyTestManager from '@/components/WeeklyTestManager';
 
-export default function AdminDashboardPage() {
+const emptySubscribe = () => () => {};
+const getClientToday = () => new Date().toISOString().split('T')[0];
+const getServerToday = () => '';
+
+function AdminDashboardContent() {
   const [data, setData] = useState(getStoredData());
   const [currentUser, setCurrentUser] = useState<User>(data.user);
   
@@ -315,11 +311,9 @@ export default function AdminDashboardPage() {
     setConfigForm(fresh.config);
   };
 
-  const [todayStr, setTodayStr] = useState('2026-10-26');
+  const todayStr = React.useSyncExternalStore(emptySubscribe, getClientToday, getServerToday);
 
   useEffect(() => {
-    refreshState();
-    setTodayStr(new Date().toISOString().split('T')[0]);
     const handleStorageUpdate = () => refreshState();
     window.addEventListener('coaching_storage_updated', handleStorageUpdate);
     return () => window.removeEventListener('coaching_storage_updated', handleStorageUpdate);
@@ -1388,16 +1382,13 @@ export default function AdminDashboardPage() {
   };
 
   // Stats
-  const approvedPayments = data.payments.filter((p: PaymentRequest) => p.status === 'approved');
   const pendingPayments = data.payments.filter((p: PaymentRequest) => p.status === 'pending');
-  const pendingDpps = (data.dppSubmissions || []).filter((s) => s.status === 'pending');
-  const totalRevenue = approvedPayments.reduce((acc: number, curr: PaymentRequest) => acc + curr.amount, 0);
 
   // Left Sidebar items categorized into sections for a simplified, clean UI
   interface NavItem {
     id: string;
     label: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }> | React.ElementType;
     count?: number;
     badge?: number | string | null;
     badgeColor?: string;
@@ -1663,7 +1654,7 @@ export default function AdminDashboardPage() {
                 {/* Today's Attendance */}
                 <div className="group p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-emerald-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Today's Attendance</span>
+                    <span className="text-xs uppercase font-bold tracking-wider text-slate-500">Today&apos;s Attendance</span>
                     <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shadow-xs">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
@@ -2079,7 +2070,7 @@ export default function AdminDashboardPage() {
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>
                     Students submit their 12-digit UTR upon paying through any UPI App.
-                    Clicking <strong>"Approve"</strong> instantly unlocks full classroom access for the student!
+                    Clicking <strong>&quot;Approve&quot;</strong> instantly unlocks full classroom access for the student!
                   </span>
                 </div>
                 <button
@@ -2287,7 +2278,7 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800">
-                        ✅ Upon submission, the student's account is created automatically and their selected batch is unlocked immediately!
+                        ✅ Upon submission, the student&apos;s account is created automatically and their selected batch is unlocked immediately!
                       </div>
 
                       <div className="flex items-center justify-end gap-2 pt-2">
@@ -5957,7 +5948,7 @@ export default function AdminDashboardPage() {
                             <h5 className="font-bold text-slate-900 text-sm">{t.studentName}</h5>
                             <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">{t.examRank}</span>
                           </div>
-                          <p className="text-xs text-slate-600 italic">"{t.review}"</p>
+                          <p className="text-xs text-slate-600 italic">&quot;{t.review}&quot;</p>
                           <div className="text-[10px] text-slate-400 mt-1">{t.examName}</div>
                         </div>
 
@@ -6211,7 +6202,7 @@ export default function AdminDashboardPage() {
                         /stats
                       </span>
                       <p className="text-slate-700">
-                        Shows a live summary of Total Enrolled Students, Today's Direct UPI Revenue, and Active Batches.
+                        Shows a live summary of Total Enrolled Students, Today&apos;s Direct UPI Revenue, and Active Batches.
                       </p>
                     </div>
 
@@ -6220,7 +6211,7 @@ export default function AdminDashboardPage() {
                         /broadcast &lt;msg&gt;
                       </span>
                       <p className="text-slate-700">
-                        Instantly publishes a notification to the website's live notice ticker and student dashboard.
+                        Instantly publishes a notification to the website&apos;s live notice ticker and student dashboard.
                       </p>
                     </div>
 
@@ -6229,7 +6220,7 @@ export default function AdminDashboardPage() {
                         /timetable
                       </span>
                       <p className="text-slate-700">
-                        Displays today's scheduled live classes, subjects, and faculty timings.
+                        Displays today&apos;s scheduled live classes, subjects, and faculty timings.
                       </p>
                     </div>
 
@@ -6238,7 +6229,7 @@ export default function AdminDashboardPage() {
                         /dpp
                       </span>
                       <p className="text-slate-700">
-                        Displays students' pending homework and numerical submissions waiting for evaluation.
+                        Displays students&apos; pending homework and numerical submissions waiting for evaluation.
                       </p>
                     </div>
                   </div>
@@ -6844,5 +6835,19 @@ export default function AdminDashboardPage() {
       {/* Mobile App Navigation Dock */}
       <MobileBottomNav currentUser={currentUser} />
     </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+          <p className="text-sm font-semibold text-slate-400">Loading ICC Admin Console...</p>
+        </div>
+      }
+    >
+      <AdminDashboardContent />
+    </Suspense>
   );
 }
