@@ -44,9 +44,12 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
       const res = authenticateUser(identifier, password);
       if (res.success && res.user) {
         const isGuruji = res.user.role === 'admin';
+        const isTeacher = res.user.role === 'teacher';
         setSuccess(
           isGuruji
             ? 'Welcome Guruji! Opening Admin Dashboard...'
+            : isTeacher
+            ? `Welcome ${res.user.name}! Opening Faculty Portal...`
             : `Welcome, ${res.user.name}!`
         );
         onLoginSuccess(res.user);
@@ -58,13 +61,13 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
           }
         }, 500);
       } else {
-        setError(res.error || 'Invalid Email ID or Password.');
+        setError(res.error || 'Invalid Email ID, Faculty ID, or Password.');
         setLoading(false);
       }
     }, 300);
   };
 
-  const handleQuickFill = (type: 'rahul' | 'priya' | 'admin') => {
+  const handleQuickFill = (type: 'rahul' | 'priya' | 'admin' | 'teacher') => {
     setError('');
     if (type === 'rahul') {
       setIdentifier('rahul.student@gmail.com');
@@ -72,6 +75,9 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
     } else if (type === 'priya') {
       setIdentifier('priya.sharma99@gmail.com');
       setPassword('student123');
+    } else if (type === 'teacher') {
+      setIdentifier('ICC-T-101');
+      setPassword('teacher123');
     } else {
       setIdentifier('admin@icckeguruji.com');
       setPassword('admin123');
@@ -121,7 +127,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
             {/* Email / Phone Field */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Email ID or Mobile Number *
+                Faculty ID, Mobile or Email *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -132,7 +138,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="e.g. rahul.student@gmail.com or 9876543210"
+                  placeholder="e.g. ICC-T-101 or 9934215013 or student@gmail.com"
                   className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -195,7 +201,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2.5">
               ⚡ 1-Click Quick Demo Login
             </div>
-            <div className="grid grid-cols-3 gap-1.5 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
               <button
                 type="button"
                 onClick={() => handleQuickFill('rahul')}
@@ -211,6 +217,14 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
               >
                 <div className="text-blue-700 font-bold truncate">Priya</div>
                 <div className="text-[10px] text-slate-500">Student</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickFill('teacher')}
+                className="p-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-left transition-colors"
+              >
+                <div className="text-indigo-800 font-bold truncate">Alok Sir</div>
+                <div className="text-[10px] text-indigo-600">Faculty</div>
               </button>
               <button
                 type="button"

@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   FileText,
-  HelpCircle
+  HelpCircle,
+  GraduationCap
 } from 'lucide-react';
 import { User as UserType, CoachingConfig } from '@/types';
 import Logo from '@/components/Logo';
@@ -160,7 +161,11 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
                       <div className="font-black text-slate-900">{currentUser.name}</div>
                       <div className="text-[11px] text-slate-500 font-mono">{currentUser.phone}</div>
                       <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 capitalize">
-                        {currentUser.role === 'admin' ? 'Admin / Teacher' : `${currentUser.enrolledCourseIds?.length || 0} Courses Enrolled`}
+                        {currentUser.role === 'admin'
+                          ? 'Admin Portal'
+                          : currentUser.role === 'teacher'
+                          ? 'Faculty Portal'
+                          : `${currentUser.enrolledCourseIds?.length || 0} Courses Enrolled`}
                       </span>
                     </div>
 
@@ -172,6 +177,15 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
                       >
                         <ShieldAlert className="w-4 h-4 text-purple-600" />
                         <span>Admin Dashboard</span>
+                      </Link>
+                    ) : currentUser.role === 'teacher' ? (
+                      <Link
+                        href="/teacher"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="w-full flex items-center gap-2 p-2 rounded-xl text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 font-semibold transition-colors"
+                      >
+                        <GraduationCap className="w-4 h-4 text-indigo-600" />
+                        <span>Faculty Portal</span>
                       </Link>
                     ) : (
                       <Link
@@ -248,6 +262,18 @@ export default function Navbar({ currentUser, config, onUserChange }: NavbarProp
                         <span>Admin Dashboard</span>
                       </div>
                       <span className="text-[10px] bg-purple-200/60 text-purple-900 px-2 py-0.5 rounded-full font-bold">Admin</span>
+                    </Link>
+                  ) : currentUser.role === 'teacher' ? (
+                    <Link
+                      href="/teacher"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4" />
+                        <span>Faculty Portal</span>
+                      </div>
+                      <span className="text-[10px] bg-indigo-200/60 text-indigo-900 px-2 py-0.5 rounded-full font-bold">Faculty</span>
                     </Link>
                   ) : (
                     <Link

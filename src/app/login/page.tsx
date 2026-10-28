@@ -42,23 +42,26 @@ export default function LoginPage() {
 
       if (res.success && res.user) {
         const isGuruji = res.user.role === 'admin';
+        const isTeacher = res.user.role === 'teacher';
         setSuccess(
           isGuruji
             ? `Welcome Guruji! Opening Admin Dashboard...`
+            : isTeacher
+            ? `Welcome ${res.user.name}! Opening Faculty Portal...`
             : `Welcome, ${res.user.name}! Opening your classroom...`
         );
 
         setTimeout(() => {
-          router.push(res.redirectTo || (isGuruji ? '/admin' : '/course/course-1'));
+          router.push(res.redirectTo || (isGuruji ? '/admin' : isTeacher ? '/teacher' : '/course/course-1'));
         }, 600);
       } else {
-        setError(res.error || 'Invalid Email ID or Password.');
+        setError(res.error || 'Invalid Email ID, Faculty ID, or Password.');
         setLoading(false);
       }
     }, 350);
   };
 
-  const handleQuickFill = (type: 'rahul' | 'priya' | 'admin') => {
+  const handleQuickFill = (type: 'rahul' | 'priya' | 'admin' | 'teacher') => {
     setError('');
     if (type === 'rahul') {
       setIdentifier('rahul.student@gmail.com');
@@ -66,6 +69,9 @@ export default function LoginPage() {
     } else if (type === 'priya') {
       setIdentifier('priya.sharma99@gmail.com');
       setPassword('student123');
+    } else if (type === 'teacher') {
+      setIdentifier('ICC-T-101');
+      setPassword('teacher123');
     } else {
       setIdentifier('admin@icckeguruji.com');
       setPassword('admin123');
@@ -127,7 +133,7 @@ export default function LoginPage() {
           {/* Email / Mobile Identifier */}
           <div>
             <label className="block text-slate-700 font-bold mb-1.5 text-xs">
-              Email ID or Mobile Number *
+              Faculty ID, Mobile Number or Email *
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -138,7 +144,7 @@ export default function LoginPage() {
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="e.g. rahul.student@gmail.com or 9876543210"
+                placeholder="e.g. ICC-T-101 or 9934215013 or student@gmail.com"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-2xl text-slate-900 text-xs sm:text-sm focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 focus:outline-none font-medium transition-all"
               />
             </div>
@@ -222,7 +228,7 @@ export default function LoginPage() {
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 text-center">
             ⚡ Quick 1-Click Demo Login Fill
           </div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <button
               type="button"
               onClick={() => handleQuickFill('rahul')}
@@ -238,6 +244,14 @@ export default function LoginPage() {
             >
               <span className="font-bold">Priya (Student)</span>
               <span className="text-[10px] text-slate-400">Class 10</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('teacher')}
+              className="p-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-semibold text-center transition-colors flex flex-col items-center gap-0.5"
+            >
+              <span className="font-bold">Alok Sir (Faculty)</span>
+              <span className="text-[10px] text-indigo-600">Physics Mentor</span>
             </button>
             <button
               type="button"

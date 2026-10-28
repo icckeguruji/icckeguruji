@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'admin';
+export type UserRole = 'student' | 'admin' | 'teacher';
 
 export interface User {
   id: string;
@@ -12,6 +12,7 @@ export interface User {
   avatar?: string;
   streakDays?: number;
   rollNo?: string;
+  facultyId?: string;
   fatherName?: string;
   address?: string;
   monthlyFee?: number;
@@ -354,9 +355,11 @@ export type TeacherAttendanceStatus = 'present' | 'absent' | 'half_day' | 'leave
 
 export interface Teacher {
   id: string;
+  facultyId: string; // Unique Faculty / Teacher Login ID (e.g. ICC-T-101)
   name: string;
   phone: string;
   email: string;
+  password?: string; // Login Password (default: teacher123)
   subject: string;
   qualification: string;
   experience: string;
@@ -366,6 +369,10 @@ export interface Teacher {
   avatar?: string;
   status: 'active' | 'on_leave' | 'inactive';
   bio?: string;
+  address?: string;
+  bloodGroup?: string;
+  specialization?: string;
+  achievements?: string[];
 }
 
 export interface TeacherAttendanceRecord {

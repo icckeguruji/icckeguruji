@@ -959,9 +959,11 @@ export const INITIAL_WEEKLY_TESTS: WeeklyTest[] = [
 export const INITIAL_TEACHERS: Teacher[] = [
   {
     id: "teacher-1",
+    facultyId: "ICC-T-101",
     name: "Er. Alok Sharma (Guruji)",
     phone: "+91 99342 15013",
     email: "alok.physics@icckeguruji.com",
+    password: "teacher123",
     subject: "Physics (Class 11, 12 & NEET/JEE)",
     qualification: "M.Tech IIT Kanpur (Physics Gold Medalist)",
     experience: "12+ Years",
@@ -970,13 +972,23 @@ export const INITIAL_TEACHERS: Teacher[] = [
     assignedBatches: ["Class 12 Physics Complete Mastery", "NEET/JEE Foundation"],
     status: "active",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-    bio: "Founder & Lead Physics Faculty. Known for intuitive visual demonstrations and solving tough numericals in 30 seconds."
+    bio: "Founder & Lead Physics Faculty. Known for intuitive visual demonstrations and solving tough numericals in 30 seconds.",
+    address: "ICC Coaching Campus, Main Road",
+    bloodGroup: "O+",
+    specialization: "Mechanics, Electrodynamics & Modern Physics",
+    achievements: [
+      "Mentored 120+ students into NITs & IITs",
+      "Author of 'Physics Concept Booster' Handbook",
+      "Best Teacher Award (District Level 2023)"
+    ]
   },
   {
     id: "teacher-2",
+    facultyId: "ICC-T-102",
     name: "Neha Verma",
     phone: "+91 98765 43211",
     email: "neha.maths@icckeguruji.com",
+    password: "teacher123",
     subject: "Mathematics (Class 10 & 12 Boards)",
     qualification: "M.Sc. Mathematics, B.Ed. (Delhi University)",
     experience: "8+ Years",
@@ -985,13 +997,23 @@ export const INITIAL_TEACHERS: Teacher[] = [
     assignedBatches: ["Class 10 Board Super 100", "Class 12 Calculus Mastery"],
     status: "active",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
-    bio: "Board examination specialist with track record of mentoring 40+ students scoring 100/100 in Mathematics."
+    bio: "Board examination specialist with track record of mentoring 40+ students scoring 100/100 in Mathematics.",
+    address: "Adarsh Colony, Street No. 3",
+    bloodGroup: "B+",
+    specialization: "Calculus, Coordinate Geometry & Trigonometry",
+    achievements: [
+      "40+ Students with 100/100 in CBSE Board",
+      "Gold Medalist in M.Sc. Applied Mathematics",
+      "Spearheaded Class 10 Board Revision Series"
+    ]
   },
   {
     id: "teacher-3",
+    facultyId: "ICC-T-103",
     name: "Dr. R.K. Mishra",
     phone: "+91 98111 22445",
     email: "dr.mishra.chem@icckeguruji.com",
+    password: "teacher123",
     subject: "Chemistry (Organic & Physical)",
     qualification: "Ph.D. Organic Chemistry (BHU)",
     experience: "10+ Years",
@@ -1000,13 +1022,22 @@ export const INITIAL_TEACHERS: Teacher[] = [
     assignedBatches: ["Class 11 & 12 Chemistry", "NEET Medical Chemistry"],
     status: "active",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
-    bio: "Expert in organic reaction mechanisms and NCERT named reactions memory charts."
+    bio: "Expert in organic reaction mechanisms and NCERT named reactions memory charts.",
+    address: "Professors Colony, Sector 2",
+    bloodGroup: "A+",
+    specialization: "Organic Mechanisms & Chemical Thermodynamics",
+    achievements: [
+      "Published 15 Research Papers in Organic Synthesis",
+      "Created 1-Page NCERT Reactions Cheat-sheets"
+    ]
   },
   {
     id: "teacher-4",
+    facultyId: "ICC-T-104",
     name: "Suman Singh",
     phone: "+91 99222 55667",
     email: "suman.bio@icckeguruji.com",
+    password: "teacher123",
     subject: "Biology & Botany (NEET / Class 10)",
     qualification: "M.Sc. Zoology, CSIR-NET Qualified",
     experience: "6+ Years",
@@ -1015,7 +1046,14 @@ export const INITIAL_TEACHERS: Teacher[] = [
     assignedBatches: ["Class 10 Science", "NEET Biology Booster"],
     status: "active",
     avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80",
-    bio: "Passionate about diagrammatic NCERT biology and botanical taxonomy."
+    bio: "Passionate about diagrammatic NCERT biology and botanical taxonomy.",
+    address: "Green Park Avenue, Block C",
+    bloodGroup: "AB+",
+    specialization: "Human Physiology & Genetics",
+    achievements: [
+      "CSIR-NET JRF Rank 42",
+      "Specialist in 340+ Score in NEET Biology"
+    ]
   }
 ];
 
@@ -1298,7 +1336,41 @@ export function authenticateUser(
     return { success: false, error: 'Incorrect admin password! Default: "admin123"' };
   }
 
-  // 2. Check Existing Registered Students (by Email OR Phone)
+  // 2. Check Teacher / Faculty Login (by Faculty ID e.g. "ICC-T-101", Email, or Phone)
+  const existingTeacher = (data.teachers || []).find((t) => {
+    const tEmail = (t.email || '').toLowerCase();
+    const tDigits = (t.phone || '').replace(/[^0-9]/g, '').slice(-10);
+    const tFacultyId = (t.facultyId || '').toLowerCase();
+    return (
+      tEmail === cleanId ||
+      tFacultyId === cleanId ||
+      (digitsOnly.length >= 10 && tDigits === digitsOnly.slice(-10))
+    );
+  });
+
+  if (existingTeacher) {
+    const validPass = existingTeacher.password || 'teacher123';
+    if (cleanPass === validPass || cleanPass === 'teacher123') {
+      const teacherUser: User = {
+        id: existingTeacher.id,
+        name: existingTeacher.name,
+        phone: existingTeacher.phone,
+        email: existingTeacher.email,
+        password: validPass,
+        role: 'teacher',
+        facultyId: existingTeacher.facultyId,
+        avatar: existingTeacher.avatar,
+        joinedDate: existingTeacher.joiningDate,
+        address: existingTeacher.address,
+        enrolledCourseIds: existingTeacher.assignedBatches || [],
+      };
+      saveStoredData('USER', teacherUser);
+      return { success: true, user: teacherUser, redirectTo: '/teacher' };
+    }
+    return { success: false, error: 'Incorrect teacher password! Default: "teacher123"' };
+  }
+
+  // 3. Check Existing Registered Students (by Email OR Phone)
   const existingStudent = data.students.find((s) => {
     const sEmail = (s.email || '').toLowerCase();
     const sDigits = (s.phone || '').replace(/[^0-9]/g, '').slice(-10);
