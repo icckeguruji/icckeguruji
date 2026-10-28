@@ -260,8 +260,12 @@ export default function LoginPage() {
       </div>
 
       {/* Footer Info */}
-      <div className="max-w-md w-full mx-auto text-center pt-6 text-xs text-slate-400">
-        © 2026 ICC KE GURUJI. All rights reserved.
+      <div className="max-w-md w-full mx-auto text-center pt-6 text-xs text-slate-500 font-medium space-y-1">
+        <div>© 2026 ICC KE GURUJI. All rights reserved.</div>
+        <div className="text-[11px] text-slate-400">
+          Developed by <strong className="text-slate-700">Muzaffar Iqbal Ishaati</strong> •{' '}
+          <a href="tel:9934215013" className="hover:text-blue-600 font-mono">+91 9934215013</a>
+        </div>
       </div>
 
       {/* Forgot Password Modal */}
