@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import { MapPin, Phone, Mail, MessageCircle, Clock } from 'lucide-react';
-import { initialPlatformConfig } from '../../../admin-web/src/lib/sample-data';
+import { initialPlatformConfig } from '@/lib/sample-data';
 
 export default function ContactPage() {
   const cfg = initialPlatformConfig.institution_profile;

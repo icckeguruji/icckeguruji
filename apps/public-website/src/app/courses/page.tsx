@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { initialCourses } from '../../../admin-web/src/lib/sample-data';
+import { initialCourses } from '@/lib/sample-data';
 import { formatINR } from '@icc/shared-utils';
 import { Clock, Video, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
 
