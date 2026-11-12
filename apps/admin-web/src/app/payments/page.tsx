@@ -94,10 +94,10 @@ export default function PaymentsPage() {
         {/* Status Filter Tabs */}
         <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
           {[
-            { id: 'pending', labelHi: 'लंबित सत्यापन (Pending)', labelEn: 'Pending Review' },
-            { id: 'approved', labelHi: 'स्वीकृत भुगतान (Approved)', labelEn: 'Approved' },
-            { id: 'rejected', labelHi: 'अस्वीकृत (Rejected)', labelEn: 'Rejected' },
-            { id: 'all', labelHi: 'सभी (All Records)', labelEn: 'All Records' },
+            { id: 'pending', labelHi: 'लंबित सत्यापन', labelEn: 'Pending Review' },
+            { id: 'approved', labelHi: 'स्वीकृत भुगतान', labelEn: 'Approved' },
+            { id: 'rejected', labelHi: 'अस्वीकृत', labelEn: 'Rejected' },
+            { id: 'all', labelHi: 'सभी भुगतान', labelEn: 'All Records' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -120,7 +120,7 @@ export default function PaymentsPage() {
               <tr>
                 <th className="py-3 px-4">{t('विद्यार्थी', 'Student')}</th>
                 <th className="py-3 px-4">{t('कोर्स', 'Course')}</th>
-                <th className="py-3 px-4">{t('राशि (INR)', 'Amount')}</th>
+                <th className="py-3 px-4">{t('राशि', 'Amount')}</th>
                 <th className="py-3 px-4">{t('UPI / UTR रेफरेंस', 'UPI / UTR Ref')}</th>
                 <th className="py-3 px-4">{t('दिनांक', 'Submitted At')}</th>
                 <th className="py-3 px-4">{t('स्थिति', 'Status')}</th>
@@ -245,7 +245,7 @@ export default function PaymentsPage() {
                 <div className="space-y-3 pt-2 text-xs">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">
-                      {t('निर्णय टिप्पणी (Remarks / Audit Note)', 'Admin Remarks (Audit Log)')}
+                      {t('निर्णय टिप्पणी', 'Admin Remarks')}
                     </label>
                     <input
                       type="text"
@@ -262,7 +262,7 @@ export default function PaymentsPage() {
                       disabled={processing}
                       className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-semibold transition"
                     >
-                      {t('अस्वीकार करें (Reject)', 'Reject Payment')}
+                      {t('अस्वीकार करें', 'Reject Payment')}
                     </button>
                     <button
                       onClick={handleApprove}

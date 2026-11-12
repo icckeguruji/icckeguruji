@@ -75,7 +75,7 @@ export default function StudentProfileScreen() {
         {/* Board & Class Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {language === 'hi' ? 'अध्ययन बोर्ड (Academic Board)' : 'Academic Board'}
+            {language === 'hi' ? 'अध्ययन बोर्ड' : 'Academic Board'}
           </Text>
           <View style={styles.chipRow}>
             <TouchableOpacity
@@ -83,7 +83,7 @@ export default function StudentProfileScreen() {
               onPress={() => setBoard('BSEB')}
             >
               <Text style={[styles.chipText, selectedBoard === 'BSEB' && styles.chipTextActive]}>
-                बिहार बोर्ड (BSEB)
+                {language === 'hi' ? 'बिहार बोर्ड (BSEB)' : 'Bihar Board (BSEB)'}
               </Text>
             </TouchableOpacity>
 
@@ -92,7 +92,7 @@ export default function StudentProfileScreen() {
               onPress={() => setBoard('JAC')}
             >
               <Text style={[styles.chipText, selectedBoard === 'JAC' && styles.chipTextActive]}>
-                झारखंड बोर्ड (JAC)
+                {language === 'hi' ? 'झारखंड बोर्ड (JAC)' : 'Jharkhand Board (JAC)'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -101,24 +101,24 @@ export default function StudentProfileScreen() {
         {/* Language Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {language === 'hi' ? 'ऐप की भाषा (Language)' : 'App Language'}
+            {language === 'hi' ? 'ऐप की भाषा' : 'App Language'}
           </Text>
           <View style={styles.chipRow}>
-            <TouchableOpacity
-              style={[styles.chip, language === 'hi' && styles.chipActive]}
-              onPress={() => setLanguage('hi')}
-            >
-              <Text style={[styles.chipText, language === 'hi' && styles.chipTextActive]}>
-                हिंदी (Default)
-              </Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.chip, language === 'en' && styles.chipActive]}
               onPress={() => setLanguage('en')}
             >
               <Text style={[styles.chipText, language === 'en' && styles.chipTextActive]}>
                 English
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.chip, language === 'hi' && styles.chipActive]}
+              onPress={() => setLanguage('hi')}
+            >
+              <Text style={[styles.chipText, language === 'hi' && styles.chipTextActive]}>
+                हिंदी
               </Text>
             </TouchableOpacity>
           </View>
@@ -138,15 +138,15 @@ export default function StudentProfileScreen() {
             }
           >
             <Text style={styles.menuItemText}>
-              📥 {language === 'hi' ? 'डाउनलोड की गई सामग्री (Offline)' : 'Downloaded Notes'}
+              📥 {language === 'hi' ? 'डाउनलोड की गई सामग्री' : 'Downloaded Notes'}
             </Text>
             <Text style={styles.menuChevron}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={toggleDarkMode}>
             <Text style={styles.menuItemText}>
-              🌓 {language === 'hi' ? 'डार्क थीम (Dark Mode)' : 'Dark Theme'}:{' '}
-              {isDarkMode ? 'ON' : 'OFF'}
+              🌓 {language === 'hi' ? 'डार्क थीम' : 'Dark Theme'}:{' '}
+              {isDarkMode ? (language === 'hi' ? 'चालू' : 'ON') : (language === 'hi' ? 'बंद' : 'OFF')}
             </Text>
             <Text style={styles.menuChevron}>›</Text>
           </TouchableOpacity>

@@ -3,12 +3,13 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { PublicNavbar } from '@/components/PublicNavbar';
 import { PublicFooter } from '@/components/PublicFooter';
+import { LanguageProvider } from '@/components/LanguageContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'IDEAL COACHING CENTRE — बिहार (BSEB) एवं झारखंड (JAC) बोर्ड कोचिंग',
-  description: 'बिहार एवं झारखंड बोर्ड परीक्षा में शत-प्रतिशत सफलता का विश्वसनीय संस्थान। दैनिक लाइव कक्षाएं, संपूर्ण टॉपर नोट्स एवं ऑनलाइन टेस्ट।',
+  title: 'IDEAL COACHING CENTRE — Premier BSEB & JAC Board Coaching',
+  description: 'Excellence in Bihar Board (BSEB) & Jharkhand Board (JAC) matric and intermediate examinations. Daily live classes, topper notes, and mock tests.',
   keywords: ['BSEB Coaching', 'JAC Board Coaching', 'Bihar Board Class 10', 'Jharkhand Matric', 'Ideal Coaching Centre'],
 };
 
@@ -18,13 +19,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="hi">
+    <html lang="en">
       <body className={inter.className}>
-        <div className="flex flex-col min-h-screen">
-          <PublicNavbar />
-          <main className="flex-1">{children}</main>
-          <PublicFooter />
-        </div>
+        <LanguageProvider>
+          <div className="flex flex-col min-h-screen">
+            <PublicNavbar />
+            <main className="flex-1">{children}</main>
+            <PublicFooter />
+          </div>
+        </LanguageProvider>
       </body>
     </html>
   );

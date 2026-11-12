@@ -7,21 +7,26 @@ import {
   FileCheck2,
   HelpCircle,
   Video,
-  Clock,
   ArrowRight,
-  CheckCircle,
-  AlertCircle,
 } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function TeacherDashboardPage() {
+  const { t } = useLanguage();
+
   return (
     <div className="flex-1 pb-12">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">शिक्षक डैशबोर्ड अवलोकन</h2>
+          <h2 className="text-xl font-bold text-slate-800">
+            {t('शिक्षक डैशबोर्ड अवलोकन', 'Teacher Dashboard Overview')}
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            आइडियल कोचिंग सेंटर - संकाय कार्यप्रणाली (Faculty Workspace)
+            {t(
+              'आइडियल कोचिंग सेंटर - संकाय कार्यप्रणाली',
+              'Ideal Coaching Centre - Faculty Workspace'
+            )}
           </p>
         </div>
 
@@ -30,8 +35,12 @@ export default function TeacherDashboardPage() {
             SN
           </div>
           <div className="text-left">
-            <p className="text-xs font-bold text-slate-800 leading-none">डॉ. एस. एन. मिश्रा</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">रसायन शास्त्र एवं विज्ञान संकाय</p>
+            <p className="text-xs font-bold text-slate-800 leading-none">
+              {t('डॉ. एस. एन. मिश्रा', 'Dr. S. N. Mishra')}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {t('रसायन शास्त्र एवं विज्ञान संकाय', 'Senior Chemistry & Science Faculty')}
+            </p>
           </div>
         </div>
       </header>
@@ -43,10 +52,16 @@ export default function TeacherDashboardPage() {
             <HelpCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-bold text-amber-900">
-                1 नया विद्यार्थी प्रश्न उत्तर की प्रतीक्षा में है
+                {t(
+                  '1 नया विद्यार्थी प्रश्न उत्तर की प्रतीक्षा में है',
+                  '1 student question is waiting for your reply'
+                )}
               </p>
               <p className="text-xs text-amber-700">
-                अध्याय 1: यूक्लिड विभाजन प्रमेयिका से संबंधित शंका का समाधान करें।
+                {t(
+                  'अध्याय 1: यूक्लिड विभाजन प्रमेयिका से संबंधित शंका का समाधान करें।',
+                  'Chapter 1: Euclid Division Lemma doubt submitted by student.'
+                )}
               </p>
             </div>
           </div>
@@ -54,7 +69,7 @@ export default function TeacherDashboardPage() {
             href="/doubts"
             className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition"
           >
-            <span>उत्तर दें</span>
+            <span>{t('उत्तर दें', 'Reply Now')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -64,60 +79,74 @@ export default function TeacherDashboardPage() {
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                आवंटित बैच (Batches)
+                {t('आवंटित बैच', 'Assigned Batches')}
               </span>
               <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                 <Layers className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl font-bold text-slate-800">2 बैच</h3>
-              <p className="text-xs text-slate-500 mt-1">83 नामांकित विद्यार्थी</p>
+              <h3 className="text-2xl font-bold text-slate-800">
+                2 {t('बैच', 'Batches')}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                83 {t('नामांकित विद्यार्थी', 'Enrolled Students')}
+              </p>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                लंबित गृहकार्य (Homework)
+                {t('लंबित गृहकार्य', 'Pending Homework')}
               </span>
               <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
                 <FileCheck2 className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl font-bold text-slate-800">4 कॉपियां</h3>
-              <p className="text-xs text-slate-500 mt-1">मूल्यांकन बाकी है</p>
+              <h3 className="text-2xl font-bold text-slate-800">
+                4 {t('कॉपियां', 'Submissions')}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {t('मूल्यांकन बाकी है', 'Awaiting Grading')}
+              </p>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                छात्र शंकाएं (Doubts)
+                {t('छात्र शंकाएं', 'Student Doubts')}
               </span>
               <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
                 <HelpCircle className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl font-bold text-slate-800">1 खुली</h3>
-              <p className="text-xs text-emerald-600 font-semibold mt-1">12 हल की गईं</p>
+              <h3 className="text-2xl font-bold text-slate-800">
+                1 {t('लंबित', 'Unresolved')}
+              </h3>
+              <p className="text-xs text-emerald-600 font-semibold mt-1">
+                12 {t('हल की गईं', 'Resolved')}
+              </p>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                आज की लाइव क्लास
+                {t('आज की लाइव क्लास', "Today's Live Class")}
               </span>
               <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
                 <Video className="w-5 h-5" />
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl font-bold text-slate-800">1 क्लास</h3>
-              <p className="text-xs text-slate-500 mt-1">शाम 04:30 PM</p>
+              <h3 className="text-2xl font-bold text-slate-800">
+                1 {t('क्लास', 'Session')}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">04:30 PM IST</p>
             </div>
           </div>
         </div>
@@ -130,10 +159,13 @@ export default function TeacherDashboardPage() {
           >
             <div>
               <h4 className="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition">
-                गृहकार्य असाइन करें एवं कॉपियां जांचें
+                {t('गृहकार्य असाइन करें एवं कॉपियां जांचें', 'Assign Homework & Review Submissions')}
               </h4>
               <p className="text-xs text-slate-500 mt-0.5">
-                विद्यार्थियों के पीडीएफ उत्तरों का मूल्यांकन कर अंक और सुझाव प्रदान करें
+                {t(
+                  'विद्यार्थियों के पीडीएफ उत्तरों का मूल्यांकन कर अंक और सुझाव प्रदान करें',
+                  'Evaluate student homework PDFs, assign scores, and write feedback remarks'
+                )}
               </p>
             </div>
             <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition" />
@@ -145,10 +177,13 @@ export default function TeacherDashboardPage() {
           >
             <div>
               <h4 className="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition">
-                शंका समाधान केंद्र (Doubt Resolution)
+                {t('शंका समाधान केंद्र', 'Doubt Resolution Center')}
               </h4>
               <p className="text-xs text-slate-500 mt-0.5">
-                विद्यार्थियों द्वारा भेजे गए शैक्षणिक प्रश्नों का लिखित एवं स्पष्ट उत्तर दें
+                {t(
+                  'विद्यार्थियों द्वारा भेजे गए शैक्षणिक प्रश्नों का लिखित एवं स्पष्ट उत्तर दें',
+                  'Provide clear written guidance and answers to academic questions submitted by students'
+                )}
               </p>
             </div>
             <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition" />

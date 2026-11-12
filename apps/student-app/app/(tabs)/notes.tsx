@@ -59,8 +59,8 @@ export default function StudentNotesScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subjectScroll}>
           {[
             { id: 'all', label: language === 'hi' ? 'सभी विषय' : 'All Subjects' },
-            { id: 'sci', label: language === 'hi' ? 'विज्ञान (Science)' : 'Science' },
-            { id: 'math', label: language === 'hi' ? 'गणित (Math)' : 'Mathematics' },
+            { id: 'sci', label: language === 'hi' ? 'विज्ञान' : 'Science' },
+            { id: 'math', label: language === 'hi' ? 'गणित' : 'Mathematics' },
             { id: 'sst', label: language === 'hi' ? 'सामाजिक विज्ञान' : 'Social Science' },
           ].map((sub) => (
             <TouchableOpacity

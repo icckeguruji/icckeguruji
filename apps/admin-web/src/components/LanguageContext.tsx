@@ -11,19 +11,21 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  lang: 'hi',
+  lang: 'en',
   setLang: () => {},
   toggleLang: () => {},
-  t: (hi, _en) => hi,
+  t: (_hi, en) => en,
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<AppLanguage>('hi');
+  const [lang, setLang] = useState<AppLanguage>('en');
 
   useEffect(() => {
     const saved = localStorage.getItem('icc_admin_lang') as AppLanguage;
     if (saved === 'hi' || saved === 'en') {
       setLang(saved);
+    } else {
+      setLang('en');
     }
   }, []);
 

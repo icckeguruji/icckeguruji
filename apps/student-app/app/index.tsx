@@ -30,19 +30,19 @@ export default function IndexScreen() {
         {/* Top Language Toggle */}
         <View style={styles.langBar}>
           <TouchableOpacity
-            style={[styles.langBtn, language === 'hi' && styles.langBtnActive]}
-            onPress={() => setLanguage('hi')}
-          >
-            <Text style={[styles.langText, language === 'hi' && styles.langTextActive]}>
-              हिंदी (Default)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={[styles.langBtn, language === 'en' && styles.langBtnActive]}
             onPress={() => setLanguage('en')}
           >
             <Text style={[styles.langText, language === 'en' && styles.langTextActive]}>
               English
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.langBtn, language === 'hi' && styles.langBtnActive]}
+            onPress={() => setLanguage('hi')}
+          >
+            <Text style={[styles.langText, language === 'hi' && styles.langTextActive]}>
+              हिंदी
             </Text>
           </TouchableOpacity>
         </View>
@@ -52,17 +52,22 @@ export default function IndexScreen() {
           <View style={styles.logoBadge}>
             <Text style={styles.logoBadgeText}>ICC</Text>
           </View>
-          <Text style={styles.appName}>IDEAL COACHING CENTRE</Text>
-          <Text style={styles.appHindiName}>आइडियल कोचिंग सेंटर</Text>
+          <Text style={styles.appName}>
+            {language === 'hi' ? 'आइडियल कोचिंग सेंटर' : 'IDEAL COACHING CENTRE'}
+          </Text>
           <Text style={styles.tagline}>{t.tagline}</Text>
 
           {/* Supported Boards Badge */}
           <View style={styles.boardBadgeRow}>
             <View style={styles.boardBadge}>
-              <Text style={styles.boardBadgeText}>बिहार बोर्ड (BSEB)</Text>
+              <Text style={styles.boardBadgeText}>
+                {language === 'hi' ? 'बिहार बोर्ड (BSEB)' : 'Bihar Board (BSEB)'}
+              </Text>
             </View>
             <View style={[styles.boardBadge, styles.boardBadgeJac]}>
-              <Text style={styles.boardBadgeText}>झारखंड बोर्ड (JAC)</Text>
+              <Text style={styles.boardBadgeText}>
+                {language === 'hi' ? 'झारखंड बोर्ड (JAC)' : 'Jharkhand Board (JAC)'}
+              </Text>
             </View>
           </View>
         </View>

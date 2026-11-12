@@ -38,7 +38,7 @@ export default function StudentLiveScreen() {
           onPress={() => setActiveTab('live')}
         >
           <Text style={[styles.tabBtnText, activeTab === 'live' && styles.tabBtnTextActive]}>
-            🔴 {language === 'hi' ? 'लाइव अभी (Live Now)' : 'Live Now'}
+            🔴 {language === 'hi' ? 'लाइव अभी' : 'Live Now'}
           </Text>
         </TouchableOpacity>
 
@@ -49,7 +49,7 @@ export default function StudentLiveScreen() {
           <Text
             style={[styles.tabBtnText, activeTab === 'upcoming' && styles.tabBtnTextActive]}
           >
-            📅 {language === 'hi' ? 'आगामी कक्षाएं (Upcoming)' : 'Upcoming'}
+            📅 {language === 'hi' ? 'आगामी कक्षाएं' : 'Upcoming'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -60,14 +60,20 @@ export default function StudentLiveScreen() {
             <View style={styles.badgeRow}>
               {item.status === 'live' ? (
                 <View style={styles.liveNowBadge}>
-                  <Text style={styles.liveNowText}>🔴 LIVE NOW</Text>
+                  <Text style={styles.liveNowText}>
+                    🔴 {language === 'hi' ? 'लाइव' : 'LIVE NOW'}
+                  </Text>
                 </View>
               ) : (
                 <View style={styles.schedBadge}>
-                  <Text style={styles.schedText}>SCHEDULED</Text>
+                  <Text style={styles.schedText}>
+                    {language === 'hi' ? 'निर्धारित' : 'SCHEDULED'}
+                  </Text>
                 </View>
               )}
-              <Text style={styles.durationText}>{item.duration_minutes} मिनट</Text>
+              <Text style={styles.durationText}>
+                {item.duration_minutes} {language === 'hi' ? 'मिनट' : 'mins'}
+              </Text>
             </View>
 
             <Text style={styles.title}>
@@ -87,10 +93,10 @@ export default function StudentLiveScreen() {
               <Text style={styles.actionBtnText}>
                 {item.status === 'live'
                   ? language === 'hi'
-                    ? 'लाइव कक्षा में शामिल हों (Join Stream)'
+                    ? 'लाइव कक्षा में शामिल हों'
                     : 'Join YouTube Stream'
                   : language === 'hi'
-                  ? 'अनुस्मारक सेट करें (Set Reminder)'
+                  ? 'अनुस्मारक सेट करें'
                   : 'Set Reminder'}
               </Text>
             </TouchableOpacity>

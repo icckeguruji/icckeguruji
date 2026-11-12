@@ -56,7 +56,9 @@ export default function RecordedLectureScreen() {
         {/* Lecture Info */}
         <View style={styles.infoSection}>
           <View style={styles.metaRow}>
-            <Text style={styles.subjectBadge}>विज्ञान (Science) · कक्षा 10</Text>
+            <Text style={styles.subjectBadge}>
+              {language === 'hi' ? 'विज्ञान · कक्षा 10' : 'Science · Class 10'}
+            </Text>
             <TouchableOpacity onPress={() => setBookmarked(!bookmarked)}>
               <Text style={{ fontSize: 18 }}>{bookmarked ? '⭐' : '☆'}</Text>
             </TouchableOpacity>
@@ -78,10 +80,14 @@ export default function RecordedLectureScreen() {
         {/* Action Buttons */}
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionBtn}>
-            <Text style={styles.actionBtnText}>📑 {language === 'hi' ? 'लेक्चर नोट्स (PDF)' : 'Lecture Notes'}</Text>
+            <Text style={styles.actionBtnText}>
+              📑 {language === 'hi' ? 'लेक्चर नोट्स' : 'Lecture Notes'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn}>
-            <Text style={styles.actionBtnText}>💬 {language === 'hi' ? 'शंका पूछें (Doubt)' : 'Ask Doubt'}</Text>
+            <Text style={styles.actionBtnText}>
+              💬 {language === 'hi' ? 'शंका पूछें' : 'Ask Doubt'}
+            </Text>
           </TouchableOpacity>
         </View>
 

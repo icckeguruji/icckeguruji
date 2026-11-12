@@ -175,11 +175,11 @@ export default function RecordedLecturesPage() {
                   <td className="py-3 px-4">
                     {lec.is_free_preview ? (
                       <span className="inline-flex items-center text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold text-[10px]">
-                        <Unlock className="w-3 h-3 mr-1" /> {t('ट्रायल डेमो (Free)', 'Trial Demo')}
+                        <Unlock className="w-3 h-3 mr-1" /> {t('ट्रायल डेमो', 'Trial Demo')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full font-semibold text-[10px]">
-                        <Lock className="w-3 h-3 mr-1" /> {t('नामांकित छात्र (Enrolled)', 'Enrolled')}
+                        <Lock className="w-3 h-3 mr-1" /> {t('नामांकित छात्र', 'Enrolled Only')}
                       </span>
                     )}
                   </td>
@@ -211,7 +211,7 @@ export default function RecordedLecturesPage() {
 
               <form onSubmit={handleCreate} className="space-y-4 pt-4 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('व्याख्यान शीर्षक (English)', 'Lecture Title (English)')}</label>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('व्याख्यान का शीर्षक (अंग्रेज़ी)', 'Lecture Title')}</label>
                   <input
                     type="text"
                     required
@@ -221,7 +221,7 @@ export default function RecordedLecturesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('व्याख्यान शीर्षक (हिंदी)', 'Lecture Title (Hindi)')}</label>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('व्याख्यान का शीर्षक (हिंदी)', 'Lecture Title (Hindi)')}</label>
                   <input
                     type="text"
                     required
@@ -242,7 +242,7 @@ export default function RecordedLecturesPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">{t('क्रम (Order Number)', 'Order Number')}</label>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('क्रम संख्या', 'Order Number')}</label>
                     <input
                       type="number"
                       value={formData.lecture_order}
@@ -270,7 +270,7 @@ export default function RecordedLecturesPage() {
                     className="w-4 h-4 text-blue-600 rounded border-slate-300"
                   />
                   <label htmlFor="is_free_preview" className="font-semibold text-slate-700">
-                    {t('निःशुल्क डेमो के रूप में पूर्वावलोकन की अनुमति दें (Free Preview)', 'Allow Free Preview')}
+                    {t('निःशुल्क डेमो के रूप में पूर्वावलोकन दें', 'Allow Free Preview')}
                   </label>
                 </div>
 

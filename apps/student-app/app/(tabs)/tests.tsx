@@ -69,11 +69,15 @@ export default function StudentTestsScreen() {
                   <Text style={styles.statVal}>{test.marks}</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>उत्तीर्ण (Pass)</Text>
+                  <Text style={styles.statLabel}>
+                    {language === 'hi' ? 'उत्तीर्ण अंक' : 'Pass Marks'}
+                  </Text>
                   <Text style={styles.statVal}>{test.passMarks}</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>निगेटिव</Text>
+                  <Text style={styles.statLabel}>
+                    {language === 'hi' ? 'निगेटिव मार्किंग' : 'Negative'}
+                  </Text>
                   <Text style={[styles.statVal, { color: '#DC2626' }]}>-{test.negative}</Text>
                 </View>
               </View>

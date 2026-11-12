@@ -58,7 +58,7 @@ export default function LiveClassesPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="यूट्यूब लाइव क्लास शेड्यूलर (Zero Server Cost)"
+        titleHi="यूट्यूब लाइव क्लास शेड्यूलर"
         titleEn="YouTube Live Class Scheduler"
         subtitleHi="यूट्यूब लाइव स्ट्रीम आईडी द्वारा निःशुल्क असीमित बैंडविड्थ लाइव प्रसारण"
         subtitleEn="Schedule and manage live classes using YouTube Live integration"

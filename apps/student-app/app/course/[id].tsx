@@ -117,14 +117,18 @@ export default function CourseDetailsScreen() {
 
       {/* Sticky Bottom Enrollment Bar */}
       <View style={styles.bottomBar}>
-        <div>
+        <View>
           <Text style={styles.bottomPriceLabel}>
-            {course.is_free ? 'निःशुल्क' : 'कोर्स शुल्क (One Time)'}
+            {course.is_free
+              ? (language === 'hi' ? 'निःशुल्क कोर्स' : 'Free Course')
+              : (language === 'hi' ? 'कोर्स शुल्क' : 'Course Fee')}
           </Text>
           <Text style={styles.bottomPriceVal}>
-            {course.is_free ? 'FREE' : formatINR(course.discount_price || course.price)}
+            {course.is_free
+              ? (language === 'hi' ? 'निःशुल्क' : 'FREE')
+              : formatINR(course.discount_price || course.price)}
           </Text>
-        </div>
+        </View>
 
         {course.is_free ? (
           <TouchableOpacity

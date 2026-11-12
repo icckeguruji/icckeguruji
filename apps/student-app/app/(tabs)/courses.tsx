@@ -39,7 +39,7 @@ export default function StudentCoursesScreen() {
                 selectedBoard === 'BSEB' && styles.boardBtnTextActive,
               ]}
             >
-              बिहार बोर्ड (BSEB)
+              {language === 'hi' ? 'बिहार बोर्ड (BSEB)' : 'Bihar Board (BSEB)'}
             </Text>
           </TouchableOpacity>
 
@@ -53,7 +53,7 @@ export default function StudentCoursesScreen() {
                 selectedBoard === 'JAC' && styles.boardBtnTextActive,
               ]}
             >
-              झारखंड बोर्ड (JAC)
+              {language === 'hi' ? 'झारखंड बोर्ड (JAC)' : 'Jharkhand Board (JAC)'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -96,9 +96,15 @@ export default function StudentCoursesScreen() {
                 </Text>
 
                 <View style={styles.statsRow}>
-                  <Text style={styles.stat}>⏱️ {course.validity_days} दिन</Text>
-                  <Text style={styles.stat}>📹 {course.lecture_count || 40} वीडियो</Text>
-                  <Text style={styles.stat}>📄 {course.material_count || 25} पीडीएफ</Text>
+                  <Text style={styles.stat}>
+                    ⏱️ {course.validity_days} {language === 'hi' ? 'दिन' : 'Days'}
+                  </Text>
+                  <Text style={styles.stat}>
+                    📹 {course.lecture_count || 40} {language === 'hi' ? 'वीडियो' : 'Videos'}
+                  </Text>
+                  <Text style={styles.stat}>
+                    📄 {course.material_count || 25} {language === 'hi' ? 'पीडीएफ' : 'PDFs'}
+                  </Text>
                 </View>
 
                 <View style={styles.actionRow}>
@@ -107,7 +113,7 @@ export default function StudentCoursesScreen() {
                       style={styles.freeBtn}
                       onPress={() => router.push(`/course/${course.id}`)}
                     >
-                      <Text style={styles.freeBtnText}>{t.enrollNow} (Free)</Text>
+                      <Text style={styles.freeBtnText}>{t.enrollNow}</Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity

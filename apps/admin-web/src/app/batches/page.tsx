@@ -75,7 +75,7 @@ export default function BatchesPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="बैच प्रबंधन (Batches)"
+        titleHi="बैच प्रबंधन"
         titleEn="Batch Management"
         subtitleHi="पाठ्यक्रम अनुसार विद्यार्थियों एवं समय सारणी का आवंटन"
         subtitleEn="Create course batches, assign schedules and organize students"
@@ -126,7 +126,7 @@ export default function BatchesPage() {
 
               <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1">
                 <span className="text-slate-400 block text-[10px] uppercase font-bold">
-                  {t('कक्षा समय सारणी (IST)', 'Schedule (IST)')}
+                  {t('कक्षा समय सारणी', 'Class Schedule')}
                 </span>
                 <span className="font-mono text-slate-800 font-semibold block">{batch.schedule_info}</span>
               </div>
@@ -145,7 +145,7 @@ export default function BatchesPage() {
 
               <form onSubmit={handleCreate} className="space-y-4 pt-4 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('बैच नाम (English)', 'Batch Name (English)')}</label>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('बैच का नाम (अंग्रेज़ी)', 'Batch Name')}</label>
                   <input
                     type="text"
                     required
@@ -155,7 +155,7 @@ export default function BatchesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('बैच नाम (हिंदी)', 'Batch Name (Hindi)')}</label>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('बैच का नाम (हिंदी)', 'Batch Name (Hindi)')}</label>
                   <input
                     type="text"
                     required
@@ -165,7 +165,7 @@ export default function BatchesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('समय सारणी (Schedule Info)', 'Schedule Info')}</label>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('समय सारणी', 'Schedule Details')}</label>
                   <input
                     type="text"
                     required

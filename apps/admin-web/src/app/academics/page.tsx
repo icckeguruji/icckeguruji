@@ -40,7 +40,7 @@ export default function AcademicsPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="शैक्षणिक ढांचा (Academic Management)"
+        titleHi="शैक्षणिक ढांचा"
         titleEn="Academic Hierarchy Management"
         subtitleHi="केवल बिहार बोर्ड (BSEB) एवं झारखंड बोर्ड (JAC) पाठ्यक्रम संरचना"
         subtitleEn="Restricted strictly to Bihar Board and Jharkhand Board curriculums"

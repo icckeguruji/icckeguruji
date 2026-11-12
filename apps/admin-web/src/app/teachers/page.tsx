@@ -72,7 +72,7 @@ export default function TeachersPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="शिक्षक एवं संकाय प्रबंधन (Faculty Management)"
+        titleHi="शिक्षक एवं संकाय प्रबंधन"
         titleEn="Teacher & Faculty Management"
         subtitleHi="संकाय खाते, विषय विशेषज्ञता एवं बैच आवंटन"
         subtitleEn="Manage teacher profiles, subject assignments and portal permissions"

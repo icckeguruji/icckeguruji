@@ -173,12 +173,11 @@ export default function ActiveExamScreen() {
             let badgeStyle = styles.paletteBadgeUnanswered;
             if (isAnswered) badgeStyle = styles.paletteBadgeAnswered;
             if (isReview) badgeStyle = styles.paletteBadgeReview;
-            if (isCurrent) badgeStyle = styles.paletteBadgeCurrent;
 
             return (
               <TouchableOpacity
                 key={q.id}
-                style={[styles.paletteBadge, badgeStyle]}
+                style={[styles.paletteBadge, badgeStyle, isCurrent && styles.paletteBadgeCurrent]}
                 onPress={() => setCurrentIndex(idx)}
               >
                 <Text style={styles.paletteBadgeText}>{idx + 1}</Text>

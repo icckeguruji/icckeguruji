@@ -28,7 +28,7 @@ const defaultStudent: UserProfile = {
   class_id: 'c0000000-0000-0000-0000-000000000010',
   district: 'Patna',
   school_name: 'Patna Collegiate High School',
-  preferred_language: 'hi',
+  preferred_language: 'en',
   is_active: true,
   created_at: '2026-04-01T00:00:00Z',
   updated_at: '2026-04-01T00:00:00Z',
@@ -37,7 +37,7 @@ const defaultStudent: UserProfile = {
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: true, // Default to demo student for immediate app usability
   user: defaultStudent,
-  language: 'hi', // Strict requirement: Default language is Hindi
+  language: 'en', // Default language is English as required
   selectedBoard: 'BSEB',
   selectedClass: 'Class 10',
   isDarkMode: false,

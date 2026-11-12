@@ -77,16 +77,22 @@ export default function StudentDoubtsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.headerRow}>
-          <div>
+          <View style={{ flex: 1 }}>
             <Text style={styles.pageTitle}>{t.doubts}</Text>
-            <Text style={styles.pageSub}>विषय विशेषज्ञ संकाय द्वारा प्रत्यक्ष समाधान</Text>
-          </div>
+            <Text style={styles.pageSub}>
+              {language === 'hi'
+                ? 'विषय विशेषज्ञ संकाय द्वारा प्रत्यक्ष समाधान'
+                : 'Direct guidance from subject matter faculty'}
+            </Text>
+          </View>
           <TouchableOpacity
             style={styles.askBtn}
             onPress={() => setIsAsking(!isAsking)}
           >
             <Text style={styles.askBtnText}>
-              {isAsking ? '✕ रद्द करें' : '+ शंका पूछें'}
+              {isAsking
+                ? (language === 'hi' ? '✕ रद्द करें' : '✕ Cancel')
+                : (language === 'hi' ? '+ शंका पूछें' : '+ Ask Doubt')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -107,11 +113,17 @@ export default function StudentDoubtsScreen() {
               multiline
               value={newDesc}
               onChangeText={setNewDesc}
-              placeholder="अपने संशय का विस्तृत विवरण लिखें..."
+              placeholder={
+                language === 'hi'
+                  ? 'अपने संशय का विस्तृत विवरण लिखें...'
+                  : 'Describe your doubt or concept in detail...'
+              }
               placeholderTextColor="#94A3B8"
             />
             <TouchableOpacity style={styles.postBtn} onPress={handlePostDoubt}>
-              <Text style={styles.postBtnText}>संकाय को भेजें (Submit Doubt)</Text>
+              <Text style={styles.postBtnText}>
+                {language === 'hi' ? 'संकाय को भेजें' : 'Submit Doubt'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -123,9 +135,13 @@ export default function StudentDoubtsScreen() {
               <View style={styles.cardHeader}>
                 <Text style={styles.subjectTag}>{d.subject}</Text>
                 {d.status === 'resolved' ? (
-                  <Text style={styles.resolvedTag}>✓ समाधान प्राप्त (Resolved)</Text>
+                  <Text style={styles.resolvedTag}>
+                    ✓ {language === 'hi' ? 'समाधान प्राप्त' : 'Resolved'}
+                  </Text>
                 ) : (
-                  <Text style={styles.openTag}>⏳ प्रक्रियाधीन (Under Review)</Text>
+                  <Text style={styles.openTag}>
+                    ⏳ {language === 'hi' ? 'प्रक्रियाधीन' : 'Under Review'}
+                  </Text>
                 )}
               </View>
 

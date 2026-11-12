@@ -10,16 +10,18 @@ import {
   HelpCircle,
   Video,
   FileText,
-  UserCheck,
+  Globe,
 } from 'lucide-react';
+import { useLanguage } from './LanguageContext';
 
 export function TeacherSidebar() {
   const pathname = usePathname();
+  const { lang, toggleLang, t } = useLanguage();
 
   const navItems = [
-    { href: '/', icon: LayoutDashboard, labelHi: 'शिक्षक डैशबोर्ड', labelEn: 'Overview' },
+    { href: '/', icon: LayoutDashboard, labelHi: 'डैशबोर्ड अवलोकन', labelEn: 'Overview' },
     { href: '/batches', icon: Layers, labelHi: 'मेरे बैच एवं छात्र', labelEn: 'My Batches' },
-    { href: '/assignments', icon: FileCheck2, labelHi: 'गृहकार्य एवं मूल्यांकन', labelEn: 'Assignments' },
+    { href: '/assignments', icon: FileCheck2, labelHi: 'गृहकार्य मूल्यांकन', labelEn: 'Assignments' },
     { href: '/doubts', icon: HelpCircle, labelHi: 'शंका समाधान केंद्र', labelEn: 'Doubt Center' },
     { href: '/live-classes', icon: Video, labelHi: 'लाइव कक्षाएं', labelEn: 'Live Classes' },
     { href: '/study-materials', icon: FileText, labelHi: 'नोट्स अपलोड करें', labelEn: 'Upload Notes' },
@@ -37,10 +39,27 @@ export function TeacherSidebar() {
               IDEAL COACHING
             </h1>
             <p className="text-[11px] text-emerald-400 font-medium">
-              शिक्षक पोर्टल (Faculty Portal)
+              {t('शिक्षक पोर्टल', 'Faculty Portal')}
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Language Switcher Button */}
+      <div className="px-3 pt-3">
+        <button
+          onClick={toggleLang}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition"
+          title={lang === 'en' ? 'हिंदी में बदलें' : 'Switch to English'}
+        >
+          <div className="flex items-center space-x-2">
+            <Globe className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{t('भाषा बदलें', 'Language')}</span>
+          </div>
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
+            {lang === 'en' ? 'हिंदी' : 'English'}
+          </span>
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
@@ -58,15 +77,19 @@ export function TeacherSidebar() {
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{item.labelHi}</span>
+              <span>{t(item.labelHi, item.labelEn)}</span>
             </Link>
           );
         })}
       </nav>
 
       <div className="p-3 border-t border-slate-800 bg-slate-950/40 text-[11px] text-slate-400">
-        <p className="font-semibold text-slate-300">डॉ. एस. एन. मिश्रा</p>
-        <p className="text-[10px]">वरिष्ठ संकाय - रसायन शास्त्र</p>
+        <p className="font-semibold text-slate-300">
+          {t('डॉ. एस. एन. मिश्रा', 'Dr. S. N. Mishra')}
+        </p>
+        <p className="text-[10px]">
+          {t('वरिष्ठ संकाय - रसायन शास्त्र', 'Senior Faculty - Chemistry')}
+        </p>
       </div>
     </aside>
   );

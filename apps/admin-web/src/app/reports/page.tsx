@@ -20,36 +20,36 @@ export default function ReportsPage() {
   const reportCards = [
     {
       id: 'registrations',
-      titleHi: 'विद्यार्थी पंजीकरण रिपोर्ट (Student Registrations)',
+      titleHi: 'विद्यार्थी पंजीकरण रिपोर्ट',
       titleEn: 'Student Registration Report',
-      descHi: 'सभी नामांकित छात्रों की सूची, बोर्ड (BSEB/JAC), कक्षा, ज़िला एवं संपर्क जानकारी।',
+      descHi: 'सभी नामांकित छात्रों की सूची, बोर्ड, कक्षा, ज़िला एवं संपर्क जानकारी।',
       descEn: 'Full directory with Board, Class, District and contact details.',
       icon: Users,
       color: 'bg-blue-50 text-blue-600',
     },
     {
       id: 'payments',
-      titleHi: 'शुल्क एवं राजस्व रिपोर्ट (Payments & Revenue)',
+      titleHi: 'शुल्क एवं राजस्व रिपोर्ट',
       titleEn: 'Fee Collection & Revenue Report',
-      descHi: 'स्वीकृत, लंबित एवं अस्वीकृत भुगतानों का UTR अनुसार संपूर्ण वित्तीय लेखा-जोखा।',
+      descHi: 'स्वीकृत, लंबित एवं अस्वीकृत भुगतानों का संपूर्ण वित्तीय लेखा-जोखा।',
       descEn: 'Complete financial statement of manual UPI payments with UTR reference.',
       icon: CreditCard,
       color: 'bg-emerald-50 text-emerald-600',
     },
     {
       id: 'exams',
-      titleHi: 'ऑनलाइन परीक्षा परिणाम रिपोर्ट (Exam Scorecards)',
+      titleHi: 'ऑनलाइन परीक्षा परिणाम रिपोर्ट',
       titleEn: 'Online Examination Performance Report',
-      descHi: 'अध्यायवार मॉक टेस्ट में छात्रों के प्राप्त अंक, सटीकता दर एवं उत्तीर्ण/अनुत्तीर्ण स्थिति।',
+      descHi: 'अध्यायवार मॉक टेस्ट में छात्रों के प्राप्त अंक, सटीकता दर एवं स्थिति।',
       descEn: 'Student scores, accuracy rates and pass/fail rankings in online tests.',
       icon: FileCheck2,
       color: 'bg-purple-50 text-purple-600',
     },
     {
       id: 'expiries',
-      titleHi: 'सक्रियता एवं वैधता समाप्ति रिपोर्ट (Course Expiry)',
+      titleHi: 'सक्रियता एवं वैधता समाप्ति रिपोर्ट',
       titleEn: 'Course Validity & Expiry Audit',
-      descHi: 'अगले 30 दिनों में समाप्त होने वाले कोर्स सब्सक्रिप्शन की समीक्षा एवं नवीनीकरण सूची।',
+      descHi: 'अगले 30 दिनों में समाप्त होने वाले कोर्स सब्सक्रिप्शन की सूची।',
       descEn: 'Subscribers due for course expiry within 30 days for renewal tracking.',
       icon: Calendar,
       color: 'bg-amber-50 text-amber-600',
@@ -76,7 +76,7 @@ export default function ReportsPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="रिपोर्ट्स एवं डेटा निर्यात (CSV Exports)"
+        titleHi="रिपोर्ट्स एवं डेटा निर्यात"
         titleEn="Reports & Data Analytics Export"
         subtitleHi="संस्थान के विद्यार्थियों, राजस्व एवं परीक्षा परिणामों का CSV डाउनलोड"
         subtitleEn="Generate audit-ready CSV exports for students, revenue and exams"

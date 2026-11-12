@@ -36,10 +36,10 @@ export function AdminHeader({ titleHi, titleEn, subtitleHi, subtitleEn }: AdminH
         <button
           onClick={toggleLang}
           className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition"
-          title="Switch Language"
+          title={lang === 'en' ? 'हिंदी में बदलें' : 'Switch to English'}
         >
           <Globe className="w-3.5 h-3.5 text-blue-600" />
-          <span>{lang === 'hi' ? 'हिंदी (Switch to EN)' : 'English (हिंदी बदलें)'}</span>
+          <span>{lang === 'en' ? 'हिंदी' : 'English'}</span>
         </button>
 
         {/* Super Admin Badge */}

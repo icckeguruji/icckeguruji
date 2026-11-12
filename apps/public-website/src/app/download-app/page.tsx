@@ -1,7 +1,12 @@
+'use client';
+
 import React from 'react';
-import { Smartphone, Download, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Download, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function DownloadAppPage() {
+  const { t } = useLanguage();
+
   return (
     <div className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       <div className="text-center space-y-3">
@@ -9,10 +14,13 @@ export default function DownloadAppPage() {
           ICC
         </div>
         <h1 className="text-3xl font-black text-slate-900">
-          आइडियल कोचिंग सेंटर एंड्रॉयड ऐप डाउनलोड
+          {t('आइडियल कोचिंग सेंटर एंड्रॉयड ऐप डाउनलोड', 'Download Ideal Coaching Centre Android App')}
         </h1>
         <p className="text-sm text-slate-500 max-w-lg mx-auto">
-          बिहार (BSEB) एवं झारखंड (JAC) बोर्ड परीक्षा की डिजिटल तैयारी के लिए आधिकारिक मोबाइल एप्लिकेशन।
+          {t(
+            'बिहार (BSEB) एवं झारखंड (JAC) बोर्ड परीक्षा की डिजिटल तैयारी के लिए आधिकारिक मोबाइल एप्लिकेशन।',
+            'Official Android mobile application for Bihar Board and Jharkhand Board matric and intermediate exam preparations.'
+          )}
         </p>
       </div>
 
@@ -24,7 +32,10 @@ export default function DownloadAppPage() {
           </span>
           <h3 className="text-xl font-bold mt-2">ideal-coaching-release.apk</h3>
           <p className="text-xs text-slate-400 mt-1">
-            फ़ाइल साइज़: ~24.8 MB · समर्थित: Android 7.0+ (Nougat और नए)
+            {t(
+              'फ़ाइल साइज़: ~24.8 MB · समर्थित: Android 7.0+ (Nougat और नए)',
+              'File Size: ~24.8 MB · Supported: Android 7.0+ (Nougat and above)'
+            )}
           </p>
         </div>
 
@@ -34,14 +45,14 @@ export default function DownloadAppPage() {
           className="flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg transition w-full sm:w-auto justify-center"
         >
           <Download className="w-5 h-5" />
-          <span>एपीके डाउनलोड करें (Direct Download)</span>
+          <span>{t('एपीके डाउनलोड करें', 'Download APK')}</span>
         </a>
       </div>
 
       {/* Step by Step Install Guide */}
       <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6">
         <h3 className="text-lg font-bold text-slate-900">
-          स्थापना निर्देश (Step-by-Step Installation Guide)
+          {t('स्थापना निर्देश', 'Step-by-Step Installation Guide')}
         </h3>
 
         <div className="space-y-4 text-xs text-slate-600">
@@ -50,7 +61,10 @@ export default function DownloadAppPage() {
               1
             </span>
             <p className="leading-relaxed">
-              ऊपर दिए गए <span className="font-bold text-slate-800">"एपीके डाउनलोड करें"</span> बटन पर क्लिक करके फ़ाइल को अपने फोन में सेव करें।
+              {t(
+                'ऊपर दिए गए "एपीके डाउनलोड करें" बटन पर क्लिक करके फ़ाइल को अपने फोन में सेव करें।',
+                'Tap the "Download APK" button above to save the installation file on your Android device.'
+              )}
             </p>
           </div>
 
@@ -59,7 +73,10 @@ export default function DownloadAppPage() {
               2
             </span>
             <p className="leading-relaxed">
-              डाउनलोड पूर्ण होने पर नोटिफिकेशन बार से एपीके फ़ाइल पर टैप करें। यदि आपका फोन <span className="font-bold text-slate-800">"अज्ञात स्रोत (Unknown Sources / Install unknown apps)"</span> की अनुमति मांगे, तो सेटिंग्स में जाकर क्रोम अथवा फ़ाइल मैनेजर के लिए अनुमति सक्रिय (Allow) करें।
+              {t(
+                'डाउनलोड पूर्ण होने पर नोटिफिकेशन बार से फ़ाइल खोलें अथवा अपने फोन के "Files/Downloads" फ़ोल्डर में जाएं।',
+                'Once downloaded, tap the download notification or locate ideal-coaching-release.apk in your Files or Downloads app.'
+              )}
             </p>
           </div>
 
@@ -68,19 +85,34 @@ export default function DownloadAppPage() {
               3
             </span>
             <p className="leading-relaxed">
-              <span className="font-bold text-slate-800">"Install"</span> बटन पर क्लिक करें। ऐप इंस्टॉल होने के उपरांत खोलें और अपने मोबाइल नंबर अथवा ईमेल द्वारा सुरक्षित ईमेल ओटीपी से लॉगिन करें।
+              {t(
+                'यदि फोन अज्ञात स्रोत (Unknown Sources / Install Unknown Apps) की अनुमति मांगे, तो सेटिंग्स में जाकर "Allow from this source" को चालू करें।',
+                'If Android prompts "Install Unknown Apps" or "Unknown Sources", open Settings and enable "Allow from this source".'
+              )}
+            </p>
+          </div>
+
+          <div className="flex items-start space-x-3">
+            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center flex-shrink-0">
+              4
+            </span>
+            <p className="leading-relaxed">
+              {t(
+                '"Install" पर क्लिक करें। ऐप कुछ ही सेकंडों में आपके फोन में सुरक्षित रूप से इंस्टॉल हो जाएगा।',
+                'Click "Install". The application will be verified and installed on your device in seconds.'
+              )}
             </p>
           </div>
         </div>
 
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start space-x-3 text-xs text-emerald-800">
-          <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-bold">सुरक्षा एवं गोपनीयता गारंटी</h4>
-            <p className="mt-0.5 leading-relaxed">
-              यह एप्लिकेशन पूरी तरह सुरक्षित है। इसमें कोई अनपेक्षित परमिशन या विज्ञापन नहीं हैं। ऐप का निर्माण स्थानीय एंड्रॉयड एसडीके द्वारा किया गया है।
-            </p>
-          </div>
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl flex items-start space-x-3 text-xs text-amber-800">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p>
+            {t(
+              'सुरक्षा सूचना: यह ऐप सीधे संस्थान द्वारा संकलित एवं हस्ताक्षरित (Signed) है। इसमें कोई विज्ञापन अथवा हानिकारक कोड नहीं है।',
+              'Security Assurance: This application is compiled and signed directly by IDEAL COACHING CENTRE. It contains zero ads and zero tracking.'
+            )}
+          </p>
         </div>
       </div>
     </div>

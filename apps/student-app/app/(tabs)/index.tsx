@@ -14,7 +14,7 @@ import { translations, formatINR } from '@icc/shared-utils';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
-  const { user, language, selectedBoard, selectedClass } = useAuthStore();
+  const { user, language, setLanguage, selectedBoard, selectedClass } = useAuthStore();
   const t = translations[language];
 
   return (
@@ -30,10 +30,22 @@ export default function StudentHomeScreen() {
           </View>
 
           <View style={styles.badgeGroup}>
-            <View style={styles.boardPill}>
-              <Text style={styles.boardPillText}>
-                {selectedBoard === 'BSEB' ? 'बिहार (BSEB)' : 'झारखंड (JAC)'}
-              </Text>
+            <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+              <TouchableOpacity
+                style={styles.langTogglePill}
+                onPress={() => setLanguage(language === 'en' ? 'hi' : 'en')}
+              >
+                <Text style={styles.langToggleText}>
+                  {language === 'en' ? 'हिंदी' : 'English'}
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.boardPill}>
+                <Text style={styles.boardPillText}>
+                  {selectedBoard === 'BSEB'
+                    ? (language === 'hi' ? 'बिहार बोर्ड' : 'BSEB')
+                    : (language === 'hi' ? 'झारखंड बोर्ड' : 'JAC')}
+                </Text>
+              </View>
             </View>
             <View style={styles.classPill}>
               <Text style={styles.classPillText}>{selectedClass}</Text>
@@ -45,7 +57,9 @@ export default function StudentHomeScreen() {
         <View style={styles.liveCard}>
           <View style={styles.liveBadgeRow}>
             <View style={styles.liveDot} />
-            <Text style={styles.liveBadgeText}>LIVE NOW · लाइव कक्षा</Text>
+            <Text style={styles.liveBadgeText}>
+              {language === 'hi' ? 'अभी लाइव' : 'LIVE NOW'}
+            </Text>
           </View>
           <Text style={styles.liveTitle}>
             {language === 'hi'
@@ -61,7 +75,7 @@ export default function StudentHomeScreen() {
             onPress={() => router.push('/(tabs)/live')}
           >
             <Text style={styles.joinLiveBtnText}>
-              {language === 'hi' ? 'अभी क्लास से जुड़ें (Join Live)' : 'Join Live Class'}
+              {language === 'hi' ? 'अभी क्लास से जुड़ें' : 'Join Live Class'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -69,7 +83,7 @@ export default function StudentHomeScreen() {
         {/* Continue Watching / Resume Bar */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {language === 'hi' ? 'पढ़ाई जारी रखें (Continue Watching)' : 'Continue Watching'}
+            {language === 'hi' ? 'पढ़ाई जारी रखें' : 'Continue Watching'}
           </Text>
           <TouchableOpacity
             style={styles.resumeCard}
@@ -78,7 +92,7 @@ export default function StudentHomeScreen() {
             <View style={styles.resumeThumb}>
               <Text style={{ fontSize: 24 }}>▶️</Text>
             </View>
-            <div style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}>
               <Text style={styles.resumeTitle} numberOfLines={1}>
                 {language === 'hi'
                   ? 'अध्याय 1: रासायनिक अभिक्रियाएँ एवं समीकरण'
@@ -90,7 +104,7 @@ export default function StudentHomeScreen() {
               <View style={styles.progressBarBg}>
                 <View style={[styles.progressBarFill, { width: '65%' }]} />
               </View>
-            </div>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -102,7 +116,7 @@ export default function StudentHomeScreen() {
           >
             <Text style={styles.gridIcon}>📄</Text>
             <Text style={styles.gridText}>{t.notes}</Text>
-            <Text style={styles.gridSub}>Auto Mapped</Text>
+            <Text style={styles.gridSub}>{language === 'hi' ? 'स्वतः मैप्ड' : 'Auto Mapped'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -111,7 +125,7 @@ export default function StudentHomeScreen() {
           >
             <Text style={styles.gridIcon}>📝</Text>
             <Text style={styles.gridText}>{t.tests}</Text>
-            <Text style={styles.gridSub}>MCQ & Timer</Text>
+            <Text style={styles.gridSub}>{language === 'hi' ? 'एमसीक्यू टेस्ट' : 'MCQ & Timer'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -120,7 +134,7 @@ export default function StudentHomeScreen() {
           >
             <Text style={styles.gridIcon}>💬</Text>
             <Text style={styles.gridText}>{t.doubts}</Text>
-            <Text style={styles.gridSub}>Ask Faculty</Text>
+            <Text style={styles.gridSub}>{language === 'hi' ? 'शिक्षक से पूछें' : 'Ask Faculty'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -128,14 +142,14 @@ export default function StudentHomeScreen() {
             onPress={() => router.push('/assignments')}
           >
             <Text style={styles.gridIcon}>📋</Text>
-            <Text style={styles.gridText}>असाइनमेंट</Text>
-            <Text style={styles.gridSub}>Homework</Text>
+            <Text style={styles.gridText}>{language === 'hi' ? 'असाइनमेंट' : 'Assignments'}</Text>
+            <Text style={styles.gridSub}>{language === 'hi' ? 'गृहकार्य' : 'Homework'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Enrolled Courses Section */}
         <View style={styles.section}>
-          <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text style={styles.sectionTitle}>
               {language === 'hi' ? 'आपके सक्रिय पाठ्यक्रम' : 'Your Enrolled Courses'}
             </Text>
@@ -144,7 +158,7 @@ export default function StudentHomeScreen() {
                 {language === 'hi' ? 'सभी देखें' : 'View All'}
               </Text>
             </TouchableOpacity>
-          </div>
+          </View>
 
           <TouchableOpacity
             style={styles.courseCard}
@@ -164,9 +178,15 @@ export default function StudentHomeScreen() {
                 : 'Daily live classes, handwritten notes, weekly mock tests and previous 10 years papers.'}
             </Text>
             <View style={styles.courseMetaRow}>
-              <Text style={styles.courseMeta}>85 व्याख्यान (Lectures)</Text>
-              <Text style={styles.courseMeta}>42 पीडीएफ नोट्स</Text>
-              <Text style={styles.courseActiveStatus}>सक्रिय (Active)</Text>
+              <Text style={styles.courseMeta}>
+                {language === 'hi' ? '85 व्याख्यान' : '85 Lectures'}
+              </Text>
+              <Text style={styles.courseMeta}>
+                {language === 'hi' ? '42 पीडीएफ नोट्स' : '42 PDF Notes'}
+              </Text>
+              <Text style={styles.courseActiveStatus}>
+                {language === 'hi' ? 'सक्रिय' : 'Active'}
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -211,6 +231,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#BFDBFE',
+  },
+  langTogglePill: {
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  langToggleText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   boardPillText: {
     fontSize: 10,

@@ -122,7 +122,7 @@ export const translations = {
     minutes: 'मिनट',
     passed: 'उत्तीर्ण',
     failed: 'पुनः प्रयास करें',
-    changeLanguage: 'भाषा बदलें (Language)',
+    changeLanguage: 'भाषा बदलें',
     boardBseb: 'बिहार बोर्ड (BSEB)',
     boardJac: 'झारखंड बोर्ड (JAC)',
   },

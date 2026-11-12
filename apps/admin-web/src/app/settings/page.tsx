@@ -32,7 +32,7 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="प्लेटफ़ॉर्म सेटिंग्स एवं संसाधन कोटा (Settings & Quota)"
+        titleHi="प्लेटफ़ॉर्म सेटिंग्स एवं संसाधन कोटा"
         titleEn="Platform Settings & Free-Tier Quota Monitor"
         subtitleHi="संस्थान प्रोफ़ाइल, UPI भुगतान विन्यास एवं ₹0/माह निःशुल्क योजना अनुपालन"
         subtitleEn="Configure institution profile, UPI VPA & monitor free-tier capacity"

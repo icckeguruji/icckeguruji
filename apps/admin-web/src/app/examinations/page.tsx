@@ -93,7 +93,7 @@ export default function ExaminationsPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="ऑनलाइन परीक्षा प्रबंधन (Online Exams)"
+        titleHi="ऑनलाइन परीक्षा प्रबंधन"
         titleEn="Online Examination Portal"
         subtitleHi="एमसीक्यू प्रश्न पत्र निर्माण, सर्वर-साइड मूल्यांकन एवं परिणाम प्रकाशन"
         subtitleEn="Create MCQ tests, configure negative marking and server-side evaluation"
