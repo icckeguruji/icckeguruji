@@ -1,0 +1,31 @@
+{
+  "name": "ideal-coaching-centre",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production Digital Coaching Platform for IDEAL COACHING CENTRE (BSEB & JAC Boards)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run --workspaces --if-present build",
+    "lint": "npm run --workspaces --if-present lint",
+    "test": "npm run --workspaces --if-present test",
+    "dev:admin": "npm --workspace=apps/admin-web run dev",
+    "dev:teacher": "npm --workspace=apps/teacher-web run dev",
+    "dev:public": "npm --workspace=apps/public-website run dev",
+    "dev:student": "npm --workspace=apps/student-app start"
+  },
+  "keywords": [
+    "edtech",
+    "bseb",
+    "jac",
+    "coaching",
+    "expo",
+    "react-native",
+    "nextjs",
+    "supabase"
+  ],
+  "author": "IDEAL COACHING CENTRE",
+  "license": "UNLICENSED"
+}
