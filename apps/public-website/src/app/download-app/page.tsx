@@ -40,7 +40,7 @@ export default function DownloadAppPage() {
         </div>
 
         <a
-          href="/ideal-coaching-release.apk"
+          href="https://github.com/icckeguruji/icc/releases/download/v1.0.0/ideal-coaching-release.apk"
           download
           className="flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg transition w-full sm:w-auto justify-center"
         >
