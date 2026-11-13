@@ -43,14 +43,27 @@ jobs:
 
       - name: Configure Kotlin for Compose Compatibility
         run: |
-          sed -i 's/1.9.24/1.9.25/g' apps/student-app/android/build.gradle
-          echo "kotlin.suppressKotlinVersionCompatibilityCheck=true" >> apps/student-app/android/gradle.properties
+          echo "android.kotlinVersion=1.9.25" >> apps/student-app/android/gradle.properties
+          echo "kotlinVersion=1.9.25" >> apps/student-app/android/gradle.properties
+          cat << 'EOF' >> apps/student-app/android/build.gradle
+
+          allprojects {
+              tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                  kotlinOptions {
+                      freeCompilerArgs += [
+                          "-P",
+                          "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true"
+                      ]
+                  }
+              }
+          }
+          EOF
 
       - name: Build Release APK
         run: |
           cd apps/student-app/android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon -Pandroid.kotlinVersion=1.9.25 -PkotlinVersion=1.9.25
 
       - name: Rename APK
         run: |
