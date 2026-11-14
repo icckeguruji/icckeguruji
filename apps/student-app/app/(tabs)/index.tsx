@@ -1,58 +1,87 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Image,
+  RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations, formatINR } from '@icc/shared-utils';
+import { CoachingHeader } from '../../src/components/CoachingHeader';
+import { DataService } from '../../src/services/dataService';
+import { Course, LiveClass } from '@icc/shared-types';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
-  const { user, language, setLanguage, selectedBoard, selectedClass } = useAuthStore();
+  const { user, language, selectedBoard, selectedClass } = useAuthStore();
   const t = translations[language];
 
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const [fetchedCourses, fetchedLive] = await Promise.all([
+        DataService.fetchCourses(),
+        DataService.fetchLiveClasses(),
+      ]);
+      setCourses(fetchedCourses);
+      setLiveClasses(fetchedLive);
+    } catch {
+      // Graceful fallback
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    const unsubscribe = DataService.subscribeToChanges(() => {
+      loadData();
+    });
+    return () => unsubscribe();
+  }, [loadData]);
+
+  const activeLive = liveClasses.find((l) => l.status === 'live') || liveClasses[0];
+  const enrolledCourses = courses.length > 0 ? courses.slice(0, 3) : [];
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Top Student Header */}
-        <View style={styles.topHeader}>
-          <View>
-            <Text style={styles.greetingText}>
-              Welcome back,
-            </Text>
-            <Text style={styles.studentName}>{user?.full_name || 'Student'}</Text>
-          </View>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Branded Coaching Header with Logo, Name & Live Sync */}
+      <CoachingHeader
+        showStudentGreeting={true}
+        onRefresh={loadData}
+        isSyncing={isSyncing}
+      />
 
-          <View style={styles.badgeGroup}>
-            <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-              <View style={styles.boardPill}>
-                <Text style={styles.boardPillText}>
-                  {selectedBoard === 'BSEB' ? 'BSEB Board' : 'JAC Board'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.classPill}>
-              <Text style={styles.classPillText}>{selectedClass}</Text>
-            </View>
-          </View>
-        </View>
-
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={isSyncing}
+            onRefresh={loadData}
+            colors={['#2563EB']}
+            tintColor="#2563EB"
+          />
+        }
+      >
         {/* Live Class Highlight Banner */}
         <View style={styles.liveCard}>
           <View style={styles.liveBadgeRow}>
             <View style={styles.liveDot} />
             <Text style={styles.liveBadgeText}>
-              LIVE NOW
+              {activeLive?.status === 'live' ? 'LIVE NOW' : 'NEXT LIVE CLASS'}
             </Text>
           </View>
           <Text style={styles.liveTitle}>
-            Science: Important 2-Mark Expected Questions
+            {activeLive?.title || 'Science: Important 2-Mark Expected Questions'}
           </Text>
           <Text style={styles.liveTeacher}>
             By: BADE SIR & Expert Faculty
@@ -146,31 +175,36 @@ export default function StudentHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.courseCard}
-            onPress={() => router.push('/course/cr-1')}
-          >
-            <View style={styles.courseBadge}>
-              <Text style={styles.courseBadgeText}>BSEB 2026-27</Text>
-            </View>
-            <Text style={styles.courseTitle}>
-              BSEB Class 10 Toppers Batch (2026-27)
-            </Text>
-            <Text style={styles.courseDesc} numberOfLines={2}>
-              Daily live classes, handwritten notes, weekly mock tests and previous 10 years papers.
-            </Text>
-            <View style={styles.courseMetaRow}>
-              <Text style={styles.courseMeta}>
-                85 Lectures
+          {enrolledCourses.map((c) => (
+            <TouchableOpacity
+              key={c.id}
+              style={styles.courseCard}
+              onPress={() => router.push(`/course/${c.id}`)}
+            >
+              <View style={styles.courseBadge}>
+                <Text style={styles.courseBadgeText}>
+                  {c.title.includes('BSEB') ? 'BSEB 2026-27' : 'JAC 2026-27'}
+                </Text>
+              </View>
+              <Text style={styles.courseTitle}>
+                {c.title}
               </Text>
-              <Text style={styles.courseMeta}>
-                42 PDF Notes
+              <Text style={styles.courseDesc} numberOfLines={2}>
+                {c.description}
               </Text>
-              <Text style={styles.courseActiveStatus}>
-                Active
-              </Text>
-            </View>
-          </TouchableOpacity>
+              <View style={styles.courseMetaRow}>
+                <Text style={styles.courseMeta}>
+                  {c.lecture_count || 45} Lectures
+                </Text>
+                <Text style={styles.courseMeta}>
+                  {c.material_count || 24} PDF Notes
+                </Text>
+                <Text style={styles.courseActiveStatus}>
+                  Active
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>

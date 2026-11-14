@@ -5,11 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations } from '@icc/shared-utils';
+import { CoachingHeader } from '../../src/components/CoachingHeader';
 
 export default function StudentTestsScreen() {
   const router = useRouter();
@@ -36,7 +35,10 @@ export default function StudentTestsScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Branded Coaching Header with Logo & Name */}
+      <CoachingHeader />
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Online Tests & Quizzes</Text>
         <Text style={styles.headerSub}>

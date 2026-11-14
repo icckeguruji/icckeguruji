@@ -4,17 +4,16 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
+  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../src/store/useAuthStore';
-import { translations } from '@icc/shared-utils';
 
 export default function IndexScreen() {
   const router = useRouter();
-  const { language, setLanguage, isAuthenticated } = useAuthStore();
-  const t = translations[language];
+  const { isAuthenticated } = useAuthStore();
 
   const handleStart = () => {
     if (isAuthenticated) {
@@ -25,15 +24,20 @@ export default function IndexScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero Branding */}
+        {/* Hero Branding with Authentic Logo */}
         <View style={styles.heroSection}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoBadgeText}>ICC</Text>
-          </View>
+          <Image
+            source={require('../assets/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.appName}>
             IDEAL COACHING CENTRE
+          </Text>
+          <Text style={styles.directorBadge}>
+            Dir: BADE SIR • Sarotiya, Mahagama (Godda)
           </Text>
           <Text style={styles.tagline}>
             Complete Digital Learning for BSEB & JAC State Board Students
@@ -92,114 +96,74 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 24,
   },
-  langBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginTop: 8,
-  },
-  langBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#1E293B',
-  },
-  langBtnActive: {
-    backgroundColor: '#2563EB',
-  },
-  langText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '600',
-  },
-  langTextActive: {
-    color: '#FFFFFF',
-  },
   heroSection: {
     alignItems: 'center',
-    marginVertical: 40,
+    paddingTop: 36,
   },
-  logoBadge: {
+  logoImage: {
     width: 90,
     height: 90,
-    borderRadius: 24,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
-    marginBottom: 20,
-  },
-  logoBadgeText: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 2,
+    borderRadius: 20,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   appName: {
     fontSize: 22,
-    fontWeight: '800',
-    color: '#F8FAFC',
-    textAlign: 'center',
+    fontWeight: '900',
+    color: '#FFFFFF',
     letterSpacing: 0.5,
+    textAlign: 'center',
   },
-  appHindiName: {
-    fontSize: 16,
+  directorBadge: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#F59E0B',
-    textAlign: 'center',
     marginTop: 4,
+    marginBottom: 8,
   },
   tagline: {
     fontSize: 13,
     color: '#94A3B8',
     textAlign: 'center',
-    marginTop: 12,
-    lineHeight: 20,
-    maxWidth: 280,
+    lineHeight: 19,
+    maxWidth: 290,
   },
   boardBadgeRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 24,
+    gap: 8,
+    marginTop: 18,
   },
   boardBadge: {
-    backgroundColor: 'rgba(37, 99, 235, 0.15)',
-    borderColor: 'rgba(37, 99, 235, 0.4)',
-    borderWidth: 1,
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   boardBadgeJac: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderColor: 'rgba(16, 185, 129, 0.4)',
+    backgroundColor: '#065F46',
   },
   boardBadgeText: {
-    fontSize: 11,
-    color: '#F8FAFC',
+    fontSize: 12,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
   actionSection: {
     gap: 12,
-    marginBottom: 16,
+    paddingBottom: 20,
   },
   primaryBtn: {
     backgroundColor: '#2563EB',
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
   },
   primaryBtnText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   secondaryBtn: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'transparent',
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
@@ -208,15 +172,16 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontWeight: '600',
+    color: '#CBD5E1',
   },
   securityNote: {
-    alignItems: 'center',
     marginTop: 8,
+    alignItems: 'center',
   },
   securityNoteText: {
     fontSize: 11,
     color: '#64748B',
+    textAlign: 'center',
   },
 });

@@ -5,20 +5,17 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations } from '@icc/shared-utils';
-import { BoardCode, AppLanguage } from '@icc/shared-types';
+import { CoachingHeader } from '../../src/components/CoachingHeader';
 
 export default function StudentProfileScreen() {
   const router = useRouter();
   const {
     user,
-    language,
-    setLanguage,
     selectedBoard,
     setBoard,
     selectedClass,
@@ -27,7 +24,6 @@ export default function StudentProfileScreen() {
     toggleDarkMode,
     logout,
   } = useAuthStore();
-  const t = translations[language];
 
   const handleLogout = () => {
     Alert.alert(
@@ -48,7 +44,10 @@ export default function StudentProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Branded Coaching Header with Logo & Name */}
+      <CoachingHeader />
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Student Profile</Text>
         <Text style={styles.headerSub}>

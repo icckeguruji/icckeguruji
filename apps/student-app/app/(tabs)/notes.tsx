@@ -1,23 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
+  RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations, formatBytes } from '@icc/shared-utils';
+import { formatBytes } from '@icc/shared-utils';
 import { initialStudyMaterials } from '../../../admin-web/src/lib/sample-data';
 import { LocalDbService } from '../../src/store/useLocalDb';
+import { CoachingHeader } from '../../src/components/CoachingHeader';
+import { DataService } from '../../src/services/dataService';
+import { StudyMaterial } from '@icc/shared-types';
 
 export default function StudentNotesScreen() {
   const { selectedBoard } = useAuthStore();
 
+  const [materials, setMaterials] = useState<StudyMaterial[]>(initialStudyMaterials);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [activeSubject, setActiveSubject] = useState('all');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const loadMaterials = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const data = await DataService.fetchStudyMaterials();
+      setMaterials(data);
+    } catch {
+      // Keep initial
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMaterials();
+    const unsubscribe = DataService.subscribeToChanges(() => {
+      loadMaterials();
+    });
+    return () => unsubscribe();
+  }, [loadMaterials]);
 
   const handleDownloadOffline = async (item: any) => {
     setDownloadingId(item.id);
@@ -41,7 +67,10 @@ export default function StudentNotesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Branded Coaching Header with Logo, Name & Live Sync */}
+      <CoachingHeader onRefresh={loadMaterials} isSyncing={isSyncing} />
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Study Notes & Materials</Text>
         <Text style={styles.headerSub}>
@@ -76,9 +105,19 @@ export default function StudentNotesScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={isSyncing}
+            onRefresh={loadMaterials}
+            colors={['#2563EB']}
+            tintColor="#2563EB"
+          />
+        }
+      >
         <View style={styles.notesList}>
-          {initialStudyMaterials.map((mat) => {
+          {materials.map((mat) => {
             const isDownloading = downloadingId === mat.id;
             return (
               <View key={mat.id} style={styles.noteCard}>

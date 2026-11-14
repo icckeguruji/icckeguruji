@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Image,
+  RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations, formatINR } from '@icc/shared-utils';
 import { initialCourses } from '../../../admin-web/src/lib/sample-data';
+import { CoachingHeader } from '../../src/components/CoachingHeader';
+import { DataService } from '../../src/services/dataService';
+import { Course } from '@icc/shared-types';
 
 // Thumbnail map for local React Native assets (web paths won't work in RN)
 const thumbMap: Record<string, any> = {
@@ -19,6 +23,9 @@ const thumbMap: Record<string, any> = {
   'cr000000-0000-0000-0000-000000000002': require('../../assets/thumbnails/batch-b4-class9.jpg'),
   'cr000000-0000-0000-0000-000000000003': require('../../assets/thumbnails/batch-b1-class8.jpg'),
   'cr000000-0000-0000-0000-000000000004': require('../../assets/thumbnails/batch-b2-class7.jpg'),
+  '10000000-0000-0000-0000-000000000001': require('../../assets/thumbnails/batch-b3-class10.jpg'),
+  '10000000-0000-0000-0000-000000000002': require('../../assets/thumbnails/batch-b4-class9.jpg'),
+  '10000000-0000-0000-0000-000000000003': require('../../assets/thumbnails/batch-b1-class8.jpg'),
   'batch-b3-class10': require('../../assets/thumbnails/batch-b3-class10.jpg'),
   'batch-b4-class9': require('../../assets/thumbnails/batch-b4-class9.jpg'),
   'batch-b1-class8': require('../../assets/thumbnails/batch-b1-class8.jpg'),
@@ -36,17 +43,42 @@ export default function StudentCoursesScreen() {
   const { language } = useAuthStore();
   const t = translations[language];
 
+  const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [selectedBoard, setSelectedBoard] = useState<BoardFilter>('ALL');
 
-  const filteredCourses = initialCourses.filter((c) => {
+  const loadCourses = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const data = await DataService.fetchCourses();
+      setCourses(data);
+    } catch {
+      // Keep initial courses
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCourses();
+    const unsubscribe = DataService.subscribeToChanges(() => {
+      loadCourses();
+    });
+    return () => unsubscribe();
+  }, [loadCourses]);
+
+  const filteredCourses = courses.filter((c) => {
     if (selectedBoard === 'ALL') return true;
-    if (selectedBoard === 'BSEB') return c.board_id === BSEB_BOARD_ID;
-    if (selectedBoard === 'JAC') return c.board_id === JAC_BOARD_ID;
+    if (selectedBoard === 'BSEB') return c.board_id === BSEB_BOARD_ID || c.title.includes('BSEB');
+    if (selectedBoard === 'JAC') return c.board_id === JAC_BOARD_ID || c.title.includes('JAC');
     return true;
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Branded Coaching Header with Logo, Name & Live Sync */}
+      <CoachingHeader onRefresh={loadCourses} isSyncing={isSyncing} />
+
       {/* Top Board Switcher */}
       <View style={styles.topBar}>
         <View style={styles.boardSwitcher}>
@@ -94,7 +126,17 @@ export default function StudentCoursesScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={isSyncing}
+            onRefresh={loadCourses}
+            colors={['#2563EB']}
+            tintColor="#2563EB"
+          />
+        }
+      >
         <Text style={styles.pageTitle}>
           {selectedBoard === 'ALL'
             ? 'All Courses'

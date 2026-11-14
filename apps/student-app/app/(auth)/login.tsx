@@ -5,12 +5,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations } from '@icc/shared-utils';
@@ -126,7 +127,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.inner}
@@ -134,12 +135,22 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between' }}>
           <View>
             <View style={styles.header}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <Text style={styles.backBtnText}>←</Text>
-              </TouchableOpacity>
+              <View style={styles.topBarRow}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                  <Text style={styles.backBtnText}>←</Text>
+                </TouchableOpacity>
+                <View style={styles.brandBadge}>
+                  <Image
+                    source={require('../../assets/logo.png')}
+                    style={styles.headerLogo}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.brandTitle}>IDEAL COACHING CENTRE</Text>
+                </View>
+              </View>
               <Text style={styles.title}>Student Login</Text>
               <Text style={styles.subtitle}>
-                IDEAL COACHING CENTRE - Student Portal
+                BSEB & JAC Board • Dir: BADE SIR (Sarotiya)
               </Text>
             </View>
 
@@ -245,6 +256,33 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 8,
+  },
+  topBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  brandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  headerLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+  },
+  brandTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   backBtn: {
     width: 36,

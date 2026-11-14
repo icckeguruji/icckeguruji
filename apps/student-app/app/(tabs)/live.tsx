@@ -1,26 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Linking,
+  RefreshControl,
 } from 'react-native';
-import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations, formatIST } from '@icc/shared-utils';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { formatIST } from '@icc/shared-utils';
 import { initialLiveClasses } from '../../../admin-web/src/lib/sample-data';
+import { CoachingHeader } from '../../src/components/CoachingHeader';
+import { DataService } from '../../src/services/dataService';
+import { LiveClass } from '@icc/shared-types';
 
 export default function StudentLiveScreen() {
   const [activeTab, setActiveTab] = useState<'live' | 'upcoming'>('live');
+  const [liveClasses, setLiveClasses] = useState<LiveClass[]>(initialLiveClasses);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const loadLiveClasses = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const data = await DataService.fetchLiveClasses();
+      setLiveClasses(data);
+    } catch {
+      // Keep initial
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLiveClasses();
+    const unsubscribe = DataService.subscribeToChanges(() => {
+      loadLiveClasses();
+    });
+    return () => unsubscribe();
+  }, [loadLiveClasses]);
 
   const openYouTubeLive = (videoId: string) => {
     Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
   };
 
+  const filtered = liveClasses.filter((item) => {
+    if (activeTab === 'live') return item.status === 'live';
+    return item.status === 'scheduled';
+  });
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Branded Coaching Header with Logo, Name & Live Sync */}
+      <CoachingHeader onRefresh={loadLiveClasses} isSyncing={isSyncing} />
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Live Classes</Text>
         <Text style={styles.headerSub}>
@@ -50,8 +83,18 @@ export default function StudentLiveScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {initialLiveClasses.map((item) => (
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={isSyncing}
+            onRefresh={loadLiveClasses}
+            colors={['#2563EB']}
+            tintColor="#2563EB"
+          />
+        }
+      >
+        {(filtered.length > 0 ? filtered : liveClasses).map((item) => (
           <View key={item.id} style={styles.liveCard}>
             <View style={styles.badgeRow}>
               {item.status === 'live' ? (
