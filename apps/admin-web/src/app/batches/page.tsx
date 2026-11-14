@@ -13,6 +13,7 @@ interface BatchItem {
   courseTitle: string;
   schedule_info: string;
   studentCount: number;
+  thumbnail_url?: string;
 }
 
 export default function BatchesPage() {
@@ -25,6 +26,7 @@ export default function BatchesPage() {
       courseTitle: 'BSEB Class 10 Toppers Batch (2026-27)',
       schedule_info: 'Mon-Sat: 06:30 AM - 08:30 AM IST',
       studentCount: 48,
+      thumbnail_url: '/thumbnails/batch-b3-class10.jpg',
     },
     {
       id: 'ba-2',
@@ -33,6 +35,7 @@ export default function BatchesPage() {
       courseTitle: 'BSEB Class 10 Toppers Batch (2026-27)',
       schedule_info: 'Mon-Sat: 04:30 PM - 06:30 PM IST',
       studentCount: 35,
+      thumbnail_url: '/thumbnails/batch-b4-class9.jpg',
     },
     {
       id: 'ba-3',
@@ -41,16 +44,31 @@ export default function BatchesPage() {
       courseTitle: 'JAC Class 10 Board Excellence Batch (2026-27)',
       schedule_info: 'Mon-Sat: 07:00 AM - 09:00 AM IST',
       studentCount: 29,
+      thumbnail_url: '/thumbnails/batch-b1-class8.jpg',
     },
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [batchThumbnail, setBatchThumbnail] = useState('/thumbnails/batch-b3-class10.jpg');
   const [formData, setFormData] = useState({
     name: '',
     name_hi: '',
     courseTitle: initialCourses[0].title,
     schedule_info: 'Mon-Sat: 05:00 PM - 07:00 PM IST',
   });
+
+  const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setBatchThumbnail(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,9 +79,11 @@ export default function BatchesPage() {
       courseTitle: formData.courseTitle,
       schedule_info: formData.schedule_info,
       studentCount: 0,
+      thumbnail_url: batchThumbnail,
     };
     setBatches([newBatch, ...batches]);
     setIsModalOpen(false);
+    setBatchThumbnail('/thumbnails/batch-b3-class10.jpg');
     setFormData({
       name: '',
       name_hi: '',
@@ -104,31 +124,48 @@ export default function BatchesPage() {
           {batches.map((batch) => (
             <div
               key={batch.id}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 hover:shadow-md transition"
+              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Layers className="w-4 h-4" />
-                </span>
-                <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  {batch.studentCount} {t('विद्यार्थी', 'Students')}
-                </span>
-              </div>
+              {batch.thumbnail_url && (
+                <div className="h-36 bg-slate-950 relative overflow-hidden flex items-center justify-center border-b border-slate-800">
+                  <img
+                    src={batch.thumbnail_url}
+                    alt={batch.name}
+                    className="w-full h-full object-contain"
+                  />
+                  <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/90 text-amber-400">
+                    16:9 Uncropped Banner
+                  </span>
+                </div>
+              )}
 
-              <div>
-                <h4 className="font-bold text-slate-900 text-sm">
-                  {lang === 'hi' ? batch.name_hi : batch.name}
-                </h4>
-                <p className="text-xs text-blue-600 font-medium mt-1 truncate">
-                  {batch.courseTitle}
-                </p>
-              </div>
+              <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                    <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <Layers className="w-4 h-4" />
+                    </span>
+                    <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      {batch.studentCount} {t('विद्यार्थी', 'Students')}
+                    </span>
+                  </div>
 
-              <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">
-                  {t('कक्षा समय सारणी', 'Class Schedule')}
-                </span>
-                <span className="font-mono text-slate-800 font-semibold block">{batch.schedule_info}</span>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">
+                      {lang === 'hi' ? batch.name_hi : batch.name}
+                    </h4>
+                    <p className="text-xs text-blue-600 font-medium mt-1 truncate">
+                      {batch.courseTitle}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1">
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">
+                    {t('कक्षा समय सारणी', 'Class Schedule')}
+                  </span>
+                  <span className="font-mono text-slate-800 font-semibold block">{batch.schedule_info}</span>
+                </div>
               </div>
             </div>
           ))}
@@ -173,6 +210,34 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({ ...formData, schedule_info: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
+                </div>
+
+                {/* Batch Thumbnail Upload */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    {t('बैच थंबनेल / बैनर (Batch Banner 16:9)', 'Batch Thumbnail / Banner (16:9)')}
+                  </label>
+                  <div className="border border-slate-300 rounded-xl p-3 bg-slate-50 space-y-2">
+                    <div className="w-full h-28 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center relative border border-slate-800">
+                      <img
+                        src={batchThumbnail}
+                        alt="Batch Preview"
+                        className="w-full h-full object-contain"
+                      />
+                      <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/90 text-amber-400">
+                        16:9 Uncropped
+                      </span>
+                    </div>
+                    <label className="flex items-center justify-center space-x-2 w-full py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition">
+                      <span>📁 {t('फ़ोटो फ़ाइल चुनें (PNG/JPG)', 'Browse Image File (PNG/JPG)')}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleThumbnailUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="pt-3 flex justify-end space-x-2">

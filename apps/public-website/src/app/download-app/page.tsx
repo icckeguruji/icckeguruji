@@ -11,8 +11,8 @@ export default function DownloadAppPage() {
   return (
     <div className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       <div className="text-center space-y-3">
-        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white shadow-lg shadow-blue-500/20 mx-auto flex items-center justify-center">
-          <Image src="/logo.png" alt="ICC Logo" width={64} height={64} className="object-contain" />
+        <div className="w-16 h-16 rounded-full overflow-hidden bg-white shadow-lg shadow-blue-500/20 mx-auto flex items-center justify-center p-1 border-2 border-slate-100">
+          <Image src="/logo.png" alt="ICC Logo" width={64} height={64} className="w-full h-full object-contain rounded-full" />
         </div>
         <h1 className="text-3xl font-black text-slate-900">
           {t('आइडियल कोचिंग सेंटर एंड्रॉयड ऐप डाउनलोड', 'Download Ideal Coaching Centre Android App')}

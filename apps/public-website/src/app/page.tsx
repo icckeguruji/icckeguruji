@@ -340,13 +340,15 @@ export default function PublicHomePage() {
 
           <div className="w-48 h-48 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 p-4 text-center shrink-0">
             <div>
-              <Image
-                src="/logo.png"
-                alt="IDEAL COACHING CENTRE"
-                width={80}
-                height={80}
-                className="mx-auto mb-2 rounded-xl"
-              />
+              <div className="w-20 h-20 rounded-full bg-white p-1.5 shadow-md flex items-center justify-center mx-auto mb-2 overflow-hidden border border-white/40">
+                <Image
+                  src="/logo.png"
+                  alt="IDEAL COACHING CENTRE"
+                  width={80}
+                  height={80}
+                  className="w-full h-full object-contain rounded-full"
+                />
+              </div>
               <p className="font-bold text-xs">ICC Student App</p>
               <p className="text-[10px] text-blue-200 mt-1">Android APK</p>
             </div>

@@ -28,11 +28,13 @@ export default function IndexScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Hero Branding with Authentic Logo */}
         <View style={styles.heroSection}>
-          <Image
-            source={require('../assets/logo.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          <View style={styles.logoCircle}>
+            <Image
+              source={require('../assets/logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
           <Text style={styles.appName}>
             IDEAL COACHING CENTRE
           </Text>
@@ -100,12 +102,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 36,
   },
-  logoImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 20,
-    marginBottom: 16,
+  logoCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   appName: {
     fontSize: 22,

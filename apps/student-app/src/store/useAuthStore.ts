@@ -15,6 +15,7 @@ interface AuthState {
   setBoard: (board: BoardCode) => void;
   setClass: (classId: string) => void;
   toggleDarkMode: () => void;
+  updateProfile: (updates: Partial<UserProfile>) => void;
   logout: () => Promise<void>;
 }
 
@@ -62,6 +63,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setClass: (selectedClass: string) => set({ selectedClass }),
 
   toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+
+  updateProfile: (updates: Partial<UserProfile>) => {
+    set((state) => {
+      if (!state.user) return state;
+      const updatedUser: UserProfile = {
+        ...state.user,
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+      if (Platform.OS !== 'web') {
+        SecureStore.setItemAsync('icc_user_profile', JSON.stringify(updatedUser)).catch(() => {});
+      }
+      return {
+        user: updatedUser,
+        selectedBoard: updatedUser.board_code || state.selectedBoard,
+      };
+    });
+  },
 
   logout: async () => {
     if (Platform.OS !== 'web') {

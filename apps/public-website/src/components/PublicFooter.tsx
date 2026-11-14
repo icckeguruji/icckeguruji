@@ -14,11 +14,13 @@ export function PublicFooter() {
         {/* Column 1: Brand */}
         <div className="space-y-4">
           <div className="flex items-center space-x-3">
-            <img
-              src="/logo.png"
-              alt="IDEAL COACHING CENTRE"
-              className="w-10 h-10 object-contain rounded-xl bg-white p-0.5"
-            />
+            <div className="w-11 h-11 rounded-full overflow-hidden bg-white p-1 border border-slate-700 shadow-sm flex items-center justify-center flex-shrink-0">
+              <img
+                src="/logo.png"
+                alt="IDEAL COACHING CENTRE"
+                className="w-full h-full object-contain rounded-full"
+              />
+            </div>
             <span className="font-extrabold text-base text-white">
               IDEAL COACHING CENTRE
             </span>

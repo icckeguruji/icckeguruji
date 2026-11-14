@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -24,6 +25,13 @@ import {
   ChevronRight,
   ShieldCheck,
 } from 'lucide-react-native';
+
+const thumbMap: Record<string, any> = {
+  'cr000000-0000-0000-0000-000000000001': require('../../assets/thumbnails/batch-b3-class10.jpg'),
+  'cr000000-0000-0000-0000-000000000002': require('../../assets/thumbnails/batch-b4-class9.jpg'),
+  'cr000000-0000-0000-0000-000000000003': require('../../assets/thumbnails/batch-b1-class8.jpg'),
+  'cr000000-0000-0000-0000-000000000004': require('../../assets/thumbnails/batch-b2-class7.jpg'),
+};
 
 export default function StudentHomeScreen() {
   const router = useRouter();
@@ -210,27 +218,37 @@ export default function StudentHomeScreen() {
               onPress={() => router.push(`/course/${c.id}`)}
               activeOpacity={0.8}
             >
-              <View style={styles.courseBadge}>
-                <Text style={styles.courseBadgeText}>
-                  {c.title.includes('BSEB') ? 'BSEB 2026-27' : 'JAC 2026-27'}
-                </Text>
+              <View style={styles.courseImageBox}>
+                <Image
+                  source={thumbMap[c.id] || { uri: c.thumbnail_url }}
+                  style={styles.courseThumbnail}
+                  resizeMode="contain"
+                />
+                <View style={styles.courseTagBadge}>
+                  <Text style={styles.courseTagBadgeText}>
+                    {c.title.includes('BSEB') ? 'BSEB 2026-27' : 'JAC 2026-27'}
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.courseTitle}>
-                {c.title}
-              </Text>
-              <Text style={styles.courseDesc} numberOfLines={2}>
-                {c.description}
-              </Text>
-              <View style={styles.courseMetaRow}>
-                <Text style={styles.courseMeta}>
-                  {c.lecture_count || 45} In-App Lectures
+
+              <View style={styles.courseCardContent}>
+                <Text style={styles.courseTitle}>
+                  {c.title}
                 </Text>
-                <Text style={styles.courseMeta}>
-                  {c.material_count || 24} PDF Notes
+                <Text style={styles.courseDesc} numberOfLines={2}>
+                  {c.description}
                 </Text>
-                <Text style={styles.courseActiveStatus}>
-                  Active
-                </Text>
+                <View style={styles.courseMetaRow}>
+                  <Text style={styles.courseMeta}>
+                    {c.lecture_count || 45} In-App Lectures
+                  </Text>
+                  <Text style={styles.courseMeta}>
+                    {c.material_count || 24} PDF Notes
+                  </Text>
+                  <Text style={styles.courseActiveStatus}>
+                    Active
+                  </Text>
+                </View>
               </View>
             </TouchableOpacity>
           ))}
@@ -411,23 +429,42 @@ const styles = StyleSheet.create({
   courseCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 12,
+    marginBottom: 14,
+    overflow: 'hidden',
   },
-  courseBadge: {
-    backgroundColor: '#EFF6FF',
+  courseImageBox: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#0F172A',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  courseThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  courseTagBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#0F172A',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
-  courseBadgeText: {
+  courseTagBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#2563EB',
+    color: '#38BDF8',
+  },
+  courseCardContent: {
+    padding: 14,
   },
   courseTitle: {
     fontSize: 14,

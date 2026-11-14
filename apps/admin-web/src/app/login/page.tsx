@@ -170,13 +170,13 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full bg-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl text-slate-100 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-white overflow-hidden flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20 p-1">
+          <div className="w-16 h-16 rounded-full bg-white overflow-hidden flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20 p-1.5 border-2 border-slate-700">
             <Image
               src="/logo.png"
               alt="ICC Logo"
               width={56}
               height={56}
-              className="object-contain"
+              className="w-full h-full object-contain rounded-full"
             />
           </div>
           <h2 className="text-lg font-black tracking-tight text-white">

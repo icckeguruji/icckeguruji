@@ -306,9 +306,14 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   headerLogo: {
-    width: 24,
-    height: 24,
-    borderRadius: 5,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    overflow: 'hidden',
   },
   brandTitle: {
     fontSize: 12,

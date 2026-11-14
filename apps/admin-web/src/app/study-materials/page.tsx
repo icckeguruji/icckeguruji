@@ -27,6 +27,8 @@ export default function StudyMaterialsPage() {
   const [filterType, setFilterType] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState<StudyMaterial | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileSizeBytes, setFileSizeBytes] = useState<number>(2150000);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -43,21 +45,38 @@ export default function StudyMaterialsPage() {
     AdminApi.getStudyMaterials().then((data) => setMaterials(data));
   }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setFileSizeBytes(file.size);
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
+      setFormData((prev) => ({
+        ...prev,
+        file_name: file.name,
+        title: prev.title || cleanName,
+        title_hi: prev.title_hi || cleanName,
+      }));
+    }
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     const created = await AdminApi.uploadStudyMaterial({
-      title: formData.title,
-      title_hi: formData.title_hi || formData.title,
+      title: formData.title || formData.file_name,
+      title_hi: formData.title_hi || formData.title || formData.file_name,
       board_id: formData.board_id,
       class_id: formData.class_id,
       subject_id: formData.subject_id,
       material_type: formData.material_type,
       file_path: `bseb/class10/science/${formData.file_name}`,
-      file_size_bytes: 2150000,
+      file_size_bytes: fileSizeBytes,
       is_free: formData.is_free,
     });
     setMaterials((prev) => [created, ...prev]);
     setIsUploadOpen(false);
+    setSelectedFile(null);
+    setFileSizeBytes(2150000);
     setFormData({
       title: '',
       title_hi: '',
@@ -310,6 +329,40 @@ export default function StudyMaterialsPage() {
                       placeholder="ch01_notes.pdf"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
+                  </div>
+                </div>
+
+                {/* Real PDF File Upload Input & Drag Area */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    {t('पीडीएफ दस्तावेज़ अपलोड करें (Upload PDF Document)', 'Upload PDF Document')}
+                  </label>
+                  <div className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-4 text-center bg-slate-50 transition cursor-pointer relative">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    {selectedFile ? (
+                      <div className="flex items-center justify-center space-x-3 text-emerald-600">
+                        <FileText className="w-8 h-8 flex-shrink-0 text-red-500" />
+                        <div className="text-left">
+                          <p className="font-bold text-slate-900 text-xs truncate max-w-xs">{selectedFile.name}</p>
+                          <p className="text-[11px] text-slate-500">{formatBytes(fileSizeBytes)} • Ready for Auto Map</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <UploadCloud className="w-8 h-8 text-blue-600 mx-auto" />
+                        <p className="text-xs font-bold text-slate-800">
+                          {t('पीडीएफ फ़ाइल चुनें अथवा यहाँ छोड़ें', 'Click or drag PDF document here')}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          {t('अध्याय नोट्स, सूत्र पुस्तिका या प्रश्न पत्र (PDF format)', 'PDF format up to 25MB')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

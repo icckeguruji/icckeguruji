@@ -41,7 +41,7 @@ export default function CourseDetailsScreen() {
           <Image
             source={thumbMap[course.id] || { uri: course.thumbnail_url }}
             style={styles.bannerImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
           <View style={styles.priceTag}>
             <Text style={styles.priceTagText}>
@@ -183,9 +183,13 @@ const styles = StyleSheet.create({
     paddingBottom: 90,
   },
   bannerContainer: {
-    height: 200,
-    backgroundColor: '#CBD5E1',
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#0F172A',
     position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   bannerImage: {
     width: '100%',

@@ -20,11 +20,13 @@ export function CoachingHeader({
       {/* Top Brand Strip */}
       <View style={styles.topRow}>
         <View style={styles.brandGroup}>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <View style={styles.logoCircle}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
           <View style={styles.titleColumn}>
             <Text style={styles.coachingName}>IDEAL COACHING CENTRE</Text>
             <Text style={styles.tagline}>
@@ -87,11 +89,21 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
+  logoCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+    overflow: 'hidden',
+  },
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#0F172A',
+    width: '100%',
+    height: '100%',
   },
   titleColumn: {
     justifyContent: 'center',

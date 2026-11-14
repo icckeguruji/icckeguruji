@@ -23,6 +23,7 @@ export default function CoursesPage() {
   const { lang, t } = useLanguage();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState('/thumbnails/batch-b3-class10.jpg');
   const [formData, setFormData] = useState({
     title: '',
     title_hi: '',
@@ -40,6 +41,19 @@ export default function CoursesPage() {
     AdminApi.getCourses().then((data) => setCourses(data));
   }, []);
 
+  const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setThumbnailUrl(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     const created = await AdminApi.createCourse({
@@ -47,6 +61,7 @@ export default function CoursesPage() {
       title_hi: formData.title_hi || formData.title,
       description: formData.description,
       description_hi: formData.description_hi,
+      thumbnail_url: thumbnailUrl,
       is_free: formData.is_free,
       price: formData.is_free ? 0 : Number(formData.price),
       discount_price: formData.is_free ? 0 : Number(formData.discount_price),
@@ -55,6 +70,7 @@ export default function CoursesPage() {
     });
     setCourses((prev) => [created, ...prev]);
     setIsModalOpen(false);
+    setThumbnailUrl('/thumbnails/batch-b3-class10.jpg');
     setFormData({
       title: '',
       title_hi: '',
@@ -104,11 +120,11 @@ export default function CoursesPage() {
               key={course.id}
               className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col"
             >
-              <div className="h-40 bg-slate-100 relative overflow-hidden">
+              <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
                 <img
                   src={course.thumbnail_url || 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80'}
                   alt={course.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
                 <div className="absolute top-3 left-3 flex space-x-2">
                   <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white backdrop-blur-sm">
@@ -229,6 +245,34 @@ export default function CoursesPage() {
                       <option value="Class 11">कक्षा 11 (विज्ञान)</option>
                       <option value="Class 12">कक्षा 12 (विज्ञान)</option>
                     </select>
+                  </div>
+                </div>
+
+                {/* Course Thumbnail Upload (16:9 Uncropped Preview) */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    {t('कोर्स थंबनेल अपलोड करें (Course Thumbnail 16:9)', 'Upload Course Thumbnail (16:9)')}
+                  </label>
+                  <div className="border border-slate-300 rounded-xl p-3 bg-slate-50 space-y-2">
+                    <div className="w-full h-32 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center relative border border-slate-800">
+                      <img
+                        src={thumbnailUrl}
+                        alt="Thumbnail Preview"
+                        className="w-full h-full object-contain"
+                      />
+                      <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/90 text-amber-400">
+                        16:9 Complete Display
+                      </span>
+                    </div>
+                    <label className="flex items-center justify-center space-x-2 w-full py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition">
+                      <span>📁 {t('फ़ोटो फ़ाइल चुनें (PNG/JPG)', 'Browse Image File (PNG/JPG)')}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleThumbnailUpload}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
                 </div>
 

@@ -14,11 +14,13 @@ export function PublicNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center space-x-3">
-          <img
-            src="/logo.png"
-            alt="IDEAL COACHING CENTRE"
-            className="w-11 h-11 object-contain rounded-xl shadow-xs bg-white p-0.5 border border-slate-200"
-          />
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-white p-1 border-2 border-slate-200 shadow-sm flex items-center justify-center flex-shrink-0">
+            <img
+              src="/logo.png"
+              alt="IDEAL COACHING CENTRE"
+              className="w-full h-full object-contain rounded-full"
+            />
+          </div>
           <div>
             <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight block">
               IDEAL COACHING CENTRE

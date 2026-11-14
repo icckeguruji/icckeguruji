@@ -155,7 +155,7 @@ export default function StudentCoursesScreen() {
                 <Image
                   source={thumbMap[course.id] || { uri: course.thumbnail_url }}
                   style={styles.thumbnail}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
                 <View style={styles.tagBadge}>
                   <Text style={styles.tagBadgeText}>
@@ -269,9 +269,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   imageBox: {
-    height: 140,
-    backgroundColor: '#CBD5E1',
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#0F172A',
     position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   thumbnail: {
     width: '100%',

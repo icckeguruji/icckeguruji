@@ -90,8 +90,8 @@ export function AdminSidebar() {
       {/* Brand Header */}
       <div className="p-4 border-b border-slate-800 bg-slate-950/60">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg overflow-hidden bg-white flex items-center justify-center shadow-md flex-shrink-0">
-            <Image src="/logo.png" alt="ICC Logo" width={40} height={40} className="object-contain" />
+          <div className="w-11 h-11 rounded-full overflow-hidden bg-white flex items-center justify-center shadow-md flex-shrink-0 p-1 border border-slate-700">
+            <Image src="/logo.png" alt="ICC Logo" width={40} height={40} className="w-full h-full object-contain rounded-full" />
           </div>
           <div className="min-w-0">
             <h1 className="font-bold text-sm leading-tight text-white tracking-wide truncate">
