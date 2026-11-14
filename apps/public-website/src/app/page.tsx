@@ -47,15 +47,7 @@ export default function PublicHomePage() {
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight sm:leading-tight tracking-tight">
-              {lang === 'hi' ? (
-                <>
-                  बोर्ड परीक्षा में <span className="text-blue-600">शीर्ष स्थान</span> प्राप्त करने का विश्वसनीय संस्थान
-                </>
-              ) : (
-                <>
-                  Your Trusted Pathway to <span className="text-blue-600">Top Ranks</span> in Board Exams
-                </>
-              )}
+              Your Trusted Pathway to <span className="text-blue-600">Top Ranks</span> in Board Exams
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
@@ -127,7 +119,7 @@ export default function PublicHomePage() {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-black uppercase">
               {t('संस्थापक निदेशक', 'Founder & Academic Director')}
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">BADE SIR (बड़े सर)</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-white">BADE SIR</h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
               {t(
                 '12 वर्षों से कक्षा 1 से 12वीं तक के बिहार एवं झारखंड बोर्ड के छात्रों को व्यक्तिगत मार्गदर्शन, रोज की उपस्थिति, हस्तलिखित नोट्स और साप्ताहिक रविवार टेस्ट के साथ सफलता दिला रहे हैं।',
@@ -273,7 +265,7 @@ export default function PublicHomePage() {
                     {c.title.includes('JAC') || c.title.includes('B-1') || c.title.includes('B-2') ? 'JAC' : 'BSEB & JAC'}
                   </span>
                   <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500 text-slate-950">
-                    {c.is_free ? (lang === 'hi' ? 'निःशुल्क' : 'FREE') : formatINR(c.discount_price || c.price)}
+                    {c.is_free ? 'FREE' : formatINR(c.discount_price || c.price)}
                   </span>
                 </div>
               </div>
@@ -281,10 +273,10 @@ export default function PublicHomePage() {
               <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm leading-snug">
-                    {lang === 'hi' ? c.title_hi || c.title : c.title}
+                    {c.title}
                   </h3>
                   <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
-                    {lang === 'hi' ? c.description_hi || c.description : c.description}
+                    {c.description}
                   </p>
                 </div>
 

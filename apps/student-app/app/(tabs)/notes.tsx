@@ -14,8 +14,7 @@ import { initialStudyMaterials } from '../../../admin-web/src/lib/sample-data';
 import { LocalDbService } from '../../src/store/useLocalDb';
 
 export default function StudentNotesScreen() {
-  const { language, selectedBoard } = useAuthStore();
-  const t = translations[language];
+  const { selectedBoard } = useAuthStore();
 
   const [activeSubject, setActiveSubject] = useState('all');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -35,10 +34,8 @@ export default function StudentNotesScreen() {
       });
       setDownloadingId(null);
       Alert.alert(
-        language === 'hi' ? 'सफलता' : 'Success',
-        language === 'hi'
-          ? 'पीडीएफ ऑफ़लाइन पढ़ने के लिए सुरक्षित कर लिया गया है।'
-          : 'PDF cached for offline reading.'
+        'Success',
+        'PDF cached for offline reading.'
       );
     }, 1000);
   };
@@ -46,11 +43,9 @@ export default function StudentNotesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t.notes}</Text>
+        <Text style={styles.headerTitle}>Study Notes & Materials</Text>
         <Text style={styles.headerSub}>
-          {language === 'hi'
-            ? 'आपके कोर्स के आधार पर स्वतः आवंटित अध्ययन सामग्री'
-            : 'Auto-assigned study materials & topper notes'}
+          Auto-assigned study materials & topper notes
         </Text>
       </View>
 
@@ -58,10 +53,10 @@ export default function StudentNotesScreen() {
       <View style={styles.subjectBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subjectScroll}>
           {[
-            { id: 'all', label: language === 'hi' ? 'सभी विषय' : 'All Subjects' },
-            { id: 'sci', label: language === 'hi' ? 'विज्ञान' : 'Science' },
-            { id: 'math', label: language === 'hi' ? 'गणित' : 'Mathematics' },
-            { id: 'sst', label: language === 'hi' ? 'सामाजिक विज्ञान' : 'Social Science' },
+            { id: 'all', label: 'All Subjects' },
+            { id: 'sci', label: 'Science' },
+            { id: 'math', label: 'Mathematics' },
+            { id: 'sst', label: 'Social Science' },
           ].map((sub) => (
             <TouchableOpacity
               key={sub.id}
@@ -100,7 +95,7 @@ export default function StudentNotesScreen() {
                   </View>
 
                   <Text style={styles.noteTitle}>
-                    {language === 'hi' ? mat.title_hi || mat.title : mat.title}
+                    {mat.title}
                   </Text>
                   <Text style={styles.noteDesc} numberOfLines={2}>
                     {mat.description}
@@ -111,14 +106,12 @@ export default function StudentNotesScreen() {
                       style={styles.readBtn}
                       onPress={() =>
                         Alert.alert(
-                          language === 'hi' ? 'पीडीएफ व्यूअर' : 'PDF Viewer',
-                          language === 'hi'
-                            ? `सुरक्षित हस्ताक्षरित टोकन द्वारा ${mat.title} खोला जा रहा है।`
-                            : `Opening ${mat.title} via 15-minute signed URL.`
+                          'PDF Viewer',
+                          `Opening ${mat.title} via secure signed URL.`
                         )
                       }
                     >
-                      <Text style={styles.readBtnText}>{t.readOnline}</Text>
+                      <Text style={styles.readBtnText}>Read Online</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -127,7 +120,7 @@ export default function StudentNotesScreen() {
                       disabled={isDownloading}
                     >
                       <Text style={styles.downloadBtnText}>
-                        {isDownloading ? 'Downloading...' : `⬇️ ${t.downloadPdf}`}
+                        {isDownloading ? 'Downloading...' : '⬇️ Download PDF'}
                       </Text>
                     </TouchableOpacity>
                   </View>

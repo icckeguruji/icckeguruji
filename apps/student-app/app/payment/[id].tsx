@@ -33,10 +33,8 @@ export default function ManualUpiPaymentScreen() {
   const handleSubmitPayment = () => {
     if (upiRefNumber.trim().length < 8) {
       Alert.alert(
-        language === 'hi' ? 'त्रुटि' : 'Error',
-        language === 'hi'
-          ? 'कृपया मान्य 12 अंकों का UPI UTR / Transaction ID दर्ज करें'
-          : 'Please enter valid 12-digit UPI UTR / Reference number'
+        'Error',
+        'Please enter a valid 12-digit UPI UTR / Reference number'
       );
       return;
     }
@@ -55,11 +53,11 @@ export default function ManualUpiPaymentScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.courseTitle}>
-            {language === 'hi' ? course.title_hi || course.title : course.title}
+            {course.title}
           </Text>
           <View style={styles.amountBox}>
             <Text style={styles.amountLabel}>
-              {language === 'hi' ? 'कुल देय शुल्क (Total Payable):' : 'Total Payable Fee:'}
+              Total Payable Fee:
             </Text>
             <Text style={styles.amountVal}>{formatINR(payableAmount)}</Text>
           </View>
@@ -70,17 +68,15 @@ export default function ManualUpiPaymentScreen() {
           <View style={styles.successCard}>
             <Text style={{ fontSize: 44, textAlign: 'center', marginBottom: 10 }}>⏳</Text>
             <Text style={styles.successTitle}>
-              {language === 'hi' ? 'भुगतान सत्यापन प्रक्रियाधीन!' : 'Payment Under Review!'}
+              Payment Under Review!
             </Text>
             <Text style={styles.successDesc}>
-              {language === 'hi'
-                ? `आपका UPI UTR (${upiRefNumber}) संस्थान के प्रशासन को सत्यापन हेतु भेज दिया गया है। 1 घंटे के भीतर बैंक से पुष्टि होते ही आपका कोर्स सक्रिय कर दिया जाएगा।`
-                : `Your transaction reference (${upiRefNumber}) has been submitted for admin verification. Enrollment will be activated upon bank statement confirmation.`}
+              {`Your transaction reference (${upiRefNumber}) has been submitted for admin verification. Enrollment will be activated upon bank statement confirmation.`}
             </Text>
 
             <View style={styles.auditInfoBox}>
               <Text style={styles.auditInfoText}>
-                🛡️ सुरक्षा नीति: यह एक अपरिवर्तनीय ऑडिट रिकॉर्ड के रूप में सुरक्षित है।
+                🛡️ Security Policy: An immutable audit log entry has been created.
               </Text>
             </View>
 
@@ -89,7 +85,7 @@ export default function ManualUpiPaymentScreen() {
               onPress={() => router.replace('/(tabs)')}
             >
               <Text style={styles.doneBtnText}>
-                {language === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Return to Dashboard'}
+                Return to Dashboard
               </Text>
             </TouchableOpacity>
           </View>
@@ -103,7 +99,7 @@ export default function ManualUpiPaymentScreen() {
                   <Text style={styles.stepNumText}>1</Text>
                 </View>
                 <Text style={styles.stepTitle}>
-                  {language === 'hi' ? 'दिए गए क्यूआर कोड या UPI ID पर भुगतान करें' : 'Scan QR Code or Pay via UPI'}
+                  Scan QR Code or Pay via UPI
                 </Text>
               </View>
 
@@ -117,7 +113,7 @@ export default function ManualUpiPaymentScreen() {
 
               <View style={styles.upiIdRow}>
                 <View>
-                  <Text style={styles.upiLabel}>संस्थान UPI VPA ID:</Text>
+                  <Text style={styles.upiLabel}>Institute UPI VPA ID:</Text>
                   <Text style={styles.upiVal}>
                     {initialPlatformConfig.payment_config.upi_id}
                   </Text>
@@ -127,16 +123,16 @@ export default function ManualUpiPaymentScreen() {
                   onPress={() =>
                     Alert.alert(
                       'UPI ID',
-                      `${initialPlatformConfig.payment_config.upi_id} क्लिपबोर्ड पर कॉपी हो गया`
+                      `${initialPlatformConfig.payment_config.upi_id} copied to clipboard`
                     )
                   }
                 >
-                  <Text style={styles.copyBtnText}>कॉपी करें</Text>
+                  <Text style={styles.copyBtnText}>Copy</Text>
                 </TouchableOpacity>
               </View>
 
               <Text style={styles.bankName}>
-                खाताधारक: {initialPlatformConfig.payment_config.account_holder_name} (SBI)
+                Account Holder: {initialPlatformConfig.payment_config.account_holder_name} (SBI)
               </Text>
             </View>
 
@@ -147,9 +143,7 @@ export default function ManualUpiPaymentScreen() {
                   <Text style={styles.stepNumText}>2</Text>
                 </View>
                 <Text style={styles.stepTitle}>
-                  {language === 'hi'
-                    ? '12 अंकों का UTR / Transaction Reference दर्ज करें'
-                    : 'Enter 12-Digit UPI UTR Reference'}
+                  Enter 12-Digit UPI UTR Reference
                 </Text>
               </View>
 
@@ -157,7 +151,7 @@ export default function ManualUpiPaymentScreen() {
                 style={styles.utrInput}
                 value={upiRefNumber}
                 onChangeText={setUpiRefNumber}
-                placeholder="उदा. 412389012345 (12 digits)"
+                placeholder="e.g. 412389012345 (12 digits)"
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="characters"
               />
@@ -170,8 +164,8 @@ export default function ManualUpiPaymentScreen() {
                 <Text style={{ fontSize: 20 }}>📸</Text>
                 <Text style={styles.uploadText}>
                   {screenshotSelected
-                    ? '✅ रसीद स्क्रीनशॉट संलग्न किया गया'
-                    : 'भुगतान रसीद का स्क्रीनशॉट संलग्न करें (वैकल्पिक)'}
+                    ? '✅ Receipt Screenshot Attached'
+                    : 'Attach Payment Receipt Screenshot (Optional)'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -186,9 +180,7 @@ export default function ManualUpiPaymentScreen() {
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitBtnText}>
-                  {language === 'hi'
-                    ? 'सत्यापन अनुरोध सबमिट करें'
-                    : 'Submit Verification Request'}
+                  Submit Verification Request
                 </Text>
               )}
             </TouchableOpacity>

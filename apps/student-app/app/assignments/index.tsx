@@ -43,10 +43,8 @@ export default function StudentAssignmentsScreen() {
   const handleSubmit = (id: string) => {
     setSubmittedId(id);
     Alert.alert(
-      language === 'hi' ? 'सफलता' : 'Success',
-      language === 'hi'
-        ? 'गृहकार्य सफलतापूर्वक अपलोड कर दिया गया है। शिक्षक शीघ्र मूल्यांकन करेंगे।'
-        : 'Assignment submitted for teacher review.'
+      'Success',
+      'Assignment submitted successfully for teacher review.'
     );
   };
 
@@ -54,8 +52,8 @@ export default function StudentAssignmentsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
-          <Text style={styles.pageTitle}>दैनिक गृहकार्य एवं असाइनमेंट</Text>
-          <Text style={styles.pageSub}>समय पर गृहकार्य जमा करके शिक्षक से अंक एवं फीडबैक प्राप्त करें</Text>
+          <Text style={styles.pageTitle}>Assignments & Homework</Text>
+          <Text style={styles.pageSub}>Submit homework on time and receive scores & teacher feedback</Text>
         </View>
 
         <View style={styles.list}>
@@ -65,22 +63,22 @@ export default function StudentAssignmentsScreen() {
               <View key={a.id} style={styles.card}>
                 <View style={styles.topRow}>
                   <Text style={styles.subjectTag}>{a.subject}</Text>
-                  <Text style={styles.marksTag}>{a.maxMarks} अंक (Marks)</Text>
+                  <Text style={styles.marksTag}>{a.maxMarks} Marks</Text>
                 </View>
 
                 <Text style={styles.title}>{a.title}</Text>
                 <Text style={styles.instructions}>{a.instructions}</Text>
-                <Text style={styles.dueDate}>⏰ अंतिम तिथि: {a.dueDate}</Text>
+                <Text style={styles.dueDate}>⏰ Due Date: {a.dueDate}</Text>
 
                 {a.status === 'submitted' && a.marks !== undefined ? (
                   <View style={styles.feedbackCard}>
                     <View style={styles.feedbackScoreRow}>
                       <Text style={styles.feedbackScore}>
-                        प्राप्त अंक: {a.marks} / {a.maxMarks}
+                        Score: {a.marks} / {a.maxMarks}
                       </Text>
                       <Text style={styles.gradeBadge}>Grade: A+</Text>
                     </View>
-                    <Text style={styles.feedbackRemarks}>शिक्षक टिप्पणी: {a.remarks}</Text>
+                    <Text style={styles.feedbackRemarks}>Teacher Remarks: {a.remarks}</Text>
                   </View>
                 ) : (
                   <TouchableOpacity
@@ -89,7 +87,7 @@ export default function StudentAssignmentsScreen() {
                     disabled={isDone}
                   >
                     <Text style={styles.submitBtnText}>
-                      {isDone ? '✓ जमा हो चुका (Submitted)' : 'उत्तर फ़ाइल अपलोड एवं सबमिट करें ›'}
+                      {isDone ? '✓ Submitted' : 'Upload File & Submit ›'}
                     </Text>
                   </TouchableOpacity>
                 )}

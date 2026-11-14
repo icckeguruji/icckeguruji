@@ -121,13 +121,11 @@ export default function ActiveExamScreen() {
       submitAction();
     } else {
       Alert.alert(
-        language === 'hi' ? 'परीक्षा सबमिट करें' : 'Submit Exam',
-        language === 'hi'
-          ? 'क्या आप परीक्षा समाप्त करना चाहते हैं? आपके उत्तर सर्वर पर निष्पक्ष रूप से जांचे जाएंगे।'
-          : 'Are you sure you want to finish the exam? Answers will be verified on the server.',
+        'Submit Exam',
+        'Are you sure you want to finish the exam? Answers will be verified on the server.',
         [
-          { text: language === 'hi' ? 'जारी रखें' : 'Continue Test', style: 'cancel' },
-          { text: language === 'hi' ? 'सबमिट करें' : 'Submit Now', onPress: submitAction },
+          { text: 'Continue Test', style: 'cancel' },
+          { text: 'Submit Now', onPress: submitAction },
         ]
       );
     }
@@ -149,16 +147,6 @@ export default function ActiveExamScreen() {
           <View style={styles.timerBadge}>
             <Text style={styles.timerText}>⏳ {formatTimer(secondsRemaining)}</Text>
           </View>
-
-          {/* Bilingual Toggle Per Question */}
-          <TouchableOpacity
-            style={styles.langBtn}
-            onPress={() => setQuestionLang(questionLang === 'hi' ? 'en' : 'hi')}
-          >
-            <Text style={styles.langBtnText}>
-              {questionLang === 'hi' ? 'English' : 'हिंदी'}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -192,7 +180,7 @@ export default function ActiveExamScreen() {
         <View style={styles.questionCard}>
           <Text style={styles.questionText}>
             Q{currentIndex + 1}.{' '}
-            {questionLang === 'hi' ? currentQ.text_hi : currentQ.text}
+            {currentQ.text}
           </Text>
 
           {/* Options */}
@@ -209,7 +197,7 @@ export default function ActiveExamScreen() {
                     {isSelected && <View style={styles.radioInner} />}
                   </View>
                   <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                    {questionLang === 'hi' ? opt.text_hi : opt.text}
+                    {opt.text}
                   </Text>
                 </TouchableOpacity>
               );

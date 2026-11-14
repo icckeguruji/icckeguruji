@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useLanguage } from '@/components/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import {
   ShieldCheck,
@@ -20,7 +19,6 @@ import {
 type LoginStep = 'login' | 'forgot' | 'forgot-sent';
 
 export default function AdminLoginPage() {
-  const { t } = useLanguage();
   const router = useRouter();
 
   const [step, setStep] = useState<LoginStep>('login');
@@ -30,7 +28,6 @@ export default function AdminLoginPage() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [infoMsg, setInfoMsg] = useState('');
 
   /** Detect if input is a mobile number (10 digits or starts with +91) */
   const isMobile = (val: string) =>
@@ -38,7 +35,6 @@ export default function AdminLoginPage() {
 
   const resolveEmail = async (val: string): Promise<string | null> => {
     if (!isMobile(val)) return val.trim();
-    // Try to look up email from phone via Supabase RPC
     try {
       const phone = val.replace(/\s/g, '').replace(/^\+91/, '');
       const { data } = await supabase.rpc('get_email_by_phone', {
@@ -48,7 +44,6 @@ export default function AdminLoginPage() {
     } catch {
       // Fallback
     }
-    // Default director mapping
     const rawDigits = val.replace(/\D/g, '');
     if (rawDigits.endsWith('9771350910')) return 'icckeguruji@gmail.com';
     return null;
@@ -78,17 +73,16 @@ export default function AdminLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    setInfoMsg('');
 
     const trimmedId = identifier.trim();
     const trimmedPw = password.trim();
 
     if (!trimmedId) {
-      setErrorMsg(t('ईमेल या 10-अंकों का मोबाइल नंबर दर्ज करें', 'Enter email or 10-digit mobile number'));
+      setErrorMsg('Please enter your email or 10-digit mobile number.');
       return;
     }
     if (!trimmedPw) {
-      setErrorMsg(t('पासवर्ड दर्ज करें', 'Enter your password'));
+      setErrorMsg('Please enter your password.');
       return;
     }
 
@@ -97,7 +91,6 @@ export default function AdminLoginPage() {
       const resolvedEmail = await resolveEmail(trimmedId);
       const emailToUse = resolvedEmail || trimmedId;
 
-      // 1. First attempt Supabase official authentication
       let supabaseSuccess = false;
       let appRole: 'admin' | 'teacher' = 'admin';
 
@@ -113,10 +106,9 @@ export default function AdminLoginPage() {
           setAuthCookies(appRole, data.session?.access_token);
         }
       } catch {
-        // Fallback to local authentication
+        // Fallback
       }
 
-      // 2. Local verification if Supabase credentials aren't synced yet
       if (!supabaseSuccess) {
         const idLower = trimmedId.toLowerCase();
         const isDirector =
@@ -134,12 +126,7 @@ export default function AdminLoginPage() {
           appRole = isFaculty ? 'teacher' : 'admin';
           setAuthCookies(appRole);
         } else {
-          setErrorMsg(
-            t(
-              'अमान्य लॉगिन विवरण। कृपया पुनः प्रयास करें अथवा त्वरित लॉगिन बटन का उपयोग करें।',
-              'Invalid credentials. Please retry or use the Quick Login button.'
-            )
-          );
+          setErrorMsg('Invalid login details. Please retry or use 1-Click Instant Access.');
           setLoading(false);
           return;
         }
@@ -152,7 +139,7 @@ export default function AdminLoginPage() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      setErrorMsg(t('त्रुटि: ' + msg, 'Error: ' + msg));
+      setErrorMsg('Error: ' + msg);
     } finally {
       setLoading(false);
     }
@@ -162,7 +149,7 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setErrorMsg('');
     if (!forgotEmail.includes('@')) {
-      setErrorMsg(t('कृपया मान्य ईमेल पता दर्ज करें', 'Enter a valid email address'));
+      setErrorMsg('Please enter a valid email address.');
       return;
     }
     setLoading(true);
@@ -172,7 +159,6 @@ export default function AdminLoginPage() {
       });
       setStep('forgot-sent');
     } catch {
-      // Still show confirmation so user is not blocked
       setStep('forgot-sent');
     } finally {
       setLoading(false);
@@ -197,10 +183,10 @@ export default function AdminLoginPage() {
             IDEAL COACHING CENTRE
           </h2>
           <p className="text-xs text-amber-400 font-bold uppercase tracking-wider">
-            {t('प्रशासक एवं शिक्षक पोर्टल', 'Admin & Faculty Unified Portal')}
+            Admin & Faculty Unified Portal
           </p>
           <p className="text-[11px] text-slate-400">
-            {t('सरोतिया, महागामा, गोड्डा (झारखंड) 814165', 'Sarotiya, Mahagama, Godda (JH) 814165')}
+            Sarotiya, Mahagama, Godda (JH) 814165 · BSEB & JAC
           </p>
         </div>
 
@@ -208,10 +194,7 @@ export default function AdminLoginPage() {
         <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex items-start space-x-2.5 text-xs text-slate-300">
           <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
           <p className="text-[11px] leading-relaxed">
-            {t(
-              'प्रशासक एवं शिक्षक: अपने पंजीकृत ईमेल आईडी या मोबाइल नंबर और पासवर्ड से लॉगिन करें।',
-              'Admin & Faculty: Log in using your registered Email ID or Mobile Number with Password.'
-            )}
+            Authorized Personnel: Sign in using your registered Email ID or Mobile Number with Password.
           </p>
         </div>
 
@@ -226,7 +209,7 @@ export default function AdminLoginPage() {
           <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300 px-1">
             <span className="flex items-center gap-1.5 text-blue-400">
               <Sparkles className="w-3.5 h-3.5" />
-              {t('त्वरित 1-क्लिक लॉगिन', '1-Click Instant Access')}
+              1-Click Instant Login
             </span>
             <span className="text-[10px] text-slate-400">Direct Entry</span>
           </div>
@@ -237,7 +220,7 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="py-2.5 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-blue-900/40"
             >
-              👑 <span>{t('निदेशक / एडमिन', 'Admin Dashboard')}</span>
+              👑 <span>Director / Admin</span>
             </button>
             <button
               type="button"
@@ -245,7 +228,7 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/40"
             >
-              👨‍🏫 <span>{t('शिक्षक पोर्टल', 'Faculty Portal')}</span>
+              👨‍🏫 <span>Faculty Portal</span>
             </button>
           </div>
         </div>
@@ -256,14 +239,14 @@ export default function AdminLoginPage() {
             <div className="relative flex py-1 items-center">
               <div className="flex-grow border-t border-slate-800"></div>
               <span className="flex-shrink mx-3 text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
-                {t('अथवा पासवर्ड से लॉगिन करें', 'Or Login with Password')}
+                Or Sign In with Password
               </span>
               <div className="flex-grow border-t border-slate-800"></div>
             </div>
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('ईमेल या मोबाइल नंबर', 'Email Address or Mobile Number')}
+                Email Address or Mobile Number
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
@@ -272,7 +255,7 @@ export default function AdminLoginPage() {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="icckeguruji@gmail.com या 9771350910"
+                  placeholder="icckeguruji@gmail.com or 9771350910"
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                 />
               </div>
@@ -281,7 +264,7 @@ export default function AdminLoginPage() {
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="text-slate-300 font-semibold">
-                  {t('पासवर्ड', 'Password')}
+                  Password
                 </label>
                 <button
                   type="button"
@@ -291,7 +274,7 @@ export default function AdminLoginPage() {
                   }}
                   className="text-blue-400 hover:text-blue-300 text-[11px] font-semibold"
                 >
-                  {t('पासवर्ड भूल गए?', 'Forgot password?')}
+                  Forgot password?
                 </button>
               </div>
               <div className="relative">
@@ -319,7 +302,7 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold rounded-xl transition flex items-center justify-center space-x-2"
             >
-              <span>{loading ? t('प्रक्रियाधीन...', 'Authenticating...') : t('लॉगिन करें', 'Log In')}</span>
+              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -330,19 +313,16 @@ export default function AdminLoginPage() {
           <form onSubmit={handleForgotPassword} className="space-y-4 text-xs">
             <div className="text-center space-y-1">
               <h3 className="font-bold text-white text-sm">
-                {t('पासवर्ड रीसेट करें', 'Reset Password')}
+                Reset Password
               </h3>
               <p className="text-slate-400 text-xs leading-relaxed">
-                {t(
-                  'अपना पंजीकृत ईमेल दर्ज करें। पासवर्ड रीसेट लिंक/ओटीपी भेजा जाएगा।',
-                  'Enter your registered email address to receive a password reset link.'
-                )}
+                Enter your registered email address. A password reset link will be sent to your inbox.
               </p>
             </div>
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                {t('ईमेल पता', 'Email Address')}
+                Registered Email Address
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
@@ -362,7 +342,7 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold rounded-xl transition flex items-center justify-center space-x-2"
             >
-              <span>{loading ? t('भेजा जा रहा है...', 'Sending...') : t('रीसेट लिंक भेजें', 'Send Reset Link')}</span>
+              <span>{loading ? 'Sending...' : 'Send Reset Link'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -371,7 +351,7 @@ export default function AdminLoginPage() {
               onClick={() => { setStep('login'); setErrorMsg(''); }}
               className="w-full text-slate-400 hover:text-white text-[11px] text-center font-medium"
             >
-              {t('← वापस लॉगिन पर जाएं', '← Back to Login')}
+              ← Back to Login
             </button>
           </form>
         )}
@@ -382,20 +362,17 @@ export default function AdminLoginPage() {
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
             <div>
               <h3 className="font-bold text-white text-sm">
-                {t('रीसेट लिंक भेजा गया!', 'Reset Link Sent!')}
+                Reset Link Sent!
               </h3>
               <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-                {t(
-                  `${forgotEmail} पर पासवर्ड रीसेट लिंक भेज दिया गया है। कृपया अपना ईमेल इनबॉक्स और स्पैम फ़ोल्डर जांचें।`,
-                  `A password reset link has been dispatched to ${forgotEmail}. Please check your inbox and spam folder.`
-                )}
+                A password reset link has been dispatched to <strong className="text-blue-300">{forgotEmail}</strong>. Please check your email inbox and spam folder.
               </p>
             </div>
             <button
               onClick={() => { setStep('login'); setErrorMsg(''); setForgotEmail(''); }}
               className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition text-xs"
             >
-              {t('← लॉगिन पर वापस जाएं', '← Return to Login')}
+              ← Return to Login
             </button>
           </div>
         )}

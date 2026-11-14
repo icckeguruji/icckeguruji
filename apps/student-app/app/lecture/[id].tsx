@@ -57,7 +57,7 @@ export default function RecordedLectureScreen() {
         <View style={styles.infoSection}>
           <View style={styles.metaRow}>
             <Text style={styles.subjectBadge}>
-              {language === 'hi' ? 'विज्ञान · कक्षा 10' : 'Science · Class 10'}
+              Science · Class 10
             </Text>
             <TouchableOpacity onPress={() => setBookmarked(!bookmarked)}>
               <Text style={{ fontSize: 18 }}>{bookmarked ? '⭐' : '☆'}</Text>
@@ -65,15 +65,11 @@ export default function RecordedLectureScreen() {
           </View>
 
           <Text style={styles.title}>
-            {language === 'hi'
-              ? 'लेक्चर 01: रासायनिक अभिक्रियाएँ एवं उनके प्रकार (परिचय एवं वर्गीकरण)'
-              : 'Lec 01: Introduction to Chemical Reactions & Types (NCERT Masterclass)'}
+            Lec 01: Introduction to Chemical Reactions & Types (NCERT Masterclass)
           </Text>
 
           <Text style={styles.desc}>
-            {language === 'hi'
-              ? 'इस व्याख्यान में भौतिक एवं रासायनिक परिवर्तन में अंतर, अभिकारकों और उत्पादों की पहचान तथा रासायनिक समीकरण को संतुलित करने की प्रारंभिक विधि विस्तार से समझाई गई है।'
-              : 'Detailed concept of physical vs chemical changes, identifying reactants and products, and balancing foundational equations.'}
+            Detailed concept of physical vs chemical changes, identifying reactants and products, and balancing foundational equations.
           </Text>
         </View>
 
@@ -81,12 +77,12 @@ export default function RecordedLectureScreen() {
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionBtn}>
             <Text style={styles.actionBtnText}>
-              📑 {language === 'hi' ? 'लेक्चर नोट्स' : 'Lecture Notes'}
+              📑 Lecture Notes
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn}>
             <Text style={styles.actionBtnText}>
-              💬 {language === 'hi' ? 'शंका पूछें' : 'Ask Doubt'}
+              💬 Ask Doubt
             </Text>
           </TouchableOpacity>
         </View>
@@ -94,16 +90,16 @@ export default function RecordedLectureScreen() {
         {/* Playlist: Next Lectures */}
         <View style={styles.playlistSection}>
           <Text style={styles.sectionHeading}>
-            {language === 'hi' ? 'अध्याय 1 के अन्य व्याख्यान' : 'Chapter 1 Playlist'}
+            Chapter 1 Playlist
           </Text>
 
           <TouchableOpacity style={[styles.playItem, styles.playItemActive]}>
             <Text style={styles.playItemNum}>01</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.playItemTitle} numberOfLines={1}>
-                रासायनिक अभिक्रियाओं का वर्गीकरण (Now Playing)
+                Classification of Chemical Reactions (Now Playing)
               </Text>
-              <Text style={styles.playItemSub}>45 मिनट · वीडियो पूर्ण</Text>
+              <Text style={styles.playItemSub}>45 mins · Completed</Text>
             </View>
           </TouchableOpacity>
 
@@ -111,9 +107,9 @@ export default function RecordedLectureScreen() {
             <Text style={styles.playItemNum}>02</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.playItemTitle} numberOfLines={1}>
-                रासायनिक समीकरणों को संतुलित करना (Hit & Trial)
+                Balancing Chemical Equations (Hit & Trial)
               </Text>
-              <Text style={styles.playItemSub}>52 मिनट · अगला व्याख्यान</Text>
+              <Text style={styles.playItemSub}>52 mins · Next Lecture</Text>
             </View>
           </TouchableOpacity>
 
@@ -121,9 +117,9 @@ export default function RecordedLectureScreen() {
             <Text style={styles.playItemNum}>03</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.playItemTitle} numberOfLines={1}>
-                संयोजन, वियोजन एवं विस्थापन अभिक्रियाएँ
+                Combination, Decomposition & Displacement Reactions
               </Text>
-              <Text style={styles.playItemSub}>48 मिनट · महत्वपूर्ण प्रश्न</Text>
+              <Text style={styles.playItemSub}>48 mins · Practice Session</Text>
             </View>
           </TouchableOpacity>
         </View>

@@ -51,12 +51,12 @@ export default function StudentDoubtsScreen() {
 
   const handlePostDoubt = () => {
     if (!newTitle.trim() || !newDesc.trim()) {
-      Alert.alert('त्रुटि', 'कृपया शीर्षक और प्रश्न विवरण दर्ज करें।');
+      Alert.alert('Error', 'Please enter a title and question details.');
       return;
     }
     const created: DoubtItem = {
       id: `d-${Date.now()}`,
-      subject: 'Science (विज्ञान)',
+      subject: 'Science',
       title: newTitle,
       description: newDesc,
       status: 'open',
@@ -66,10 +66,8 @@ export default function StudentDoubtsScreen() {
     setNewTitle('');
     setNewDesc('');
     Alert.alert(
-      language === 'hi' ? 'सफलता' : 'Success',
-      language === 'hi'
-        ? 'आपकी शंका संकाय को भेज दी गई है। उत्तर शीघ्र प्राप्त होगा।'
-        : 'Doubt submitted to faculty.'
+      'Success',
+      'Your doubt has been submitted to faculty. You will receive an answer shortly.'
     );
   };
 
@@ -78,11 +76,9 @@ export default function StudentDoubtsScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.pageTitle}>{t.doubts}</Text>
+            <Text style={styles.pageTitle}>Doubt Clearance</Text>
             <Text style={styles.pageSub}>
-              {language === 'hi'
-                ? 'विषय विशेषज्ञ संकाय द्वारा प्रत्यक्ष समाधान'
-                : 'Direct guidance from subject matter faculty'}
+              Direct guidance and solutions from subject matter faculty
             </Text>
           </View>
           <TouchableOpacity
@@ -90,9 +86,7 @@ export default function StudentDoubtsScreen() {
             onPress={() => setIsAsking(!isAsking)}
           >
             <Text style={styles.askBtnText}>
-              {isAsking
-                ? (language === 'hi' ? '✕ रद्द करें' : '✕ Cancel')
-                : (language === 'hi' ? '+ शंका पूछें' : '+ Ask Doubt')}
+              {isAsking ? '✕ Cancel' : '+ Ask Doubt'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -100,12 +94,12 @@ export default function StudentDoubtsScreen() {
         {/* New Doubt Form */}
         {isAsking && (
           <View style={styles.askCard}>
-            <Text style={styles.askHeading}>नया प्रश्न / शंका दर्ज करें</Text>
+            <Text style={styles.askHeading}>Submit a New Doubt / Question</Text>
             <TextInput
               style={styles.input}
               value={newTitle}
               onChangeText={setNewTitle}
-              placeholder="प्रश्न का संक्षिप्त शीर्षक (उदा. ओम का नियम)"
+              placeholder="Short title of question (e.g., Ohm's Law derivation)"
               placeholderTextColor="#94A3B8"
             />
             <TextInput
@@ -113,16 +107,12 @@ export default function StudentDoubtsScreen() {
               multiline
               value={newDesc}
               onChangeText={setNewDesc}
-              placeholder={
-                language === 'hi'
-                  ? 'अपने संशय का विस्तृत विवरण लिखें...'
-                  : 'Describe your doubt or concept in detail...'
-              }
+              placeholder="Describe your doubt or concept in detail..."
               placeholderTextColor="#94A3B8"
             />
             <TouchableOpacity style={styles.postBtn} onPress={handlePostDoubt}>
               <Text style={styles.postBtnText}>
-                {language === 'hi' ? 'संकाय को भेजें' : 'Submit Doubt'}
+                Submit Doubt
               </Text>
             </TouchableOpacity>
           </View>
@@ -136,11 +126,11 @@ export default function StudentDoubtsScreen() {
                 <Text style={styles.subjectTag}>{d.subject}</Text>
                 {d.status === 'resolved' ? (
                   <Text style={styles.resolvedTag}>
-                    ✓ {language === 'hi' ? 'समाधान प्राप्त' : 'Resolved'}
+                    ✓ Resolved
                   </Text>
                 ) : (
                   <Text style={styles.openTag}>
-                    ⏳ {language === 'hi' ? 'प्रक्रियाधीन' : 'Under Review'}
+                    ⏳ Under Review
                   </Text>
                 )}
               </View>

@@ -31,12 +31,12 @@ export default function StudentProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      language === 'hi' ? 'लॉगआउट' : 'Logout',
-      language === 'hi' ? 'क्या आप बाहर निकलना चाहते हैं?' : 'Are you sure you want to log out?',
+      'Logout',
+      'Are you sure you want to log out?',
       [
-        { text: language === 'hi' ? 'रद्द करें' : 'Cancel', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: language === 'hi' ? 'हाँ, लॉगआउट करें' : 'Logout',
+          text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -50,11 +50,9 @@ export default function StudentProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t.profile}</Text>
+        <Text style={styles.headerTitle}>Student Profile</Text>
         <Text style={styles.headerSub}>
-          {language === 'hi'
-            ? 'विद्यार्थी खाता, बोर्ड वरीयता एवं ऐप सेटिंग्स'
-            : 'Student account, board settings and language'}
+          Student account, board settings and preferences
         </Text>
       </View>
 
@@ -72,18 +70,16 @@ export default function StudentProfileScreen() {
           </View>
         </View>
 
-        {/* Board & Class Selection */}
+        {/* Board Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {language === 'hi' ? 'अध्ययन बोर्ड' : 'Academic Board'}
-          </Text>
+          <Text style={styles.sectionTitle}>Academic Board</Text>
           <View style={styles.chipRow}>
             <TouchableOpacity
               style={[styles.chip, selectedBoard === 'BSEB' && styles.chipActive]}
               onPress={() => setBoard('BSEB')}
             >
               <Text style={[styles.chipText, selectedBoard === 'BSEB' && styles.chipTextActive]}>
-                {language === 'hi' ? 'बिहार बोर्ड (BSEB)' : 'Bihar Board (BSEB)'}
+                Bihar Board (BSEB)
               </Text>
             </TouchableOpacity>
 
@@ -92,33 +88,7 @@ export default function StudentProfileScreen() {
               onPress={() => setBoard('JAC')}
             >
               <Text style={[styles.chipText, selectedBoard === 'JAC' && styles.chipTextActive]}>
-                {language === 'hi' ? 'झारखंड बोर्ड (JAC)' : 'Jharkhand Board (JAC)'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Language Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {language === 'hi' ? 'ऐप की भाषा' : 'App Language'}
-          </Text>
-          <View style={styles.chipRow}>
-            <TouchableOpacity
-              style={[styles.chip, language === 'en' && styles.chipActive]}
-              onPress={() => setLanguage('en')}
-            >
-              <Text style={[styles.chipText, language === 'en' && styles.chipTextActive]}>
-                English
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.chip, language === 'hi' && styles.chipActive]}
-              onPress={() => setLanguage('hi')}
-            >
-              <Text style={[styles.chipText, language === 'hi' && styles.chipTextActive]}>
-                हिंदी
+                Jharkhand Board (JAC)
               </Text>
             </TouchableOpacity>
           </View>
@@ -130,23 +100,20 @@ export default function StudentProfileScreen() {
             style={styles.menuItem}
             onPress={() =>
               Alert.alert(
-                language === 'hi' ? 'ऑफलाइन फाइल्स' : 'Offline Files',
-                language === 'hi'
-                  ? 'स्थानीय SQLite डेटाबेस में डाउनलोड की गई अध्ययन सामग्री सुरक्षित है।'
-                  : 'Downloaded notes are cached securely in SQLite.'
+                'Offline Files',
+                'Downloaded notes are cached securely in local storage.'
               )
             }
           >
             <Text style={styles.menuItemText}>
-              📥 {language === 'hi' ? 'डाउनलोड की गई सामग्री' : 'Downloaded Notes'}
+              📥 Downloaded Study Materials
             </Text>
             <Text style={styles.menuChevron}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={toggleDarkMode}>
             <Text style={styles.menuItemText}>
-              🌓 {language === 'hi' ? 'डार्क थीम' : 'Dark Theme'}:{' '}
-              {isDarkMode ? (language === 'hi' ? 'चालू' : 'ON') : (language === 'hi' ? 'बंद' : 'OFF')}
+              🌓 Dark Theme: {isDarkMode ? 'ON' : 'OFF'}
             </Text>
             <Text style={styles.menuChevron}>›</Text>
           </TouchableOpacity>
@@ -156,12 +123,12 @@ export default function StudentProfileScreen() {
             onPress={() =>
               Alert.alert(
                 'IDEAL COACHING CENTRE',
-                'v1.0.0 · Production Ready\nStrict Zero-Paid-Service Compliance\nEmail OTP Authentication Only'
+                'Sarotiya, Post Sarbhanga, Mahagama, Godda (JH) 814165\nDirector: BADE SIR (+91 9771350910)\nUPI ID: azhargodda@ybl'
               )
             }
           >
             <Text style={styles.menuItemText}>
-              ℹ️ {language === 'hi' ? 'संस्थान के बारे में एवं नियम' : 'About & Terms'}
+              ℹ️ Institute Information & Contact
             </Text>
             <Text style={styles.menuChevron}>›</Text>
           </TouchableOpacity>
@@ -170,7 +137,7 @@ export default function StudentProfileScreen() {
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Text style={styles.logoutBtnText}>
-            🚪 {language === 'hi' ? 'लॉगआउट करें' : 'Log Out'}
+            🚪 Sign Out
           </Text>
         </TouchableOpacity>
       </ScrollView>

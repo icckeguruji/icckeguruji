@@ -21,15 +21,12 @@ import {
   ShieldCheck,
   LogOut,
   HelpCircle,
-  Globe,
 } from 'lucide-react';
-import { useLanguage } from './LanguageContext';
 import { supabase } from '@/lib/supabase';
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { lang, toggleLang, t } = useLanguage();
   const [role, setRole] = useState<'admin' | 'teacher'>('admin');
   const [userEmail, setUserEmail] = useState<string>('');
 
@@ -61,28 +58,28 @@ export function AdminSidebar() {
   };
 
   const adminNavItems = [
-    { href: '/', icon: LayoutDashboard, labelHi: 'डैशबोर्ड', labelEn: 'Dashboard' },
-    { href: '/students', icon: Users, labelHi: 'विद्यार्थी', labelEn: 'Students' },
-    { href: '/academics', icon: GraduationCap, labelHi: 'शैक्षणिक ढांचा', labelEn: 'Academics' },
-    { href: '/courses', icon: BookOpen, labelHi: 'कोर्स', labelEn: 'Courses' },
-    { href: '/batches', icon: Layers, labelHi: 'बैच', labelEn: 'Batches' },
-    { href: '/live-classes', icon: Video, labelHi: 'लाइव क्लास', labelEn: 'Live Classes' },
-    { href: '/recorded-lectures', icon: PlaySquare, labelHi: 'रिकॉर्डेड वीडियो', labelEn: 'Recorded Videos' },
-    { href: '/study-materials', icon: FileText, labelHi: 'पीडीएफ एवं नोट्स', labelEn: 'Notes & PDFs' },
-    { href: '/payments', icon: CreditCard, labelHi: 'शुल्क सत्यापन', labelEn: 'Payments' },
-    { href: '/examinations', icon: FileCheck2, labelHi: 'ऑनलाइन परीक्षा', labelEn: 'Examinations' },
-    { href: '/teachers', icon: UserCheck, labelHi: 'शिक्षक प्रबंधन', labelEn: 'Teachers' },
-    { href: '/reports', icon: BarChart3, labelHi: 'रिपोर्ट्स', labelEn: 'Reports' },
-    { href: '/settings', icon: Settings, labelHi: 'सेटिंग्स एवं कोटा', labelEn: 'Settings & Quota' },
+    { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/students', icon: Users, label: 'Students' },
+    { href: '/academics', icon: GraduationCap, label: 'Academics' },
+    { href: '/courses', icon: BookOpen, label: 'Courses' },
+    { href: '/batches', icon: Layers, label: 'Batches' },
+    { href: '/live-classes', icon: Video, label: 'Live Classes' },
+    { href: '/recorded-lectures', icon: PlaySquare, label: 'Recorded Videos' },
+    { href: '/study-materials', icon: FileText, label: 'Notes & PDFs' },
+    { href: '/payments', icon: CreditCard, label: 'Payments & UTR' },
+    { href: '/examinations', icon: FileCheck2, label: 'Examinations' },
+    { href: '/teachers', icon: UserCheck, label: 'Faculty Management' },
+    { href: '/reports', icon: BarChart3, label: 'Reports' },
+    { href: '/settings', icon: Settings, label: 'Settings & Quota' },
   ];
 
   const teacherNavItems = [
-    { href: '/teacher', icon: LayoutDashboard, labelHi: 'डैशबोर्ड अवलोकन', labelEn: 'Overview' },
-    { href: '/teacher/batches', icon: Layers, labelHi: 'मेरे बैच एवं छात्र', labelEn: 'My Batches' },
-    { href: '/teacher/assignments', icon: FileCheck2, labelHi: 'गृहकार्य मूल्यांकन', labelEn: 'Assignments' },
-    { href: '/teacher/doubts', icon: HelpCircle, labelHi: 'शंका समाधान केंद्र', labelEn: 'Doubt Center' },
-    { href: '/teacher/live-classes', icon: Video, labelHi: 'लाइव कक्षाएं', labelEn: 'Live Classes' },
-    { href: '/teacher/study-materials', icon: FileText, labelHi: 'नोट्स अपलोड करें', labelEn: 'Upload Notes' },
+    { href: '/teacher', icon: LayoutDashboard, label: 'Overview' },
+    { href: '/teacher/batches', icon: Layers, label: 'My Batches' },
+    { href: '/teacher/assignments', icon: FileCheck2, label: 'Assignments' },
+    { href: '/teacher/doubts', icon: HelpCircle, label: 'Doubt Center' },
+    { href: '/teacher/live-classes', icon: Video, label: 'Live Classes' },
+    { href: '/teacher/study-materials', icon: FileText, label: 'Upload Notes' },
   ];
 
   const currentNav = role === 'teacher' || isTeacherSection ? teacherNavItems : adminNavItems;
@@ -101,28 +98,10 @@ export function AdminSidebar() {
               IDEAL COACHING
             </h1>
             <p className={`text-[11px] font-semibold ${isTeacherMode ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {isTeacherMode
-                ? t('शिक्षक पोर्टल (Faculty)', 'Faculty Portal')
-                : t('प्रशासक पोर्टल (Admin)', 'Admin Portal')}
+              {isTeacherMode ? 'Faculty Portal' : 'Admin Portal'}
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Language Switcher */}
-      <div className="px-3 pt-3">
-        <button
-          onClick={toggleLang}
-          className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[11px] font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition"
-        >
-          <div className="flex items-center space-x-1.5">
-            <Globe className="w-3.5 h-3.5 text-blue-400" />
-            <span>{t('भाषा बदलें', 'Language')}</span>
-          </div>
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300">
-            {lang === 'en' ? 'हिंदी' : 'English'}
-          </span>
-        </button>
       </div>
 
       {/* Navigation Links */}
@@ -143,7 +122,7 @@ export function AdminSidebar() {
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">{t(item.labelHi, item.labelEn)}</span>
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}
@@ -163,11 +142,11 @@ export function AdminSidebar() {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-1 px-2 py-1 rounded bg-red-900/30 hover:bg-red-800/50 text-red-300 text-[11px] font-semibold transition"
-            title={t('लॉगआउट करें', 'Logout')}
+            className="flex items-center space-x-1 px-2.5 py-1 rounded bg-red-900/30 hover:bg-red-800/50 text-red-300 text-[11px] font-semibold transition"
+            title="Logout"
           >
             <LogOut className="w-3 h-3" />
-            <span>{t('लॉगआउट', 'Logout')}</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>

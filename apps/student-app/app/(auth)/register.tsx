@@ -36,25 +36,17 @@ export default function RegisterScreen() {
     setErrorMsg('');
 
     if (!fullName.trim() || !username.trim() || !mobileNumber.trim() || !email.trim()) {
-      setErrorMsg(
-        language === 'hi'
-          ? 'कृपया सभी आवश्यक फ़ील्ड भरें'
-          : 'Please fill all required fields'
-      );
+      setErrorMsg('Please fill all required fields');
       return;
     }
 
     if (!email.includes('@')) {
-      setErrorMsg(language === 'hi' ? 'मान्य ईमेल दर्ज करें' : 'Enter a valid email');
+      setErrorMsg('Enter a valid email address');
       return;
     }
 
     if (mobileNumber.replace(/\D/g, '').length < 10) {
-      setErrorMsg(
-        language === 'hi'
-          ? 'मान्य 10 अंकों का मोबाइल नंबर दर्ज करें'
-          : 'Enter valid 10-digit mobile number'
-      );
+      setErrorMsg('Enter a valid 10-digit mobile number');
       return;
     }
 
@@ -99,23 +91,19 @@ export default function RegisterScreen() {
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
               <Text style={styles.backBtnText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>{t.register}</Text>
+            <Text style={styles.title}>Student Registration</Text>
             <Text style={styles.subtitle}>
-              {language === 'hi'
-                ? 'आईडियल कोचिंग सेंटर - विद्यार्थी पंजीकरण'
-                : 'Ideal Coaching Centre - Student Registration'}
+              Ideal Coaching Centre - Student Portal
             </Text>
           </View>
 
           {/* Security Alert */}
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>
-              🛡️ {language === 'hi' ? 'पंजीकरण नीति' : 'Registration Policy'}
+              🛡️ Registration Policy
             </Text>
             <Text style={styles.alertText}>
-              {language === 'hi'
-                ? 'ओटीपी सत्यापन के लिए अपना वास्तविक ईमेल पता दर्ज करें। सत्यापन के उपरांत आप मोबाइल नंबर से भी लॉगिन कर सकेंगे।'
-                : 'Please provide an active email for OTP verification. Once registered, you may log in via mobile number or username.'}
+              Please provide an active email for OTP verification. Once registered, you may log in via email, mobile number, or username.
             </Text>
           </View>
 
@@ -129,13 +117,13 @@ export default function RegisterScreen() {
             {/* Full Name */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'पूरा नाम *' : 'Full Name *'}
+                Full Name *
               </Text>
               <TextInput
                 style={styles.input}
                 value={fullName}
                 onChangeText={setFullName}
-                placeholder={language === 'hi' ? 'उदा. रोहित कुमार' : 'e.g. Rohit Kumar'}
+                placeholder="e.g. Rohit Kumar"
                 placeholderTextColor="#94A3B8"
               />
             </View>
@@ -143,7 +131,7 @@ export default function RegisterScreen() {
             {/* Username */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'यूज़रनेम (अद्वितीय) *' : 'Unique Username *'}
+                Unique Username *
               </Text>
               <TextInput
                 style={styles.input}
@@ -158,7 +146,7 @@ export default function RegisterScreen() {
             {/* Mobile Number */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'मोबाइल नंबर (10 अंक) *' : 'Mobile Number (10 digits) *'}
+                Mobile Number (10 digits) *
               </Text>
               <TextInput
                 style={styles.input}
@@ -173,7 +161,7 @@ export default function RegisterScreen() {
             {/* Email Address */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'ईमेल पता (ओटीपी गंतव्य) *' : 'Email Address (OTP Destination) *'}
+                Email Address (OTP Destination) *
               </Text>
               <TextInput
                 style={styles.input}
@@ -189,7 +177,7 @@ export default function RegisterScreen() {
             {/* Board Selection */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'बोर्ड चुनें (Select Board) *' : 'Select Board *'}
+                Select Board *
               </Text>
               <View style={styles.chipRow}>
                 <TouchableOpacity
@@ -199,7 +187,7 @@ export default function RegisterScreen() {
                   <Text
                     style={[styles.chipText, boardCode === 'BSEB' && styles.chipTextActive]}
                   >
-                    बिहार बोर्ड (BSEB)
+                    Bihar Board (BSEB)
                   </Text>
                 </TouchableOpacity>
 
@@ -210,7 +198,7 @@ export default function RegisterScreen() {
                   <Text
                     style={[styles.chipText, boardCode === 'JAC' && styles.chipTextActive]}
                   >
-                    झारखंड बोर्ड (JAC)
+                    Jharkhand Board (JAC)
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -219,7 +207,7 @@ export default function RegisterScreen() {
             {/* Class Selection */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'कक्षा (Class) *' : 'Class *'}
+                Class *
               </Text>
               <View style={styles.chipRow}>
                 {['Class 9', 'Class 10', 'Class 11', 'Class 12'].map((c) => (
@@ -244,13 +232,13 @@ export default function RegisterScreen() {
             {/* District */}
             <View style={styles.field}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'ज़िला (District) *' : 'District *'}
+                District *
               </Text>
               <TextInput
                 style={styles.input}
                 value={district}
                 onChangeText={setDistrict}
-                placeholder={language === 'hi' ? 'उदा. पटना, गया, रांची' : 'e.g. Patna, Ranchi'}
+                placeholder="e.g. Patna, Ranchi"
                 placeholderTextColor="#94A3B8"
               />
             </View>
@@ -265,7 +253,7 @@ export default function RegisterScreen() {
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitBtnText}>
-                  {language === 'hi' ? 'पंजीकरण करें एवं ओटीपी पाएं' : 'Register & Get OTP'}
+                  Register & Get OTP
                 </Text>
               )}
             </TouchableOpacity>

@@ -41,11 +41,7 @@ export default function VerifyOtpScreen() {
   const handleVerify = async () => {
     setErrorMsg('');
     if (otp.length < 6) {
-      setErrorMsg(
-        language === 'hi'
-          ? 'कृपया 6 अंकों का मान्य ओटीपी दर्ज करें'
-          : 'Please enter a valid 6-digit OTP'
-      );
+      setErrorMsg('Please enter a valid 6-digit OTP');
       return;
     }
 
@@ -69,18 +65,14 @@ export default function VerifyOtpScreen() {
           router.replace('/(tabs)');
           return;
         }
-        setErrorMsg(
-          language === 'hi'
-            ? 'ओटीपी गलत या समाप्त हो गया है। कृपया पुनः प्रयास करें।'
-            : 'OTP is invalid or expired. Please try again.'
-        );
+        setErrorMsg('OTP is invalid or expired. Please try again.');
         setLoading(false);
         return;
       }
 
       router.replace('/(tabs)');
     } catch (err: any) {
-      setErrorMsg(err.message || 'त्रुटि हुई। कृपया थोड़ी देर बाद प्रयास करें।');
+      setErrorMsg(err.message || 'Verification failed. Please try again.');
       setLoading(false);
     }
   };
@@ -95,11 +87,9 @@ export default function VerifyOtpScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{t.enterOtp}</Text>
+          <Text style={styles.title}>Enter OTP</Text>
           <Text style={styles.subtitle}>
-            {language === 'hi'
-              ? 'ओटीपी केवल आपके पंजीकृत ईमेल पर भेजा गया है:'
-              : 'OTP was delivered strictly to your registered email:'}
+            OTP was delivered to your registered email:
           </Text>
           <Text style={styles.emailBadge}>{maskedEmail || 'r****r@example.com'}</Text>
         </View>
@@ -112,7 +102,7 @@ export default function VerifyOtpScreen() {
 
         <View style={styles.form}>
           <Text style={styles.label}>
-            {language === 'hi' ? '6-अंकों का ईमेल ओटीपी' : '6-Digit Email OTP'}
+            6-Digit Email OTP
           </Text>
           <TextInput
             style={styles.otpInput}
@@ -133,20 +123,18 @@ export default function VerifyOtpScreen() {
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.submitBtnText}>{t.verifyOtp}</Text>
+              <Text style={styles.submitBtnText}>Verify OTP</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.resendRow}>
             {countdown > 0 ? (
               <Text style={styles.countdownText}>
-                {language === 'hi'
-                  ? `पुनः भेजने के लिए प्रतीक्षा करें: ${countdown}s`
-                  : `Resend available in: ${countdown}s`}
+                Resend available in: {countdown}s
               </Text>
             ) : (
               <TouchableOpacity onPress={() => setCountdown(60)}>
-                <Text style={styles.resendLink}>{t.resendOtp}</Text>
+                <Text style={styles.resendLink}>Resend OTP</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -154,7 +142,7 @@ export default function VerifyOtpScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.zeroSmsNotice}>
-            ℹ️ {t.otpSentNotice}
+            ℹ️ Free tier security: OTP sent via email (₹0/mo, zero SMS costs).
           </Text>
         </View>
       </KeyboardAvoidingView>

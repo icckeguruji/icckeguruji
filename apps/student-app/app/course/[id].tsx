@@ -53,17 +53,17 @@ export default function CourseDetailsScreen() {
         <View style={styles.body}>
           <View style={styles.boardBadgeRow}>
             <Text style={styles.boardBadge}>
-              {course.title.includes('BSEB') ? 'बिहार बोर्ड (BSEB)' : 'झारखंड बोर्ड (JAC)'}
+              {course.title.includes('BSEB') ? 'Bihar Board (BSEB)' : 'Jharkhand Board (JAC)'}
             </Text>
-            <Text style={styles.validityBadge}>⏱️ {course.validity_days} दिन वैधता</Text>
+            <Text style={styles.validityBadge}>⏱️ {course.validity_days} Days Validity</Text>
           </View>
 
           <Text style={styles.title}>
-            {language === 'hi' ? course.title_hi || course.title : course.title}
+            {course.title}
           </Text>
 
           <Text style={styles.desc}>
-            {language === 'hi' ? course.description_hi || course.description : course.description}
+            {course.description}
           </Text>
 
           {/* Key Course Stats */}
@@ -71,35 +71,33 @@ export default function CourseDetailsScreen() {
             <View style={styles.statBox}>
               <Text style={styles.statIcon}>📹</Text>
               <Text style={styles.statVal}>{course.lecture_count || 45}+</Text>
-              <Text style={styles.statLabel}>व्याख्यान (Lectures)</Text>
+              <Text style={styles.statLabel}>Lectures</Text>
             </View>
             <View style={styles.statBox}>
               <Text style={styles.statIcon}>📑</Text>
               <Text style={styles.statVal}>{course.material_count || 24}+</Text>
-              <Text style={styles.statLabel}>पीडीएफ नोट्स</Text>
+              <Text style={styles.statLabel}>PDF Notes</Text>
             </View>
             <View style={styles.statBox}>
               <Text style={styles.statIcon}>📝</Text>
               <Text style={styles.statVal}>15+</Text>
-              <Text style={styles.statLabel}>मॉक टेस्ट</Text>
+              <Text style={styles.statLabel}>Mock Tests</Text>
             </View>
           </View>
 
           {/* Curriculum Structure */}
           <View style={styles.curriculumSection}>
             <Text style={styles.sectionHeading}>
-              {language === 'hi' ? 'पाठ्यक्रम पाठ्यक्रम (Curriculum)' : 'Course Curriculum'}
+              Course Curriculum
             </Text>
 
             <View style={styles.chapterItem}>
               <Text style={styles.chapterNumber}>01</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.chapterTitle}>
-                  {language === 'hi'
-                    ? 'रासायनिक अभिक्रियाएँ एवं समीकरण'
-                    : 'Chemical Reactions & Equations'}
+                  Chemical Reactions & Equations
                 </Text>
-                <Text style={styles.chapterMeta}>5 वीडियो व्याख्यान · 2 पीडीएफ नोट्स</Text>
+                <Text style={styles.chapterMeta}>5 Video Lectures · 2 PDF Notes</Text>
               </View>
             </View>
 
@@ -107,9 +105,9 @@ export default function CourseDetailsScreen() {
               <Text style={styles.chapterNumber}>02</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.chapterTitle}>
-                  {language === 'hi' ? 'अम्ल, क्षारक एवं लवण' : 'Acids, Bases & Salts'}
+                  Acids, Bases & Salts
                 </Text>
-                <Text style={styles.chapterMeta}>6 वीडियो व्याख्यान · 3 पीडीएफ नोट्स</Text>
+                <Text style={styles.chapterMeta}>6 Video Lectures · 3 PDF Notes</Text>
               </View>
             </View>
 
@@ -117,9 +115,9 @@ export default function CourseDetailsScreen() {
               <Text style={styles.chapterNumber}>03</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.chapterTitle}>
-                  {language === 'hi' ? 'वास्तविक संख्याएं (गणित)' : 'Real Numbers (Mathematics)'}
+                  Real Numbers (Mathematics)
                 </Text>
-                <Text style={styles.chapterMeta}>4 वीडियो व्याख्यान · 1 फॉर्मूला शीट</Text>
+                <Text style={styles.chapterMeta}>4 Video Lectures · 1 Formula Sheet</Text>
               </View>
             </View>
           </View>
@@ -130,13 +128,11 @@ export default function CourseDetailsScreen() {
       <View style={styles.bottomBar}>
         <View>
           <Text style={styles.bottomPriceLabel}>
-            {course.is_free
-              ? (language === 'hi' ? 'निःशुल्क कोर्स' : 'Free Course')
-              : (language === 'hi' ? 'कोर्स शुल्क' : 'Course Fee')}
+            {course.is_free ? 'Free Course' : 'Course Fee'}
           </Text>
           <Text style={styles.bottomPriceVal}>
             {course.is_free
-              ? (language === 'hi' ? 'निःशुल्क' : 'FREE')
+              ? 'FREE'
               : formatINR(course.discount_price || course.price)}
           </Text>
         </View>
@@ -146,14 +142,14 @@ export default function CourseDetailsScreen() {
             style={styles.enrollBtn}
             onPress={() => router.replace('/(tabs)')}
           >
-            <Text style={styles.enrollBtnText}>{t.enrollNow}</Text>
+            <Text style={styles.enrollBtnText}>Enroll Free</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={styles.payBtn}
             onPress={() => router.push(`/payment/${course.id}`)}
           >
-            <Text style={styles.payBtnText}>UPI से भुगतान करें ›</Text>
+            <Text style={styles.payBtnText}>Pay via UPI ›</Text>
           </TouchableOpacity>
         )}
       </View>

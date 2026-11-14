@@ -64,7 +64,7 @@ export default function RootLayout() {
             name="course/[id]"
             options={{
               headerShown: true,
-              title: 'कोर्स विवरण (Course Details)',
+              title: 'Course Details',
               headerTintColor: '#0F172A',
             }}
           />
@@ -72,7 +72,7 @@ export default function RootLayout() {
             name="payment/[id]"
             options={{
               headerShown: true,
-              title: 'शुल्क भुगतान (UPI Payment)',
+              title: 'UPI Payment',
               headerTintColor: '#0F172A',
             }}
           />
@@ -80,7 +80,7 @@ export default function RootLayout() {
             name="lecture/[id]"
             options={{
               headerShown: true,
-              title: 'वीडियो व्याख्यान (Video Lecture)',
+              title: 'Video Lecture',
               headerTintColor: '#FFFFFF',
               headerStyle: { backgroundColor: '#0F172A' },
             }}
@@ -89,7 +89,7 @@ export default function RootLayout() {
             name="exam/[id]"
             options={{
               headerShown: true,
-              title: 'ऑनलाइन परीक्षा (Active Test)',
+              title: 'Active Test',
               headerTintColor: '#FFFFFF',
               headerStyle: { backgroundColor: '#1E3A8A' },
             }}
@@ -98,7 +98,7 @@ export default function RootLayout() {
             name="exam-result/[id]"
             options={{
               headerShown: true,
-              title: 'परीक्षा परिणाम (Scorecard)',
+              title: 'Scorecard',
               headerTintColor: '#0F172A',
             }}
           />
@@ -106,7 +106,7 @@ export default function RootLayout() {
             name="doubts/index"
             options={{
               headerShown: true,
-              title: 'शंका समाधान (Doubt Clearance)',
+              title: 'Doubt Clearance',
               headerTintColor: '#0F172A',
             }}
           />
@@ -114,7 +114,7 @@ export default function RootLayout() {
             name="assignments/index"
             options={{
               headerShown: true,
-              title: 'गृहकार्य एवं असाइनमेंट (Assignments)',
+              title: 'Assignments & Homework',
               headerTintColor: '#0F172A',
             }}
           />

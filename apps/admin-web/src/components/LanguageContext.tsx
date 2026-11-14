@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { AppLanguage } from '@icc/shared-types';
 
 interface LanguageContextType {
@@ -18,30 +18,17 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<AppLanguage>('en');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('icc_admin_lang') as AppLanguage;
-    if (saved === 'hi' || saved === 'en') {
-      setLang(saved);
-    } else {
-      setLang('en');
-    }
-  }, []);
-
-  const handleSetLang = (l: AppLanguage) => {
-    setLang(l);
-    localStorage.setItem('icc_admin_lang', l);
-  };
-
-  const toggleLang = () => {
-    handleSetLang(lang === 'hi' ? 'en' : 'hi');
-  };
-
-  const t = (hiText: string, enText: string) => (lang === 'hi' ? hiText : enText);
+  const t = (_hiText: string, enText: string) => enText;
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang: handleSetLang, toggleLang, t }}>
+    <LanguageContext.Provider
+      value={{
+        lang: 'en',
+        setLang: () => {},
+        toggleLang: () => {},
+        t,
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );

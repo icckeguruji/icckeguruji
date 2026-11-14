@@ -36,44 +36,38 @@ export default function ExamResultScreen() {
           </Text>
           <Text style={styles.resultTitle}>
             {isPassed
-              ? language === 'hi'
-                ? 'बधाई! आप उत्तीर्ण हुए'
-                : 'Congratulations! You Passed'
-              : language === 'hi'
-              ? 'पुनः अभ्यास की आवश्यकता है'
+              ? 'Congratulations! You Passed'
               : 'Needs Practice'}
           </Text>
           <Text style={styles.resultScore}>
             {totalScore || '2'} / {totalMarks || '3'} Marks
           </Text>
           <Text style={styles.accuracyText}>
-            सटीकता दर (Accuracy): {accuracy || '67%'}
+            Accuracy Rate: {accuracy || '67%'}
           </Text>
         </View>
 
         {/* Detailed Solutions & Explanations */}
         <View style={styles.section}>
           <Text style={styles.sectionHeading}>
-            {language === 'hi'
-              ? 'विस्तृत समाधान एवं व्याख्या (Solutions)'
-              : 'Detailed Explanations'}
+            Detailed Solutions & Explanations
           </Text>
 
           {/* Solution 1 */}
           <View style={styles.solutionCard}>
             <View style={styles.qHeader}>
-              <Text style={styles.qNum}>प्रश्न 1 (Correct · +1.0)</Text>
-              <Text style={styles.correctBadge}>✓ सही उत्तर</Text>
+              <Text style={styles.qNum}>Question 1 (Correct · +1.0)</Text>
+              <Text style={styles.correctBadge}>✓ Correct Answer</Text>
             </View>
             <Text style={styles.qText}>
               जब कली चूना (CaO) जल से अभिक्रिया करता है, तो यह किस प्रकार की अभिक्रिया होती है?
             </Text>
             <View style={styles.answerBox}>
               <Text style={styles.ansText}>
-                सही विकल्प: <Text style={{ fontWeight: 'bold' }}>ऊष्माक्षेपी संयोजन अभिक्रिया</Text>
+                Correct Option: <Text style={{ fontWeight: 'bold' }}>ऊष्माक्षेपी संयोजन अभिक्रिया</Text>
               </Text>
               <Text style={styles.explainText}>
-                व्याख्या: CaO + H2O → Ca(OH)2 + ऊष्मा। इस अभिक्रिया में ऊष्मा उत्सर्जित होती है और दो अभिकारक मिलकर एक उत्पाद बनाते हैं, अतः यह ऊष्माक्षेपी संयोजन अभिक्रिया है।
+                Explanation: CaO + H2O → Ca(OH)2 + ऊष्मा। इस अभिक्रिया में ऊष्मा उत्सर्जित होती है और दो अभिकारक मिलकर एक उत्पाद बनाते हैं, अतः यह ऊष्माक्षेपी संयोजन अभिक्रिया है।
               </Text>
             </View>
           </View>
@@ -81,18 +75,18 @@ export default function ExamResultScreen() {
           {/* Solution 2 */}
           <View style={styles.solutionCard}>
             <View style={styles.qHeader}>
-              <Text style={styles.qNum}>प्रश्न 2 (Correct · +1.0)</Text>
-              <Text style={styles.correctBadge}>✓ सही उत्तर</Text>
+              <Text style={styles.qNum}>Question 2 (Correct · +1.0)</Text>
+              <Text style={styles.correctBadge}>✓ Correct Answer</Text>
             </View>
             <Text style={styles.qText}>
               जिंक के दानों पर तनु सल्फ्यूरिक अम्ल डालने पर कौन सी गैस उत्सर्जित होती है?
             </Text>
             <View style={styles.answerBox}>
               <Text style={styles.ansText}>
-                सही विकल्प: <Text style={{ fontWeight: 'bold' }}>हाइड्रोजन (H2)</Text>
+                Correct Option: <Text style={{ fontWeight: 'bold' }}>हाइड्रोजन (H2)</Text>
               </Text>
               <Text style={styles.explainText}>
-                व्याख्या: Zn + H2SO4 → ZnSO4 + H2↑। धातु अम्ल के साथ क्रिया करके हाइड्रोजन गैस मुक्त करते हैं।
+                Explanation: Zn + H2SO4 → ZnSO4 + H2↑। धातु अम्ल के साथ क्रिया करके हाइड्रोजन गैस मुक्त करते हैं।
               </Text>
             </View>
           </View>
@@ -104,7 +98,7 @@ export default function ExamResultScreen() {
           onPress={() => router.replace('/(tabs)')}
         >
           <Text style={styles.returnBtnText}>
-            {language === 'hi' ? 'डैशबोर्ड पर वापस जाएं' : 'Return to Home Dashboard'}
+            Return to Home Dashboard
           </Text>
         </TouchableOpacity>
       </ScrollView>

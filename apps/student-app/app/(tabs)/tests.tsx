@@ -13,14 +13,11 @@ import { translations } from '@icc/shared-utils';
 
 export default function StudentTestsScreen() {
   const router = useRouter();
-  const { language } = useAuthStore();
-  const t = translations[language];
 
   const tests = [
     {
       id: 'ex-1',
       title: 'BSEB Class 10 Science: Chemical Reactions & Equations Test',
-      title_hi: 'बिहार बोर्ड कक्षा 10 विज्ञान: रासायनिक अभिक्रियाएँ एवं समीकरण टेस्ट',
       duration: 30,
       marks: 20,
       passMarks: 7,
@@ -30,7 +27,6 @@ export default function StudentTestsScreen() {
     {
       id: 'ex-2',
       title: 'BSEB Class 10 Mathematics: Real Numbers Practice Exam',
-      title_hi: 'बिहार बोर्ड कक्षा 10 गणित: वास्तविक संख्याएं अभ्यास परीक्षा',
       duration: 40,
       marks: 25,
       passMarks: 9,
@@ -42,11 +38,9 @@ export default function StudentTestsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t.tests}</Text>
+        <Text style={styles.headerTitle}>Online Tests & Quizzes</Text>
         <Text style={styles.headerSub}>
-          {language === 'hi'
-            ? 'समयबद्ध वस्तुनिष्ठ प्रश्नोत्तरी एवं तत्काल परिणाम'
-            : 'Timed MCQ tests with instant server-evaluated scorecard'}
+          Timed MCQ tests with instant scorecard evaluation
         </Text>
       </View>
 
@@ -56,28 +50,24 @@ export default function StudentTestsScreen() {
             <View key={test.id} style={styles.testCard}>
               <View style={styles.badgeRow}>
                 <Text style={styles.typeBadge}>{test.type}</Text>
-                <Text style={styles.duration}>⏱️ {test.duration} {t.minutes}</Text>
+                <Text style={styles.duration}>⏱️ {test.duration} mins</Text>
               </View>
 
               <Text style={styles.testTitle}>
-                {language === 'hi' ? test.title_hi : test.title}
+                {test.title}
               </Text>
 
               <View style={styles.statsRow}>
                 <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>{t.marks}</Text>
+                  <Text style={styles.statLabel}>Total Marks</Text>
                   <Text style={styles.statVal}>{test.marks}</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>
-                    {language === 'hi' ? 'उत्तीर्ण अंक' : 'Pass Marks'}
-                  </Text>
+                  <Text style={styles.statLabel}>Pass Marks</Text>
                   <Text style={styles.statVal}>{test.passMarks}</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>
-                    {language === 'hi' ? 'निगेटिव मार्किंग' : 'Negative'}
-                  </Text>
+                  <Text style={styles.statLabel}>Negative Marking</Text>
                   <Text style={[styles.statVal, { color: '#DC2626' }]}>-{test.negative}</Text>
                 </View>
               </View>
@@ -86,7 +76,7 @@ export default function StudentTestsScreen() {
                 style={styles.startBtn}
                 onPress={() => router.push(`/exam/${test.id}`)}
               >
-                <Text style={styles.startBtnText}>{t.startTest}</Text>
+                <Text style={styles.startBtnText}>Start Test Now</Text>
               </TouchableOpacity>
             </View>
           ))}

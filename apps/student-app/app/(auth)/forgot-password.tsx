@@ -48,9 +48,7 @@ export default function ForgotPasswordScreen() {
 
       if (error) {
         setErrorMsg(
-          language === 'hi'
-            ? 'रीसेट लिंक भेजने में त्रुटि हुई। कृपया पुनः प्रयास करें।'
-            : 'Failed to send reset link. Please try again.'
+          'Failed to send reset link. Please verify your email and try again.'
         );
         setLoading(false);
         return;
@@ -58,7 +56,7 @@ export default function ForgotPasswordScreen() {
 
       setSuccessMsg(trimmed);
     } catch (err: any) {
-      setErrorMsg(err.message || 'त्रुटि हुई। कृपया थोड़ी देर बाद प्रयास करें।');
+      setErrorMsg(err.message || 'An error occurred. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -75,12 +73,10 @@ export default function ForgotPasswordScreen() {
             <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>
-            {language === 'hi' ? 'पासवर्ड रीसेट करें' : 'Reset Password'}
+            Reset Password
           </Text>
           <Text style={styles.subtitle}>
-            {language === 'hi'
-              ? 'आपके ईमेल पर एक रीसेट लिंक भेजा जाएगा'
-              : 'A reset link will be sent to your email'}
+            A password reset link will be sent to your email
           </Text>
         </View>
 
@@ -93,34 +89,30 @@ export default function ForgotPasswordScreen() {
         {successMsg ? (
           <View style={styles.successBox}>
             <Text style={styles.successTitle}>
-              ✅ {language === 'hi' ? 'लिंक भेजा गया!' : 'Link Sent!'}
+              ✅ Reset Link Sent!
             </Text>
             <Text style={styles.successText}>
-              {language === 'hi'
-                ? `आपके ईमेल ${maskEmail(successMsg)} पर पासवर्ड रीसेट लिंक भेजा गया है। कृपया अपना इनबॉक्स और स्पैम फ़ोल्डर जांचें।`
-                : `A password reset link has been sent to ${maskEmail(successMsg)}. Please check your inbox and spam folder.`}
+              {`A password reset link has been sent to ${maskEmail(successMsg)}. Please check your inbox and spam folder.`}
             </Text>
             <TouchableOpacity
               style={styles.backToLoginBtn}
               onPress={() => router.replace('/(auth)/login')}
             >
               <Text style={styles.backToLoginText}>
-                {language === 'hi' ? 'लॉगिन पर वापस जाएं' : 'Back to Login'}
+                Back to Login
               </Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.form}>
             <Text style={styles.label}>
-              {language === 'hi' ? 'ईमेल पता' : 'Email Address'}
+              Email Address
             </Text>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder={
-                language === 'hi' ? 'आपका ईमेल दर्ज करें' : 'Enter your email address'
-              }
+              placeholder="Enter your email address"
               placeholderTextColor="#94A3B8"
               autoCapitalize="none"
               autoCorrect={false}
@@ -136,7 +128,7 @@ export default function ForgotPasswordScreen() {
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitBtnText}>
-                  {language === 'hi' ? 'रीसेट लिंक भेजें' : 'Send Reset Link'}
+                  Send Reset Link
                 </Text>
               )}
             </TouchableOpacity>
@@ -146,11 +138,11 @@ export default function ForgotPasswordScreen() {
         {!successMsg && (
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {language === 'hi' ? 'पासवर्ड याद आ गया?' : 'Remember your password?'}{' '}
+              Remember your password?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.back()}>
               <Text style={styles.footerLink}>
-                {language === 'hi' ? 'लॉगिन करें' : 'Log In'}
+                Log In
               </Text>
             </TouchableOpacity>
           </View>

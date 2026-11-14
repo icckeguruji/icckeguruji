@@ -24,26 +24,16 @@ export default function StudentHomeScreen() {
         <View style={styles.topHeader}>
           <View>
             <Text style={styles.greetingText}>
-              {language === 'hi' ? 'नमस्ते,' : 'Welcome back,'}
+              Welcome back,
             </Text>
             <Text style={styles.studentName}>{user?.full_name || 'Student'}</Text>
           </View>
 
           <View style={styles.badgeGroup}>
             <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-              <TouchableOpacity
-                style={styles.langTogglePill}
-                onPress={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-              >
-                <Text style={styles.langToggleText}>
-                  {language === 'en' ? 'हिंदी' : 'English'}
-                </Text>
-              </TouchableOpacity>
               <View style={styles.boardPill}>
                 <Text style={styles.boardPillText}>
-                  {selectedBoard === 'BSEB'
-                    ? (language === 'hi' ? 'बिहार बोर्ड' : 'BSEB')
-                    : (language === 'hi' ? 'झारखंड बोर्ड' : 'JAC')}
+                  {selectedBoard === 'BSEB' ? 'BSEB Board' : 'JAC Board'}
                 </Text>
               </View>
             </View>
@@ -58,16 +48,14 @@ export default function StudentHomeScreen() {
           <View style={styles.liveBadgeRow}>
             <View style={styles.liveDot} />
             <Text style={styles.liveBadgeText}>
-              {language === 'hi' ? 'अभी लाइव' : 'LIVE NOW'}
+              LIVE NOW
             </Text>
           </View>
           <Text style={styles.liveTitle}>
-            {language === 'hi'
-              ? 'विज्ञान: 2 अंक वाले महत्वपूर्ण संभावित प्रश्न'
-              : 'Science: Important 2-Mark Expected Questions'}
+            Science: Important 2-Mark Expected Questions
           </Text>
           <Text style={styles.liveTeacher}>
-            {language === 'hi' ? 'मार्गदर्शन: BADE SIR एवं विशेषज्ञ संकाय' : 'By: BADE SIR & Expert Faculty'}
+            By: BADE SIR & Expert Faculty
           </Text>
 
           <TouchableOpacity
@@ -75,7 +63,7 @@ export default function StudentHomeScreen() {
             onPress={() => router.push('/(tabs)/live')}
           >
             <Text style={styles.joinLiveBtnText}>
-              {language === 'hi' ? 'अभी क्लास से जुड़ें' : 'Join Live Class'}
+              Join Live Class
             </Text>
           </TouchableOpacity>
         </View>
@@ -83,7 +71,7 @@ export default function StudentHomeScreen() {
         {/* Continue Watching / Resume Bar */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {language === 'hi' ? 'पढ़ाई जारी रखें' : 'Continue Watching'}
+            Continue Watching
           </Text>
           <TouchableOpacity
             style={styles.resumeCard}
@@ -94,12 +82,10 @@ export default function StudentHomeScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.resumeTitle} numberOfLines={1}>
-                {language === 'hi'
-                  ? 'अध्याय 1: रासायनिक अभिक्रियाएँ एवं समीकरण'
-                  : 'Ch 1: Chemical Reactions & Equations'}
+                Ch 1: Chemical Reactions & Equations
               </Text>
               <Text style={styles.resumeSub}>
-                {language === 'hi' ? 'लेक्चर 02 · 18 मिनट शेष' : 'Lecture 02 · 18m left'}
+                Lecture 02 · 18m left
               </Text>
               <View style={styles.progressBarBg}>
                 <View style={[styles.progressBarFill, { width: '65%' }]} />
@@ -115,8 +101,8 @@ export default function StudentHomeScreen() {
             onPress={() => router.push('/(tabs)/notes')}
           >
             <Text style={styles.gridIcon}>📄</Text>
-            <Text style={styles.gridText}>{t.notes}</Text>
-            <Text style={styles.gridSub}>{language === 'hi' ? 'स्वतः मैप्ड' : 'Auto Mapped'}</Text>
+            <Text style={styles.gridText}>Notes</Text>
+            <Text style={styles.gridSub}>Auto Mapped</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -124,8 +110,8 @@ export default function StudentHomeScreen() {
             onPress={() => router.push('/(tabs)/tests')}
           >
             <Text style={styles.gridIcon}>📝</Text>
-            <Text style={styles.gridText}>{t.tests}</Text>
-            <Text style={styles.gridSub}>{language === 'hi' ? 'एमसीक्यू टेस्ट' : 'MCQ & Timer'}</Text>
+            <Text style={styles.gridText}>Tests</Text>
+            <Text style={styles.gridSub}>MCQ & Timer</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -133,8 +119,8 @@ export default function StudentHomeScreen() {
             onPress={() => router.push('/doubts')}
           >
             <Text style={styles.gridIcon}>💬</Text>
-            <Text style={styles.gridText}>{t.doubts}</Text>
-            <Text style={styles.gridSub}>{language === 'hi' ? 'शिक्षक से पूछें' : 'Ask Faculty'}</Text>
+            <Text style={styles.gridText}>Doubts</Text>
+            <Text style={styles.gridSub}>Ask Faculty</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -142,8 +128,8 @@ export default function StudentHomeScreen() {
             onPress={() => router.push('/assignments')}
           >
             <Text style={styles.gridIcon}>📋</Text>
-            <Text style={styles.gridText}>{language === 'hi' ? 'असाइनमेंट' : 'Assignments'}</Text>
-            <Text style={styles.gridSub}>{language === 'hi' ? 'गृहकार्य' : 'Homework'}</Text>
+            <Text style={styles.gridText}>Assignments</Text>
+            <Text style={styles.gridSub}>Homework</Text>
           </TouchableOpacity>
         </View>
 
@@ -151,11 +137,11 @@ export default function StudentHomeScreen() {
         <View style={styles.section}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text style={styles.sectionTitle}>
-              {language === 'hi' ? 'आपके सक्रिय पाठ्यक्रम' : 'Your Enrolled Courses'}
+              Your Enrolled Courses
             </Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/courses')}>
               <Text style={styles.seeAllText}>
-                {language === 'hi' ? 'सभी देखें' : 'View All'}
+                View All
               </Text>
             </TouchableOpacity>
           </View>
@@ -168,24 +154,20 @@ export default function StudentHomeScreen() {
               <Text style={styles.courseBadgeText}>BSEB 2026-27</Text>
             </View>
             <Text style={styles.courseTitle}>
-              {language === 'hi'
-                ? 'बिहार बोर्ड कक्षा 10 टॉपर बैच (2026-27)'
-                : 'BSEB Class 10 Toppers Batch (2026-27)'}
+              BSEB Class 10 Toppers Batch (2026-27)
             </Text>
             <Text style={styles.courseDesc} numberOfLines={2}>
-              {language === 'hi'
-                ? 'प्रतिदिन लाइव कक्षाएं, संपूर्ण हस्तलिखित टॉपर नोट्स, साप्ताहिक टेस्ट एवं 10 वर्षीय हल प्रश्न पत्र।'
-                : 'Daily live classes, handwritten notes, weekly mock tests and previous 10 years papers.'}
+              Daily live classes, handwritten notes, weekly mock tests and previous 10 years papers.
             </Text>
             <View style={styles.courseMetaRow}>
               <Text style={styles.courseMeta}>
-                {language === 'hi' ? '85 व्याख्यान' : '85 Lectures'}
+                85 Lectures
               </Text>
               <Text style={styles.courseMeta}>
-                {language === 'hi' ? '42 पीडीएफ नोट्स' : '42 PDF Notes'}
+                42 PDF Notes
               </Text>
               <Text style={styles.courseActiveStatus}>
-                {language === 'hi' ? 'सक्रिय' : 'Active'}
+                Active
               </Text>
             </View>
           </TouchableOpacity>

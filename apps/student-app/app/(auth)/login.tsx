@@ -58,17 +58,13 @@ export default function LoginScreen() {
 
     if (!trimmedId || trimmedId.length < 3) {
       setErrorMsg(
-        language === 'hi'
-          ? 'कृपया मान्य ईमेल या 10-अंकों का मोबाइल नंबर दर्ज करें'
-          : 'Please enter a valid email or 10-digit mobile number'
+        'Please enter a valid email or 10-digit mobile number'
       );
       return;
     }
     if (!trimmedPw || trimmedPw.length < 4) {
       setErrorMsg(
-        language === 'hi'
-          ? 'कृपया पासवर्ड दर्ज करें (कम से कम 4 अक्षर)'
-          : 'Please enter your password (at least 4 characters)'
+        'Please enter your password (at least 4 characters)'
       );
       return;
     }
@@ -123,7 +119,7 @@ export default function LoginScreen() {
 
       router.replace('/(tabs)');
     } catch (err: any) {
-      setErrorMsg(err.message || 'लॉगिन में त्रुटि हुई।');
+      setErrorMsg(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -141,11 +137,9 @@ export default function LoginScreen() {
               <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                 <Text style={styles.backBtnText}>←</Text>
               </TouchableOpacity>
-              <Text style={styles.title}>{t.login}</Text>
+              <Text style={styles.title}>Student Login</Text>
               <Text style={styles.subtitle}>
-                {language === 'hi'
-                  ? 'आइडियल कोचिंग सेंटर - विद्यार्थी लॉगिन'
-                  : 'IDEAL COACHING CENTRE - Student Portal'}
+                IDEAL COACHING CENTRE - Student Portal
               </Text>
             </View>
 
@@ -157,10 +151,10 @@ export default function LoginScreen() {
               <Text style={styles.quickAccessIcon}>⚡</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.quickAccessTitle}>
-                  {language === 'hi' ? 'त्वरित 1-क्लिक छात्र प्रवेश' : '1-Click Instant Student Login'}
+                  1-Click Instant Student Login
                 </Text>
                 <Text style={styles.quickAccessSub}>
-                  {language === 'hi' ? 'सीधे विद्यार्थी डैशबोर्ड खोलें' : 'Direct student dashboard access'}
+                  Direct student dashboard access
                 </Text>
               </View>
               <Text style={styles.quickAccessArrow}>›</Text>
@@ -175,30 +169,26 @@ export default function LoginScreen() {
             {/* Login Form */}
             <View style={styles.form}>
               <Text style={styles.label}>
-                {language === 'hi' ? 'ईमेल या मोबाइल नंबर' : 'Email or Mobile Number'}
+                Email or Mobile Number
               </Text>
               <TextInput
                 style={styles.input}
                 value={identifier}
                 onChangeText={setIdentifier}
-                placeholder={
-                  language === 'hi'
-                    ? '9876543210 या rohit@example.com'
-                    : '9876543210 or rohit@example.com'
-                }
+                placeholder="9876543210 or rohit@example.com"
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
 
               <Text style={styles.label}>
-                {language === 'hi' ? 'पासवर्ड' : 'Password'}
+                Password
               </Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder={language === 'hi' ? 'पासवर्ड दर्ज करें' : 'Enter your password'}
+                placeholder="Enter your password"
                 placeholderTextColor="#94A3B8"
                 secureTextEntry
                 autoCapitalize="none"
@@ -211,7 +201,7 @@ export default function LoginScreen() {
                 onPress={() => router.push('/(auth)/forgot-password')}
               >
                 <Text style={styles.forgotLink}>
-                  {language === 'hi' ? 'पासवर्ड भूल गए?' : 'Forgot Password?'}
+                  Forgot Password?
                 </Text>
               </TouchableOpacity>
 
@@ -223,7 +213,7 @@ export default function LoginScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.submitBtnText}>{t.login}</Text>
+                  <Text style={styles.submitBtnText}>Log In</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -232,10 +222,10 @@ export default function LoginScreen() {
           {/* Bottom Register Switch */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {language === 'hi' ? 'नया विद्यार्थी हैं?' : 'New student?'}{' '}
+              New student?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={styles.footerLink}>{t.register}</Text>
+              <Text style={styles.footerLink}>Register Here</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

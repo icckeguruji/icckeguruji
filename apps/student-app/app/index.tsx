@@ -27,46 +27,28 @@ export default function IndexScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Top Language Toggle */}
-        <View style={styles.langBar}>
-          <TouchableOpacity
-            style={[styles.langBtn, language === 'en' && styles.langBtnActive]}
-            onPress={() => setLanguage('en')}
-          >
-            <Text style={[styles.langText, language === 'en' && styles.langTextActive]}>
-              English
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.langBtn, language === 'hi' && styles.langBtnActive]}
-            onPress={() => setLanguage('hi')}
-          >
-            <Text style={[styles.langText, language === 'hi' && styles.langTextActive]}>
-              हिंदी
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Hero Branding */}
         <View style={styles.heroSection}>
           <View style={styles.logoBadge}>
             <Text style={styles.logoBadgeText}>ICC</Text>
           </View>
           <Text style={styles.appName}>
-            {language === 'hi' ? 'आइडियल कोचिंग सेंटर' : 'IDEAL COACHING CENTRE'}
+            IDEAL COACHING CENTRE
           </Text>
-          <Text style={styles.tagline}>{t.tagline}</Text>
+          <Text style={styles.tagline}>
+            Complete Digital Learning for BSEB & JAC State Board Students
+          </Text>
 
           {/* Supported Boards Badge */}
           <View style={styles.boardBadgeRow}>
             <View style={styles.boardBadge}>
               <Text style={styles.boardBadgeText}>
-                {language === 'hi' ? 'बिहार बोर्ड (BSEB)' : 'Bihar Board (BSEB)'}
+                Bihar Board (BSEB)
               </Text>
             </View>
             <View style={[styles.boardBadge, styles.boardBadgeJac]}>
               <Text style={styles.boardBadgeText}>
-                {language === 'hi' ? 'झारखंड बोर्ड (JAC)' : 'Jharkhand Board (JAC)'}
+                Jharkhand Board (JAC)
               </Text>
             </View>
           </View>
@@ -76,7 +58,7 @@ export default function IndexScreen() {
         <View style={styles.actionSection}>
           <TouchableOpacity style={styles.primaryBtn} onPress={handleStart}>
             <Text style={styles.primaryBtnText}>
-              {isAuthenticated ? (language === 'hi' ? 'डैशबोर्ड खोलें' : 'Open Dashboard') : t.login}
+              {isAuthenticated ? 'Open Student Dashboard' : 'Sign In to Portal'}
             </Text>
           </TouchableOpacity>
 
@@ -85,15 +67,13 @@ export default function IndexScreen() {
               style={styles.secondaryBtn}
               onPress={() => router.push('/(auth)/register')}
             >
-              <Text style={styles.secondaryBtnText}>{t.register}</Text>
+              <Text style={styles.secondaryBtnText}>Register New Account</Text>
             </TouchableOpacity>
           )}
 
           <View style={styles.securityNote}>
             <Text style={styles.securityNoteText}>
-              🔒 {language === 'hi'
-                ? 'सुरक्षित ईमेल ओटीपी लॉगिन | शून्य एसएमएस लागत'
-                : 'Secure Email OTP Login | Zero SMS Fee'}
+              🔒 Secure OTP & Password Authentication · Direct Faculty Support
             </Text>
           </View>
         </View>

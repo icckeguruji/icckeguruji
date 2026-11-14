@@ -13,8 +13,6 @@ import { translations, formatIST } from '@icc/shared-utils';
 import { initialLiveClasses } from '../../../admin-web/src/lib/sample-data';
 
 export default function StudentLiveScreen() {
-  const { language } = useAuthStore();
-  const t = translations[language];
   const [activeTab, setActiveTab] = useState<'live' | 'upcoming'>('live');
 
   const openYouTubeLive = (videoId: string) => {
@@ -24,11 +22,9 @@ export default function StudentLiveScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t.liveClasses}</Text>
+        <Text style={styles.headerTitle}>Live Classes</Text>
         <Text style={styles.headerSub}>
-          {language === 'hi'
-            ? 'यूट्यूब लाइव द्वारा उच्च गुणवत्ता लाइव प्रसारण'
-            : 'High quality live streaming via YouTube Live'}
+          High quality live streaming via YouTube Live
         </Text>
       </View>
 
@@ -38,7 +34,7 @@ export default function StudentLiveScreen() {
           onPress={() => setActiveTab('live')}
         >
           <Text style={[styles.tabBtnText, activeTab === 'live' && styles.tabBtnTextActive]}>
-            🔴 {language === 'hi' ? 'लाइव अभी' : 'Live Now'}
+            🔴 Live Now
           </Text>
         </TouchableOpacity>
 
@@ -49,7 +45,7 @@ export default function StudentLiveScreen() {
           <Text
             style={[styles.tabBtnText, activeTab === 'upcoming' && styles.tabBtnTextActive]}
           >
-            📅 {language === 'hi' ? 'आगामी कक्षाएं' : 'Upcoming'}
+            📅 Upcoming
           </Text>
         </TouchableOpacity>
       </View>
@@ -61,23 +57,23 @@ export default function StudentLiveScreen() {
               {item.status === 'live' ? (
                 <View style={styles.liveNowBadge}>
                   <Text style={styles.liveNowText}>
-                    🔴 {language === 'hi' ? 'लाइव' : 'LIVE NOW'}
+                    🔴 LIVE NOW
                   </Text>
                 </View>
               ) : (
                 <View style={styles.schedBadge}>
                   <Text style={styles.schedText}>
-                    {language === 'hi' ? 'निर्धारित' : 'SCHEDULED'}
+                    SCHEDULED
                   </Text>
                 </View>
               )}
               <Text style={styles.durationText}>
-                {item.duration_minutes} {language === 'hi' ? 'मिनट' : 'mins'}
+                {item.duration_minutes} mins
               </Text>
             </View>
 
             <Text style={styles.title}>
-              {language === 'hi' ? item.title_hi || item.title : item.title}
+              {item.title}
             </Text>
             <Text style={styles.timeText}>
               🕒 {formatIST(item.scheduled_at)}
@@ -92,11 +88,7 @@ export default function StudentLiveScreen() {
             >
               <Text style={styles.actionBtnText}>
                 {item.status === 'live'
-                  ? language === 'hi'
-                    ? 'लाइव कक्षा में शामिल हों'
-                    : 'Join YouTube Stream'
-                  : language === 'hi'
-                  ? 'अनुस्मारक सेट करें'
+                  ? 'Join YouTube Stream'
                   : 'Set Reminder'}
               </Text>
             </TouchableOpacity>

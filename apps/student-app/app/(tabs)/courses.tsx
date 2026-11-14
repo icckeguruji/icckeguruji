@@ -60,7 +60,7 @@ export default function StudentCoursesScreen() {
                 selectedBoard === 'ALL' && styles.boardBtnTextActive,
               ]}
             >
-              {language === 'hi' ? 'सभी' : 'All'}
+              All
             </Text>
           </TouchableOpacity>
 
@@ -74,7 +74,7 @@ export default function StudentCoursesScreen() {
                 selectedBoard === 'BSEB' && styles.boardBtnTextActive,
               ]}
             >
-              {language === 'hi' ? 'बिहार बोर्ड (BSEB)' : 'Bihar Board (BSEB)'}
+              Bihar Board (BSEB)
             </Text>
           </TouchableOpacity>
 
@@ -88,7 +88,7 @@ export default function StudentCoursesScreen() {
                 selectedBoard === 'JAC' && styles.boardBtnTextActive,
               ]}
             >
-              {language === 'hi' ? 'झारखंड बोर्ड (JAC)' : 'Jharkhand Board (JAC)'}
+              Jharkhand Board (JAC)
             </Text>
           </TouchableOpacity>
         </View>
@@ -96,13 +96,7 @@ export default function StudentCoursesScreen() {
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>
-          {language === 'hi'
-            ? selectedBoard === 'ALL'
-              ? 'सभी पाठ्यक्रम'
-              : selectedBoard === 'BSEB'
-              ? 'बिहार बोर्ड के पाठ्यक्रम'
-              : 'झारखंड बोर्ड के पाठ्यक्रम'
-            : selectedBoard === 'ALL'
+          {selectedBoard === 'ALL'
             ? 'All Courses'
             : `${selectedBoard} Examination Courses`}
         </Text>
@@ -123,28 +117,28 @@ export default function StudentCoursesScreen() {
                 />
                 <View style={styles.tagBadge}>
                   <Text style={styles.tagBadgeText}>
-                    {course.is_free ? t.freeBatch : formatINR(course.discount_price || course.price)}
+                    {course.is_free ? 'FREE BATCH' : formatINR(course.discount_price || course.price)}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>
-                  {language === 'hi' ? course.title_hi || course.title : course.title}
+                  {course.title}
                 </Text>
                 <Text style={styles.cardDesc} numberOfLines={2}>
-                  {language === 'hi' ? course.description_hi || course.description : course.description}
+                  {course.description}
                 </Text>
 
                 <View style={styles.statsRow}>
                   <Text style={styles.stat}>
-                    ⏱️ {course.validity_days} {language === 'hi' ? 'दिन' : 'Days'}
+                    ⏱️ {course.validity_days} Days
                   </Text>
                   <Text style={styles.stat}>
-                    📹 {course.lecture_count || 40} {language === 'hi' ? 'वीडियो' : 'Videos'}
+                    📹 {course.lecture_count || 40} Videos
                   </Text>
                   <Text style={styles.stat}>
-                    📄 {course.material_count || 25} {language === 'hi' ? 'पीडीएफ' : 'PDFs'}
+                    📄 {course.material_count || 25} PDFs
                   </Text>
                 </View>
 
@@ -154,14 +148,14 @@ export default function StudentCoursesScreen() {
                       style={styles.freeBtn}
                       onPress={() => router.push(`/course/${course.id}`)}
                     >
-                      <Text style={styles.freeBtnText}>{t.enrollNow}</Text>
+                      <Text style={styles.freeBtnText}>Enroll Free</Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
                       style={styles.payBtn}
                       onPress={() => router.push(`/payment/${course.id}`)}
                     >
-                      <Text style={styles.payBtnText}>{t.payUpi}</Text>
+                      <Text style={styles.payBtnText}>Enroll Now</Text>
                     </TouchableOpacity>
                   )}
                 </View>
