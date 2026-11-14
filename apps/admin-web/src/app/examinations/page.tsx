@@ -12,6 +12,11 @@ import {
   CheckCircle2,
   HelpCircle,
   FileSpreadsheet,
+  Sparkles,
+  Copy,
+  Check,
+  Printer,
+  Bot,
 } from 'lucide-react';
 
 interface MockExam {
@@ -64,6 +69,69 @@ export default function ExaminationsPage() {
     exam_type: 'chapter_test',
   });
 
+  // Grok AI Exam Paper Generator State
+  const [isAiExamModalOpen, setIsAiExamModalOpen] = useState(false);
+  const [aiExamPayload, setAiExamPayload] = useState({
+    board: 'BSEB',
+    classLevel: 'Class 10',
+    subject: 'Science',
+    topic: 'Chemical Reactions & Equations',
+    totalMarks: 50,
+  });
+  const [aiLoading, setAiLoading] = useState(false);
+  const [generatedPaper, setGeneratedPaper] = useState<string | null>(null);
+  const [paperModel, setPaperModel] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+
+  const handleGenerateAiPaper = async () => {
+    setAiLoading(true);
+    setGeneratedPaper(null);
+    try {
+      const res = await fetch('/api/ai/grok', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_exam_paper',
+          payload: aiExamPayload,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.paper) {
+        setGeneratedPaper(data.paper);
+        setPaperModel(data.model || 'Grok AI');
+      }
+    } catch {
+      alert('Unable to connect to AI engine. Please check network connection.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleCopyPaper = () => {
+    if (!generatedPaper) return;
+    navigator.clipboard?.writeText(generatedPaper);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveAiPaperToExams = () => {
+    if (!generatedPaper) return;
+    const newExam: MockExam = {
+      id: `ex-${Date.now()}`,
+      title: `${aiExamPayload.board} ${aiExamPayload.classLevel} ${aiExamPayload.subject}: ${aiExamPayload.topic} (Grok AI Paper)`,
+      title_hi: `${aiExamPayload.board} ${aiExamPayload.classLevel} ${aiExamPayload.subject}: ${aiExamPayload.topic} (ग्रोक एआई प्रश्न पत्र)`,
+      duration_minutes: 90,
+      total_marks: Number(aiExamPayload.totalMarks),
+      pass_marks: Math.round(Number(aiExamPayload.totalMarks) * 0.33),
+      negative_marking: 0.0,
+      exam_type: 'Board Pattern',
+      question_count: 17,
+    };
+    setExams([newExam, ...exams]);
+    setIsAiExamModalOpen(false);
+    alert('AI Exam Paper added successfully to active examination list!');
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     const newExam: MockExam = {
@@ -109,13 +177,22 @@ export default function ExaminationsPage() {
               {t('सर्वर-साइड सुरक्षित मूल्यांकन (क्लाइंट में उत्तर लीक नहीं होते)', 'Server-side tamper-proof grading')}
             </p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t('नई परीक्षा बनाएं', 'Create New Test')}</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsAiExamModalOpen(true)}
+              className="flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+            >
+              <Sparkles className="w-4 h-4 text-purple-200" />
+              <span>{t('Grok AI से प्रश्न पत्र बनाएं', 'Generate Paper with Grok AI')}</span>
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t('नई परीक्षा बनाएं', 'Create New Test')}</span>
+            </button>
+          </div>
         </div>
 
         {/* Exams Grid */}
@@ -283,6 +360,177 @@ export default function ExaminationsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {/* Grok AI Exam Paper Generator Modal */}
+        {isAiExamModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-8 max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                      {t('Grok AI बोर्ड प्रश्न पत्र जनरेटर', 'Grok AI Board Exam Paper Generator')}
+                      <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                        xAI Engine
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {t('बिहार एवं झारखंड बोर्ड पाठ्यक्रम के अनुसार 1-क्लिक में पूरा प्रश्न पत्र और उत्तर कुंजी बनाएं', 'Generate full board-pattern papers with marking scheme & answer key')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAiExamModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Generator Configuration Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Board</label>
+                  <select
+                    value={aiExamPayload.board}
+                    onChange={(e) => setAiExamPayload({ ...aiExamPayload, board: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="BSEB">Bihar Board (BSEB)</option>
+                    <option value="JAC">Jharkhand Board (JAC)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Class</label>
+                  <select
+                    value={aiExamPayload.classLevel}
+                    onChange={(e) => setAiExamPayload({ ...aiExamPayload, classLevel: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="Class 9">Class 9</option>
+                    <option value="Class 10">Class 10</option>
+                    <option value="Class 11">Class 11</option>
+                    <option value="Class 12">Class 12</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Subject</label>
+                  <select
+                    value={aiExamPayload.subject}
+                    onChange={(e) => setAiExamPayload({ ...aiExamPayload, subject: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="Science">Science (विज्ञान)</option>
+                    <option value="Mathematics">Mathematics (गणित)</option>
+                    <option value="Social Science">Social Science (सामाजिक विज्ञान)</option>
+                    <option value="Hindi">Hindi (हिंदी)</option>
+                    <option value="English">English</option>
+                    <option value="Sanskrit">Sanskrit (संस्कृत)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Total Marks</label>
+                  <select
+                    value={aiExamPayload.totalMarks}
+                    onChange={(e) => setAiExamPayload({ ...aiExamPayload, totalMarks: Number(e.target.value) })}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value={20}>20 Marks (Quick Test)</option>
+                    <option value={50}>50 Marks (Mid-Term)</option>
+                    <option value={100}>100 Marks (Full Board Mock)</option>
+                  </select>
+                </div>
+
+                <div className="col-span-2 sm:col-span-3">
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Chapter / Topic</label>
+                  <input
+                    type="text"
+                    value={aiExamPayload.topic}
+                    onChange={(e) => setAiExamPayload({ ...aiExamPayload, topic: e.target.value })}
+                    placeholder="e.g. Chemical Reactions, Electricity, Trigonometry, Light..."
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 flex items-end">
+                  <button
+                    onClick={handleGenerateAiPaper}
+                    disabled={aiLoading}
+                    className="w-full py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-lg font-bold text-xs shadow transition flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{aiLoading ? 'Generating...' : 'Generate'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Generated Paper Preview Box */}
+              <div className="flex-1 overflow-hidden flex flex-col border border-slate-200 rounded-2xl bg-slate-900 text-slate-100 min-h-[300px]">
+                <div className="bg-slate-800/90 px-4 py-2.5 border-b border-slate-700/80 flex items-center justify-between text-xs">
+                  <span className="text-slate-300 font-mono text-[11px] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    {paperModel || 'Ready to Generate'}
+                  </span>
+                  {generatedPaper && (
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handleCopyPaper}
+                        className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-200 text-[11px] font-medium flex items-center gap-1 transition"
+                      >
+                        {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copied ? 'Copied' : 'Copy'}</span>
+                      </button>
+                      <button
+                        onClick={handleSaveAiPaperToExams}
+                        className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-white text-[11px] font-bold transition flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add to Test List</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 p-4 overflow-y-auto font-mono text-xs text-slate-200 leading-relaxed whitespace-pre-wrap select-text">
+                  {aiLoading ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 py-12">
+                      <Sparkles className="w-8 h-8 text-purple-400 animate-spin" />
+                      <p className="font-sans text-xs font-semibold">
+                        Grok AI is drafting complete question paper with answer keys...
+                      </p>
+                    </div>
+                  ) : generatedPaper ? (
+                    generatedPaper
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 py-12">
+                      <Bot className="w-8 h-8 text-slate-500" />
+                      <p className="font-sans text-xs">
+                        Select board, class & topic above and click <strong>Generate</strong>.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-between items-center text-xs">
+                <span className="text-slate-400 text-[11px]">
+                  💡 Grok AI generates bilingual MCQs, short questions, long questions, and answer keys.
+                </span>
+                <button
+                  onClick={() => setIsAiExamModalOpen(false)}
+                  className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

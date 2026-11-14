@@ -5,6 +5,7 @@ import { PublicNavbar } from '@/components/PublicNavbar';
 import { PublicFooter } from '@/components/PublicFooter';
 import { LanguageProvider } from '@/components/LanguageContext';
 import WhatsAppFloatingWidget from '@/components/WhatsAppFloatingWidget';
+import GrokAICounselorWidget from '@/components/GrokAICounselorWidget';
 import BoardExamCountdown from '@/components/BoardExamCountdown';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap', preload: false, fallback: ['system-ui', 'arial'] });
@@ -43,6 +44,8 @@ export default function RootLayout({
             <PublicFooter />
             {/* WhatsApp Floating Widget — Director Helpline */}
             <WhatsAppFloatingWidget />
+            {/* Grok AI Admission Counselor Widget */}
+            <GrokAICounselorWidget />
           </div>
         </LanguageProvider>
       </body>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpCircle, CheckCircle, Send, Clock } from 'lucide-react';
+import { HelpCircle, CheckCircle, Send, Clock, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
 interface TeacherDoubt {
@@ -58,6 +58,33 @@ export default function TeacherDoubtsPage() {
 
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const [aiDrafting, setAiDrafting] = useState(false);
+
+  const handleAiDraftDoubt = async (d: TeacherDoubt) => {
+    setAiDrafting(true);
+    try {
+      const res = await fetch('/api/ai/grok', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'draft_doubt_solution',
+          payload: {
+            title: lang === 'hi' ? d.titleHi : d.titleEn,
+            description: lang === 'hi' ? d.descriptionHi : d.descriptionEn,
+            subject: lang === 'hi' ? d.subjectHi : d.subjectEn,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.solution) {
+        setReplyText(data.solution);
+      }
+    } catch {
+      alert('Unable to draft solution with Grok AI at the moment.');
+    } finally {
+      setAiDrafting(false);
+    }
+  };
 
   const handleSendReply = (id: string) => {
     if (!replyText.trim()) return;
@@ -136,13 +163,27 @@ export default function TeacherDoubtsPage() {
                 </div>
               ) : activeReplyId === d.id ? (
                 <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      {t('समाधान आलेख (Solution Draft):', 'Solution Draft:')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAiDraftDoubt(d)}
+                      disabled={aiDrafting}
+                      className="px-2.5 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-lg text-[11px] font-bold shadow-sm transition flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3 h-3 text-purple-200" />
+                      <span>{aiDrafting ? t('ड्राफ्टिंग जारी...', 'Drafting with Grok...') : t('Grok AI से हल ड्राफ्ट करें', 'Draft with Grok AI')}</span>
+                    </button>
+                  </div>
                   <textarea
-                    rows={4}
+                    rows={5}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder={t(
-                      'छात्र के लिए स्पष्ट समाधान लिखें...',
-                      'Write clear guidance for the student...'
+                      'छात्र के लिए स्पष्ट समाधान लिखें या Grok AI से तुरंत ड्राफ्ट करें...',
+                      'Write clear guidance or click Draft with Grok AI...'
                     )}
                     className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
