@@ -63,6 +63,21 @@ export default function RegisterScreen() {
     setTimeout(() => {
       setLoading(false);
       setBoard(boardCode);
+      useAuthStore.getState().setUser({
+        id: `u-${Date.now()}`,
+        username: username.trim(),
+        full_name: fullName.trim(),
+        mobile_number: mobileNumber.trim(),
+        email: email.trim(),
+        board_code: boardCode,
+        class_id: 'c0000000-0000-0000-0000-000000000010',
+        district: district.trim(),
+        school_name: schoolName.trim() || 'Ideal Coaching Centre',
+        preferred_language: 'en',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
       router.push({
         pathname: '/(auth)/verify-otp',
         params: {

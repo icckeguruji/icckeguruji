@@ -13,6 +13,17 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations, formatINR } from '@icc/shared-utils';
 import { initialCourses } from '../../../admin-web/src/lib/sample-data';
 
+const thumbMap: Record<string, any> = {
+  'cr000000-0000-0000-0000-000000000001': require('../../assets/thumbnails/batch-b3-class10.jpg'),
+  'cr000000-0000-0000-0000-000000000002': require('../../assets/thumbnails/batch-b4-class9.jpg'),
+  'cr000000-0000-0000-0000-000000000003': require('../../assets/thumbnails/batch-b1-class8.jpg'),
+  'cr000000-0000-0000-0000-000000000004': require('../../assets/thumbnails/batch-b2-class7.jpg'),
+  'batch-b3-class10': require('../../assets/thumbnails/batch-b3-class10.jpg'),
+  'batch-b4-class9': require('../../assets/thumbnails/batch-b4-class9.jpg'),
+  'batch-b1-class8': require('../../assets/thumbnails/batch-b1-class8.jpg'),
+  'batch-b2-class7': require('../../assets/thumbnails/batch-b2-class7.jpg'),
+};
+
 export default function CourseDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,7 +39,7 @@ export default function CourseDetailsScreen() {
         {/* Course Banner */}
         <View style={styles.bannerContainer}>
           <Image
-            source={{ uri: course.thumbnail_url }}
+            source={thumbMap[course.id] || { uri: course.thumbnail_url }}
             style={styles.bannerImage}
             resizeMode="cover"
           />

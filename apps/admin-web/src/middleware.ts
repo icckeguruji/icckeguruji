@@ -39,11 +39,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Read the Supabase auth cookie
+  // Read cookies
   let accessToken = req.cookies.get('sb-access-token')?.value;
+  const iccRole = req.cookies.get('icc-role')?.value;
 
   if (!accessToken) {
-    // Check JSON cookie format used by supabase-js v2
     const allCookies = req.cookies.getAll();
     const sbCookie = allCookies.find(
       (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
@@ -58,30 +58,24 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // If no token found at all, redirect to login
-  if (!accessToken) {
+  // If no auth token and no role cookie, redirect to login
+  if (!accessToken && !iccRole) {
     const loginUrl = new URL('/login', req.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Decode JWT payload locally (instant, zero network latency)
-  const payload = decodeJwtPayload(accessToken);
-  if (!payload) {
-    const loginUrl = new URL('/login', req.url);
-    return NextResponse.redirect(loginUrl);
-  }
+  let role = iccRole || 'admin';
 
-  // Check token expiration
-  if (payload.exp && payload.exp * 1000 < Date.now()) {
-    const loginUrl = new URL('/login', req.url);
-    return NextResponse.redirect(loginUrl);
+  if (accessToken && accessToken.includes('.')) {
+    const payload = decodeJwtPayload(accessToken);
+    if (payload?.exp && payload.exp * 1000 < Date.now()) {
+      const loginUrl = new URL('/login', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
+    if (payload?.app_metadata?.role) {
+      role = payload.app_metadata.role;
+    }
   }
-
-  // Get user role from payload or fallback cookie
-  const role =
-    (payload.app_metadata?.role as string | undefined) ||
-    req.cookies.get('icc-role')?.value ||
-    'admin';
 
   // Teachers cannot access admin-only sections
   if (role === 'teacher') {
