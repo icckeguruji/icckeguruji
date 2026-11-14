@@ -67,7 +67,7 @@ export default function StudentHomeScreen() {
               : 'Science: Important 2-Mark Expected Questions'}
           </Text>
           <Text style={styles.liveTeacher}>
-            {language === 'hi' ? 'शिक्षक: डॉ. एस. एन. मिश्रा' : 'By: Dr. S. N. Mishra'}
+            {language === 'hi' ? 'मार्गदर्शन: BADE SIR एवं विशेषज्ञ संकाय' : 'By: BADE SIR & Expert Faculty'}
           </Text>
 
           <TouchableOpacity

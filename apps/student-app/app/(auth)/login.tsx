@@ -9,11 +9,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations, maskEmail } from '@icc/shared-utils';
+import { translations } from '@icc/shared-utils';
 import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
 
 export default function LoginScreen() {
@@ -22,18 +21,31 @@ export default function LoginScreen() {
   const t = translations[language];
 
   const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSendOtp = async () => {
-    setErrorMsg('');
-    const trimmed = identifier.trim();
+  const isMobile = (val: string) => /^\d{10}$/.test(val.trim());
+  const isEmail = (val: string) => val.includes('@');
 
-    if (!trimmed || trimmed.length < 3) {
+  const handleLogin = async () => {
+    setErrorMsg('');
+    const trimmedId = identifier.trim();
+    const trimmedPw = password.trim();
+
+    if (!trimmedId || trimmedId.length < 3) {
       setErrorMsg(
         language === 'hi'
-          ? 'कृपया मान्य मोबाइल नंबर, यूज़रनेम या ईमेल दर्ज करें'
-          : 'Please enter a valid mobile number, username, or email'
+          ? 'कृपया मान्य ईमेल या मोबाइल नंबर दर्ज करें'
+          : 'Please enter a valid email or mobile number'
+      );
+      return;
+    }
+    if (!trimmedPw || trimmedPw.length < 6) {
+      setErrorMsg(
+        language === 'hi'
+          ? 'कृपया पासवर्ड दर्ज करें (कम से कम 6 अक्षर)'
+          : 'Please enter your password (at least 6 characters)'
       );
       return;
     }
@@ -41,40 +53,49 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      if (isSupabaseConfigured) {
-        // Call backend Edge Function / RPC for identifier resolution and Email OTP trigger
-        const { data, error } = await supabase.functions.invoke('auth-lookup', {
-          body: { identifier: trimmed },
-        });
+      let emailToUse = trimmedId;
 
-        if (error || !data.success) {
-          setErrorMsg(data?.message || 'लॉगिन में त्रुटि हुई। कृपया पुनः प्रयास करें।');
+      // If mobile number, look up email via RPC
+      if (isMobile(trimmedId)) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_email_by_phone', {
+          phone: '+91' + trimmedId,
+        });
+        if (rpcError || !rpcData) {
+          setErrorMsg(
+            language === 'hi'
+              ? 'यह मोबाइल नंबर पंजीकृत नहीं है।'
+              : 'This mobile number is not registered.'
+          );
           setLoading(false);
           return;
         }
-
-        router.push({
-          pathname: '/(auth)/verify-otp',
-          params: {
-            identifier: trimmed,
-            maskedEmail: data.masked_email || maskEmail(trimmed),
-          },
-        });
-      } else {
-        // Local fallback simulation with realistic masked email
-        setTimeout(() => {
-          setLoading(false);
-          router.push({
-            pathname: '/(auth)/verify-otp',
-            params: {
-              identifier: trimmed,
-              maskedEmail: trimmed.includes('@')
-                ? maskEmail(trimmed)
-                : 'r****r@example.com',
-            },
-          });
-        }, 800);
+        emailToUse = rpcData as string;
+      } else if (!isEmail(trimmedId)) {
+        setErrorMsg(
+          language === 'hi'
+            ? 'कृपया मान्य ईमेल या 10-अंकों का मोबाइल नंबर दर्ज करें'
+            : 'Please enter a valid email or 10-digit mobile number'
+        );
+        setLoading(false);
+        return;
       }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailToUse,
+        password: trimmedPw,
+      });
+
+      if (error) {
+        setErrorMsg(
+          language === 'hi'
+            ? 'ईमेल या पासवर्ड गलत है। कृपया पुनः प्रयास करें।'
+            : 'Incorrect email or password. Please try again.'
+        );
+        setLoading(false);
+        return;
+      }
+
+      router.replace('/(tabs)/');
     } catch (err: any) {
       setErrorMsg(err.message || 'त्रुटि हुई। कृपया थोड़ी देर बाद प्रयास करें।');
       setLoading(false);
@@ -99,30 +120,16 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        {/* Security Alert: Strict Email OTP Notice */}
-        <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>
-            🛡️ {language === 'hi' ? 'महत्वपूर्ण सुरक्षा सूचना' : 'Security Notice'}
-          </Text>
-          <Text style={styles.alertText}>
-            {language === 'hi'
-              ? 'आप मोबाइल नंबर, यूज़रनेम या ईमेल में से कोई भी दर्ज कर सकते हैं। लेकिन ओटीपी केवल आपके पंजीकृत ईमेल पते पर भेजा जाएगा। कोई एसएमएस नहीं भेजा जाएगा।'
-              : 'You may log in using your Mobile Number, Username, or Email. However, the OTP will strictly be sent only to your registered email address. No SMS OTP is used.'}
-          </Text>
-        </View>
-
         {errorMsg ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{errorMsg}</Text>
           </View>
         ) : null}
 
-        {/* Single Input Field */}
+        {/* Login Form */}
         <View style={styles.form}>
           <Text style={styles.label}>
-            {language === 'hi'
-              ? 'मोबाइल नंबर / यूज़रनेम / ईमेल'
-              : 'Mobile Number / Username / Email'}
+            {language === 'hi' ? 'ईमेल या मोबाइल नंबर' : 'Email or Mobile Number'}
           </Text>
           <TextInput
             style={styles.input}
@@ -130,23 +137,48 @@ export default function LoginScreen() {
             onChangeText={setIdentifier}
             placeholder={
               language === 'hi'
-                ? '9876543210 या यूज़रनेम या ईमेल'
-                : 'Enter Mobile / Username / Email'
+                ? '9876543210 या example@email.com'
+                : '9876543210 or example@email.com'
             }
             placeholderTextColor="#94A3B8"
             autoCapitalize="none"
             autoCorrect={false}
+            keyboardType="email-address"
           />
+
+          <Text style={styles.label}>
+            {language === 'hi' ? 'पासवर्ड' : 'Password'}
+          </Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder={language === 'hi' ? 'पासवर्ड दर्ज करें' : 'Enter your password'}
+            placeholderTextColor="#94A3B8"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          {/* Forgot Password Link */}
+          <TouchableOpacity
+            style={styles.forgotRow}
+            onPress={() => router.push('/(auth)/forgot-password')}
+          >
+            <Text style={styles.forgotLink}>
+              {language === 'hi' ? 'पासवर्ड भूल गए?' : 'Forgot Password?'}
+            </Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-            onPress={handleSendOtp}
+            onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.submitBtnText}>{t.sendOtp}</Text>
+              <Text style={styles.submitBtnText}>{t.login}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -202,25 +234,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 4,
   },
-  alertCard: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    marginVertical: 16,
-  },
-  alertTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1E3A8A',
-    marginBottom: 4,
-  },
-  alertText: {
-    fontSize: 11,
-    color: '#1D4ED8',
-    lineHeight: 16,
-  },
   errorBox: {
     backgroundColor: '#FEF2F2',
     borderColor: '#FECACA',
@@ -253,7 +266,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: '#0F172A',
+    marginBottom: 16,
+  },
+  forgotRow: {
+    alignItems: 'flex-end',
     marginBottom: 20,
+    marginTop: -8,
+  },
+  forgotLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2563EB',
   },
   submitBtn: {
     backgroundColor: '#2563EB',

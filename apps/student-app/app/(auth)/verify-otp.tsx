@@ -13,6 +13,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations } from '@icc/shared-utils';
+import { supabase } from '../../src/lib/supabase';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function VerifyOtpScreen() {
     maskedEmail: string;
   }>();
 
-  const { language, setUser } = useAuthStore();
+  const { language } = useAuthStore();
   const t = translations[language];
 
   const [otp, setOtp] = useState('');
@@ -50,24 +51,33 @@ export default function VerifyOtpScreen() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      setUser({
-        id: 'u0000000-0000-0000-0000-000000000001',
-        username: 'rohit_kumar',
-        full_name: 'Rohit Kumar',
-        mobile_number: '9876543210',
-        email: 'rohit.kumar@example.com',
-        board_code: 'BSEB',
-        class_id: 'c0000000-0000-0000-0000-000000000010',
-        district: 'Patna',
-        preferred_language: 'hi',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    try {
+      // Determine email to use for OTP verification
+      const emailForVerification = identifier?.includes('@')
+        ? identifier
+        : maskedEmail || identifier;
+
+      const { error } = await supabase.auth.verifyOtp({
+        email: emailForVerification,
+        token: otp,
+        type: 'email',
       });
+
+      if (error) {
+        setErrorMsg(
+          language === 'hi'
+            ? 'ओटीपी गलत या समाप्त हो गया है। कृपया पुनः प्रयास करें।'
+            : 'OTP is invalid or expired. Please try again.'
+        );
+        setLoading(false);
+        return;
+      }
+
       router.replace('/(tabs)');
-    }, 800);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'त्रुटि हुई। कृपया थोड़ी देर बाद प्रयास करें।');
+      setLoading(false);
+    }
   };
 
   return (

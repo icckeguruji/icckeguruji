@@ -13,16 +13,37 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations, formatINR } from '@icc/shared-utils';
 import { initialCourses } from '../../../admin-web/src/lib/sample-data';
 
+// Thumbnail map for local React Native assets (web paths won't work in RN)
+const thumbMap: Record<string, any> = {
+  'cr000000-0000-0000-0000-000000000001': require('../../assets/thumbnails/batch-b3-class10.jpg'),
+  'cr000000-0000-0000-0000-000000000002': require('../../assets/thumbnails/batch-b4-class9.jpg'),
+  'cr000000-0000-0000-0000-000000000003': require('../../assets/thumbnails/batch-b1-class8.jpg'),
+  'cr000000-0000-0000-0000-000000000004': require('../../assets/thumbnails/batch-b2-class7.jpg'),
+  'batch-b3-class10': require('../../assets/thumbnails/batch-b3-class10.jpg'),
+  'batch-b4-class9': require('../../assets/thumbnails/batch-b4-class9.jpg'),
+  'batch-b1-class8': require('../../assets/thumbnails/batch-b1-class8.jpg'),
+  'batch-b2-class7': require('../../assets/thumbnails/batch-b2-class7.jpg'),
+};
+
+// Board IDs from sample-data
+const BSEB_BOARD_ID = 'b0000000-0000-0000-0000-000000000001';
+const JAC_BOARD_ID = 'b0000000-0000-0000-0000-000000000002';
+
+type BoardFilter = 'ALL' | 'BSEB' | 'JAC';
+
 export default function StudentCoursesScreen() {
   const router = useRouter();
-  const { language, selectedBoard, setBoard } = useAuthStore();
+  const { language } = useAuthStore();
   const t = translations[language];
 
-  const filteredCourses = initialCourses.filter((c) =>
-    selectedBoard === 'BSEB'
-      ? c.title.includes('BSEB') || c.board_id?.includes('1')
-      : c.title.includes('JAC') || c.board_id?.includes('2')
-  );
+  const [selectedBoard, setSelectedBoard] = useState<BoardFilter>('ALL');
+
+  const filteredCourses = initialCourses.filter((c) => {
+    if (selectedBoard === 'ALL') return true;
+    if (selectedBoard === 'BSEB') return c.board_id === BSEB_BOARD_ID;
+    if (selectedBoard === 'JAC') return c.board_id === JAC_BOARD_ID;
+    return true;
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -30,8 +51,22 @@ export default function StudentCoursesScreen() {
       <View style={styles.topBar}>
         <View style={styles.boardSwitcher}>
           <TouchableOpacity
+            style={[styles.boardBtn, selectedBoard === 'ALL' && styles.boardBtnActive]}
+            onPress={() => setSelectedBoard('ALL')}
+          >
+            <Text
+              style={[
+                styles.boardBtnText,
+                selectedBoard === 'ALL' && styles.boardBtnTextActive,
+              ]}
+            >
+              {language === 'hi' ? 'सभी' : 'All'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.boardBtn, selectedBoard === 'BSEB' && styles.boardBtnActive]}
-            onPress={() => setBoard('BSEB')}
+            onPress={() => setSelectedBoard('BSEB')}
           >
             <Text
               style={[
@@ -45,7 +80,7 @@ export default function StudentCoursesScreen() {
 
           <TouchableOpacity
             style={[styles.boardBtn, selectedBoard === 'JAC' && styles.boardBtnActive]}
-            onPress={() => setBoard('JAC')}
+            onPress={() => setSelectedBoard('JAC')}
           >
             <Text
               style={[
@@ -62,7 +97,13 @@ export default function StudentCoursesScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>
           {language === 'hi'
-            ? `${selectedBoard === 'BSEB' ? 'बिहार बोर्ड' : 'झारखंड बोर्ड'} के पाठ्यक्रम`
+            ? selectedBoard === 'ALL'
+              ? 'सभी पाठ्यक्रम'
+              : selectedBoard === 'BSEB'
+              ? 'बिहार बोर्ड के पाठ्यक्रम'
+              : 'झारखंड बोर्ड के पाठ्यक्रम'
+            : selectedBoard === 'ALL'
+            ? 'All Courses'
             : `${selectedBoard} Examination Courses`}
         </Text>
 
@@ -76,7 +117,7 @@ export default function StudentCoursesScreen() {
             >
               <View style={styles.imageBox}>
                 <Image
-                  source={{ uri: course.thumbnail_url }}
+                  source={thumbMap[course.id] || { uri: course.thumbnail_url }}
                   style={styles.thumbnail}
                   resizeMode="cover"
                 />
@@ -146,7 +187,7 @@ const styles = StyleSheet.create({
   },
   boardSwitcher: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   boardBtn: {
     flex: 1,
@@ -159,7 +200,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
   },
   boardBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#475569',
   },
