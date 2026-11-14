@@ -5,21 +5,29 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Image,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations, formatINR } from '@icc/shared-utils';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import { Course, LiveClass } from '@icc/shared-types';
+import {
+  Play,
+  Radio,
+  FileText,
+  CheckSquare,
+  MessageSquareQuote,
+  ClipboardList,
+  Sparkles,
+  ChevronRight,
+  ShieldCheck,
+} from 'lucide-react-native';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
-  const { user, language, selectedBoard, selectedClass } = useAuthStore();
-  const t = translations[language];
+  const { user } = useAuthStore();
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
@@ -77,8 +85,12 @@ export default function StudentHomeScreen() {
           <View style={styles.liveBadgeRow}>
             <View style={styles.liveDot} />
             <Text style={styles.liveBadgeText}>
-              {activeLive?.status === 'live' ? 'LIVE NOW' : 'NEXT LIVE CLASS'}
+              {activeLive?.status === 'live' ? 'STREAMING NOW' : 'NEXT LIVE CLASS'}
             </Text>
+            <View style={styles.drmBadge}>
+              <ShieldCheck size={11} color="#34D399" />
+              <Text style={styles.drmBadgeText}>Secure In-App</Text>
+            </View>
           </View>
           <Text style={styles.liveTitle}>
             {activeLive?.title || 'Science: Important 2-Mark Expected Questions'}
@@ -90,9 +102,11 @@ export default function StudentHomeScreen() {
           <TouchableOpacity
             style={styles.joinLiveBtn}
             onPress={() => router.push('/(tabs)/live')}
+            activeOpacity={0.85}
           >
+            <Radio size={16} color="#FFFFFF" />
             <Text style={styles.joinLiveBtnText}>
-              Join Live Class
+              Watch Live Inside App
             </Text>
           </TouchableOpacity>
         </View>
@@ -105,9 +119,10 @@ export default function StudentHomeScreen() {
           <TouchableOpacity
             style={styles.resumeCard}
             onPress={() => router.push('/lecture/lec-1')}
+            activeOpacity={0.8}
           >
             <View style={styles.resumeThumb}>
-              <Text style={{ fontSize: 24 }}>▶️</Text>
+              <Play size={20} color="#2563EB" fill="#2563EB" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.resumeTitle} numberOfLines={1}>
@@ -120,34 +135,44 @@ export default function StudentHomeScreen() {
                 <View style={[styles.progressBarFill, { width: '65%' }]} />
               </View>
             </View>
+            <ChevronRight size={18} color="#94A3B8" />
           </TouchableOpacity>
         </View>
 
-        {/* Quick Service Grid */}
+        {/* Quick Service Grid with Lucide Icons */}
         <View style={styles.gridRow}>
           <TouchableOpacity
             style={styles.gridItem}
             onPress={() => router.push('/(tabs)/notes')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.gridIcon}>📄</Text>
+            <View style={[styles.iconBox, { backgroundColor: '#EFF6FF' }]}>
+              <FileText size={20} color="#2563EB" />
+            </View>
             <Text style={styles.gridText}>Notes</Text>
-            <Text style={styles.gridSub}>Auto Mapped</Text>
+            <Text style={styles.gridSub}>Secure View</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.gridItem}
             onPress={() => router.push('/(tabs)/tests')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.gridIcon}>📝</Text>
+            <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
+              <CheckSquare size={20} color="#16A34A" />
+            </View>
             <Text style={styles.gridText}>Tests</Text>
-            <Text style={styles.gridSub}>MCQ & Timer</Text>
+            <Text style={styles.gridSub}>MCQ & Rank</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.gridItem}
             onPress={() => router.push('/doubts')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.gridIcon}>💬</Text>
+            <View style={[styles.iconBox, { backgroundColor: '#FEF3C7' }]}>
+              <MessageSquareQuote size={20} color="#D97706" />
+            </View>
             <Text style={styles.gridText}>Doubts</Text>
             <Text style={styles.gridSub}>Ask Faculty</Text>
           </TouchableOpacity>
@@ -155,10 +180,13 @@ export default function StudentHomeScreen() {
           <TouchableOpacity
             style={styles.gridItem}
             onPress={() => router.push('/assignments')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.gridIcon}>📋</Text>
-            <Text style={styles.gridText}>Assignments</Text>
-            <Text style={styles.gridSub}>Homework</Text>
+            <View style={[styles.iconBox, { backgroundColor: '#F5F3FF' }]}>
+              <ClipboardList size={20} color="#7C3AED" />
+            </View>
+            <Text style={styles.gridText}>Homework</Text>
+            <Text style={styles.gridSub}>Daily Tasks</Text>
           </TouchableOpacity>
         </View>
 
@@ -180,6 +208,7 @@ export default function StudentHomeScreen() {
               key={c.id}
               style={styles.courseCard}
               onPress={() => router.push(`/course/${c.id}`)}
+              activeOpacity={0.8}
             >
               <View style={styles.courseBadge}>
                 <Text style={styles.courseBadgeText}>
@@ -194,7 +223,7 @@ export default function StudentHomeScreen() {
               </Text>
               <View style={styles.courseMetaRow}>
                 <Text style={styles.courseMeta}>
-                  {c.lecture_count || 45} Lectures
+                  {c.lecture_count || 45} In-App Lectures
                 </Text>
                 <Text style={styles.courseMeta}>
                   {c.material_count || 24} PDF Notes
@@ -220,63 +249,8 @@ const styles = StyleSheet.create({
     padding: 18,
     paddingBottom: 36,
   },
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  greetingText: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  studentName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  badgeGroup: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  boardPill: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  langTogglePill: {
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  langToggleText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  boardPillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#1E40AF',
-  },
-  classPill: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  classPillText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#475569',
-  },
   liveCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#0F172A',
     borderRadius: 18,
     padding: 16,
     marginBottom: 20,
@@ -289,7 +263,7 @@ const styles = StyleSheet.create({
   liveBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     marginBottom: 8,
   },
   liveDot: {
@@ -304,6 +278,20 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     letterSpacing: 0.5,
   },
+  drmBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  drmBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#34D399',
+  },
   liveTitle: {
     fontSize: 15,
     fontWeight: '700',
@@ -317,9 +305,12 @@ const styles = StyleSheet.create({
   },
   joinLiveBtn: {
     backgroundColor: '#EF4444',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     paddingVertical: 10,
     borderRadius: 10,
-    alignItems: 'center',
     marginTop: 14,
   },
   joinLiveBtnText: {
@@ -331,10 +322,10 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 10,
+    letterSpacing: -0.2,
   },
   seeAllText: {
     fontSize: 12,
@@ -350,10 +341,11 @@ const styles = StyleSheet.create({
     gap: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    marginTop: 10,
   },
   resumeThumb: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 10,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
@@ -390,16 +382,20 @@ const styles = StyleSheet.create({
   gridItem: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
     borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  gridIcon: {
-    fontSize: 22,
-    marginBottom: 4,
+  iconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
   gridText: {
     fontSize: 11,
@@ -418,6 +414,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    marginBottom: 12,
   },
   courseBadge: {
     backgroundColor: '#EFF6FF',

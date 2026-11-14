@@ -5,25 +5,23 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../src/store/useAuthStore';
+import { useRouter } from 'expo-router';
+import { BookOpen, ShieldCheck, Eye, Sparkles } from 'lucide-react-native';
 import { formatBytes } from '@icc/shared-utils';
 import { initialStudyMaterials } from '../../../admin-web/src/lib/sample-data';
-import { LocalDbService } from '../../src/store/useLocalDb';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import { StudyMaterial } from '@icc/shared-types';
 
 export default function StudentNotesScreen() {
-  const { selectedBoard } = useAuthStore();
+  const router = useRouter();
 
   const [materials, setMaterials] = useState<StudyMaterial[]>(initialStudyMaterials);
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeSubject, setActiveSubject] = useState('all');
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const loadMaterials = useCallback(async () => {
     setIsSyncing(true);
@@ -45,37 +43,43 @@ export default function StudentNotesScreen() {
     return () => unsubscribe();
   }, [loadMaterials]);
 
-  const handleDownloadOffline = async (item: any) => {
-    setDownloadingId(item.id);
-    setTimeout(async () => {
-      await LocalDbService.saveDownloadedPdf({
-        id: item.id,
-        title: item.title,
-        title_hi: item.title_hi,
-        local_uri: `file:///storage/emulated/0/ICC/${item.file_path}`,
-        file_size_bytes: item.file_size_bytes,
-        material_type: item.material_type,
-        board_code: selectedBoard,
-        class_name: 'Class 10',
-      });
-      setDownloadingId(null);
-      Alert.alert(
-        'Success',
-        'PDF cached for offline reading.'
-      );
-    }, 1000);
+  const openDocument = (mat: StudyMaterial) => {
+    router.push(`/pdf-viewer/${mat.id}`);
   };
+
+  const filteredMaterials = materials.filter((mat) => {
+    if (activeSubject === 'all') return true;
+    const titleLower = (mat.title || '').toLowerCase();
+    const descLower = (mat.description || '').toLowerCase();
+    if (activeSubject === 'sci') return titleLower.includes('sci') || titleLower.includes('chem') || descLower.includes('sci');
+    if (activeSubject === 'math') return titleLower.includes('math') || descLower.includes('math') || titleLower.includes('geom');
+    if (activeSubject === 'sst') return titleLower.includes('sst') || titleLower.includes('hist') || descLower.includes('social');
+    return true;
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
       <CoachingHeader onRefresh={loadMaterials} isSyncing={isSyncing} />
 
+      {/* Screen Title & Subheading */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Study Notes & Materials</Text>
-        <Text style={styles.headerSub}>
-          Auto-assigned study materials & topper notes
-        </Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerTitle}>Study Notes & Materials</Text>
+            <Text style={styles.headerSub}>
+              Curated topper notes, formula cheat sheets & solutions
+            </Text>
+          </View>
+        </View>
+
+        {/* Anti-Piracy Security Banner */}
+        <View style={styles.drmBanner}>
+          <ShieldCheck size={16} color="#059669" />
+          <Text style={styles.drmBannerText}>
+            Protected In-App Viewer • Downloads & Screenshots Disabled
+          </Text>
+        </View>
       </View>
 
       {/* Subject Filter Bar */}
@@ -91,6 +95,7 @@ export default function StudentNotesScreen() {
               key={sub.id}
               style={[styles.subjectChip, activeSubject === sub.id && styles.subjectChipActive]}
               onPress={() => setActiveSubject(sub.id)}
+              activeOpacity={0.7}
             >
               <Text
                 style={[
@@ -117,57 +122,49 @@ export default function StudentNotesScreen() {
         }
       >
         <View style={styles.notesList}>
-          {materials.map((mat) => {
-            const isDownloading = downloadingId === mat.id;
-            return (
-              <View key={mat.id} style={styles.noteCard}>
+          {filteredMaterials.map((mat) => (
+            <View key={mat.id} style={styles.noteCard}>
+              <View style={styles.cardHeader}>
                 <View style={styles.noteIconBox}>
-                  <Text style={{ fontSize: 24 }}>📑</Text>
+                  <BookOpen size={22} color="#2563EB" />
                 </View>
 
-                <View style={styles.noteContent}>
+                <View style={styles.noteHeaderMeta}>
                   <View style={styles.noteTypeRow}>
                     <Text style={styles.noteType}>
                       {mat.material_type.toUpperCase().replace('_', ' ')}
                     </Text>
                     <Text style={styles.fileSize}>{formatBytes(mat.file_size_bytes)}</Text>
                   </View>
-
-                  <Text style={styles.noteTitle}>
+                  <Text style={styles.noteTitle} numberOfLines={2}>
                     {mat.title}
                   </Text>
-                  <Text style={styles.noteDesc} numberOfLines={2}>
-                    {mat.description}
-                  </Text>
-
-                  <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                      style={styles.readBtn}
-                      onPress={() =>
-                        Alert.alert(
-                          'PDF Viewer',
-                          `Opening ${mat.title} via secure signed URL.`
-                        )
-                      }
-                    >
-                      <Text style={styles.readBtnText}>Read Online</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.downloadBtn}
-                      onPress={() => handleDownloadOffline(mat)}
-                      disabled={isDownloading}
-                    >
-                      <Text style={styles.downloadBtnText}>
-                        {isDownloading ? 'Downloading...' : '⬇️ Download PDF'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
                 </View>
               </View>
-            );
-          })}
+
+              <Text style={styles.noteDesc} numberOfLines={2}>
+                {mat.description}
+              </Text>
+
+              {/* In-App Reader Only Action */}
+              <TouchableOpacity
+                style={styles.readBtn}
+                onPress={() => openDocument(mat)}
+                activeOpacity={0.8}
+              >
+                <Eye size={16} color="#FFFFFF" />
+                <Text style={styles.readBtnText}>Read Inside App (Secure)</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
         </View>
+
+        {filteredMaterials.length === 0 && (
+          <View style={styles.emptyState}>
+            <Sparkles size={32} color="#94A3B8" />
+            <Text style={styles.emptyText}>No materials found for this subject.</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -179,20 +176,45 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.3,
   },
   headerSub: {
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
+  },
+  drmBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  drmBannerText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#065F46',
   },
   subjectBar: {
     backgroundColor: '#FFFFFF',
@@ -206,7 +228,7 @@ const styles = StyleSheet.create({
   },
   subjectChip: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
     backgroundColor: '#F1F5F9',
   },
@@ -223,7 +245,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: 16,
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
   notesList: {
     gap: 14,
@@ -231,31 +253,35 @@ const styles = StyleSheet.create({
   noteCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 14,
-    flexDirection: 'row',
-    gap: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 2,
   },
+  cardHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
   noteIconBox: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  noteContent: {
+  noteHeaderMeta: {
     flex: 1,
   },
   noteTypeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 4,
   },
   noteType: {
@@ -268,49 +294,46 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   fileSize: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#94A3B8',
     fontWeight: '600',
   },
   noteTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#0F172A',
-    lineHeight: 20,
+    lineHeight: 21,
   },
   noteDesc: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
+    marginTop: 8,
+    marginBottom: 14,
+    lineHeight: 18,
   },
   readBtn: {
-    flex: 1,
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: '#2563EB',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   readBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#2563EB',
+    color: '#FFFFFF',
   },
-  downloadBtn: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 8,
-    borderRadius: 8,
+  emptyState: {
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 10,
   },
-  downloadBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
+  emptyText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
 });

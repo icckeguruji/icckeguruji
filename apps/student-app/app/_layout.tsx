@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as ScreenCapture from 'expo-screen-capture';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useAuthStore } from '../src/store/useAuthStore';
@@ -40,6 +41,9 @@ const customDarkTheme = {
 
 export default function RootLayout() {
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
+
+  // Anti-Piracy DRM: Block Screenshots & Screen Recording globally across Android app
+  ScreenCapture.usePreventScreenCapture();
 
   useEffect(() => {
     initLocalDatabase();
@@ -118,6 +122,15 @@ export default function RootLayout() {
                 headerShown: true,
                 title: 'Assignments & Homework',
                 headerTintColor: '#0F172A',
+              }}
+            />
+            <Stack.Screen
+              name="pdf-viewer/[id]"
+              options={{
+                headerShown: true,
+                title: 'Study Material (Protected)',
+                headerTintColor: '#FFFFFF',
+                headerStyle: { backgroundColor: '#0F172A' },
               }}
             />
           </Stack>

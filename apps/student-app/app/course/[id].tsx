@@ -87,39 +87,56 @@ export default function CourseDetailsScreen() {
 
           {/* Curriculum Structure */}
           <View style={styles.curriculumSection}>
-            <Text style={styles.sectionHeading}>
-              Course Curriculum
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={styles.sectionHeading}>
+                Course Curriculum
+              </Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>
+                Tap to Watch In-App
+              </Text>
+            </View>
 
-            <View style={styles.chapterItem}>
+            <TouchableOpacity
+              style={styles.chapterItem}
+              onPress={() => router.push('/lecture/lec-1')}
+              activeOpacity={0.7}
+            >
               <Text style={styles.chapterNumber}>01</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.chapterTitle}>
                   Chemical Reactions & Equations
                 </Text>
-                <Text style={styles.chapterMeta}>5 Video Lectures · 2 PDF Notes</Text>
+                <Text style={styles.chapterMeta}>5 Video Lectures · 2 PDF Notes · In-App Player</Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.chapterItem}>
+            <TouchableOpacity
+              style={styles.chapterItem}
+              onPress={() => router.push('/lecture/lec-2')}
+              activeOpacity={0.7}
+            >
               <Text style={styles.chapterNumber}>02</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.chapterTitle}>
                   Acids, Bases & Salts
                 </Text>
-                <Text style={styles.chapterMeta}>6 Video Lectures · 3 PDF Notes</Text>
+                <Text style={styles.chapterMeta}>6 Video Lectures · 3 PDF Notes · In-App Player</Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.chapterItem}>
+            <TouchableOpacity
+              style={styles.chapterItem}
+              onPress={() => router.push('/lecture/lec-3')}
+              activeOpacity={0.7}
+            >
               <Text style={styles.chapterNumber}>03</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.chapterTitle}>
                   Real Numbers (Mathematics)
                 </Text>
-                <Text style={styles.chapterMeta}>4 Video Lectures · 1 Formula Sheet</Text>
+                <Text style={styles.chapterMeta}>4 Video Lectures · 1 Formula Sheet · In-App Player</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
