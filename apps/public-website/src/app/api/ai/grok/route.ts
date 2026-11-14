@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({
               success: true,
               text: reply,
-              model: isGroq ? 'Grok/Groq Engine (Live LPU)' : 'Grok-Beta (xAI Live)',
+              model: 'ICC Smart AI',
               live: true,
             });
           }
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({
                   success: true,
                   text: reply,
-                  model: 'Grok/Groq Engine (Qwen Live)',
+                  model: 'ICC Smart AI',
                   live: true,
                 });
               }
@@ -138,7 +138,7 @@ How can I assist you today?
 4. Speak with Director BADE SIR (+91 9771350910)`;
       }
     } else {
-      fallbackReply = `Namaste! Main **ICC AI Guruji (Grok AI Engine)** hoon.
+      fallbackReply = `Namaste! Main **ICC AI Guruji** hoon.
 Main Bihar Board (BSEB) aur Jharkhand Board (JAC) ke sabhi vishayo (Ganit, Vigyan, Samajik Vigyan, Hindi, English) ke sawal step-by-step samjha sakta hoon.
 
 Aap apna koi bhi question ya topic pooch sakte hain, main poore concept aur board exam ke tips ke sath explain karunga!`;
@@ -147,7 +147,7 @@ Aap apna koi bhi question ya topic pooch sakte hain, main poore concept aur boar
     return NextResponse.json({
       success: true,
       text: fallbackReply,
-      model: 'grok-ai (ICC Knowledge Base)',
+      model: 'ICC Smart AI (Knowledge Base)',
       live: false,
     });
   } catch (err: unknown) {

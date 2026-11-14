@@ -27,7 +27,7 @@ export default function GrokAICounselorWidget() {
     {
       role: 'assistant',
       content:
-        'Namaste! Welcome to IDEAL COACHING CENTRE (ICC). I am your AI Counselor powered by **Grok AI**.\n\nAsk me anything about BSEB & JAC Board courses, fees, batch timings, UPI enrollment, or guidance from Director **BADE SIR**!',
+        'Namaste! Welcome to IDEAL COACHING CENTRE (ICC). I am your **ICC AI Counselor (AI Guruji)**.\n\nAsk me anything about BSEB & JAC Board courses, fees, batch timings, UPI enrollment, or guidance from Director **BADE SIR**!',
       time: 'Just now',
     },
   ]);
@@ -131,7 +131,7 @@ export default function GrokAICounselorWidget() {
             </span>
           </div>
           <span className="font-bold text-xs hidden sm:inline tracking-wide">
-            Ask Grok AI 🤖
+            Ask AI Guruji 🤖
           </span>
         </button>
       </div>
@@ -149,7 +149,7 @@ export default function GrokAICounselorWidget() {
                 <div className="flex items-center space-x-1.5">
                   <h3 className="font-bold text-sm text-white">ICC AI Counselor</h3>
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-500/40 text-blue-100 border border-indigo-400/30">
-                    Grok AI
+                    AI Guruji
                   </span>
                 </div>
                 <div className="flex items-center space-x-1.5 text-[11px] text-blue-200">
@@ -209,7 +209,7 @@ export default function GrokAICounselorWidget() {
             {loading && (
               <div className="flex items-center space-x-2 bg-white border border-slate-200 text-slate-500 rounded-2xl px-3.5 py-2.5 w-fit rounded-bl-none">
                 <Sparkles className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                <span className="text-[11px] font-medium">Grok AI is thinking...</span>
+                <span className="text-[11px] font-medium">AI Guruji is thinking...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -238,7 +238,7 @@ export default function GrokAICounselorWidget() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSend();
               }}
-              placeholder="Ask Grok AI about admissions, syllabus, fees..."
+              placeholder="Ask AI Guruji about admissions, syllabus, fees..."
               disabled={loading}
               className="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

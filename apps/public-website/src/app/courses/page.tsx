@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { initialCourses } from '@/lib/sample-data';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
-import { Clock, Video, FileText, ArrowRight, ShieldCheck, QrCode } from 'lucide-react';
+import { Clock, Video, FileText, ArrowRight, ShieldCheck, GraduationCap } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { PublicEnrollmentModal } from '@/components/PublicEnrollmentModal';
 
@@ -121,8 +121,8 @@ export default function PublicCoursesPage() {
                   onClick={() => handleEnrollClick(course)}
                   className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition active:scale-98"
                 >
-                  <QrCode className="w-4 h-4" />
-                  <span>{t('कोर्स में प्रवेश लें (Dynamic QR)', 'Enroll Now (Dynamic QR)')}</span>
+                  <GraduationCap className="w-4 h-4" />
+                  <span>{t('कोर्स में प्रवेश लें', 'Enroll Now')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

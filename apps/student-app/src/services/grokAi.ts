@@ -68,7 +68,7 @@ export async function askGrokGuruji(
         if (text) {
           return {
             answer: text,
-            model: isGroq ? 'Grok/Groq Engine (Live LPU)' : 'Grok-Beta (xAI Live)',
+            model: 'ICC AI Guruji (High-Speed Engine)',
           };
         }
       } else if (isGroq) {
@@ -96,7 +96,7 @@ export async function askGrokGuruji(
           const data = await qwenRes.json();
           const text = data.choices?.[0]?.message?.content;
           if (text) {
-            return { answer: text, model: 'Grok/Groq Engine (Qwen Live)' };
+            return { answer: text, model: 'ICC AI Guruji (Smart Engine)' };
           }
         }
       }
@@ -170,7 +170,7 @@ V ∝ I
 यदि आपको इस टॉपिक में किसी विशेष समीकरण में संदेह हो, तो बेझिझक दोबारा पूछें!`;
   }
 
-  return { answer: answerText, model: 'Grok-AI (ICC Smart Engine)' };
+  return { answer: answerText, model: 'ICC AI Guruji (Smart Engine)' };
 }
 
 /**

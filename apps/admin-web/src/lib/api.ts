@@ -1,5 +1,6 @@
 // IDEAL COACHING CENTRE — ADMIN & FACULTY API SERVICE LAYER
-// Seamlessly interfaces with Supabase Backend with graceful local seed state fallback
+// Seamlessly interfaces with Supabase Backend with permanent browser localStorage persistence
+// Ensures changes made in Admin Panel NEVER revert back on refresh or reload!
 
 import { supabase, isSupabaseConfigured } from './supabase';
 import {
@@ -26,17 +27,55 @@ import {
   TeacherProfile,
 } from '@icc/shared-types';
 
-// In-memory mutable state for responsive testing and seed fallback
-let localStudents = [...initialStudents];
-let localPayments = [...initialPayments];
-let localCourses = [...initialCourses];
-let localMaterials = [...initialStudyMaterials];
-let localLiveClasses = [...initialLiveClasses];
-let localSubjects = [...initialSubjects];
+// Persistent Storage Keys
+const STORAGE_KEYS = {
+  STUDENTS: 'icc_admin_persistent_students',
+  COURSES: 'icc_admin_persistent_courses',
+  PAYMENTS: 'icc_admin_persistent_payments',
+  MATERIALS: 'icc_admin_persistent_materials',
+  LIVE_CLASSES: 'icc_admin_persistent_live_classes',
+  SUBJECTS: 'icc_admin_persistent_subjects',
+};
+
+// Helper to retrieve data from localStorage (browser-safe)
+function getPersistentState<T>(key: string, defaultData: T): T {
+  if (typeof window === 'undefined') return defaultData;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed as T;
+      if (!Array.isArray(parsed) && parsed) return parsed as T;
+    }
+  } catch {}
+  return defaultData;
+}
+
+// Helper to save data to localStorage (browser-safe)
+function savePersistentState<T>(key: string, data: T): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {}
+}
+
+// In-memory working state initialized from persistent store or seeds
+let localStudents: UserProfile[] = getPersistentState(STORAGE_KEYS.STUDENTS, [...initialStudents]);
+let localPayments: Payment[] = getPersistentState(STORAGE_KEYS.PAYMENTS, [...initialPayments]);
+let localCourses: Course[] = getPersistentState(STORAGE_KEYS.COURSES, [...initialCourses]);
+let localMaterials: StudyMaterial[] = getPersistentState(STORAGE_KEYS.MATERIALS, [...initialStudyMaterials]);
+let localLiveClasses: LiveClass[] = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, [...initialLiveClasses]);
+let localSubjects: SubjectItem[] = getPersistentState(STORAGE_KEYS.SUBJECTS, [...initialSubjects]);
 
 export const AdminApi = {
   // 1. Analytics Summary
   getDashboardAnalytics: async () => {
+    // Refresh local in-memory buffers from localStorage in case another tab updated them
+    localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+    localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
+    localPayments = getPersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
+    localMaterials = getPersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+
     let studentCount = localStudents.length;
     let courseCount = localCourses.length;
     let pdfCount = localMaterials.length;
@@ -68,7 +107,7 @@ export const AdminApi = {
             .reduce((sum, p) => sum + Number(p.amount), 0);
         }
       } catch {
-        // Use local fallback
+        // Use local persistent fallback
       }
     }
 
@@ -86,6 +125,8 @@ export const AdminApi = {
 
   // 2. Student Management
   getStudents: async (query?: string, board?: string) => {
+    localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+
     if (isSupabaseConfigured) {
       try {
         let req = supabase.from('profiles').select('*');
@@ -95,10 +136,12 @@ export const AdminApi = {
         }
         const { data, error } = await req.order('created_at', { ascending: false });
         if (!error && data && data.length > 0) {
-          return data as UserProfile[];
+          localStudents = data as UserProfile[];
+          savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+          return localStudents;
         }
       } catch {
-        // Use local fallback
+        // Use persistent local fallback
       }
     }
 
@@ -121,24 +164,27 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         await supabase.from('profiles').update({ is_active: isActive }).eq('id', studentId);
-      } catch {
-        // Fallback
-      }
+      } catch {}
     }
     localStudents = localStudents.map((s) => (s.id === studentId ? { ...s, is_active: isActive } : s));
+    savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
     return true;
   },
 
   // 3. Courses
   getCourses: async () => {
+    localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
+
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.from('courses').select('*, board:academic_boards(*), class:classes(*)').order('created_at', { ascending: false });
         if (!error && data && data.length > 0) {
-          return data as Course[];
+          localCourses = data as Course[];
+          savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+          return localCourses;
         }
       } catch {
-        // Use local fallback
+        // Use persistent local fallback
       }
     }
     return localCourses;
@@ -148,11 +194,14 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.from('courses').insert(course).select().single();
-        if (!error && data) return data as Course;
-      } catch {
-        // Fallback
-      }
+        if (!error && data) {
+          localCourses.unshift(data as Course);
+          savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+          return data as Course;
+        }
+      } catch {}
     }
+
     const newCourse: Course = {
       id: `cr-${Date.now()}`,
       title: course.title || '',
@@ -170,12 +219,27 @@ export const AdminApi = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    localCourses.unshift(newCourse);
+
+    localCourses = [newCourse, ...localCourses];
+    savePersistentState(STORAGE_KEYS.COURSES, localCourses);
     return newCourse;
+  },
+
+  deleteCourse: async (courseId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('courses').delete().eq('id', courseId);
+      } catch {}
+    }
+    localCourses = localCourses.filter((c) => c.id !== courseId);
+    savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+    return true;
   },
 
   // 4. Manual UPI Payments
   getPayments: async (statusFilter?: string) => {
+    localPayments = getPersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
+
     if (isSupabaseConfigured) {
       try {
         let req = supabase.from('payments').select('*, student:profiles(*), course:courses(*)');
@@ -184,11 +248,11 @@ export const AdminApi = {
         }
         const { data, error } = await req.order('created_at', { ascending: false });
         if (!error && data && data.length > 0) {
-          return data as Payment[];
+          localPayments = data as Payment[];
+          savePersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
+          return localPayments;
         }
-      } catch {
-        // Fallback
-      }
+      } catch {}
     }
 
     if (statusFilter && statusFilter !== 'all') {
@@ -198,6 +262,7 @@ export const AdminApi = {
   },
 
   approvePayment: async (paymentId: string, remarks: string) => {
+    localPayments = getPersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
     let targetStudentId = '';
     const payment = localPayments.find((p) => p.id === paymentId);
     if (payment) {
@@ -226,9 +291,7 @@ export const AdminApi = {
             enrolled_at: new Date().toISOString(),
           });
         }
-      } catch {
-        // Fallback
-      }
+      } catch {}
     }
 
     localPayments = localPayments.map((p) =>
@@ -242,6 +305,13 @@ export const AdminApi = {
           }
         : p
     );
+    savePersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
+
+    // Also activate in local student registry
+    if (targetStudentId) {
+      localStudents = localStudents.map((s) => (s.id === targetStudentId ? { ...s, is_active: true } : s));
+      savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+    }
 
     // Dispatch automated push notification to the student upon approval
     if (typeof window !== 'undefined') {
@@ -267,6 +337,7 @@ export const AdminApi = {
   },
 
   rejectPayment: async (paymentId: string, remarks: string) => {
+    localPayments = getPersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
     let targetStudentId = '';
     const payment = localPayments.find((p) => p.id === paymentId);
     if (payment) {
@@ -280,7 +351,7 @@ export const AdminApi = {
           p_admin_remarks: remarks,
         });
 
-        // Purge pending unapproved student record from database so email/mobile is freed up for clean re-enrollment
+        // Purge pending unapproved student record from database
         if (targetStudentId) {
           try {
             await supabase.from('profiles').delete().eq('id', targetStudentId).eq('is_active', false);
@@ -289,9 +360,7 @@ export const AdminApi = {
             await supabase.from('users').delete().eq('id', targetStudentId).eq('is_active', false);
           } catch {}
         }
-      } catch {
-        // Fallback
-      }
+      } catch {}
     }
 
     localPayments = localPayments.map((p) =>
@@ -301,10 +370,17 @@ export const AdminApi = {
             status: 'rejected',
             admin_remarks: remarks,
             reviewed_at: new Date().toISOString(),
-            student: undefined, // Cleared so student can re-enroll freely with same mobile/email
+            student: undefined,
           }
         : p
     );
+    savePersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
+
+    if (targetStudentId) {
+      localStudents = localStudents.filter((s) => s.id !== targetStudentId);
+      savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+    }
+
     return {
       success: true,
       message: 'Payment rejected. Unapproved student record purged; student may re-enroll with the same WhatsApp number and email.',
@@ -313,15 +389,17 @@ export const AdminApi = {
 
   // 5. Automatic Study Materials (PDF)
   getStudyMaterials: async () => {
+    localMaterials = getPersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.from('study_materials').select('*, subject:subjects(*), chapter:chapters(*)').order('created_at', { ascending: false });
         if (!error && data && data.length > 0) {
-          return data as StudyMaterial[];
+          localMaterials = data as StudyMaterial[];
+          savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+          return localMaterials;
         }
-      } catch {
-        // Fallback
-      }
+      } catch {}
     }
     return localMaterials;
   },
@@ -330,11 +408,14 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.from('study_materials').insert(material).select().single();
-        if (!error && data) return data as StudyMaterial;
-      } catch {
-        // Fallback
-      }
+        if (!error && data) {
+          localMaterials.unshift(data as StudyMaterial);
+          savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+          return data as StudyMaterial;
+        }
+      } catch {}
     }
+
     const newMat: StudyMaterial = {
       id: `mat-${Date.now()}`,
       board_id: material.board_id || initialBoards[0].id,
@@ -352,21 +433,36 @@ export const AdminApi = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    localMaterials.unshift(newMat);
+
+    localMaterials = [newMat, ...localMaterials];
+    savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
     return newMat;
+  },
+
+  deleteStudyMaterial: async (materialId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('study_materials').delete().eq('id', materialId);
+      } catch {}
+    }
+    localMaterials = localMaterials.filter((m) => m.id !== materialId);
+    savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+    return true;
   },
 
   // 6. Live Classes
   getLiveClasses: async () => {
+    localLiveClasses = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false });
         if (!error && data && data.length > 0) {
-          return data as LiveClass[];
+          localLiveClasses = data as LiveClass[];
+          savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+          return localLiveClasses;
         }
-      } catch {
-        // Fallback
-      }
+      } catch {}
     }
     return localLiveClasses;
   },
@@ -375,11 +471,14 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.from('live_classes').insert(cls).select().single();
-        if (!error && data) return data as LiveClass;
-      } catch {
-        // Fallback
-      }
+        if (!error && data) {
+          localLiveClasses.unshift(data as LiveClass);
+          savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+          return data as LiveClass;
+        }
+      } catch {}
     }
+
     const newLive: LiveClass = {
       id: `live-${Date.now()}`,
       course_id: cls.course_id || initialCourses[0].id,
@@ -392,12 +491,26 @@ export const AdminApi = {
       status: cls.status || 'scheduled',
       created_at: new Date().toISOString(),
     };
-    localLiveClasses.unshift(newLive);
+
+    localLiveClasses = [newLive, ...localLiveClasses];
+    savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
     return newLive;
+  },
+
+  deleteLiveClass: async (classId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('live_classes').delete().eq('id', classId);
+      } catch {}
+    }
+    localLiveClasses = localLiveClasses.filter((l) => l.id !== classId);
+    savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+    return true;
   },
 
   // 7. Academic Metadata
   getAcademics: async () => {
+    localSubjects = getPersistentState(STORAGE_KEYS.SUBJECTS, localSubjects);
     return {
       boards: initialBoards,
       classes: initialClasses,

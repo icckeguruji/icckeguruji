@@ -116,12 +116,12 @@ export default function StudentTestsScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Online Tests & Quizzes</Text>
         <Text style={styles.headerSub}>
-          Timed MCQ tests with instant Grok AI practice generator
+          Timed MCQ tests with instant ICC AI practice generator
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Grok AI Quiz Banner */}
+        {/* ICC AI Quiz Banner */}
         <View style={styles.aiQuizBanner}>
           <View style={styles.aiQuizBannerHeader}>
             <View style={styles.sparkleBox}>
@@ -130,8 +130,8 @@ export default function StudentTestsScreen() {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.aiQuizBannerTitle}>AI Instant Practice Quiz</Text>
-                <View style={styles.grokTag}>
-                  <Text style={styles.grokTagText}>Grok AI</Text>
+                <View style={styles.aiTag}>
+                  <Text style={styles.aiTagText}>ICC AI</Text>
                 </View>
               </View>
               <Text style={styles.aiQuizBannerSub}>
@@ -206,7 +206,7 @@ export default function StudentTestsScreen() {
                 <Sparkles size={18} color="#D97706" />
                 <Text style={styles.modalTitle}>
                   {quizPhase === 'config'
-                    ? 'Grok AI Practice Quiz'
+                    ? 'ICC AI Practice Quiz'
                     : quizPhase === 'playing'
                     ? `Quiz: ${subject} (${currentIdx + 1}/${questions.length})`
                     : 'Quiz Results & Solutions'}
@@ -384,7 +384,7 @@ export default function StudentTestsScreen() {
                         Correct Answer: ({String.fromCharCode(65 + q.correctIndex)}) {q.options[q.correctIndex]}
                       </Text>
                       <View style={styles.explanationBox}>
-                        <Text style={styles.explanationTitle}>💡 Grok AI Explanation:</Text>
+                        <Text style={styles.explanationTitle}>💡 AI Guruji Explanation:</Text>
                         <Text style={styles.explanationText}>{q.explanation}</Text>
                       </View>
                     </View>
@@ -455,13 +455,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  grokTag: {
+  aiTag: {
     backgroundColor: '#D97706',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
   },
-  grokTagText: {
+  aiTagText: {
     fontSize: 9,
     fontWeight: '800',
     color: '#FFFFFF',

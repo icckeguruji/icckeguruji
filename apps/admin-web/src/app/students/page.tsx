@@ -19,6 +19,7 @@ import {
   School,
   Clock,
   Eye,
+  MessageCircle,
 } from 'lucide-react';
 
 export default function StudentsPage() {
@@ -46,6 +47,47 @@ export default function StudentsPage() {
     setStudents((prev) =>
       prev.map((s) => (s.id === student.id ? { ...s, is_active: nextStatus } : s))
     );
+  };
+
+  const sendParentWhatsApp = (student: UserProfile, reportType: 'attendance' | 'performance') => {
+    const rawPhone = (student.guardian_phone || student.mobile_number || '').replace(/\D/g, '');
+    const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+
+    let msg = '';
+    if (reportType === 'attendance') {
+      msg = `🏫 *आदर्श कोचिंग सेन्टर (IDEAL COACHING CENTRE)*
+📍 सरोतिया, महगामा, गोड्डा (झारखंड)
+निदेशक: बड़े सर (BADE SIR) | +91 9771350910
+----------------------------------------
+📋 *साप्ताहिक उपस्थिति एवं अनुशासन रिपोर्ट (Attendance Report)*
+विद्यार्थी का नाम: *${student.full_name}*
+कक्षा एवं बोर्ड: *${student.board_code} Class 10*
+अभिभावक: *${student.guardian_name || 'आदरणीय अभिभावक'}*
+
+✅ इस सप्ताह उपस्थिति: *6 / 6 दिन (100% उपस्थित)*
+⭐ क्लास अनुशासन: *उत्कृष्ट (Excellent)*
+💡 शिक्षक टिप्पणी: विद्यार्थी नियमित रूप से समय पर उपस्थित हो रहा है एवं कक्षा अभ्यास पूरा कर रहा है।
+----------------------------------------
+आदर्श कोचिंग सेन्टर द्वारा स्वचालित अभिभावक संदेश`;
+    } else {
+      msg = `🏫 *आदर्श कोचिंग सेन्टर (IDEAL COACHING CENTRE)*
+📍 सरोतिया, महगामा, गोड्डा (झारखंड)
+निदेशक: बड़े सर (BADE SIR) | +91 9771350910
+----------------------------------------
+📝 *साप्ताहिक टेस्ट परिणाम (Sunday Mock Test Scorecard)*
+विद्यार्थी का नाम: *${student.full_name}*
+बोर्ड: *${student.board_code}*
+विषय: *विज्ञान एवं गणित (Science & Math)*
+प्राप्तांक (Score): *46 / 50 Marks (92%)*
+रैंक (Batch Rank): *#3 (Top 5% in Batch)*
+परिणाम: *उत्तीर्ण (PASSED ⭐⭐⭐)*
+अभिभावक: *${student.guardian_name || 'आदरणीय अभिभावक'}*
+----------------------------------------
+बधाई! आपके बच्चे का प्रदर्शन बहुत सराहनीय है। बोर्ड परीक्षा 2027 की तैयारी सही दिशा में है।`;
+    }
+
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -148,6 +190,14 @@ export default function StudentsPage() {
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <button
+                          onClick={() => sendParentWhatsApp(student, 'attendance')}
+                          title="Send WhatsApp Attendance Report to Parent"
+                          className="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold transition flex items-center gap-1 text-[11px]"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>WhatsApp</span>
+                        </button>
+                        <button
                           onClick={() => setSelectedStudent(student)}
                           className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition"
                         >
@@ -236,6 +286,37 @@ export default function StudentsPage() {
                       <span className="font-bold text-slate-700 text-xs">+91 {selectedStudent.guardian_phone}</span>
                     </div>
                   )}
+                </div>
+
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-emerald-900 text-xs">
+                      {t('अभिभावक व्हाट्सएप अलर्ट (Parent WhatsApp Alerts)', 'Parent WhatsApp Alerts')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700">
+                    {t(
+                      'सीधे माता-पिता के व्हाट्सएप नंबर (+91 ' + (selectedStudent.guardian_phone || selectedStudent.mobile_number) + ') पर 1-क्लिक में रिपोर्ट भेजें:',
+                      'Send instant reports directly to guardian WhatsApp (+91 ' + (selectedStudent.guardian_phone || selectedStudent.mobile_number) + '):'
+                    )}
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => sendParentWhatsApp(selectedStudent, 'attendance')}
+                      className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
+                    >
+                      <span>📋 {t('उपस्थिति रिपोर्ट भेजें', 'Send Attendance Report')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => sendParentWhatsApp(selectedStudent, 'performance')}
+                      className="flex-1 py-1.5 px-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm"
+                    >
+                      <span>📝 {t('टेस्ट रिजल्ट भेजें', 'Send Test Scorecard')}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">

@@ -80,7 +80,7 @@ export default function TeacherDoubtsPage() {
         setReplyText(data.solution);
       }
     } catch {
-      alert('Unable to draft solution with Grok AI at the moment.');
+      alert('Unable to draft solution with AI Guruji at the moment.');
     } finally {
       setAiDrafting(false);
     }
@@ -174,7 +174,7 @@ export default function TeacherDoubtsPage() {
                       className="px-2.5 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-lg text-[11px] font-bold shadow-sm transition flex items-center gap-1.5"
                     >
                       <Sparkles className="w-3 h-3 text-purple-200" />
-                      <span>{aiDrafting ? t('ड्राफ्टिंग जारी...', 'Drafting with Grok...') : t('Grok AI से हल ड्राफ्ट करें', 'Draft with Grok AI')}</span>
+                      <span>{aiDrafting ? t('ड्राफ्टिंग जारी...', 'Drafting with AI...') : t('✨ AI से हल ड्राफ्ट करें', '✨ Draft with AI')}</span>
                     </button>
                   </div>
                   <textarea
@@ -182,8 +182,8 @@ export default function TeacherDoubtsPage() {
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder={t(
-                      'छात्र के लिए स्पष्ट समाधान लिखें या Grok AI से तुरंत ड्राफ्ट करें...',
-                      'Write clear guidance or click Draft with Grok AI...'
+                      'छात्र के लिए स्पष्ट समाधान लिखें या AI से तुरंत ड्राफ्ट करें...',
+                      'Write clear guidance or click Draft with AI...'
                     )}
                     className="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />

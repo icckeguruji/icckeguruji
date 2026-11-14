@@ -60,7 +60,7 @@ const SEED_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: 'notif-4',
-    title: '⚡ 24/7 Grok AI Guruji Activated',
+    title: '⚡ 24/7 ICC AI Guruji Activated',
     message: 'Stuck on a tough Physics, Math, or Chemistry question? Ask ICC AI Guruji in the Doubts tab for instant step-by-step help!',
     type: 'announcement',
     link: '/doubts',

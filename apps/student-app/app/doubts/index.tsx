@@ -65,7 +65,7 @@ export default function StudentDoubtsScreen() {
 - **समीकरण**: Na2SO4 + BaCl2 → BaSO4↓ + 2NaCl (सफेद अवक्षेप बनता है)
 
 💡 **बोर्ड परीक्षा टिप**: परीक्षा में तीर (↓) का निशान अवक्षेप (Precipitate) दर्शाने के लिए अवश्य लगाएं।`,
-      model: 'Grok-AI (ICC Engine)',
+      model: 'ICC AI Guruji',
       time: 'Just now',
     },
   ]);
@@ -111,7 +111,7 @@ export default function StudentDoubtsScreen() {
       setAiHistory([newEntry, ...aiHistory]);
       setAiQuestion('');
     } catch {
-      Alert.alert('Error', 'Unable to get response from Grok AI right now.');
+      Alert.alert('Error', 'Unable to get response from AI Guruji right now.');
     } finally {
       setAiLoading(false);
     }
@@ -160,7 +160,7 @@ export default function StudentDoubtsScreen() {
         >
           <Sparkles size={14} color={activeTab === 'ai' ? '#FFFFFF' : '#64748B'} />
           <Text style={[styles.tabBtnText, activeTab === 'ai' && styles.tabBtnTextActive]}>
-            AI Guruji (Grok AI) ⚡
+            ICC AI Guruji ⚡
           </Text>
         </TouchableOpacity>
 
@@ -189,7 +189,7 @@ export default function StudentDoubtsScreen() {
                   <Bot size={20} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.aiBannerTitle}>ICC AI Guruji (Grok AI)</Text>
+                  <Text style={styles.aiBannerTitle}>ICC AI Guruji</Text>
                   <Text style={styles.aiBannerSub}>
                     24/7 Step-by-step doubt clearing for {selectedBoard === 'BSEB' ? 'Bihar Board (BSEB)' : 'Jharkhand Board (JAC)'}
                   </Text>

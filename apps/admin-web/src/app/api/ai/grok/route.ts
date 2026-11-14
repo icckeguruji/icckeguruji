@@ -80,7 +80,7 @@ Please format the question paper strictly in this structure:
               return NextResponse.json({
                 success: true,
                 paper: text,
-                model: isGroq ? 'Grok/Groq Engine (Live LPU)' : 'Grok-Beta (xAI Live)',
+                model: 'ICC Smart AI',
                 live: true,
               });
             }
@@ -113,7 +113,7 @@ Please format the question paper strictly in this structure:
                 return NextResponse.json({
                   success: true,
                   paper: text,
-                  model: 'Grok/Groq Engine (Qwen Live)',
+                  model: 'ICC Smart AI',
                   live: true,
                 });
               }
@@ -224,7 +224,7 @@ Section C Hints & Key Concepts:
       return NextResponse.json({
         success: true,
         paper: fallbackPaper,
-        model: 'grok-ai (ICC Board Template Engine)',
+        model: 'ICC Smart AI (Board Template)',
         live: false,
       });
     }
@@ -276,13 +276,13 @@ Include:
               return NextResponse.json({
                 success: true,
                 solution: text,
-                model: isGroq ? 'Grok/Groq Engine (Live LPU)' : 'Grok-Beta (xAI Live)',
+                model: 'ICC Smart AI',
                 live: true,
               });
             }
           }
         } catch (err) {
-          console.warn('Grok doubt resolution failed, using fallback:', err);
+          console.warn('AI doubt resolution fallback:', err);
         }
       }
 
@@ -310,7 +310,7 @@ HCF (135, 225) = 45 होगा।
       return NextResponse.json({
         success: true,
         solution: fallbackSolution,
-        model: 'grok-ai (ICC Knowledge Base)',
+        model: 'ICC Smart AI (Knowledge Base)',
         live: false,
       });
     }

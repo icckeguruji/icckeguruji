@@ -373,7 +373,7 @@ export function PublicEnrollmentModal({
                   2
                 </span>
                 <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wide">
-                  Pay via Dynamic UPI QR Code
+                  Official UPI Payment (PhonePe / GPay / Paytm)
                 </span>
               </div>
 

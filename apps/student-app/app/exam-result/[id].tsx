@@ -5,11 +5,14 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations } from '@icc/shared-utils';
+import { Share2, MessageCircle, ArrowLeft } from 'lucide-react-native';
 
 export default function ExamResultScreen() {
   const router = useRouter();
@@ -22,9 +25,41 @@ export default function ExamResultScreen() {
       passed: string;
     }>();
 
-  const { language } = useAuthStore();
+  const { user, language } = useAuthStore();
   const t = translations[language];
   const isPassed = passed === 'true';
+
+  const handleShareWithParents = async () => {
+    const rawPhone = (user?.guardian_phone || user?.mobile_number || '9771350910').replace(/\D/g, '');
+    const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+
+    const msg = `🏫 *आदर्श कोचिंग सेन्टर (IDEAL COACHING CENTRE)*
+📍 सरोतिया, महगामा, गोड्डा (झारखंड)
+निदेशक: बड़े सर (BADE SIR) | +91 9771350910
+----------------------------------------
+📋 *साप्ताहिक टेस्ट रिपोर्ट कार्ड (Student Scorecard)*
+विद्यार्थी का नाम: *${user?.full_name || 'Student'}*
+कक्षा एवं बोर्ड: *${user?.board_code || 'BSEB'} Class 10*
+प्राप्तांक (Score): *${totalScore || '18'} / ${totalMarks || '20'} Marks (${accuracy || '90%'})*
+परिणाम: *${isPassed ? 'उत्तीर्ण (PASSED ⭐⭐⭐)' : 'अभ्यास जारी (Needs Practice)'}*
+अभिभावक: *${user?.guardian_name || 'आदरणीय अभिभावक'}*
+----------------------------------------
+आदर्श कोचिंग सेन्टर द्वारा स्वचालित रिपोर्ट`;
+
+    const url = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`;
+    const webUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        await Linking.openURL(webUrl);
+      }
+    } catch {
+      await Linking.openURL(webUrl);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,6 +81,23 @@ export default function ExamResultScreen() {
             Accuracy Rate: {accuracy || '67%'}
           </Text>
         </View>
+
+        {/* WhatsApp Parent Share Card */}
+        <TouchableOpacity
+          style={styles.whatsappCard}
+          onPress={handleShareWithParents}
+          activeOpacity={0.8}
+        >
+          <View style={styles.whatsappIconCircle}>
+            <Text style={{ fontSize: 20 }}>📲</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.whatsappTitle}>माता-पिता को WhatsApp पर भेजें</Text>
+            <Text style={styles.whatsappSub}>
+              Send official scorecard summary to {user?.guardian_name || 'Parent'} ({user?.guardian_phone || 'WhatsApp'})
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Detailed Solutions & Explanations */}
         <View style={styles.section}>
@@ -211,5 +263,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  whatsappCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1.5,
+    borderColor: '#6EE7B7',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  whatsappIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  whatsappTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#065F46',
+    marginBottom: 2,
+  },
+  whatsappSub: {
+    fontSize: 11,
+    color: '#047857',
+    lineHeight: 15,
   },
 });

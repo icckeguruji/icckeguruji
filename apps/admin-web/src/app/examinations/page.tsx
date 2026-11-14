@@ -98,7 +98,7 @@ export default function ExaminationsPage() {
       const data = await res.json();
       if (data.success && data.paper) {
         setGeneratedPaper(data.paper);
-        setPaperModel(data.model || 'Grok AI');
+        setPaperModel(data.model || 'ICC Smart AI');
       }
     } catch {
       alert('Unable to connect to AI engine. Please check network connection.');
@@ -118,8 +118,8 @@ export default function ExaminationsPage() {
     if (!generatedPaper) return;
     const newExam: MockExam = {
       id: `ex-${Date.now()}`,
-      title: `${aiExamPayload.board} ${aiExamPayload.classLevel} ${aiExamPayload.subject}: ${aiExamPayload.topic} (Grok AI Paper)`,
-      title_hi: `${aiExamPayload.board} ${aiExamPayload.classLevel} ${aiExamPayload.subject}: ${aiExamPayload.topic} (ग्रोक एआई प्रश्न पत्र)`,
+      title: `${aiExamPayload.board} ${aiExamPayload.classLevel} ${aiExamPayload.subject}: ${aiExamPayload.topic} (AI Model Paper)`,
+      title_hi: `${aiExamPayload.board} ${aiExamPayload.classLevel} ${aiExamPayload.subject}: ${aiExamPayload.topic} (आदर्श एआई मॉडल पेपर)`,
       duration_minutes: 90,
       total_marks: Number(aiExamPayload.totalMarks),
       pass_marks: Math.round(Number(aiExamPayload.totalMarks) * 0.33),
@@ -183,7 +183,7 @@ export default function ExaminationsPage() {
               className="flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
             >
               <Sparkles className="w-4 h-4 text-purple-200" />
-              <span>{t('Grok AI से प्रश्न पत्र बनाएं', 'Generate Paper with Grok AI')}</span>
+              <span>{t('ICC AI से प्रश्न पत्र बनाएं', 'Generate Paper with ICC AI')}</span>
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
@@ -374,9 +374,9 @@ export default function ExaminationsPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                      {t('Grok AI बोर्ड प्रश्न पत्र जनरेटर', 'Grok AI Board Exam Paper Generator')}
+                      {t('ICC Smart AI बोर्ड प्रश्न पत्र जनरेटर', 'ICC Smart AI Board Exam Paper Generator')}
                       <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
-                        xAI Engine
+                        AI Engine
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500">
@@ -504,7 +504,7 @@ export default function ExaminationsPage() {
                     <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 py-12">
                       <Sparkles className="w-8 h-8 text-purple-400 animate-spin" />
                       <p className="font-sans text-xs font-semibold">
-                        Grok AI is drafting complete question paper with answer keys...
+                        ICC Smart AI is drafting complete question paper with answer keys...
                       </p>
                     </div>
                   ) : generatedPaper ? (
@@ -522,7 +522,7 @@ export default function ExaminationsPage() {
 
               <div className="pt-2 flex justify-between items-center text-xs">
                 <span className="text-slate-400 text-[11px]">
-                  💡 Grok AI generates bilingual MCQs, short questions, long questions, and answer keys.
+                  💡 ICC Smart AI generates bilingual MCQs, short questions, long questions, and answer keys.
                 </span>
                 <button
                   onClick={() => setIsAiExamModalOpen(false)}
