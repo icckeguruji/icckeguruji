@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -47,8 +48,8 @@ export function AdminSidebar() {
       {/* Brand Header */}
       <div className="p-4 border-b border-slate-800 bg-slate-950/60">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-md">
-            ICC
+          <div className="w-10 h-10 rounded-lg overflow-hidden bg-white flex items-center justify-center shadow-md">
+            <Image src="/logo.png" alt="ICC Logo" width={40} height={40} className="object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-sm leading-tight text-white tracking-wide">

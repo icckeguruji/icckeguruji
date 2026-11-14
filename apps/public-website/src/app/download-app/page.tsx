@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Download, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
@@ -10,8 +11,8 @@ export default function DownloadAppPage() {
   return (
     <div className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       <div className="text-center space-y-3">
-        <div className="w-16 h-16 rounded-2xl bg-blue-600 text-white font-black text-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20">
-          ICC
+        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white shadow-lg shadow-blue-500/20 mx-auto flex items-center justify-center">
+          <Image src="/logo.png" alt="ICC Logo" width={64} height={64} className="object-contain" />
         </div>
         <h1 className="text-3xl font-black text-slate-900">
           {t('आइडियल कोचिंग सेंटर एंड्रॉयड ऐप डाउनलोड', 'Download Ideal Coaching Centre Android App')}
@@ -28,19 +29,19 @@ export default function DownloadAppPage() {
       <div className="bg-gradient-to-r from-slate-900 to-blue-950 rounded-3xl p-8 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 border border-slate-800">
         <div>
           <span className="px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 text-xs font-bold uppercase">
-            Official Release v1.0.0
+            Official Release v1.1.0
           </span>
           <h3 className="text-xl font-bold mt-2">ideal-coaching-release.apk</h3>
           <p className="text-xs text-slate-400 mt-1">
             {t(
-              'फ़ाइल साइज़: ~24.8 MB · समर्थित: Android 7.0+ (Nougat और नए)',
-              'File Size: ~24.8 MB · Supported: Android 7.0+ (Nougat and above)'
+              'फ़ाइल साइज़: ~25 MB · समर्थित: Android 7.0+ (Nougat और नए)',
+              'File Size: ~25 MB · Supported: Android 7.0+ (Nougat and above)'
             )}
           </p>
         </div>
 
         <a
-          href="https://github.com/icckeguruji/icc/releases/download/v1.0.0/ideal-coaching-release.apk"
+          href="https://github.com/icckeguruji/icc/releases/latest/download/ideal-coaching-release.apk"
           download
           className="flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg transition w-full sm:w-auto justify-center"
         >

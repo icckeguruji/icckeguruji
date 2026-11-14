@@ -14,17 +14,19 @@ export function PublicFooter() {
         {/* Column 1: Brand */}
         <div className="space-y-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-lg">
-              ICC
-            </div>
+            <img
+              src="/logo.png"
+              alt="IDEAL COACHING CENTRE"
+              className="w-10 h-10 object-contain rounded-xl bg-white p-0.5"
+            />
             <span className="font-extrabold text-base text-white">
               IDEAL COACHING CENTRE
             </span>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
             {t(
-              'बिहार विद्यालय परीक्षा समिति (BSEB) एवं झारखंड अधिविद्य परिषद् (JAC) के लिए समर्पित शीर्ष कोचिंग संस्थान। शत-प्रतिशत परीक्षा सफलता का विश्वसनीय मार्गदर्शक।',
-              'Premier coaching institution dedicated to BSEB and JAC board exams with high-impact live classes, chapter-wise notes and regular tests.'
+              'कक्षा 1 से 12वीं तक • बिहार बोर्ड (BSEB) एवं झारखंड बोर्ड (JAC) के लिए समर्पित शीर्ष कोचिंग संस्थान। डायरेक्टर बड़े सर के नेतृत्व में शत-प्रतिशत सफलता।',
+              'Classes 1st to 12th premier coaching institution for BSEB & JAC board exams under Director BADE SIR.'
             )}
           </p>
           <div className="flex items-center space-x-2 text-xs text-emerald-400 font-semibold">
@@ -86,16 +88,20 @@ export function PublicFooter() {
             {t('संपर्क सूत्र', 'Contact Information')}
           </h4>
           <p className="flex items-start space-x-2">
-            <MapPin className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-            <span>Station Road, Near Gandhi Chowk, Patna, Bihar</span>
+            <MapPin className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <span>Sarotiya, Post Sarbhanga, Mahagama, Godda (JH) 814165</span>
           </p>
           <p className="flex items-center space-x-2">
-            <Phone className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <span>+91 98765 43210</span>
+            <Phone className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <a href="tel:+919771350910" className="hover:text-emerald-300 transition">
+              +91 9771350910 (Director BADE SIR)
+            </a>
           </p>
           <p className="flex items-center space-x-2">
-            <Mail className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <span>contact@idealcoachingcentre.com</span>
+            <Mail className="w-4 h-4 text-sky-400 flex-shrink-0" />
+            <a href="mailto:icckeguruji@gmail.com" className="hover:text-sky-300 transition">
+              icckeguruji@gmail.com
+            </a>
           </p>
         </div>
       </div>

@@ -13,9 +13,12 @@ export default function PublicCoursesPage() {
 
   const filtered = initialCourses.filter((c) => {
     if (boardFilter === 'all') return true;
-    return boardFilter === 'BSEB'
-      ? c.title.includes('BSEB') || c.board_id?.includes('1')
-      : c.title.includes('JAC') || c.board_id?.includes('2');
+    // board_id ...0001 = BSEB (B-3 class10, B-4 class9); board_id ...0002 = JAC (B-1 class8, B-2 class7)
+    // B-3 and B-4 cover BSEB+JAC both; B-1 and B-2 are JAC-only
+    const bsebIds = ['batch-b3-class10', 'batch-b4-class9'];
+    if (boardFilter === 'BSEB') return bsebIds.includes(c.id);
+    if (boardFilter === 'JAC') return !bsebIds.includes(c.id); // JAC-only batches
+    return true;
   });
 
   return (
@@ -68,8 +71,8 @@ export default function PublicCoursesPage() {
               />
               <div className="absolute top-3 left-3 flex space-x-2">
                 <span className="px-2.5 py-1 rounded bg-slate-950/80 text-white text-xs font-bold backdrop-blur-sm">
-                  {course.title.includes('BSEB')
-                    ? t('BSEB पटना', 'BSEB Patna')
+                  {['batch-b3-class10', 'batch-b4-class9'].includes(course.id)
+                    ? t('BSEB + JAC', 'BSEB + JAC')
                     : t('JAC रांची', 'JAC Ranchi')}
                 </span>
                 <span className="px-2.5 py-1 rounded bg-amber-500 text-slate-950 text-xs font-bold">

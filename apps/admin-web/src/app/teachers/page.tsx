@@ -19,6 +19,15 @@ export default function TeachersPage() {
   const { lang, t } = useLanguage();
   const [teachers, setTeachers] = useState<MockTeacher[]>([
     {
+      id: 't-0',
+      full_name: 'BADE SIR (Director / बड़े सर)',
+      qualification: 'Founder & Academic Director - 12+ Years Experience',
+      subjects: 'Senior Physics, Mathematics & Board Strategy',
+      email: 'icckeguruji@gmail.com',
+      mobile: '+91 9771350910',
+      assignedBatches: 4,
+    },
+    {
       id: 't-1',
       full_name: 'Er. R. K. Sharma (इंजी. आर. के. शर्मा)',
       qualification: 'B.Tech (NIT Patna) - 10+ Years Experience',

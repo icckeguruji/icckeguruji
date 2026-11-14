@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import { TeacherSidebar } from '@/components/TeacherSidebar';
 import { LanguageProvider } from '@/components/LanguageContext';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap', preload: false, fallback: ['system-ui', 'arial'] });
 
 export const metadata: Metadata = {
   title: 'IDEAL COACHING CENTRE — Teacher Portal',

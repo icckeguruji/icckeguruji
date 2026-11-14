@@ -27,8 +27,8 @@ export default function AboutPage() {
         </h2>
         <p>
           {t(
-            'आइडियल कोचिंग सेंटर की स्थापना 2015 में इस मुख्य उद्देश्य के साथ की गई थी कि बिहार एवं झारखंड के दूरदराज के क्षेत्रों और साधारण पृष्ठभूमि के विद्यार्थियों को भी राज्य के सर्वश्रेष्ठ शिक्षकों से गुणवत्तापूर्ण और परिणामोन्मुखी शिक्षा प्राप्त हो सके।',
-            'IDEAL COACHING CENTRE was founded with the prime objective of bringing top-quality board examination coaching to students across Bihar and Jharkhand, eliminating geographic and economic barriers.'
+            'आइडियल कोचिंग सेंटर (सरोतिया, महागामा, गोड्डा) की स्थापना डायरेक्टर बड़े सर (BADE SIR) के मार्गदर्शन में इस मुख्य उद्देश्य के साथ की गई थी कि बिहार एवं झारखंड के विद्यार्थियों को राज्य के सर्वश्रेष्ठ मार्गदर्शन से गुणवत्तापूर्ण और परिणामोन्मुखी शिक्षा प्राप्त हो सके।',
+            'IDEAL COACHING CENTRE (Sarotiya, Mahagama, Godda) was established under the leadership of Director BADE SIR with the core mission of bringing premier, result-oriented board examination coaching to students across Bihar and Jharkhand.'
           )}
         </p>
         <p>

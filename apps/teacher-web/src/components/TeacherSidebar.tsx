@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -31,8 +32,8 @@ export function TeacherSidebar() {
     <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen sticky top-0 border-r border-slate-800 select-none">
       <div className="p-4 border-b border-slate-800 bg-slate-950/60">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-bold text-white shadow-md">
-            ICC
+          <div className="w-10 h-10 rounded-lg overflow-hidden bg-white flex items-center justify-center shadow-md">
+            <Image src="/logo.png" alt="ICC Logo" width={40} height={40} className="object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-sm leading-tight text-white tracking-wide">
@@ -85,10 +86,10 @@ export function TeacherSidebar() {
 
       <div className="p-3 border-t border-slate-800 bg-slate-950/40 text-[11px] text-slate-400">
         <p className="font-semibold text-slate-300">
-          {t('डॉ. एस. एन. मिश्रा', 'Dr. S. N. Mishra')}
+          {t('BADE SIR — निदेशक', 'BADE SIR — Director')}
         </p>
         <p className="text-[10px]">
-          {t('वरिष्ठ संकाय - रसायन शास्त्र', 'Senior Faculty - Chemistry')}
+          {t('आइडियल कोचिंग सेंटर, सरोतिया, गोड्डा', 'IDEAL COACHING CENTRE, Sarotiya, Godda')}
         </p>
       </div>
     </aside>

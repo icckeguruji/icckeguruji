@@ -14,9 +14,11 @@ export function PublicNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md">
-            ICC
-          </div>
+          <img
+            src="/logo.png"
+            alt="IDEAL COACHING CENTRE"
+            className="w-11 h-11 object-contain rounded-xl shadow-xs bg-white p-0.5 border border-slate-200"
+          />
           <div>
             <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight block">
               IDEAL COACHING CENTRE

@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import { LanguageProvider } from '@/components/LanguageContext';
 import { AdminSidebar } from '@/components/AdminSidebar';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap', preload: false, fallback: ['system-ui', 'arial'] });
 
 export const metadata: Metadata = {
   title: 'IDEAL COACHING CENTRE — Admin Portal',
