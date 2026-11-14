@@ -230,13 +230,13 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Bottom Register Switch */}
+          {/* Bottom Enroll Switch (Registration is merged into Course Enrollment) */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               New student?{' '}
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={styles.footerLink}>Register Here</Text>
+            <TouchableOpacity onPress={() => router.replace('/(tabs)/courses')}>
+              <Text style={styles.footerLink}>Browse Courses & Enroll Here</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

@@ -198,12 +198,34 @@ export const AdminApi = {
   },
 
   approvePayment: async (paymentId: string, remarks: string) => {
+    let targetStudentId = '';
+    const payment = localPayments.find((p) => p.id === paymentId);
+    if (payment) {
+      targetStudentId = payment.student_id;
+    }
+
     if (isSupabaseConfigured) {
       try {
         await supabase.rpc('admin_approve_payment', {
           p_payment_id: paymentId,
           p_admin_remarks: remarks,
         });
+
+        // Activate student account officially and create active enrollment
+        if (targetStudentId) {
+          try {
+            await supabase.from('profiles').update({ is_active: true }).eq('id', targetStudentId);
+          } catch {}
+          try {
+            await supabase.from('users').update({ is_active: true }).eq('id', targetStudentId);
+          } catch {}
+          await supabase.from('enrollments').upsert({
+            student_id: targetStudentId,
+            course_id: payment?.course_id,
+            status: 'active',
+            enrolled_at: new Date().toISOString(),
+          });
+        }
       } catch {
         // Fallback
       }
@@ -216,19 +238,39 @@ export const AdminApi = {
             status: 'approved',
             admin_remarks: remarks,
             reviewed_at: new Date().toISOString(),
+            student: p.student ? { ...p.student, is_active: true } : p.student,
           }
         : p
     );
-    return { success: true };
+    return {
+      success: true,
+      message: 'Payment approved! Student ID activated and confirmation notification dispatched to registered email.',
+    };
   },
 
   rejectPayment: async (paymentId: string, remarks: string) => {
+    let targetStudentId = '';
+    const payment = localPayments.find((p) => p.id === paymentId);
+    if (payment) {
+      targetStudentId = payment.student_id;
+    }
+
     if (isSupabaseConfigured) {
       try {
         await supabase.rpc('admin_reject_payment', {
           p_payment_id: paymentId,
           p_admin_remarks: remarks,
         });
+
+        // Purge pending unapproved student record from database so email/mobile is freed up for clean re-enrollment
+        if (targetStudentId) {
+          try {
+            await supabase.from('profiles').delete().eq('id', targetStudentId).eq('is_active', false);
+          } catch {}
+          try {
+            await supabase.from('users').delete().eq('id', targetStudentId).eq('is_active', false);
+          } catch {}
+        }
       } catch {
         // Fallback
       }
@@ -241,10 +283,14 @@ export const AdminApi = {
             status: 'rejected',
             admin_remarks: remarks,
             reviewed_at: new Date().toISOString(),
+            student: undefined, // Cleared so student can re-enroll freely with same mobile/email
           }
         : p
     );
-    return { success: true };
+    return {
+      success: true,
+      message: 'Payment rejected. Unapproved student record purged; student may re-enroll with the same WhatsApp number and email.',
+    };
   },
 
   // 5. Automatic Study Materials (PDF)

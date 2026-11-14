@@ -74,6 +74,9 @@ export interface UserProfile {
   full_name: string;
   mobile_number: string;
   email: string;
+  dob?: string;
+  guardian_name?: string;
+  guardian_phone?: string;
   board_code: BoardCode;
   class_id?: string;
   district: string;

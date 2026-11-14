@@ -67,6 +67,8 @@ export default function StudentProfileScreen() {
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [mobileNumber, setMobileNumber] = useState(user?.mobile_number || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [guardianName, setGuardianName] = useState(user?.guardian_name || '');
+  const [guardianPhone, setGuardianPhone] = useState(user?.guardian_phone || '');
   const [schoolName, setSchoolName] = useState(user?.school_name || '');
   const [district, setDistrict] = useState(user?.district || '');
   const [selectedClassForm, setSelectedClassForm] = useState(selectedClass || 'Class 10');
@@ -80,6 +82,19 @@ export default function StudentProfileScreen() {
   // Custom photo URL state
   const [customPhotoUrl, setCustomPhotoUrl] = useState('');
 
+  // Open modal with fresh user data synced
+  const openEditModal = () => {
+    setFullName(user?.full_name || '');
+    setMobileNumber(user?.mobile_number || '');
+    setEmail(user?.email || '');
+    setGuardianName(user?.guardian_name || '');
+    setGuardianPhone(user?.guardian_phone || '');
+    setSchoolName(user?.school_name || '');
+    setDistrict(user?.district || '');
+    setSelectedClassForm(selectedClass || 'Class 10');
+    setIsEditProfileOpen(true);
+  };
+
   // Handle Save Profile Details
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
@@ -90,12 +105,18 @@ export default function StudentProfileScreen() {
       Alert.alert('Validation Error', 'Please enter a valid 10-digit mobile number.');
       return;
     }
+    if (guardianPhone.trim() && guardianPhone.trim().replace(/\D/g, '').length < 10) {
+      Alert.alert('Validation Error', 'Guardian mobile number must be 10 digits.');
+      return;
+    }
 
     try {
       updateProfile({
         full_name: fullName.trim(),
         mobile_number: mobileNumber.trim(),
         email: email.trim(),
+        guardian_name: guardianName.trim(),
+        guardian_phone: guardianPhone.trim(),
         school_name: schoolName.trim(),
         district: district.trim(),
       });
@@ -103,16 +124,21 @@ export default function StudentProfileScreen() {
 
       // Attempt live Supabase profile sync
       if (user?.id) {
-        await supabase
-          .from('users')
-          .update({
-            full_name: fullName.trim(),
-            mobile_number: mobileNumber.trim(),
-            email: email.trim(),
-            district: district.trim(),
-            school_name: schoolName.trim(),
-          })
-          .eq('id', user.id);
+        const updatePayload = {
+          full_name: fullName.trim(),
+          mobile_number: mobileNumber.trim(),
+          email: email.trim(),
+          guardian_name: guardianName.trim(),
+          guardian_phone: guardianPhone.trim(),
+          district: district.trim(),
+          school_name: schoolName.trim(),
+        };
+        try {
+          await supabase.from('profiles').update(updatePayload).eq('id', user.id);
+        } catch {}
+        try {
+          await supabase.from('users').update(updatePayload).eq('id', user.id);
+        } catch {}
       }
 
       setIsEditProfileOpen(false);
@@ -236,7 +262,7 @@ export default function StudentProfileScreen() {
               <Text style={styles.userName}>{user?.full_name || 'Rohit Kumar'}</Text>
               <TouchableOpacity
                 style={styles.editPill}
-                onPress={() => setIsEditProfileOpen(true)}
+                onPress={openEditModal}
               >
                 <Edit3 size={12} color="#2563EB" />
                 <Text style={styles.editPillText}>Edit</Text>
@@ -254,7 +280,7 @@ export default function StudentProfileScreen() {
           </View>
         </View>
 
-        {/* Academic Details Summary Card */}
+        {/* Academic Details & Guardian Summary Card */}
         <View style={styles.academicCard}>
           <View style={styles.academicRow}>
             <View style={styles.academicCol}>
@@ -279,6 +305,23 @@ export default function StudentProfileScreen() {
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>District</Text>
               <Text style={styles.academicValue}>{user?.district || 'Patna'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.academicDivider} />
+
+          <View style={styles.academicRow}>
+            <View style={styles.academicCol}>
+              <Text style={styles.academicLabel}>Guardian / Parent</Text>
+              <Text style={styles.academicValue} numberOfLines={1}>
+                {user?.guardian_name || 'Shri Manoj Kumar'}
+              </Text>
+            </View>
+            <View style={styles.academicCol}>
+              <Text style={styles.academicLabel}>Guardian Phone</Text>
+              <Text style={styles.academicValue}>
+                {user?.guardian_phone ? `+91 ${user.guardian_phone}` : '+91 9876500001'}
+              </Text>
             </View>
           </View>
         </View>
@@ -317,7 +360,7 @@ export default function StudentProfileScreen() {
           {/* Edit Profile Details Item */}
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => setIsEditProfileOpen(true)}
+            onPress={openEditModal}
           >
             <View style={styles.menuLeft}>
               <View style={[styles.iconBox, { backgroundColor: '#EFF6FF' }]}>
@@ -325,7 +368,7 @@ export default function StudentProfileScreen() {
               </View>
               <View>
                 <Text style={styles.menuItemText}>Update Personal Details</Text>
-                <Text style={styles.menuItemSub}>Name, Mobile, School, District & Class</Text>
+                <Text style={styles.menuItemSub}>Name, Mobile, Guardian, Photo & School</Text>
               </View>
             </View>
             <ChevronRight size={18} color="#94A3B8" />
@@ -450,6 +493,35 @@ export default function StudentProfileScreen() {
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {/* Profile Photo / Avatar Option in Edit Modal */}
+              <View style={styles.modalAvatarSection}>
+                <View style={styles.modalAvatarRow}>
+                  <View style={styles.modalAvatarContainer}>
+                    {user?.avatar_url ? (
+                      <Image source={{ uri: user.avatar_url }} style={styles.modalAvatarImage} />
+                    ) : (
+                      <View style={styles.modalAvatarFallback}>
+                        <Text style={styles.modalAvatarFallbackText}>
+                          {fullName ? fullName[0].toUpperCase() : 'S'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modalAvatarTitle}>Profile Photo</Text>
+                    <Text style={styles.modalAvatarSub}>Select avatar or custom photo link</Text>
+                    <TouchableOpacity
+                      style={styles.modalAvatarBtn}
+                      onPress={() => setIsPhotoModalOpen(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Camera size={13} color="#2563EB" />
+                      <Text style={styles.modalAvatarBtnText}>Change Photo</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Full Name</Text>
                 <TextInput
@@ -461,7 +533,7 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Mobile Number (+91)</Text>
+                <Text style={styles.inputLabel}>Mobile / WhatsApp Number (+91)</Text>
                 <TextInput
                   style={styles.textInput}
                   value={mobileNumber}
@@ -481,6 +553,29 @@ export default function StudentProfileScreen() {
                   placeholder="student@example.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
+                />
+              </View>
+
+              {/* Guardian Name & Mobile Number */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Guardian / Parent Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={guardianName}
+                  onChangeText={setGuardianName}
+                  placeholder="Father's / Mother's / Guardian's Full Name"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Guardian Mobile Number (+91)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={guardianPhone}
+                  onChangeText={setGuardianPhone}
+                  placeholder="10-digit Guardian Mobile Number"
+                  keyboardType="phone-pad"
+                  maxLength={10}
                 />
               </View>
 
@@ -1059,5 +1154,69 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalAvatarSection: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  modalAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalAvatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#E2E8F0',
+  },
+  modalAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  modalAvatarFallback: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalAvatarFallbackText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 20,
+  },
+  modalAvatarTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E3A8A',
+  },
+  modalAvatarSub: {
+    fontSize: 10,
+    color: '#3B82F6',
+    marginTop: 1,
+  },
+  modalAvatarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  modalAvatarBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
   },
 });

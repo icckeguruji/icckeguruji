@@ -27,6 +27,7 @@ export default function PaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [actionRemarks, setActionRemarks] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadPayments = () => {
     setLoading(true);
@@ -42,24 +43,28 @@ export default function PaymentsPage() {
   const handleApprove = async () => {
     if (!selectedPayment) return;
     setProcessing(true);
-    await AdminApi.approvePayment(selectedPayment.id, actionRemarks || 'बैंक खाते में राशि सत्यापित हुई');
+    const res = await AdminApi.approvePayment(selectedPayment.id, actionRemarks || 'बैंक खाते में राशि सत्यापित हुई');
     setSelectedPayment(null);
     setActionRemarks('');
     setProcessing(false);
+    setFeedbackMsg({ type: 'success', text: res.message || 'Payment approved! Student account activated & email notification sent.' });
     loadPayments();
+    setTimeout(() => setFeedbackMsg(null), 6000);
   };
 
   const handleReject = async () => {
     if (!selectedPayment) return;
     setProcessing(true);
-    await AdminApi.rejectPayment(
+    const res = await AdminApi.rejectPayment(
       selectedPayment.id,
       actionRemarks || 'अमान्य UTR नंबर अथवा बैंक में राशि प्राप्त नहीं हुई'
     );
     setSelectedPayment(null);
     setActionRemarks('');
     setProcessing(false);
+    setFeedbackMsg({ type: 'error', text: res.message || 'Payment rejected. Student details purged; student can re-enroll.' });
     loadPayments();
+    setTimeout(() => setFeedbackMsg(null), 6000);
   };
 
   return (
@@ -90,6 +95,20 @@ export default function PaymentsPage() {
             </p>
           </div>
         </div>
+
+        {/* Action Feedback Banner */}
+        {feedbackMsg && (
+          <div
+            className={`p-4 rounded-xl border flex items-center space-x-3 text-xs font-bold animate-in fade-in duration-200 ${
+              feedbackMsg.type === 'success'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                : 'bg-rose-50 border-rose-300 text-rose-900'
+            }`}
+          >
+            <span className="text-base">{feedbackMsg.type === 'success' ? '✅' : 'ℹ️'}</span>
+            <span>{feedbackMsg.text}</span>
+          </div>
+        )}
 
         {/* Status Filter Tabs */}
         <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">

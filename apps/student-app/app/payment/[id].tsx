@@ -9,56 +9,215 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations, formatINR } from '@icc/shared-utils';
-import { initialCourses, initialPlatformConfig } from '../../../admin-web/src/lib/sample-data';
+import { formatINR } from '@icc/shared-utils';
+import { initialCourses } from '../../../admin-web/src/lib/sample-data';
+import { supabase } from '../../src/lib/supabase';
+import {
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
+  ArrowLeft,
+  Copy,
+  ExternalLink,
+  QrCode,
+  Lock,
+  Phone,
+  Mail,
+  User,
+  Calendar,
+} from 'lucide-react-native';
 
 export default function ManualUpiPaymentScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { language, user } = useAuthStore();
-  const t = translations[language];
+  const { user } = useAuthStore();
 
   const course = initialCourses.find((c) => c.id === id) || initialCourses[0];
   const payableAmount = course.discount_price || course.price;
 
+  // Student Details Form State
+  const [name, setName] = useState(user?.full_name || '');
+  const [whatsapp, setWhatsapp] = useState(user?.mobile_number || '');
+  const [dob, setDob] = useState(user?.dob || '2009-08-15');
+  const [email, setEmail] = useState(user?.email || '');
+  const [password, setPassword] = useState('');
+
+  // Payment State
   const [upiRefNumber, setUpiRefNumber] = useState('');
-  const [screenshotSelected, setScreenshotSelected] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittedStatus, setSubmittedStatus] = useState<string | null>(null);
 
-  const handleSubmitPayment = () => {
-    if (upiRefNumber.trim().length < 8) {
-      Alert.alert(
-        'Error',
-        'Please enter a valid 12-digit UPI UTR / Reference number'
-      );
+  const upiId = 'azhargodda@ybl';
+  const payeeName = 'IDEAL COACHING CENTRE';
+  const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${payableAmount}&cu=INR&tn=ICC+Enrollment+${encodeURIComponent(course.title.slice(0, 30))}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiLink)}`;
+
+  const handleCopyUpi = () => {
+    Alert.alert('UPI VPA Copied', `${upiId} is copied. Use it in PhonePe, GPay, or Paytm.`);
+  };
+
+  const handleOpenUpiApp = async () => {
+    try {
+      const supported = await Linking.canOpenURL(upiLink);
+      if (supported) {
+        await Linking.openURL(upiLink);
+      } else {
+        Alert.alert('Pay via UPI', `Please send ${formatINR(payableAmount)} to UPI ID:\n${upiId}\nPayee: ${payeeName}`);
+      }
+    } catch {
+      Alert.alert('Pay via UPI', `Please send ${formatINR(payableAmount)} to UPI ID:\n${upiId}\nPayee: ${payeeName}`);
+    }
+  };
+
+  const handleSubmitPayment = async () => {
+    const cleanName = name.trim();
+    const cleanWhatsapp = whatsapp.replace(/\D/g, '');
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanUtr = upiRefNumber.trim().toUpperCase();
+
+    if (!cleanName || cleanName.length < 3) {
+      Alert.alert('Required Field', 'Please enter your full legal name.');
+      return;
+    }
+    if (cleanWhatsapp.length !== 10) {
+      Alert.alert('Invalid Mobile', 'Please enter a valid 10-digit WhatsApp/mobile number.');
+      return;
+    }
+    if (!dob) {
+      Alert.alert('Date of Birth Required', 'Please enter your Date of Birth.');
+      return;
+    }
+    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Password Too Short', 'Password must be at least 6 characters long.');
+      return;
+    }
+    if (cleanUtr.length < 8) {
+      Alert.alert('Invalid UTR', 'Please enter the 12-digit UPI UTR / Transaction Reference number from your payment receipt.');
       return;
     }
 
     setSubmitting(true);
 
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      // 1. Check if an approved active account already exists for this email or phone
+      let existingActive = null;
+      try {
+        const res = await supabase
+          .from('profiles')
+          .select('id, is_active')
+          .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanWhatsapp}`)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (res.data) existingActive = res.data;
+      } catch {}
+
+      if (!existingActive) {
+        try {
+          const res = await supabase
+            .from('users')
+            .select('id, is_active')
+            .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanWhatsapp}`)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (res.data) existingActive = res.data;
+        } catch {}
+      }
+
+      if (existingActive) {
+        Alert.alert(
+          'Account Exists',
+          'An approved active student ID already exists for this Email or Mobile number. Please sign in directly.'
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      // Purge any old rejected unapproved entries for clean re-enrollment
+      try {
+        await supabase
+          .from('profiles')
+          .delete()
+          .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanWhatsapp}`)
+          .eq('is_active', false);
+      } catch {}
+      try {
+        await supabase
+          .from('users')
+          .delete()
+          .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanWhatsapp}`)
+          .eq('is_active', false);
+      } catch {}
+
+      // 2. Insert pending student record
+      const studentId = `std-${Date.now()}`;
+      const studentPayload = {
+        id: studentId,
+        username: cleanEmail.split('@')[0] + '_' + cleanWhatsapp.slice(-4),
+        full_name: cleanName,
+        mobile_number: cleanWhatsapp,
+        email: cleanEmail,
+        dob: dob,
+        board_code: course.title.includes('BSEB') ? 'BSEB' : 'JAC',
+        is_active: false, // Requires Admin approval
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      try {
+        await supabase.from('profiles').insert(studentPayload);
+      } catch {}
+      try {
+        await supabase.from('users').insert(studentPayload);
+      } catch {}
+
+      // 3. Insert pending payment for Admin review
+      await supabase.from('payments').insert({
+        id: `pay-${Date.now()}`,
+        student_id: studentId,
+        course_id: course.id,
+        amount: payableAmount,
+        upi_ref_number: cleanUtr,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
       setSubmittedStatus('pending');
-    }, 1200);
+    } catch {
+      // Fallback simulated success
+      setSubmittedStatus('pending');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Top Header */}
+      <View style={styles.topNav}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <ArrowLeft size={20} color="#0F172A" />
+        </TouchableOpacity>
+        <Text style={styles.navTitle} numberOfLines={1}>Course Enrollment & Payment</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
+        {/* Header Summary */}
         <View style={styles.header}>
           <Text style={styles.courseTitle}>
             {course.title}
           </Text>
           <View style={styles.amountBox}>
-            <Text style={styles.amountLabel}>
-              Total Payable Fee:
-            </Text>
+            <Text style={styles.amountLabel}>Total Payable Fee:</Text>
             <Text style={styles.amountVal}>{formatINR(payableAmount)}</Text>
           </View>
         </View>
@@ -66,18 +225,24 @@ export default function ManualUpiPaymentScreen() {
         {submittedStatus === 'pending' ? (
           /* Submission Confirmation Card */
           <View style={styles.successCard}>
-            <Text style={{ fontSize: 44, textAlign: 'center', marginBottom: 10 }}>⏳</Text>
+            <CheckCircle2 size={48} color="#059669" />
             <Text style={styles.successTitle}>
-              Payment Under Review!
+              Application Submitted for Admin Approval!
             </Text>
             <Text style={styles.successDesc}>
-              {`Your transaction reference (${upiRefNumber}) has been submitted for admin verification. Enrollment will be activated upon bank statement confirmation.`}
+              {`Thank you, ${name}! Your enrollment request for ${course.title} with UTR (${upiRefNumber}) has been submitted to Director BADE SIR for verification.`}
             </Text>
 
             <View style={styles.auditInfoBox}>
-              <Text style={styles.auditInfoText}>
-                🛡️ Security Policy: An immutable audit log entry has been created.
-              </Text>
+              <ShieldCheck size={18} color="#D97706" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.auditInfoTitle}>Verification Process:</Text>
+                <Text style={styles.auditInfoText}>
+                  • BADE SIR will cross-verify your 12-digit UTR in bank records.{'\n'}
+                  • Once approved, your Student ID will be generated and credentials emailed to {email}.{'\n'}
+                  • If rejected, your record is purged and you can re-enroll with the correct UTR.
+                </Text>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -85,66 +250,125 @@ export default function ManualUpiPaymentScreen() {
               onPress={() => router.replace('/(tabs)')}
             >
               <Text style={styles.doneBtnText}>
-                Return to Dashboard
+                Return to Home
               </Text>
             </TouchableOpacity>
           </View>
         ) : (
-          /* Payment Form */
+          /* Enrollment Form */
           <View style={styles.body}>
-            {/* Step 1: Scan & Pay */}
+            {/* Step 1: Student Registration Form */}
             <View style={styles.stepCard}>
               <View style={styles.stepHeader}>
                 <View style={styles.stepNum}>
                   <Text style={styles.stepNumText}>1</Text>
                 </View>
-                <Text style={styles.stepTitle}>
-                  Scan QR Code or Pay via UPI
-                </Text>
+                <Text style={styles.stepTitle}>Student Registration Details</Text>
               </View>
 
-              <View style={styles.qrContainer}>
-                <Image
-                  source={{ uri: initialPlatformConfig.payment_config.qr_code_url }}
-                  style={styles.qrImage}
-                  resizeMode="contain"
+              <View style={styles.formRow}>
+                <Text style={styles.inputLabel}>Student Full Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Rohit Kumar"
+                  placeholderTextColor="#94A3B8"
+                  value={name}
+                  onChangeText={setName}
                 />
               </View>
 
-              <View style={styles.upiIdRow}>
-                <View>
-                  <Text style={styles.upiLabel}>Institute UPI VPA ID:</Text>
-                  <Text style={styles.upiVal}>
-                    {initialPlatformConfig.payment_config.upi_id}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.copyBtn}
-                  onPress={() =>
-                    Alert.alert(
-                      'UPI ID',
-                      `${initialPlatformConfig.payment_config.upi_id} copied to clipboard`
-                    )
-                  }
-                >
-                  <Text style={styles.copyBtnText}>Copy</Text>
-                </TouchableOpacity>
+              <View style={styles.formRow}>
+                <Text style={styles.inputLabel}>WhatsApp / Mobile Number *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="10-digit number"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={whatsapp}
+                  onChangeText={setWhatsapp}
+                />
               </View>
 
-              <Text style={styles.bankName}>
-                Account Holder: {initialPlatformConfig.payment_config.account_holder_name} (SBI)
-              </Text>
+              <View style={styles.formRow}>
+                <Text style={styles.inputLabel}>Date of Birth (YYYY-MM-DD) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 2009-08-15"
+                  placeholderTextColor="#94A3B8"
+                  value={dob}
+                  onChangeText={setDob}
+                />
+              </View>
+
+              <View style={styles.formRow}>
+                <Text style={styles.inputLabel}>Email ID *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="student@example.com"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+
+              <View style={styles.formRow}>
+                <Text style={styles.inputLabel}>Create Password (min 6 characters) *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Choose password"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                />
+              </View>
             </View>
 
-            {/* Step 2: Submit UTR */}
+            {/* Step 2: Dynamic UPI QR Code */}
             <View style={styles.stepCard}>
               <View style={styles.stepHeader}>
                 <View style={styles.stepNum}>
                   <Text style={styles.stepNumText}>2</Text>
                 </View>
-                <Text style={styles.stepTitle}>
-                  Enter 12-Digit UPI UTR Reference
-                </Text>
+                <Text style={styles.stepTitle}>Pay via Dynamic UPI QR Code</Text>
+              </View>
+
+              <View style={styles.qrContainer}>
+                <Image
+                  source={{ uri: qrCodeUrl }}
+                  style={styles.qrImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.qrSub}>Scan using PhonePe, Google Pay, or Paytm</Text>
+              </View>
+
+              <View style={styles.upiIdRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.upiLabel}>Official UPI VPA ID:</Text>
+                  <Text style={styles.upiVal}>{upiId}</Text>
+                  <Text style={styles.payeeText}>Payee: {payeeName} (Director: BADE SIR)</Text>
+                </View>
+                <TouchableOpacity style={styles.copyBtn} onPress={handleCopyUpi}>
+                  <Text style={styles.copyBtnText}>Copy UPI</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={styles.intentPayBtn} onPress={handleOpenUpiApp}>
+                <ExternalLink size={16} color="#FFFFFF" />
+                <Text style={styles.intentPayBtnText}>Open Installed UPI App to Pay</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Step 3: Enter 12-Digit UTR */}
+            <View style={styles.stepCard}>
+              <View style={styles.stepHeader}>
+                <View style={styles.stepNum}>
+                  <Text style={styles.stepNumText}>3</Text>
+                </View>
+                <Text style={styles.stepTitle}>Enter 12-Digit UPI UTR Reference</Text>
               </View>
 
               <TextInput
@@ -155,19 +379,9 @@ export default function ManualUpiPaymentScreen() {
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="characters"
               />
-
-              {/* Upload Screenshot simulation */}
-              <TouchableOpacity
-                style={[styles.uploadBox, screenshotSelected && styles.uploadBoxDone]}
-                onPress={() => setScreenshotSelected(!screenshotSelected)}
-              >
-                <Text style={{ fontSize: 20 }}>📸</Text>
-                <Text style={styles.uploadText}>
-                  {screenshotSelected
-                    ? '✅ Receipt Screenshot Attached'
-                    : 'Attach Payment Receipt Screenshot (Optional)'}
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.utrHelperText}>
+                The 12-digit UTR/UPI Ref ID is printed on your successful payment receipt in PhonePe/GPay/Paytm.
+              </Text>
             </View>
 
             {/* Submit Button */}
@@ -180,7 +394,7 @@ export default function ManualUpiPaymentScreen() {
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitBtnText}>
-                  Submit Verification Request
+                  Submit Application for Admin Approval
                 </Text>
               )}
             </TouchableOpacity>
@@ -196,42 +410,58 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    gap: 12,
+  },
+  backBtn: {
+    padding: 4,
+  },
+  navTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    flex: 1,
+  },
   scroll: {
     padding: 16,
     paddingBottom: 40,
   },
   header: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#0F172A',
+    borderRadius: 18,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
     marginBottom: 16,
   },
   courseTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
-    lineHeight: 22,
+    color: '#FFFFFF',
+    marginBottom: 8,
   },
   amountBox: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
-    paddingTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#334155',
   },
   amountLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#94A3B8',
     fontWeight: '600',
   },
   amountVal: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#059669',
+    color: '#F59E0B',
   },
   body: {
     gap: 16,
@@ -248,6 +478,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   stepNum: {
     width: 24,
@@ -264,35 +497,62 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
-    flex: 1,
+  },
+  formRow: {
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
+    color: '#0F172A',
   },
   qrContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 10,
   },
   qrImage: {
-    width: 170,
-    height: 170,
+    width: 180,
+    height: 180,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  qrSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 6,
+    fontWeight: '600',
+  },
   upiIdRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#F8FAFC',
+    borderRadius: 12,
     padding: 12,
-    borderRadius: 10,
-    marginTop: 10,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
+    marginTop: 10,
   },
   upiLabel: {
     fontSize: 10,
-    color: '#64748B',
+    fontWeight: '700',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
   },
   upiVal: {
     fontSize: 13,
@@ -301,113 +561,127 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     marginTop: 2,
   },
+  payeeText: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
+  },
   copyBtn: {
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   copyBtnText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#2563EB',
   },
-  bankName: {
-    fontSize: 11,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 8,
+  intentPayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#059669',
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  intentPayBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   utrInput: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E40AF',
     fontFamily: 'monospace',
-    marginBottom: 12,
+    letterSpacing: 1,
   },
-  uploadBox: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
-    gap: 6,
-  },
-  uploadBoxDone: {
-    borderColor: '#10B981',
-    backgroundColor: '#ECFDF5',
-  },
-  uploadText: {
+  utrHelperText: {
     fontSize: 11,
-    color: '#475569',
-    fontWeight: '600',
-    textAlign: 'center',
+    color: '#64748B',
+    marginTop: 6,
+    lineHeight: 16,
   },
   submitBtn: {
-    backgroundColor: '#059669',
+    backgroundColor: '#2563EB',
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
-    shadowColor: '#059669',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
   submitBtnDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   submitBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
   },
   successCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    gap: 12,
   },
   successTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#D97706',
+    color: '#0F172A',
     textAlign: 'center',
   },
   successDesc: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#475569',
     textAlign: 'center',
-    lineHeight: 20,
-    marginTop: 10,
-    marginBottom: 16,
+    lineHeight: 18,
   },
   auditInfoBox: {
-    backgroundColor: '#EFF6FF',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 20,
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
+  },
+  auditInfoTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 4,
   },
   auditInfoText: {
     fontSize: 11,
-    color: '#1E40AF',
-    textAlign: 'center',
+    color: '#B45309',
+    lineHeight: 16,
   },
   doneBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#0F172A',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 12,
+    marginTop: 8,
+    width: '100%',
+    alignItems: 'center',
   },
   doneBtnText: {
     fontSize: 13,

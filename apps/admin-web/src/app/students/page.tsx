@@ -211,13 +211,31 @@ export default function StudentsPage() {
                     <span className="font-bold text-slate-700 text-xs">{selectedStudent.district}</span>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('मोबाइल', 'Mobile')}</span>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('मोबाइल / व्हाट्सएप', 'Mobile / WhatsApp')}</span>
                     <span className="font-bold text-slate-700 text-xs">+91 {selectedStudent.mobile_number}</span>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-lg">
                     <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('ईमेल', 'Email')}</span>
                     <span className="font-bold text-slate-700 text-xs truncate block">{selectedStudent.email}</span>
                   </div>
+                  {selectedStudent.dob && (
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('जन्म तिथि', 'Date of Birth')}</span>
+                      <span className="font-bold text-slate-700 text-xs">{selectedStudent.dob}</span>
+                    </div>
+                  )}
+                  {selectedStudent.guardian_name && (
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('अभिभावक का नाम', 'Guardian Name')}</span>
+                      <span className="font-bold text-slate-700 text-xs">{selectedStudent.guardian_name}</span>
+                    </div>
+                  )}
+                  {selectedStudent.guardian_phone && (
+                    <div className="p-3 bg-slate-50 rounded-lg col-span-2">
+                      <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('अभिभावक संपर्क नंबर', 'Guardian Contact')}</span>
+                      <span className="font-bold text-slate-700 text-xs">+91 {selectedStudent.guardian_phone}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">

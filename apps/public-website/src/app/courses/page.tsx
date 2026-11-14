@@ -3,13 +3,22 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { initialCourses } from '@/lib/sample-data';
+import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
-import { Clock, Video, FileText, ArrowRight } from 'lucide-react';
+import { Clock, Video, FileText, ArrowRight, ShieldCheck, QrCode } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import { PublicEnrollmentModal } from '@/components/PublicEnrollmentModal';
 
 export default function PublicCoursesPage() {
   const [boardFilter, setBoardFilter] = useState<'all' | 'BSEB' | 'JAC'>('all');
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const { lang, t } = useLanguage();
+
+  const handleEnrollClick = (course: Course) => {
+    setSelectedCourse(course);
+    setIsEnrollModalOpen(true);
+  };
 
   const filtered = initialCourses.filter((c) => {
     if (boardFilter === 'all') return true;
@@ -63,19 +72,19 @@ export default function PublicCoursesPage() {
             key={course.id}
             className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between"
           >
-            <div className="h-48 bg-slate-100 relative">
+            <div className="h-48 bg-slate-950 relative overflow-hidden flex items-center justify-center">
               <img
                 src={course.thumbnail_url}
                 alt={course.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
               <div className="absolute top-3 left-3 flex space-x-2">
-                <span className="px-2.5 py-1 rounded bg-slate-950/80 text-white text-xs font-bold backdrop-blur-sm">
+                <span className="px-2.5 py-1 rounded bg-slate-900/90 text-white text-xs font-bold backdrop-blur-sm border border-slate-700">
                   {['batch-b3-class10', 'batch-b4-class9'].includes(course.id)
                     ? t('BSEB + JAC', 'BSEB + JAC')
                     : t('JAC रांची', 'JAC Ranchi')}
                 </span>
-                <span className="px-2.5 py-1 rounded bg-amber-500 text-slate-950 text-xs font-bold">
+                <span className="px-2.5 py-1 rounded bg-amber-500 text-slate-950 text-xs font-black shadow-xs">
                   {course.is_free ? (lang === 'hi' ? 'निःशुल्क' : 'FREE') : formatINR(course.discount_price || course.price)}
                 </span>
               </div>
@@ -107,18 +116,27 @@ export default function PublicCoursesPage() {
                   </span>
                 </div>
 
-                <Link
-                  href="/download-app"
-                  className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition"
+                <button
+                  type="button"
+                  onClick={() => handleEnrollClick(course)}
+                  className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition active:scale-98"
                 >
-                  <span>{t('ऐप में प्रवेश लें', 'Enroll in App')}</span>
+                  <QrCode className="w-4 h-4" />
+                  <span>{t('कोर्स में प्रवेश लें (Dynamic QR)', 'Enroll Now (Dynamic QR)')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Dynamic UPI Enrollment Modal */}
+      <PublicEnrollmentModal
+        course={selectedCourse}
+        isOpen={isEnrollModalOpen}
+        onClose={() => setIsEnrollModalOpen(false)}
+      />
     </div>
   );
 }

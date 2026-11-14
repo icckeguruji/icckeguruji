@@ -252,13 +252,13 @@ export default function PublicHomePage() {
               key={c.id}
               className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
             >
-              <div className="h-44 bg-slate-100 relative">
+              <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
                 <Image
                   src={c.thumbnail_url || '/thumbnails/batch-b3-class10.jpg'}
                   alt={c.title}
                   width={400}
                   height={176}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
                 <div className="absolute top-3 left-3 flex space-x-2">
                   <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white">
@@ -285,8 +285,8 @@ export default function PublicHomePage() {
                     ⏱ {c.validity_days} {t('दिन', 'Days')}
                   </span>
                   <Link
-                    href="/download-app"
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition"
+                    href="/courses"
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
                   >
                     {t('प्रवेश लें', 'Enroll Now')}
                   </Link>
