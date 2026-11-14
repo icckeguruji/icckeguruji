@@ -21,8 +21,7 @@ Operating under a **Strict Zero-Paid-Service Policy**, the platform delivers an 
 ideal-coaching-centre/
 ├── apps/
 │   ├── student-app/         # Android Native App (React Native, Expo Router, SQLite)
-│   ├── admin-web/           # Admin Web Portal (Next.js 14, Tailwind, shadcn/ui)
-│   ├── teacher-web/         # Faculty Portal (Next.js 14, Assignment & Doubts)
+│   ├── admin-web/           # Admin & Faculty Unified Web Portal (Next.js 14, Tailwind)
 │   └── public-website/      # Public Coaching Website & Direct APK Download
 ├── packages/
 │   ├── shared-types/        # Unified TypeScript data models & contracts

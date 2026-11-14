@@ -12,7 +12,6 @@
     "lint": "npm run --workspaces --if-present lint",
     "test": "npm run --workspaces --if-present test",
     "dev:admin": "npm --workspace=apps/admin-web run dev",
-    "dev:teacher": "npm --workspace=apps/teacher-web run dev",
     "dev:public": "npm --workspace=apps/public-website run dev",
     "dev:student": "npm --workspace=apps/student-app start"
   },
