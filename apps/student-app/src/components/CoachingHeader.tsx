@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Bell } from 'lucide-react-native';
 import { useAuthStore } from '../store/useAuthStore';
+import { useNotificationStore } from '../services/notificationService';
 
 interface CoachingHeaderProps {
   showStudentGreeting?: boolean;
@@ -13,7 +16,13 @@ export function CoachingHeader({
   onRefresh,
   isSyncing = false,
 }: CoachingHeaderProps) {
+  const router = useRouter();
   const { user, selectedBoard, selectedClass } = useAuthStore();
+  const { unreadCount, initPushNotifications } = useNotificationStore();
+
+  useEffect(() => {
+    initPushNotifications(user?.id, selectedBoard);
+  }, [user?.id, selectedBoard]);
 
   return (
     <View style={styles.container}>
@@ -35,16 +44,34 @@ export function CoachingHeader({
           </View>
         </View>
 
-        {/* Live Sync Status & Refresh */}
-        <TouchableOpacity
-          style={[styles.syncBadge, isSyncing && styles.syncBadgeLoading]}
-          onPress={onRefresh}
-          disabled={isSyncing}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.syncDot}>{isSyncing ? '🔄' : '🟢'}</Text>
-          <Text style={styles.syncText}>{isSyncing ? 'Syncing...' : 'Live Synced'}</Text>
-        </TouchableOpacity>
+        {/* Right Action Icons: Live Sync Status & Notification Bell */}
+        <View style={styles.rightActions}>
+          <TouchableOpacity
+            style={[styles.syncBadge, isSyncing && styles.syncBadgeLoading]}
+            onPress={onRefresh}
+            disabled={isSyncing}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.syncDot}>{isSyncing ? '🔄' : '🟢'}</Text>
+            <Text style={styles.syncText}>{isSyncing ? 'Syncing...' : 'Live'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.bellButton}
+            onPress={() => router.push('/notifications')}
+            activeOpacity={0.7}
+            accessibilityLabel="Notifications"
+          >
+            <Bell size={20} color="#334155" />
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Student Greeting & Class/Board Pills (If requested) */}
@@ -121,13 +148,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 1,
   },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   syncBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#ECFDF5',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#A7F3D0',
@@ -143,6 +175,37 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#047857',
+  },
+  bellButton: {
+    position: 'relative',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+    lineHeight: 11,
   },
   greetingRow: {
     flexDirection: 'row',

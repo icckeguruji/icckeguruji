@@ -133,6 +133,12 @@ export default function RootLayout() {
                 headerStyle: { backgroundColor: '#0F172A' },
               }}
             />
+            <Stack.Screen
+              name="notifications"
+              options={{
+                headerShown: false,
+              }}
+            />
           </Stack>
         </PaperProvider>
       </QueryClientProvider>

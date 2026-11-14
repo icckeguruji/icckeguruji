@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   LogOut,
   HelpCircle,
+  Bell,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -68,6 +69,7 @@ export function AdminSidebar() {
     { href: '/study-materials', icon: FileText, label: 'Notes & PDFs' },
     { href: '/payments', icon: CreditCard, label: 'Payments & UTR' },
     { href: '/examinations', icon: FileCheck2, label: 'Examinations' },
+    { href: '/notifications', icon: Bell, label: 'Push Notifications' },
     { href: '/teachers', icon: UserCheck, label: 'Faculty Management' },
     { href: '/reports', icon: BarChart3, label: 'Reports' },
     { href: '/settings', icon: Settings, label: 'Settings & Quota' },
@@ -80,6 +82,7 @@ export function AdminSidebar() {
     { href: '/teacher/doubts', icon: HelpCircle, label: 'Doubt Center' },
     { href: '/teacher/live-classes', icon: Video, label: 'Live Classes' },
     { href: '/teacher/study-materials', icon: FileText, label: 'Upload Notes' },
+    { href: '/notifications', icon: Bell, label: 'Push Broadcast' },
   ];
 
   const currentNav = role === 'teacher' || isTeacherSection ? teacherNavItems : adminNavItems;

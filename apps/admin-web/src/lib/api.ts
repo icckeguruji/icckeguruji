@@ -242,9 +242,27 @@ export const AdminApi = {
           }
         : p
     );
+
+    // Dispatch automated push notification to the student upon approval
+    if (typeof window !== 'undefined') {
+      try {
+        fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: '🎉 Enrollment Approved! Course Unlocked',
+            message: `Congratulations! Your enrollment for ${payment?.course?.title || 'BSEB/JAC Board Batch'} has been approved by Admin. All live classes, notes & exams are now accessible.`,
+            type: 'approval',
+            studentId: targetStudentId || undefined,
+            link: '/(tabs)/courses',
+          }),
+        }).catch(() => {});
+      } catch {}
+    }
+
     return {
       success: true,
-      message: 'Payment approved! Student ID activated and confirmation notification dispatched to registered email.',
+      message: 'Payment approved! Student ID activated and push notification dispatched to student device & registered email.',
     };
   },
 
