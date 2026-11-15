@@ -6,7 +6,6 @@ import { PublicFooter } from '@/components/PublicFooter';
 import { LanguageProvider } from '@/components/LanguageContext';
 import WhatsAppFloatingWidget from '@/components/WhatsAppFloatingWidget';
 import GrokAICounselorWidget from '@/components/GrokAICounselorWidget';
-import BoardExamCountdown from '@/components/BoardExamCountdown';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap', preload: false, fallback: ['system-ui', 'arial'] });
 
@@ -37,8 +36,6 @@ export default function RootLayout({
       <body className={inter.className}>
         <LanguageProvider>
           <div className="flex flex-col min-h-screen">
-            {/* Board Exam Countdown Banner — always visible at top */}
-            <BoardExamCountdown />
             <PublicNavbar />
             <main className="flex-1">{children}</main>
             <PublicFooter />

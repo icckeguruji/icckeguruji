@@ -10,7 +10,8 @@ export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 export const CURRENT_VERSION_CODE = Constants.expoConfig?.android?.versionCode || 1;
 
 const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/icckeguruji/icc/releases/latest';
-const DEFAULT_APK_FALLBACK_URL = 'https://github.com/icckeguruji/icc/releases/download/v1.0.0/ideal-coaching-release.apk';
+const DEFAULT_APK_FALLBACK_URL = 'https://github.com/icckeguruji/icc/releases/latest/download/ideal-coaching-release.apk';
+const CDN_MIRROR_PREFIX = 'https://ghproxy.net/';
 
 export interface UpdateInfo {
   hasUpdate: boolean;
@@ -191,16 +192,36 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
     const targetFile = `${FileSystem.documentDirectory}ideal-coaching-v${latestVersion}.apk`;
 
     try {
-      // Create resumable download with live progress callback
+      // Create resumable download with live progress callback and optimized headers
       let lastNotifPercent = -1;
+      let startTime = Date.now();
+      let lastBytes = 0;
+      let lastTime = startTime;
+      let downloadSpeedMBps = '0.0';
+
       const downloadResumable = FileSystem.createDownloadResumable(
         apkUrl,
         targetFile,
-        {},
+        {
+          headers: {
+            'Accept-Encoding': 'identity',
+            'User-Agent': 'ICC-Android-App-Updater/1.0.1',
+          },
+          cache: false,
+        },
         async (progress) => {
-          const total = progress.totalBytesExpectedToWrite || 30000000;
+          const total = progress.totalBytesExpectedToWrite || 22000000;
           const written = progress.totalBytesWritten;
           const percent = Math.min(100, Math.round((written / total) * 100));
+
+          const now = Date.now();
+          const timeDelta = (now - lastTime) / 1000;
+          if (timeDelta >= 1) {
+            const bytesDelta = written - lastBytes;
+            downloadSpeedMBps = (bytesDelta / timeDelta / (1024 * 1024)).toFixed(1);
+            lastTime = now;
+            lastBytes = written;
+          }
 
           set({
             downloadProgress: percent,
@@ -208,13 +229,13 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
             totalBytes: total,
           });
 
-          // Update Android notification bar progress every 20%
-          if (percent - lastNotifPercent >= 20 || percent === 100) {
+          // Update Android notification bar progress every 15%
+          if (percent - lastNotifPercent >= 15 || percent === 100) {
             lastNotifPercent = percent;
             try {
               await Notifications.scheduleNotificationAsync({
                 content: {
-                  title: `📲 Downloading ICC Update (${percent}%)`,
+                  title: `📲 Downloading ICC Update (${percent}%) • ${downloadSpeedMBps} MB/s`,
                   body: `${(written / 1024 / 1024).toFixed(1)} MB of ${(total / 1024 / 1024).toFixed(1)} MB downloaded`,
                   sticky: percent < 100,
                   sound: false,
@@ -254,11 +275,37 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       } else {
         throw new Error('Download did not return file URI');
       }
-    } catch (err: any) {
-      console.warn('Error during in-app update download:', err);
+    } catch (primaryErr: any) {
+      console.warn('Primary download attempt error, attempting CDN mirror fallback:', primaryErr);
+
+      try {
+        const mirrorUrl = `${CDN_MIRROR_PREFIX}${apkUrl}`;
+        const mirrorResumable = FileSystem.createDownloadResumable(
+          mirrorUrl,
+          targetFile,
+          {
+            headers: { 'Accept-Encoding': 'identity' },
+            cache: false,
+          }
+        );
+        const mirrorResult = await mirrorResumable.downloadAsync();
+        if (mirrorResult && mirrorResult.uri) {
+          set({
+            isDownloading: false,
+            downloadProgress: 100,
+            downloadedFilePath: mirrorResult.uri,
+            isReadyToInstall: true,
+          });
+          await get().installDownloadedApk();
+          return;
+        }
+      } catch (mirrorErr) {
+        console.warn('CDN mirror download error:', mirrorErr);
+      }
+
       set({
         isDownloading: false,
-        error: err?.message || 'Failed to download update APK',
+        error: primaryErr?.message || 'Failed to download update APK',
       });
 
       // Fallback: Open in Android browser or Download Manager

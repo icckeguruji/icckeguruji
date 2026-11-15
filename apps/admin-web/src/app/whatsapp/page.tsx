@@ -75,13 +75,12 @@ export default function WhatsAppAdminPage() {
 
   useEffect(() => {
     fetchStatus();
-    // Poll every 3 seconds if connecting or scanning QR, otherwise every 8 seconds
-    const interval = setInterval(
-      () => {
-        fetchStatus();
-      },
-      status.status === 'SCAN_QR' || status.status === 'CONNECTING' ? 3000 : 8000
-    );
+    // Poll every 3s only during QR scan / connecting, and 30s when connected or idle. Pauses when tab is hidden.
+    const pollInterval = status.status === 'SCAN_QR' || status.status === 'CONNECTING' ? 3000 : 30000;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchStatus();
+    }, pollInterval);
     return () => clearInterval(interval);
   }, [status.status]);
 
