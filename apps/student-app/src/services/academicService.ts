@@ -187,6 +187,17 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     has_sub_subjects: false,
     display_order: 6,
   },
+  {
+    id: 'sub-urdu-10',
+    course_id: 'cr000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000010',
+    name: 'Urdu (Darakhshan & Roshni)',
+    name_hi: 'उर्दू (درخشاں اور روشنی)',
+    code: 'URD-10',
+    icon_name: 'languages',
+    has_sub_subjects: false,
+    display_order: 7,
+  },
 ];
 
 export const initialAcademicChapters: AcademicChapter[] = [
@@ -359,6 +370,28 @@ export const initialAcademicChapters: AcademicChapter[] = [
     description: 'Asexual reproduction, sexual reproduction in plants & humans, reproductive health.',
     live_count: 0,
     lecture_count: 5,
+    material_count: 2,
+  },
+  {
+    id: 'ch-urdu-01',
+    subject_id: 'sub-urdu-10',
+    chapter_number: 1,
+    title: 'Hamd (حمد) — Khuda ki Tareef',
+    title_hi: 'हम्द — सबनम कमाली',
+    description: 'Sabnam Kamali ki likhi hui mashhoor Hamd ki tashreeh aur ahem sawalat.',
+    live_count: 0,
+    lecture_count: 3,
+    material_count: 2,
+  },
+  {
+    id: 'ch-urdu-02',
+    subject_id: 'sub-urdu-10',
+    chapter_number: 2,
+    title: 'Bhabhi Jaan (Afsaana)',
+    title_hi: 'भाभी जान — सोहैल अज़ीमाबादी',
+    description: 'Suhail Azimabadi ka mashhoor afsaana Bhabhi Jaan ka khulasa aur maroosi sawalat.',
+    live_count: 0,
+    lecture_count: 4,
     material_count: 2,
   },
 ];
@@ -568,6 +601,10 @@ class AcademicRepository {
     } catch {}
   }
 
+  getClasses(): string[] {
+    return ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
+  }
+
   // --- COURSES ---
   async getCourses(): Promise<Course[]> {
     return this.courses;
@@ -582,6 +619,7 @@ class AcademicRepository {
       id: `cr-${Date.now()}`,
       title: data.title || 'New Target Course',
       title_hi: data.title_hi || data.title || 'नया कोर्स',
+      tagline: data.tagline || 'Complete Board Exam Syllabus Mastery with BADE SIR',
       description: data.description || '',
       description_hi: data.description_hi || data.description || '',
       thumbnail_url:
@@ -593,6 +631,13 @@ class AcademicRepository {
       price: data.price !== undefined ? data.price : 999,
       discount_price: data.discount_price !== undefined ? data.discount_price : 499,
       validity_days: data.validity_days || 365,
+      start_date: data.start_date || new Date().toISOString().split('T')[0],
+      features: data.features || [
+        'Daily Live Classes',
+        'Handwritten PDF Notes',
+        'Weekly 30-Second AI Speed Quiz',
+        'Offline Study Mode',
+      ],
       is_published: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -609,6 +654,7 @@ class AcademicRepository {
           id: newCourse.id,
           title: newCourse.title,
           title_hi: newCourse.title_hi,
+          tagline: newCourse.tagline,
           description: newCourse.description,
           description_hi: newCourse.description_hi,
           thumbnail_url: newCourse.thumbnail_url,
@@ -618,6 +664,8 @@ class AcademicRepository {
           price: newCourse.price,
           discount_price: newCourse.discount_price,
           validity_days: newCourse.validity_days,
+          start_date: newCourse.start_date,
+          features: newCourse.features,
           is_published: true,
         });
       }
@@ -645,11 +693,14 @@ class AcademicRepository {
             .update({
               title: updates.title,
               title_hi: updates.title_hi,
+              tagline: updates.tagline,
               description: updates.description,
               thumbnail_url: updates.thumbnail_url,
               price: updates.price,
               discount_price: updates.discount_price,
               validity_days: updates.validity_days,
+              start_date: updates.start_date,
+              features: updates.features,
               updated_at: new Date().toISOString(),
             })
             .eq('id', id);

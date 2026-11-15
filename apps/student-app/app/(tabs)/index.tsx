@@ -106,7 +106,7 @@ export default function StudentHomeScreen() {
             <View style={styles.adminQuickHeader}>
               <View style={styles.adminQuickBadge}>
                 <ShieldCheck size={16} color="#B45309" />
-                <Text style={styles.adminQuickBadgeText}>👑 बड़े सर (DIRECTOR MODE ACTIVE)</Text>
+                <Text style={styles.adminQuickBadgeText}>👑 Director Command Center (BADE SIR)</Text>
               </View>
               <Text style={styles.adminQuickSub}>All administrative features unified inside app</Text>
             </View>
@@ -200,6 +200,31 @@ export default function StudentHomeScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* AI 30-Second Speed Quiz Quick Card */}
+        <TouchableOpacity
+          style={styles.homeQuizCard}
+          onPress={() => router.push('/(tabs)/tests')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.homeQuizLeft}>
+            <View style={styles.homeQuizIconBox}>
+              <Sparkles size={18} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.homeQuizTitle}>AI 30-Second Live Speed Quiz</Text>
+                <View style={styles.quizPtsBadge}>
+                  <Text style={styles.quizPtsBadgeText}>+10 / -5 Pts</Text>
+                </View>
+              </View>
+              <Text style={styles.homeQuizSub}>
+                Score: {user?.quiz_points || 0} PTS • Zero repetition test engine
+              </Text>
+            </View>
+          </View>
+          <ChevronRight size={18} color="#94A3B8" />
+        </TouchableOpacity>
 
         {/* Continue Watching / Resume Bar */}
         <View style={styles.section}>
@@ -308,7 +333,7 @@ export default function StudentHomeScreen() {
                 />
                 <View style={styles.courseTagBadge}>
                   <Text style={styles.courseTagBadgeText}>
-                    {c.title.includes('BSEB') ? 'BSEB 2026-27' : 'JAC 2026-27'}
+                    Board Batch 2027
                   </Text>
                 </View>
               </View>
@@ -514,6 +539,57 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  homeQuizCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  homeQuizLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  homeQuizIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  homeQuizTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  quizPtsBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  quizPtsBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  homeQuizSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
   },
   section: {
     marginBottom: 22,

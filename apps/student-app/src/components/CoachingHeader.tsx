@@ -39,7 +39,7 @@ export function CoachingHeader({
           <View style={styles.titleColumn}>
             <Text style={styles.coachingName}>IDEAL COACHING CENTRE</Text>
             <Text style={styles.tagline}>
-              BSEB & JAC Board • Dir: BADE SIR
+              Board Examination 2027 • Dir: BADE SIR
             </Text>
           </View>
         </View>
@@ -84,7 +84,7 @@ export function CoachingHeader({
 
           <View style={styles.pillGroup}>
             <View style={styles.boardPill}>
-              <Text style={styles.boardPillText}>{selectedBoard || 'BSEB'}</Text>
+              <Text style={styles.boardPillText}>🏆 {user?.quiz_points || 0} PTS</Text>
             </View>
             <View style={styles.classPill}>
               <Text style={styles.classPillText}>{selectedClass || 'Class 10'}</Text>

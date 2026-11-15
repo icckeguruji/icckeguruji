@@ -85,6 +85,8 @@ export interface UserProfile {
   avatar_url?: string;
   is_active: boolean;
   role?: 'student' | 'teacher' | 'admin' | 'super_admin';
+  quiz_points?: number;
+  badges?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -106,6 +108,7 @@ export interface Course {
   id: string;
   title: string;
   title_hi: string;
+  tagline?: string;
   description?: string;
   description_hi?: string;
   thumbnail_url?: string;
@@ -116,6 +119,8 @@ export interface Course {
   price: number;
   discount_price?: number;
   validity_days: number;
+  start_date?: string;
+  features?: string[];
   is_published: boolean;
   created_at: string;
   updated_at: string;

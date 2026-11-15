@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,32 +6,50 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  TextInput,
   ActivityIndicator,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
-import { generateGrokQuiz, QuizQuestion } from '../../src/services/grokAi';
+import { aiService, AIQuizQuestion, QuizSubmissionResult } from '../../src/services/aiService';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import {
   Sparkles,
   Award,
   CheckCircle2,
   XCircle,
   X,
-  HelpCircle,
+  Clock,
   RotateCcw,
+  Zap,
+  Shield,
+  Trophy,
+  Flame,
+  ArrowRight,
   BookOpen,
+  ChevronRight,
 } from 'lucide-react-native';
+
+const SUBJECTS_LIST = [
+  { id: 'ALL', name: 'All Subjects (Mixed)', hi: 'सभी विषय' },
+  { id: 'Science', name: 'Science', hi: 'विज्ञान' },
+  { id: 'Mathematics', name: 'Mathematics', hi: 'गणित' },
+  { id: 'Social Science', name: 'Social Science', hi: 'सामाजिक विज्ञान' },
+  { id: 'Hindi', name: 'Hindi', hi: 'हिंदी' },
+  { id: 'English', name: 'English', hi: 'अंग्रेज़ी' },
+  { id: 'Sanskrit', name: 'Sanskrit', hi: 'संस्कृत' },
+  { id: 'Urdu', name: 'Urdu', hi: 'اردو' },
+];
 
 export default function StudentTestsScreen() {
   const router = useRouter();
+  const { user, updateProfile } = useAuthStore();
 
-  const [tests, setTests] = useState([
+  const [tests] = useState([
     {
       id: 'ex-1',
-      title: 'BSEB Class 10 Science: Chemical Reactions & Equations Test',
+      title: 'Class 10 Science: Chemical Reactions & Equations Test',
       duration: 30,
       marks: 20,
       passMarks: 7,
@@ -40,123 +58,275 @@ export default function StudentTestsScreen() {
     },
     {
       id: 'ex-2',
-      title: 'BSEB Class 10 Mathematics: Real Numbers Practice Exam',
+      title: 'Class 10 Mathematics: Real Numbers Practice Exam',
       duration: 40,
       marks: 25,
       passMarks: 9,
       negative: 0.0,
       type: 'Mock Test',
     },
+    {
+      id: 'ex-3',
+      title: 'Class 10 Social Science: Nationalism & Resources Assessment',
+      duration: 45,
+      marks: 30,
+      passMarks: 10,
+      negative: 0.25,
+      type: 'Syllabus Test',
+    },
   ]);
 
-  // AI Quiz Modal States
+  // AI 30-Second Live Speed Quiz States
   const [isAiQuizModalOpen, setIsAiQuizModalOpen] = useState(false);
   const [quizPhase, setQuizPhase] = useState<'config' | 'playing' | 'result'>('config');
-  const [subject, setSubject] = useState('Science');
-  const [topic, setTopic] = useState('Chemical Reactions & Equations');
+  const [selectedSubject, setSelectedSubject] = useState('ALL');
   const [questionCount, setQuestionCount] = useState(5);
   const [loading, setLoading] = useState(false);
 
-  // Active Quiz State
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  // Active Quiz Playing State
+  const [questions, setQuestions] = useState<AIQuizQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [sessionPoints, setSessionPoints] = useState(0);
+  const [sessionResults, setSessionResults] = useState<
+    Array<{
+      question: AIQuizQuestion;
+      selectedIdx: number | null;
+      isCorrect: boolean;
+      pointsDelta: number;
+    }>
+  >([]);
+  const [newBadgeUnlocked, setNewBadgeUnlocked] = useState<string | null>(null);
 
-  const handleStartAiQuiz = async () => {
-    if (!topic.trim()) {
-      Alert.alert('Required Field', 'Please enter a chapter or topic name.');
-      return;
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // -------------------------------------------------------------
+  // 30-SECOND TIMER PER QUESTION
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (quizPhase === 'playing' && !isAnswered) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            handleAnswerQuestion(-1, true); // Timeout penalty: -5 pts
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [quizPhase, currentIdx, isAnswered]);
+
+  // Start Speed Quiz: Fetch Questions with Anti-Repetition
+  const handleStartSpeedQuiz = async () => {
     setLoading(true);
+    setNewBadgeUnlocked(null);
     try {
-      const qs = await generateGrokQuiz(subject, topic.trim(), questionCount);
+      const isUrdu = selectedSubject === 'Urdu';
+      const studentId = user?.id || 'guest_student';
+
+      const qs = await aiService.getLiveQuizQuestions(
+        studentId,
+        selectedSubject,
+        undefined,
+        isUrdu ? 'ur' : 'hi',
+        questionCount
+      );
+
       if (qs && qs.length > 0) {
         setQuestions(qs);
         setCurrentIdx(0);
-        setSelectedAnswers({});
+        setTimeLeft(30);
+        setIsAnswered(false);
+        setSelectedOption(null);
+        setSessionPoints(0);
+        setSessionResults([]);
         setQuizPhase('playing');
       } else {
-        Alert.alert('Notice', 'Could not generate quiz. Please try again.');
+        Alert.alert('Notice', 'No questions available. Please try another subject.');
       }
-    } catch {
-      Alert.alert('Error', 'Unable to start AI quiz.');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Unable to generate speed quiz.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSelectOption = (optionIndex: number) => {
-    setSelectedAnswers({
-      ...selectedAnswers,
-      [currentIdx]: optionIndex,
+  // Handle Question Answer or Timeout
+  const handleAnswerQuestion = async (optionIdx: number, isTimeout: boolean = false) => {
+    if (isAnswered) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    setIsAnswered(true);
+    setSelectedOption(isTimeout ? -1 : optionIdx);
+
+    const currentQ = questions[currentIdx];
+    const isCorrect = !isTimeout && optionIdx === currentQ.correctIndex;
+    const pointsDelta = isCorrect ? 10 : -5;
+
+    setSessionPoints((prev) => prev + pointsDelta);
+
+    // Save answer result for end review
+    setSessionResults((prev) => [
+      ...prev,
+      {
+        question: currentQ,
+        selectedIdx: isTimeout ? null : optionIdx,
+        isCorrect,
+        pointsDelta,
+      },
+    ]);
+
+    // Submit to atomic scoring & Supabase anti-repetition engine
+    const studentId = user?.id || 'guest_student';
+    const currentTotalPoints = user?.quiz_points || 0;
+    const currentBadges = user?.badges || [];
+
+    const result: QuizSubmissionResult = await aiService.submitAnswer(
+      studentId,
+      currentQ.id,
+      isCorrect,
+      currentQ.subject,
+      currentQ.chapter,
+      currentTotalPoints,
+      currentBadges
+    );
+
+    // Update client profile store
+    const updatedBadges = result.newlyUnlockedBadge
+      ? [...currentBadges, result.newlyUnlockedBadge]
+      : currentBadges;
+
+    updateProfile({
+      quiz_points: result.newTotalPoints,
+      badges: updatedBadges,
     });
+
+    if (result.newlyUnlockedBadge) {
+      setNewBadgeUnlocked(result.newlyUnlockedBadge);
+    }
   };
 
-  const calculateScore = () => {
-    let score = 0;
-    questions.forEach((q, idx) => {
-      if (selectedAnswers[idx] === q.correctIndex) {
-        score += 1;
-      }
-    });
-    return score;
+  // Advance to Next Question or Final Results
+  const handleNextQuestion = () => {
+    if (currentIdx < questions.length - 1) {
+      setCurrentIdx((prev) => prev + 1);
+      setTimeLeft(30);
+      setIsAnswered(false);
+      setSelectedOption(null);
+    } else {
+      setQuizPhase('result');
+    }
   };
 
   const resetQuiz = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setQuizPhase('config');
-    setSelectedAnswers({});
+    setQuestions([]);
     setCurrentIdx(0);
+    setTimeLeft(30);
+    setIsAnswered(false);
+    setSelectedOption(null);
+    setSessionPoints(0);
+    setSessionResults([]);
+    setNewBadgeUnlocked(null);
   };
+
+  const currentBadge =
+    user?.badges && user.badges.length > 0
+      ? user.badges[user.badges.length - 1]
+      : (user?.quiz_points || 0) >= 50
+      ? 'Bronze Scholar'
+      : 'Novice Student';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header */}
       <CoachingHeader />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Online Tests & Quizzes</Text>
-        <Text style={styles.headerSub}>
-          Timed MCQ tests with instant ICC AI practice generator
-        </Text>
-      </View>
-
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* ICC AI Quiz Banner */}
-        <View style={styles.aiQuizBanner}>
-          <View style={styles.aiQuizBannerHeader}>
-            <View style={styles.sparkleBox}>
-              <Sparkles size={20} color="#F59E0B" />
+        {/* Student Points & Badge Status Card */}
+        <View style={styles.profileStatCard}>
+          <View style={styles.profileStatLeft}>
+            <View style={styles.trophyIconBox}>
+              <Trophy size={24} color="#D97706" />
             </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.aiQuizBannerTitle}>AI Instant Practice Quiz</Text>
-                <View style={styles.aiTag}>
-                  <Text style={styles.aiTagText}>ICC AI</Text>
-                </View>
-              </View>
-              <Text style={styles.aiQuizBannerSub}>
-                Generate 5 or 10 board MCQs for any chapter in 1-click
+            <View>
+              <Text style={styles.profileScoreLabel}>Your Total Quiz Points</Text>
+              <Text style={styles.profileScoreVal}>
+                {user?.quiz_points || 0} <Text style={{ fontSize: 13, color: '#64748B' }}>PTS</Text>
               </Text>
             </View>
           </View>
+          <View style={styles.badgePill}>
+            <Award size={14} color="#B45309" />
+            <Text style={styles.badgePillText}>{currentBadge}</Text>
+          </View>
+        </View>
+
+        {/* AI 30-Second Live Speed Quiz Launch Banner */}
+        <View style={styles.speedQuizBanner}>
+          <View style={styles.speedQuizBannerHeader}>
+            <View style={styles.zapBox}>
+              <Zap size={22} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.speedQuizTitle}>AI 30-Second Live Speed Quiz</Text>
+                <View style={styles.liveTag}>
+                  <Text style={styles.liveTagText}>AI LIVE</Text>
+                </View>
+              </View>
+              <Text style={styles.speedQuizSub}>
+                +10 Points for Correct • -5 Points Penalty for Wrong / Timeout
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.bannerPerksRow}>
+            <View style={styles.perkItem}>
+              <Clock size={13} color="#CBD5E1" />
+              <Text style={styles.perkText}>30s Timer / Q</Text>
+            </View>
+            <View style={styles.perkItem}>
+              <Shield size={13} color="#CBD5E1" />
+              <Text style={styles.perkText}>Zero Repetition</Text>
+            </View>
+            <View style={styles.perkItem}>
+              <Flame size={13} color="#FBBF24" />
+              <Text style={styles.perkText}>Earn Rank Badges</Text>
+            </View>
+          </View>
+
           <TouchableOpacity
-            style={styles.aiQuizBannerBtn}
+            style={styles.startSpeedQuizBtn}
             onPress={() => {
               resetQuiz();
               setIsAiQuizModalOpen(true);
             }}
             activeOpacity={0.85}
           >
-            <Text style={styles.aiQuizBannerBtnText}>Generate Custom AI Quiz ⚡</Text>
+            <Text style={styles.startSpeedQuizBtnText}>Start 30s Speed Quiz ⚡</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Regular Course Tests */}
-        <Text style={styles.sectionHeading}>Scheduled Board Tests</Text>
+        {/* Regular Scheduled Tests */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Scheduled Board Examinations</Text>
+          <Text style={styles.sectionSub}>All Indian Curriculum Standards</Text>
+        </View>
+
         <View style={styles.testList}>
           {tests.map((test) => (
             <View key={test.id} style={styles.testCard}>
-              <View style={styles.badgeRow}>
+              <View style={styles.cardTopBadgeRow}>
                 <Text style={styles.typeBadge}>{test.type}</Text>
                 <Text style={styles.duration}>⏱️ {test.duration} mins</Text>
               </View>
@@ -181,6 +351,7 @@ export default function StudentTestsScreen() {
               <TouchableOpacity
                 style={styles.startBtn}
                 onPress={() => router.push(`/exam/${test.id}`)}
+                activeOpacity={0.8}
               >
                 <Text style={styles.startBtnText}>Start Test Now</Text>
               </TouchableOpacity>
@@ -190,210 +361,361 @@ export default function StudentTestsScreen() {
       </ScrollView>
 
       {/* ========================================================= */}
-      {/* GROK AI INTERACTIVE QUIZ MODAL                            */}
+      {/* AI 30-SECOND SPEED QUIZ INTERACTIVE MODAL                  */}
       {/* ========================================================= */}
       <Modal
         visible={isAiQuizModalOpen}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setIsAiQuizModalOpen(false)}
+        onRequestClose={() => {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setIsAiQuizModalOpen(false);
+        }}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Sparkles size={18} color="#D97706" />
+                <Zap size={18} color="#D97706" />
                 <Text style={styles.modalTitle}>
                   {quizPhase === 'config'
-                    ? 'ICC AI Practice Quiz'
+                    ? 'AI 30-Second Speed Quiz Setup'
                     : quizPhase === 'playing'
-                    ? `Quiz: ${subject} (${currentIdx + 1}/${questions.length})`
-                    : 'Quiz Results & Solutions'}
+                    ? `Live Challenge (${currentIdx + 1}/${questions.length})`
+                    : 'Quiz Results & Score Card'}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setIsAiQuizModalOpen(false)}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  setIsAiQuizModalOpen(false);
+                }}
+              >
                 <X size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            {/* Phase 1: Configuration */}
+            {/* ---------------------------------------------------- */}
+            {/* Phase 1: Configuration                                */}
+            {/* ---------------------------------------------------- */}
             {quizPhase === 'config' && (
               <ScrollView style={styles.modalBody}>
-                <Text style={styles.label}>Select Subject</Text>
+                <Text style={styles.label}>1. Select Subject (विषय चुनें)</Text>
                 <View style={styles.subjectChips}>
-                  {['Science', 'Mathematics', 'Social Science', 'Hindi', 'English'].map((sub) => (
+                  {SUBJECTS_LIST.map((sub) => (
                     <TouchableOpacity
-                      key={sub}
-                      style={[styles.subjectChip, subject === sub && styles.subjectChipActive]}
-                      onPress={() => setSubject(sub)}
+                      key={sub.id}
+                      style={[
+                        styles.subjectChip,
+                        selectedSubject === sub.id && styles.subjectChipActive,
+                      ]}
+                      onPress={() => setSelectedSubject(sub.id)}
                     >
                       <Text
-                        style={[styles.subjectChipText, subject === sub && styles.subjectChipTextActive]}
+                        style={[
+                          styles.subjectChipText,
+                          selectedSubject === sub.id && styles.subjectChipTextActive,
+                        ]}
                       >
-                        {sub}
+                        {sub.name}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
-                <Text style={styles.label}>Chapter / Topic</Text>
-                <TextInput
-                  style={styles.input}
-                  value={topic}
-                  onChangeText={setTopic}
-                  placeholder="e.g. Chemical Reactions, Electricity, Triangles..."
-                  placeholderTextColor="#94A3B8"
-                />
-
-                <Text style={styles.label}>Number of Questions</Text>
+                <Text style={styles.label}>2. Select Question Count</Text>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {[5, 10].map((num) => (
                     <TouchableOpacity
                       key={num}
-                      style={[styles.numChip, questionCount === num && styles.numChipActive]}
+                      style={[
+                        styles.numChip,
+                        questionCount === num && styles.numChipActive,
+                      ]}
                       onPress={() => setQuestionCount(num)}
                     >
-                      <Text style={[styles.numChipText, questionCount === num && styles.numChipTextActive]}>
-                        {num} Questions
+                      <Text
+                        style={[
+                          styles.numChipText,
+                          questionCount === num && styles.numChipTextActive,
+                        ]}
+                      >
+                        {num} Questions ({num * 10} Max Pts)
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
+                {/* Anti-Repetition Guarantee Box */}
+                <View style={styles.antiRepetitionBox}>
+                  <Shield size={16} color="#059669" />
+                  <Text style={styles.antiRepetitionText}>
+                    AI Anti-Repetition Engine active. You will receive fresh board questions
+                    tailored to your class syllabus with zero repeats.
+                  </Text>
+                </View>
+
+                <View style={styles.scoringRuleRow}>
+                  <View style={styles.rulePillGreen}>
+                    <Text style={styles.rulePillGreenText}>✅ Correct: +10 Pts</Text>
+                  </View>
+                  <View style={styles.rulePillRed}>
+                    <Text style={styles.rulePillRedText}>❌ Wrong / Timeout: -5 Pts</Text>
+                  </View>
+                </View>
+
                 <TouchableOpacity
                   style={[styles.startQuizBtn, loading && { opacity: 0.6 }]}
-                  onPress={handleStartAiQuiz}
+                  onPress={handleStartSpeedQuiz}
                   disabled={loading}
+                  activeOpacity={0.85}
                 >
                   {loading ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <>
-                      <Sparkles size={16} color="#FFFFFF" />
-                      <Text style={styles.startQuizBtnText}>Generate & Start Quiz 🚀</Text>
+                      <Zap size={16} color="#FFFFFF" />
+                      <Text style={styles.startQuizBtnText}>
+                        Start 30-Second Speed Quiz ⚡
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>
               </ScrollView>
             )}
 
-            {/* Phase 2: Playing Quiz */}
+            {/* ---------------------------------------------------- */}
+            {/* Phase 2: Playing Live 30-Second Quiz                 */}
+            {/* ---------------------------------------------------- */}
             {quizPhase === 'playing' && questions.length > 0 && (
               <ScrollView style={styles.modalBody}>
+                {/* Timer Bar & Live Score Header */}
+                <View style={styles.timerHeaderRow}>
+                  <View style={styles.timerBadge}>
+                    <Clock
+                      size={14}
+                      color={timeLeft <= 5 ? '#EF4444' : timeLeft <= 10 ? '#F59E0B' : '#2563EB'}
+                    />
+                    <Text
+                      style={[
+                        styles.timerText,
+                        timeLeft <= 5 && { color: '#EF4444', fontWeight: '800' },
+                      ]}
+                    >
+                      00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}s
+                    </Text>
+                  </View>
+
+                  <View style={styles.liveScoreBadge}>
+                    <Text style={styles.liveScoreLabel}>Run Score:</Text>
+                    <Text
+                      style={[
+                        styles.liveScoreVal,
+                        sessionPoints < 0 ? { color: '#EF4444' } : { color: '#059669' },
+                      ]}
+                    >
+                      {sessionPoints > 0 ? `+${sessionPoints}` : sessionPoints} Pts
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Visual Progress Bar for 30 Seconds */}
+                <View style={styles.timerProgressBg}>
+                  <View
+                    style={[
+                      styles.timerProgressFill,
+                      {
+                        width: `${Math.max(0, (timeLeft / 30) * 100)}%`,
+                        backgroundColor:
+                          timeLeft <= 5 ? '#EF4444' : timeLeft <= 10 ? '#F59E0B' : '#2563EB',
+                      },
+                    ]}
+                  />
+                </View>
+
+                {/* Question Card */}
                 <View style={styles.questionCard}>
-                  <Text style={styles.questionIndex}>
-                    Question {currentIdx + 1} of {questions.length}
-                  </Text>
+                  <View style={styles.questionMetaRow}>
+                    <Text style={styles.questionIndex}>
+                      QUESTION {currentIdx + 1} OF {questions.length}
+                    </Text>
+                    <Text style={styles.questionSubjectTag}>
+                      {questions[currentIdx]?.subject}
+                    </Text>
+                  </View>
                   <Text style={styles.questionText}>
                     {questions[currentIdx]?.question}
                   </Text>
                 </View>
 
+                {/* Options List */}
                 <View style={styles.optionsList}>
                   {questions[currentIdx]?.options.map((opt, oIdx) => {
-                    const isSelected = selectedAnswers[currentIdx] === oIdx;
+                    const isSelected = selectedOption === oIdx;
+                    const isCorrectOpt = oIdx === questions[currentIdx].correctIndex;
+
+                    let btnStyle: any = styles.optionBtn;
+                    let textStyle: any = styles.optionText;
+
+                    if (isAnswered) {
+                      if (isCorrectOpt) {
+                        btnStyle = styles.optionBtnCorrect;
+                        textStyle = styles.optionTextCorrect;
+                      } else if (isSelected) {
+                        btnStyle = styles.optionBtnWrong;
+                        textStyle = styles.optionTextWrong;
+                      }
+                    }
+
                     return (
                       <TouchableOpacity
                         key={oIdx}
-                        style={[styles.optionBtn, isSelected && styles.optionBtnSelected]}
-                        onPress={() => handleSelectOption(oIdx)}
+                        style={btnStyle}
+                        onPress={() => handleAnswerQuestion(oIdx)}
+                        disabled={isAnswered}
                         activeOpacity={0.8}
                       >
-                        <View style={[styles.optionRadio, isSelected && styles.optionRadioSelected]}>
-                          <Text
-                            style={[
-                              styles.optionRadioText,
-                              isSelected && styles.optionRadioTextSelected,
-                            ]}
-                          >
+                        <View style={styles.optionLetterBox}>
+                          <Text style={styles.optionLetterText}>
                             {String.fromCharCode(65 + oIdx)}
                           </Text>
                         </View>
-                        <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                          {opt}
-                        </Text>
+                        <Text style={textStyle}>{opt}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
 
-                <View style={styles.quizNavRow}>
-                  {currentIdx > 0 && (
-                    <TouchableOpacity
-                      style={styles.prevBtn}
-                      onPress={() => setCurrentIdx(currentIdx - 1)}
-                    >
-                      <Text style={styles.prevBtnText}>Previous</Text>
-                    </TouchableOpacity>
-                  )}
+                {/* Instant Feedback & AI Explanation */}
+                {isAnswered && (
+                  <View style={styles.feedbackContainer}>
+                    {selectedOption === questions[currentIdx].correctIndex ? (
+                      <View style={styles.correctBanner}>
+                        <CheckCircle2 size={18} color="#059669" />
+                        <Text style={styles.correctBannerText}>
+                          🎉 +10 Points! Correct Answer!
+                        </Text>
+                      </View>
+                    ) : selectedOption === -1 ? (
+                      <View style={styles.wrongBanner}>
+                        <Clock size={18} color="#DC2626" />
+                        <Text style={styles.wrongBannerText}>
+                          ⏰ Time Up! -5 Points Penalty.
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.wrongBanner}>
+                        <XCircle size={18} color="#DC2626" />
+                        <Text style={styles.wrongBannerText}>
+                          ❌ Incorrect (-5 Points Penalty).
+                        </Text>
+                      </View>
+                    )}
 
-                  {currentIdx < questions.length - 1 ? (
+                    <View style={styles.explanationBox}>
+                      <Text style={styles.explanationTitle}>💡 AI Guruji Explanation:</Text>
+                      <Text style={styles.explanationText}>
+                        {questions[currentIdx].explanation}
+                      </Text>
+                    </View>
+
                     <TouchableOpacity
-                      style={styles.nextBtn}
-                      onPress={() => setCurrentIdx(currentIdx + 1)}
+                      style={styles.nextQuestionBtn}
+                      onPress={handleNextQuestion}
+                      activeOpacity={0.85}
                     >
-                      <Text style={styles.nextBtnText}>Next Question</Text>
+                      <Text style={styles.nextQuestionBtnText}>
+                        {currentIdx < questions.length - 1
+                          ? 'Next Question ➔'
+                          : 'View Final Score Card 🏆'}
+                      </Text>
                     </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.submitQuizBtn}
-                      onPress={() => setQuizPhase('result')}
-                    >
-                      <Text style={styles.submitQuizBtnText}>Submit & View Score</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
+                  </View>
+                )}
               </ScrollView>
             )}
 
-            {/* Phase 3: Results & Explanations */}
+            {/* ---------------------------------------------------- */}
+            {/* Phase 3: Results & Badge Celebration                 */}
+            {/* ---------------------------------------------------- */}
             {quizPhase === 'result' && (
               <ScrollView style={styles.modalBody}>
                 <View style={styles.scoreBanner}>
-                  <Award size={36} color="#F59E0B" />
+                  <Trophy size={42} color="#F59E0B" />
                   <Text style={styles.scoreTitle}>
-                    Score: {calculateScore()} / {questions.length}
+                    {sessionPoints >= 0 ? `+${sessionPoints}` : sessionPoints} Points Earned!
                   </Text>
                   <Text style={styles.scoreSub}>
-                    {calculateScore() >= Math.round(questions.length * 0.7)
-                      ? '🌟 Excellent performance! Keep practicing.'
-                      : '👍 Good effort! Review the detailed solutions below.'}
+                    Total Profile Points: {user?.quiz_points || 0} PTS
                   </Text>
                 </View>
 
-                <Text style={[styles.sectionHeading, { marginTop: 14 }]}>
-                  Solutions & Explanations:
+                {/* Newly Unlocked Badge Callout */}
+                {newBadgeUnlocked && (
+                  <View style={styles.unlockedBadgeBox}>
+                    <Award size={24} color="#B45309" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.unlockedBadgeTitle}>New Rank Badge Unlocked! 🎖️</Text>
+                      <Text style={styles.unlockedBadgeName}>{newBadgeUnlocked}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Score Breakdown */}
+                <View style={styles.breakdownRow}>
+                  <View style={styles.breakdownItem}>
+                    <Text style={styles.breakdownVal}>
+                      {sessionResults.filter((r) => r.isCorrect).length}
+                    </Text>
+                    <Text style={styles.breakdownLabel}>Correct (+10)</Text>
+                  </View>
+                  <View style={styles.breakdownItem}>
+                    <Text style={[styles.breakdownVal, { color: '#DC2626' }]}>
+                      {sessionResults.filter((r) => !r.isCorrect).length}
+                    </Text>
+                    <Text style={styles.breakdownLabel}>Wrong (-5)</Text>
+                  </View>
+                  <View style={styles.breakdownItem}>
+                    <Text style={[styles.breakdownVal, { color: '#D97706' }]}>
+                      {currentBadge}
+                    </Text>
+                    <Text style={styles.breakdownLabel}>Current Badge</Text>
+                  </View>
+                </View>
+
+                {/* Question by Question Review */}
+                <Text style={[styles.sectionHeading, { marginTop: 16 }]}>
+                  Solutions & Detailed Explanations
                 </Text>
 
-                {questions.map((q, idx) => {
-                  const userChoice = selectedAnswers[idx];
-                  const isCorrect = userChoice === q.correctIndex;
-                  return (
-                    <View key={q.id} style={styles.reviewCard}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        {isCorrect ? (
-                          <CheckCircle2 size={16} color="#059669" />
-                        ) : (
-                          <XCircle size={16} color="#DC2626" />
-                        )}
-                        <Text style={styles.reviewQIndex}>Question {idx + 1}</Text>
-                      </View>
-                      <Text style={styles.reviewQText}>{q.question}</Text>
-                      <Text style={styles.reviewCorrect}>
-                        Correct Answer: ({String.fromCharCode(65 + q.correctIndex)}) {q.options[q.correctIndex]}
+                {sessionResults.map((res, idx) => (
+                  <View key={res.question.id} style={styles.reviewCard}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {res.isCorrect ? (
+                        <CheckCircle2 size={16} color="#059669" />
+                      ) : (
+                        <XCircle size={16} color="#DC2626" />
+                      )}
+                      <Text style={styles.reviewQIndex}>
+                        Question {idx + 1}: {res.isCorrect ? '+10 Pts' : '-5 Pts'}
                       </Text>
-                      <View style={styles.explanationBox}>
-                        <Text style={styles.explanationTitle}>💡 AI Guruji Explanation:</Text>
-                        <Text style={styles.explanationText}>{q.explanation}</Text>
-                      </View>
                     </View>
-                  );
-                })}
+                    <Text style={styles.reviewQText}>{res.question.question}</Text>
+                    <Text style={styles.reviewCorrect}>
+                      Correct: ({String.fromCharCode(65 + res.question.correctIndex)}){' '}
+                      {res.question.options[res.question.correctIndex]}
+                    </Text>
+                    <View style={styles.explanationBox}>
+                      <Text style={styles.explanationTitle}>💡 AI Explanation:</Text>
+                      <Text style={styles.explanationText}>{res.question.explanation}</Text>
+                    </View>
+                  </View>
+                ))}
 
                 <TouchableOpacity style={styles.retakeBtn} onPress={resetQuiz}>
                   <RotateCcw size={16} color="#FFFFFF" />
-                  <Text style={styles.retakeBtnText}>Take Another AI Quiz</Text>
+                  <Text style={styles.retakeBtnText}>Play Another Speed Quiz</Text>
                 </TouchableOpacity>
               </ScrollView>
             )}
@@ -409,110 +731,170 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  header: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  headerSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
   scroll: {
     padding: 16,
     paddingBottom: 40,
   },
-  aiQuizBanner: {
-    backgroundColor: '#1E1B4B',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
+  profileStatCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#312E81',
+    borderColor: '#E2E8F0',
   },
-  aiQuizBannerHeader: {
+  profileStatLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  sparkleBox: {
-    width: 40,
-    height: 40,
+  trophyIconBox: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: '#FEF3C7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  aiQuizBannerTitle: {
+  profileScoreLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  profileScoreVal: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  badgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  badgePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  speedQuizBanner: {
+    backgroundColor: '#0F172A',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  speedQuizBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  zapBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speedQuizTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  aiTag: {
-    backgroundColor: '#D97706',
+  liveTag: {
+    backgroundColor: '#DC2626',
     paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingVertical: 2,
     borderRadius: 4,
   },
-  aiTagText: {
+  liveTagText: {
     fontSize: 9,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  aiQuizBannerSub: {
+  speedQuizSub: {
     fontSize: 11,
-    color: '#C7D2FE',
+    color: '#94A3B8',
     marginTop: 2,
   },
-  aiQuizBannerBtn: {
+  bannerPerksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#1E293B',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 12,
+  },
+  perkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  perkText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#CBD5E1',
+  },
+  startSpeedQuizBtn: {
     backgroundColor: '#2563EB',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 14,
   },
-  aiQuizBannerBtnText: {
-    fontSize: 12,
+  startSpeedQuizBtnText: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  sectionHeaderRow: {
+    marginBottom: 10,
   },
   sectionHeading: {
     fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 10,
+  },
+  sectionSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
   },
   testList: {
-    gap: 14,
+    gap: 12,
   },
   testCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  badgeRow: {
+  cardTopBadgeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   typeBadge: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#2563EB',
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   duration: {
     fontSize: 11,
@@ -521,38 +903,35 @@ const styles = StyleSheet.create({
   },
   testTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0F172A',
-    lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   statsRow: {
     flexDirection: 'row',
     backgroundColor: '#F8FAFC',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 10,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   statBox: {
     flex: 1,
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 9,
-    fontWeight: '700',
+    fontSize: 10,
     color: '#64748B',
-    textTransform: 'uppercase',
+    marginBottom: 2,
   },
   statVal: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0F172A',
-    marginTop: 2,
   },
   startBtn: {
     backgroundColor: '#2563EB',
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: 'center',
   },
   startBtnText: {
@@ -562,64 +941,64 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'flex-end',
   },
   modalCard: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 14,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-    marginBottom: 14,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
   modalBody: {
-    maxHeight: 480,
+    padding: 16,
+    paddingBottom: 30,
   },
   label: {
     fontSize: 12,
     fontWeight: '700',
     color: '#475569',
-    marginBottom: 8,
-    marginTop: 10,
+    marginBottom: 6,
+    marginTop: 6,
   },
   subjectChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
+    marginBottom: 10,
   },
   subjectChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   subjectChipActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#2563EB',
     borderColor: '#2563EB',
   },
   subjectChipText: {
     fontSize: 12,
-    color: '#475569',
     fontWeight: '600',
+    color: '#475569',
   },
   subjectChipTextActive: {
-    color: '#2563EB',
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   numChip: {
@@ -632,7 +1011,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   numChipActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#2563EB',
     borderColor: '#2563EB',
   },
   numChipText: {
@@ -641,218 +1020,368 @@ const styles = StyleSheet.create({
     color: '#475569',
   },
   numChipTextActive: {
-    color: '#2563EB',
+    color: '#FFFFFF',
     fontWeight: '700',
   },
-  input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
-    color: '#0F172A',
-  },
-  startQuizBtn: {
+  antiRepetitionBox: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  antiRepetitionText: {
+    fontSize: 11,
+    color: '#166534',
+    flex: 1,
+    lineHeight: 16,
+  },
+  scoringRuleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  rulePillGreen: {
+    flex: 1,
+    backgroundColor: '#DCFCE7',
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  rulePillGreenText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  rulePillRed: {
+    flex: 1,
+    backgroundColor: '#FEE2E2',
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  rulePillRedText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B91C1C',
+  },
+  startQuizBtn: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#2563EB',
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 20,
-    marginBottom: 10,
   },
   startQuizBtnText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  questionCard: {
+  timerHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  timerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: '#EFF6FF',
-    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  timerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  liveScoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  liveScoreLabel: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  liveScoreVal: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  timerProgressBg: {
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  timerProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  questionCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
     padding: 14,
-    marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+  },
+  questionMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   questionIndex: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#2563EB',
-    marginBottom: 4,
-    textTransform: 'uppercase',
+  },
+  questionSubjectTag: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   questionText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
-    lineHeight: 20,
+    lineHeight: 24,
   },
   optionsList: {
     gap: 10,
-    marginBottom: 16,
   },
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#F8FAFC',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
+    gap: 10,
+  },
+  optionBtnCorrect: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 2,
+    borderColor: '#059669',
+    gap: 10,
   },
-  optionBtnSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
+  optionBtnWrong: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 2,
+    borderColor: '#DC2626',
+    gap: 10,
   },
-  optionRadio: {
+  optionLetterBox: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionRadioSelected: {
-    backgroundColor: '#2563EB',
-  },
-  optionRadioText: {
+  optionLetterText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#475569',
-  },
-  optionRadioTextSelected: {
-    color: '#FFFFFF',
   },
   optionText: {
-    fontSize: 13,
-    color: '#334155',
+    fontSize: 14,
+    color: '#1E293B',
     flex: 1,
+    fontWeight: '500',
+  },
+  optionTextCorrect: {
+    fontSize: 14,
+    color: '#065F46',
+    flex: 1,
+    fontWeight: '700',
+  },
+  optionTextWrong: {
+    fontSize: 14,
+    color: '#991B1B',
+    flex: 1,
+    fontWeight: '600',
+  },
+  feedbackContainer: {
+    marginTop: 14,
+  },
+  correctBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#DCFCE7',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  correctBannerText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  wrongBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEE2E2',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  wrongBannerText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+  explanationBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  explanationTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D97706',
+    marginBottom: 2,
+  },
+  explanationText: {
+    fontSize: 12,
+    color: '#475569',
     lineHeight: 18,
   },
-  optionTextSelected: {
-    color: '#1E40AF',
-    fontWeight: '700',
-  },
-  quizNavRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingTop: 10,
-  },
-  prevBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-  },
-  prevBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  nextBtn: {
-    flex: 2,
-    paddingVertical: 12,
-    borderRadius: 10,
+  nextQuestionBtn: {
     backgroundColor: '#2563EB',
-    alignItems: 'center',
-  },
-  nextBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  submitQuizBtn: {
-    flex: 2,
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#059669',
+    borderRadius: 8,
     alignItems: 'center',
   },
-  submitQuizBtnText: {
-    fontSize: 12,
+  nextQuestionBtnText: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   scoreBanner: {
+    alignItems: 'center',
     backgroundColor: '#FEF3C7',
     borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
+    padding: 18,
+    marginBottom: 12,
   },
   scoreTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: '#92400E',
-    marginTop: 8,
+    marginTop: 6,
   },
   scoreSub: {
     fontSize: 12,
     color: '#B45309',
-    marginTop: 4,
-    textAlign: 'center',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  unlockedBadgeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  unlockedBadgeTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  unlockedBadgeName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#78350F',
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  breakdownItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  breakdownVal: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  breakdownLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
   },
   reviewCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     padding: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 10,
-    gap: 4,
+    marginTop: 10,
   },
   reviewQIndex: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: '#334155',
   },
   reviewQText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#0F172A',
     marginVertical: 4,
   },
   reviewCorrect: {
     fontSize: 12,
-    color: '#059669',
-    fontWeight: '600',
-  },
-  explanationBox: {
-    backgroundColor: '#F0FDF4',
-    padding: 8,
-    borderRadius: 8,
-    marginTop: 6,
-    borderWidth: 1,
-    borderColor: '#DCFCE7',
-  },
-  explanationTitle: {
-    fontSize: 11,
     fontWeight: '700',
-    color: '#166534',
-    marginBottom: 2,
-  },
-  explanationText: {
-    fontSize: 11,
-    color: '#14532D',
-    lineHeight: 16,
+    color: '#059669',
+    marginBottom: 6,
   },
   retakeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
     backgroundColor: '#2563EB',
     paddingVertical: 12,
     borderRadius: 10,
-    marginTop: 14,
-    marginBottom: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
   },
   retakeBtnText: {
     fontSize: 13,

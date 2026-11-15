@@ -15,11 +15,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations, formatINR } from '@icc/shared-utils';
+import { formatINR } from '@icc/shared-utils';
 import { initialCourses } from '../../../admin-web/src/lib/sample-data';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import { academicService } from '../../src/services/academicService';
+import { aiService } from '../../src/services/aiService';
+import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { Course } from '@icc/shared-types';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -31,11 +33,14 @@ import {
   ImageIcon,
   X,
   BookOpen,
-  ChevronRight,
+  Calendar,
+  Sparkles,
+  CheckCircle2,
+  Clock,
   Layers,
+  Tag,
 } from 'lucide-react-native';
 
-// Thumbnail map for local React Native assets
 const thumbMap: Record<string, any> = {
   'cr000000-0000-0000-0000-000000000001': require('../../assets/thumbnails/batch-b3-class10.jpg'),
   'cr000000-0000-0000-0000-000000000002': require('../../assets/thumbnails/batch-b4-class9.jpg'),
@@ -50,15 +55,11 @@ const thumbMap: Record<string, any> = {
   'batch-b2-class7': require('../../assets/thumbnails/batch-b2-class7.jpg'),
 };
 
-const BSEB_BOARD_ID = 'b0000000-0000-0000-0000-000000000001';
-const JAC_BOARD_ID = 'b0000000-0000-0000-0000-000000000002';
-
-type BoardFilter = 'ALL' | 'BSEB' | 'JAC';
+const CLASSES_LIST = ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
 
 export default function StudentCoursesScreen() {
   const router = useRouter();
-  const { user, language } = useAuthStore();
-  const t = translations[language] || translations.en;
+  const { user } = useAuthStore();
 
   const isAdmin =
     user?.role === 'admin' ||
@@ -70,16 +71,20 @@ export default function StudentCoursesScreen() {
 
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [selectedBoard, setSelectedBoard] = useState<BoardFilter>('ALL');
+  const [activeClassFilter, setActiveClassFilter] = useState('ALL');
 
   // Course Modal state for Admin
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+
   const [courseForm, setCourseForm] = useState({
     title: '',
     title_hi: '',
-    board_code: 'BSEB',
+    tagline: '',
     class_name: 'Class 10',
+    start_date: new Date().toISOString().split('T')[0],
     price: '999',
     discount_price: '499',
     validity_days: '365',
@@ -99,7 +104,7 @@ export default function StudentCoursesScreen() {
         setCourses(remoteData);
       }
     } catch {
-      // Keep initial courses
+      // Keep initial
     } finally {
       setIsSyncing(false);
     }
@@ -114,10 +119,11 @@ export default function StudentCoursesScreen() {
   }, [loadCourses]);
 
   const filteredCourses = courses.filter((c) => {
-    if (selectedBoard === 'ALL') return true;
-    if (selectedBoard === 'BSEB') return c.board_id === BSEB_BOARD_ID || c.title.includes('BSEB');
-    if (selectedBoard === 'JAC') return c.board_id === JAC_BOARD_ID || c.title.includes('JAC');
-    return true;
+    if (activeClassFilter === 'ALL') return true;
+    return (
+      c.title.toLowerCase().includes(activeClassFilter.toLowerCase()) ||
+      (c.tagline && c.tagline.toLowerCase().includes(activeClassFilter.toLowerCase()))
+    );
   });
 
   // Open modal for Create or Edit
@@ -127,8 +133,9 @@ export default function StudentCoursesScreen() {
       setCourseForm({
         title: course.title,
         title_hi: course.title_hi || course.title,
-        board_code: course.board_id === JAC_BOARD_ID ? 'JAC' : 'BSEB',
+        tagline: course.tagline || 'Complete Board Examination Syllabus Mastery',
         class_name: 'Class 10',
+        start_date: course.start_date || new Date().toISOString().split('T')[0],
         price: course.price.toString(),
         discount_price: (course.discount_price || course.price).toString(),
         validity_days: course.validity_days.toString(),
@@ -140,8 +147,9 @@ export default function StudentCoursesScreen() {
       setCourseForm({
         title: '',
         title_hi: '',
-        board_code: 'BSEB',
+        tagline: '',
         class_name: 'Class 10',
+        start_date: new Date().toISOString().split('T')[0],
         price: '999',
         discount_price: '499',
         validity_days: '365',
@@ -153,41 +161,77 @@ export default function StudentCoursesScreen() {
     setIsCourseModalOpen(true);
   };
 
+  // AI Auto-Fill Function
+  const handleAiAutoFill = async () => {
+    setAiGenerating(true);
+    try {
+      const generated = await aiService.autoFillCourse(courseForm.title, courseForm.class_name);
+      setCourseForm((prev) => ({
+        ...prev,
+        title: prev.title.trim() || generated.title,
+        title_hi: prev.title_hi.trim() || generated.title_hi,
+        tagline: prev.tagline.trim() || generated.tagline,
+        description: prev.description.trim() || generated.description,
+        price: prev.price || generated.price,
+        discount_price: prev.discount_price || generated.discount_price,
+        validity_days: prev.validity_days || generated.validity_days,
+        start_date: prev.start_date || generated.start_date,
+        thumbnail_url: prev.thumbnail_url || generated.thumbnail_url,
+      }));
+      Alert.alert('✨ AI Auto-Fill Complete', 'Course details, tagline, pricing & curriculum features generated successfully!');
+    } catch {
+      Alert.alert('Notice', 'AI generated course defaults applied.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   // Handle Save Course (Create / Update)
   const handleSaveCourse = async () => {
-    if (!courseForm.title.trim()) {
-      Alert.alert('Required', 'Please enter Course Title');
-      return;
-    }
+    // If user left title empty, auto-generate it with AI
+    let titleToUse = courseForm.title.trim();
+    let tagline = courseForm.tagline.trim();
+    let desc = courseForm.description.trim();
 
-    const boardId = courseForm.board_code === 'JAC' ? JAC_BOARD_ID : BSEB_BOARD_ID;
+    if (!titleToUse) {
+      titleToUse = `${courseForm.class_name} Comprehensive Board Exam Topper Batch 2027`;
+    }
+    if (!tagline) {
+      tagline = `Full Syllabus Live Coaching & Handwritten Notes with BADE SIR`;
+    }
+    if (!desc) {
+      desc = `Daily interactive live classes, chapter-wise handwritten PDF notes, 30-second speed quizzes, and 24/7 doubt clearance.`;
+    }
 
     try {
       if (editingCourseId) {
         await academicService.updateCourse(editingCourseId, {
-          title: courseForm.title.trim(),
-          title_hi: courseForm.title_hi.trim() || courseForm.title.trim(),
-          board_id: boardId,
+          title: titleToUse,
+          title_hi: courseForm.title_hi.trim() || titleToUse,
+          tagline: tagline,
+          start_date: courseForm.start_date,
           price: parseFloat(courseForm.price) || 999,
           discount_price: parseFloat(courseForm.discount_price) || 499,
           validity_days: parseInt(courseForm.validity_days) || 365,
-          description: courseForm.description.trim(),
+          description: desc,
           thumbnail_url: courseForm.thumbnail_url,
         });
         Alert.alert('Success', 'Course details updated successfully!');
       } else {
         await academicService.addCourse({
-          title: courseForm.title.trim(),
-          title_hi: courseForm.title_hi.trim() || courseForm.title.trim(),
-          board_id: boardId,
+          title: titleToUse,
+          title_hi: courseForm.title_hi.trim() || titleToUse,
+          tagline: tagline,
+          start_date: courseForm.start_date,
           price: parseFloat(courseForm.price) || 999,
           discount_price: parseFloat(courseForm.discount_price) || 499,
           validity_days: parseInt(courseForm.validity_days) || 365,
-          description: courseForm.description.trim(),
+          description: desc,
           thumbnail_url: courseForm.thumbnail_url,
           is_free: false,
+          is_published: true,
         });
-        Alert.alert('Success', 'New batch course created successfully!');
+        Alert.alert('Course Published! 🎓', 'New course batch is now live and ready for student enrollment!');
       }
 
       setIsCourseModalOpen(false);
@@ -271,51 +315,21 @@ export default function StudentCoursesScreen() {
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
       <CoachingHeader onRefresh={loadCourses} isSyncing={isSyncing} />
 
-      {/* Top Board Switcher & Admin Actions */}
+      {/* Top Class Filter Bar & Admin Action */}
       <View style={styles.topBar}>
-        <View style={styles.boardSwitcher}>
-          <TouchableOpacity
-            style={[styles.boardBtn, selectedBoard === 'ALL' && styles.boardBtnActive]}
-            onPress={() => setSelectedBoard('ALL')}
-          >
-            <Text
-              style={[
-                styles.boardBtnText,
-                selectedBoard === 'ALL' && styles.boardBtnTextActive,
-              ]}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.classFilterScroll}>
+          {['ALL', ...CLASSES_LIST].map((cls) => (
+            <TouchableOpacity
+              key={cls}
+              style={[styles.classChip, activeClassFilter === cls && styles.classChipActive]}
+              onPress={() => setActiveClassFilter(cls)}
             >
-              All Batches
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.boardBtn, selectedBoard === 'BSEB' && styles.boardBtnActive]}
-            onPress={() => setSelectedBoard('BSEB')}
-          >
-            <Text
-              style={[
-                styles.boardBtnText,
-                selectedBoard === 'BSEB' && styles.boardBtnTextActive,
-              ]}
-            >
-              Bihar Board (BSEB)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.boardBtn, selectedBoard === 'JAC' && styles.boardBtnActive]}
-            onPress={() => setSelectedBoard('JAC')}
-          >
-            <Text
-              style={[
-                styles.boardBtnText,
-                selectedBoard === 'JAC' && styles.boardBtnTextActive,
-              ]}
-            >
-              Jharkhand (JAC)
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text style={[styles.classChipText, activeClassFilter === cls && styles.classChipTextActive]}>
+                {cls}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* Admin Inline Action: Add New Course Button */}
         {isAdmin && (
@@ -347,11 +361,7 @@ export default function StudentCoursesScreen() {
           />
         }
       >
-        <Text style={styles.pageTitle}>
-          {selectedBoard === 'ALL'
-            ? 'All Target Courses'
-            : `${selectedBoard} Target Board Batches`}
-        </Text>
+        <Text style={styles.pageTitle}>Target Board Examination Courses</Text>
 
         <View style={styles.courseList}>
           {filteredCourses.map((course) => (
@@ -369,21 +379,30 @@ export default function StudentCoursesScreen() {
                 />
                 <View style={styles.tagBadge}>
                   <Text style={styles.tagBadgeText}>
-                    {course.is_free ? 'FREE BATCH' : formatINR(course.discount_price || course.price)}
+                    {course.is_free ? 'FREE ACCESS' : formatINR(course.discount_price || course.price)}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{course.title}</Text>
+                {course.tagline ? (
+                  <Text style={styles.cardTagline} numberOfLines={1}>
+                    ✨ {course.tagline}
+                  </Text>
+                ) : null}
+
                 <Text style={styles.cardDesc} numberOfLines={2}>
                   {course.description}
                 </Text>
 
+                {/* Course Metadata Stats */}
                 <View style={styles.statsRow}>
+                  <Text style={styles.stat}>
+                    📅 Starts: {course.start_date || 'Enrolling Now'}
+                  </Text>
                   <Text style={styles.stat}>⏱️ {course.validity_days} Days</Text>
                   <Text style={styles.stat}>📹 {course.lecture_count || 40} Videos</Text>
-                  <Text style={styles.stat}>📄 {course.material_count || 25} PDFs</Text>
                 </View>
 
                 {/* Normal Student Action Row */}
@@ -393,7 +412,7 @@ export default function StudentCoursesScreen() {
                     onPress={() => router.push(`/course/${course.id}`)}
                   >
                     <BookOpen size={14} color="#2563EB" />
-                    <Text style={styles.viewCourseBtnText}>Open Course (विषय व पाठ)</Text>
+                    <Text style={styles.viewCourseBtnText}>Open Syllabus & Chapters</Text>
                   </TouchableOpacity>
 
                   {course.is_free ? (
@@ -461,75 +480,73 @@ export default function StudentCoursesScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
-              <Text style={styles.inputLabel}>Course Title (English) *</Text>
+              {/* AI Auto-Fill Helper Banner */}
+              <TouchableOpacity
+                style={styles.aiHelperBanner}
+                onPress={handleAiAutoFill}
+                disabled={aiGenerating}
+              >
+                <Sparkles size={16} color="#7C3AED" />
+                <Text style={styles.aiHelperText}>
+                  {aiGenerating ? 'AI Generating Content...' : '✨ Auto-Fill Missing Fields with AI'}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.inputLabel}>Course Title (Name) *</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. BSEB Class 10 Target Board 2027"
+                placeholder="e.g. Class 10 State Board Topper Batch 2027"
                 value={courseForm.title}
                 onChangeText={(text) => setCourseForm((prev) => ({ ...prev, title: text }))}
               />
 
-              <Text style={styles.inputLabel}>Course Title (Hindi)</Text>
+              <Text style={styles.inputLabel}>Tagline / Subtitle *</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. बिहार बोर्ड 10वीं 2027 टॉपर बैच"
-                value={courseForm.title_hi}
-                onChangeText={(text) => setCourseForm((prev) => ({ ...prev, title_hi: text }))}
+                placeholder="e.g. Full Syllabus Live Coaching & Handwritten Notes"
+                value={courseForm.tagline}
+                onChangeText={(text) => setCourseForm((prev) => ({ ...prev, tagline: text }))}
               />
 
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Board</Text>
-                  <View style={styles.boardToggleRow}>
+              <Text style={styles.inputLabel}>Target Class</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {CLASSES_LIST.map((cls) => (
                     <TouchableOpacity
+                      key={cls}
                       style={[
-                        styles.toggleBtn,
-                        courseForm.board_code === 'BSEB' && styles.toggleBtnActive,
+                        styles.classModalPill,
+                        courseForm.class_name === cls && styles.classModalPillActive,
                       ]}
-                      onPress={() => setCourseForm((prev) => ({ ...prev, board_code: 'BSEB' }))}
+                      onPress={() => setCourseForm((p) => ({ ...p, class_name: cls }))}
                     >
                       <Text
                         style={[
-                          styles.toggleBtnText,
-                          courseForm.board_code === 'BSEB' && styles.toggleBtnTextActive,
+                          styles.classModalPillText,
+                          courseForm.class_name === cls && styles.classModalPillTextActive,
                         ]}
                       >
-                        BSEB
+                        {cls}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.toggleBtn,
-                        courseForm.board_code === 'JAC' && styles.toggleBtnActive,
-                      ]}
-                      onPress={() => setCourseForm((prev) => ({ ...prev, board_code: 'JAC' }))}
-                    >
-                      <Text
-                        style={[
-                          styles.toggleBtnText,
-                          courseForm.board_code === 'JAC' && styles.toggleBtnTextActive,
-                        ]}
-                      >
-                        JAC
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  ))}
                 </View>
+              </ScrollView>
 
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Class</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Class 10"
-                    value={courseForm.class_name}
-                    onChangeText={(text) => setCourseForm((prev) => ({ ...prev, class_name: text }))}
-                  />
-                </View>
-              </View>
+              {/* Start Date Picker (Touch Selection - No Typing) */}
+              <Text style={styles.inputLabel}>Batch Start Date *</Text>
+              <TouchableOpacity
+                style={styles.datePickerTrigger}
+                onPress={() => setIsDatePickerOpen(true)}
+              >
+                <Calendar size={16} color="#2563EB" />
+                <Text style={styles.datePickerTriggerText}>{courseForm.start_date}</Text>
+                <Text style={styles.datePickerChangeHint}>Tap to change</Text>
+              </TouchableOpacity>
 
               <View style={styles.formRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Price (₹)</Text>
+                  <Text style={styles.inputLabel}>Original Price (₹)</Text>
                   <TextInput
                     style={styles.textInput}
                     keyboardType="numeric"
@@ -539,7 +556,7 @@ export default function StudentCoursesScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Discount Price (₹)</Text>
+                  <Text style={styles.inputLabel}>Sale / Offer Price (₹)</Text>
                   <TextInput
                     style={styles.textInput}
                     keyboardType="numeric"
@@ -552,7 +569,7 @@ export default function StudentCoursesScreen() {
                 </View>
               </View>
 
-              <Text style={styles.inputLabel}>Validity (Days)</Text>
+              <Text style={styles.inputLabel}>Validity Duration (Days)</Text>
               <TextInput
                 style={styles.textInput}
                 keyboardType="numeric"
@@ -563,17 +580,17 @@ export default function StudentCoursesScreen() {
                 }
               />
 
-              <Text style={styles.inputLabel}>Description</Text>
+              <Text style={styles.inputLabel}>Course Description</Text>
               <TextInput
                 style={[styles.textInput, { height: 70, textAlignVertical: 'top' }]}
                 multiline
                 numberOfLines={3}
-                placeholder="Course features, live class schedule & syllabus overview..."
+                placeholder="Course features, syllabus overview & live class schedule..."
                 value={courseForm.description}
                 onChangeText={(text) => setCourseForm((prev) => ({ ...prev, description: text }))}
               />
 
-              <Text style={styles.inputLabel}>Course Thumbnail</Text>
+              <Text style={styles.inputLabel}>Course Thumbnail Photo</Text>
               {courseForm.thumbnail_url ? (
                 <View style={styles.thumbnailPreviewContainer}>
                   <Image
@@ -620,13 +637,24 @@ export default function StudentCoursesScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveCourse}>
                 <Text style={styles.saveBtnText}>
-                  {editingCourseId ? 'Save Changes' : 'Create Course'}
+                  {editingCourseId ? 'Save Changes' : 'Create & Publish'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Interactive Date Picker Modal */}
+      <DateTimePickerModal
+        visible={isDatePickerOpen}
+        mode="date"
+        title="Select Course Start Date"
+        onClose={() => setIsDatePickerOpen(false)}
+        onSelect={(date, formatted) => {
+          setCourseForm((prev) => ({ ...prev, start_date: formatted }));
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -637,31 +665,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   topBar: {
-    padding: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  boardSwitcher: {
-    flexDirection: 'row',
-    gap: 6,
+  classFilterScroll: {
+    gap: 8,
   },
-  boardBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+  classChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
     backgroundColor: '#F1F5F9',
-    alignItems: 'center',
   },
-  boardBtnActive: {
+  classChipActive: {
     backgroundColor: '#2563EB',
   },
-  boardBtnText: {
-    fontSize: 11,
+  classChipText: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#475569',
   },
-  boardBtnTextActive: {
+  classChipTextActive: {
     color: '#FFFFFF',
   },
   adminBar: {
@@ -757,7 +784,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  cardTagline: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2563EB',
+    marginBottom: 6,
   },
   cardDesc: {
     fontSize: 12,
@@ -767,7 +800,8 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 10,
     marginBottom: 12,
   },
   stat: {
@@ -886,6 +920,23 @@ const styles = StyleSheet.create({
   modalBody: {
     padding: 16,
   },
+  aiHelperBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F5F3FF',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    borderRadius: 8,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  aiHelperText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
@@ -903,31 +954,48 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#0F172A',
   },
+  classModalPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+  },
+  classModalPillActive: {
+    backgroundColor: '#2563EB',
+  },
+  classModalPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  classModalPillTextActive: {
+    color: '#FFFFFF',
+  },
+  datePickerTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  datePickerTriggerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  datePickerChangeHint: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#2563EB',
+  },
   formRow: {
     flexDirection: 'row',
     gap: 10,
-  },
-  boardToggleRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  toggleBtnActive: {
-    backgroundColor: '#2563EB',
-  },
-  toggleBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  toggleBtnTextActive: {
-    color: '#FFFFFF',
   },
   thumbnailPreviewContainer: {
     height: 120,

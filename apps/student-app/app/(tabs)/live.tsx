@@ -27,12 +27,23 @@ import {
   X,
   ShieldCheck,
   StopCircle,
+  Sparkles,
+  ChevronDown,
+  Layers,
+  BookOpen,
 } from 'lucide-react-native';
 import { formatIST } from '@icc/shared-utils';
 import { initialLiveClasses } from '../../../admin-web/src/lib/sample-data';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
-import { academicService } from '../../src/services/academicService';
+import {
+  academicService,
+  AcademicSubject,
+  SubSubject,
+  AcademicChapter,
+} from '../../src/services/academicService';
+import { aiService } from '../../src/services/aiService';
+import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { LiveClass } from '@icc/shared-types';
 import { useAuthStore } from '../../src/store/useAuthStore';
 
@@ -42,6 +53,8 @@ interface LiveChatMessage {
   text: string;
   time: string;
 }
+
+const CLASSES_LIST = ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
 
 export default function StudentLiveScreen() {
   const { user } = useAuthStore();
@@ -54,66 +67,121 @@ export default function StudentLiveScreen() {
     user?.username === 'badesir';
 
   const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'all'>('live');
-  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('ALL');
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>(initialLiveClasses);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [selectedStream, setSelectedStream] = useState<LiveClass | null>(initialLiveClasses[0] || null);
+  const [selectedStream, setSelectedStream] = useState<LiveClass | null>(
+    initialLiveClasses[0] || null
+  );
   const [playing, setPlaying] = useState(true);
 
   // In-App Live Doubts / Chat state
   const [chatMessages, setChatMessages] = useState<LiveChatMessage[]>([
-    { id: '1', sender: 'बड़े सर (Director)', text: 'स्वागत है विद्यार्थियों! ध्यान से समझें और कोई भी प्रश्न पूछें।', time: 'Live' },
-    { id: '2', sender: 'Aman Sharma (Patna)', text: 'सर, रासायनिक अभिक्रिया में उत्प्रेरक का क्या कार्य होता है?', time: 'Just now' },
+    {
+      id: '1',
+      sender: 'BADE SIR (Director)',
+      text: 'Welcome students! Today we solve expected board exam questions.',
+      time: 'Live',
+    },
+    {
+      id: '2',
+      sender: 'Aman Sharma (Class 10)',
+      text: 'Sir, please explain balancing of redox reactions.',
+      time: 'Just now',
+    },
   ]);
   const [newComment, setNewComment] = useState('');
 
   // Admin Modal: Go Live / Schedule Class
   const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
+  const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+
+  // Cascading Dropdown States for Modal
+  const [subjectsList, setSubjectsList] = useState<AcademicSubject[]>([]);
+  const [selectedClass, setSelectedClass] = useState('Class 10');
+  const [selectedSubject, setSelectedSubject] = useState<AcademicSubject | null>(null);
+  const [selectedSubSubject, setSelectedSubSubject] = useState<SubSubject | null>(null);
+  const [chaptersList, setChaptersList] = useState<AcademicChapter[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState<AcademicChapter | null>(null);
+
   const [liveForm, setLiveForm] = useState({
     title: '',
     title_hi: '',
-    subject_name: 'Science (Chemistry)',
-    chapter_title: 'Chapter 1: Chemical Reactions',
-    class_name: 'Class 10',
     youtube_video_id: '',
     duration_minutes: '60',
     start_immediately: true,
     scheduled_at: new Date().toISOString(),
+    scheduledDisplay: 'Today at 6:00 PM',
   });
 
-  const loadLiveClasses = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setIsSyncing(true);
     try {
-      const data = await academicService.getLiveClasses();
-      if (data && data.length > 0) {
-        setLiveClasses(data);
+      const [lives, subs] = await Promise.all([
+        academicService.getLiveClasses(),
+        academicService.getSubjects(),
+      ]);
+      if (lives && lives.length > 0) {
+        setLiveClasses(lives);
         if (!selectedStream) {
-          const liveNow = data.find((c) => c.status === 'live') || data[0];
+          const liveNow = lives.find((c) => c.status === 'live') || lives[0];
           setSelectedStream(liveNow);
         }
       } else {
         const remoteData = await DataService.fetchLiveClasses();
         if (remoteData && remoteData.length > 0) {
           setLiveClasses(remoteData);
-          if (!selectedStream) {
-            setSelectedStream(remoteData[0]);
-          }
+          if (!selectedStream) setSelectedStream(remoteData[0]);
         }
+      }
+
+      setSubjectsList(subs);
+      if (subs.length > 0 && !selectedSubject) {
+        setSelectedSubject(subs[0]);
+        loadChaptersForSubject(subs[0], null);
       }
     } catch {
       // Keep initial
     } finally {
       setIsSyncing(false);
     }
-  }, [selectedStream]);
+  }, [selectedStream, selectedSubject]);
 
   useEffect(() => {
-    loadLiveClasses();
+    loadData();
     const unsubscribe = DataService.subscribeToChanges(() => {
-      loadLiveClasses();
+      loadData();
     });
     return () => unsubscribe();
-  }, [loadLiveClasses]);
+  }, [loadData]);
+
+  // Load chapters when subject or sub-subject changes
+  const loadChaptersForSubject = async (sub: AcademicSubject, subSub: SubSubject | null) => {
+    const chaps = await academicService.getChapters(sub.id, subSub?.id);
+    setChaptersList(chaps);
+    if (chaps.length > 0) {
+      setSelectedChapter(chaps[0]);
+    } else {
+      setSelectedChapter(null);
+    }
+  };
+
+  const handleSelectSubject = (sub: AcademicSubject) => {
+    setSelectedSubject(sub);
+    if (sub.has_sub_subjects && sub.sub_subjects && sub.sub_subjects.length > 0) {
+      setSelectedSubSubject(sub.sub_subjects[0]);
+      loadChaptersForSubject(sub, sub.sub_subjects[0]);
+    } else {
+      setSelectedSubSubject(null);
+      loadChaptersForSubject(sub, null);
+    }
+  };
+
+  const handleSelectSubSubject = (subSub: SubSubject) => {
+    if (!selectedSubject) return;
+    setSelectedSubSubject(subSub);
+    loadChaptersForSubject(selectedSubject, subSub);
+  };
 
   // Clean video ID helper
   const extractYoutubeId = (urlOrId: string): string => {
@@ -133,23 +201,51 @@ export default function StudentLiveScreen() {
     return trimmed || 'jfKfPfyJRdk';
   };
 
+  // AI Auto-Fill Helper for Live Class
+  const handleAiAutoFill = async () => {
+    setAiGenerating(true);
+    try {
+      const subName = selectedSubSubject?.name || selectedSubject?.name || 'Science';
+      const chapName = selectedChapter?.title || 'Chapter 1: Chemical Reactions';
+      const auto = await aiService.autoFillLiveSession(liveForm.title, subName, chapName);
+
+      setLiveForm((prev) => ({
+        ...prev,
+        title: prev.title.trim() || auto.title,
+        title_hi: prev.title_hi.trim() || auto.title_hi,
+        duration_minutes: prev.duration_minutes || auto.duration_minutes,
+        youtube_video_id: prev.youtube_video_id || auto.youtube_video_id,
+      }));
+      Alert.alert('✨ AI Auto-Fill Complete', 'Live title, Hindi overview and schedule duration generated!');
+    } catch {
+      Alert.alert('Notice', 'AI defaults generated.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const handleScheduleLive = async () => {
-    if (!liveForm.title.trim()) {
-      Alert.alert('Required', 'Please enter Live Class Title');
-      return;
+    let titleToUse = liveForm.title.trim();
+    const subName = selectedSubSubject?.name || selectedSubject?.name || 'General';
+    const chapName = selectedChapter?.title || 'Core Topic';
+
+    if (!titleToUse) {
+      titleToUse = `${selectedClass} ${subName}: ${chapName} Live Masterclass`;
     }
 
     const videoId = extractYoutubeId(liveForm.youtube_video_id);
 
     try {
       const newLive = await academicService.scheduleLiveClass({
-        title: `${liveForm.class_name}: ${liveForm.title.trim()}`,
-        title_hi: liveForm.title_hi.trim() || liveForm.title.trim(),
-        description: `${liveForm.subject_name} • ${liveForm.chapter_title}`,
+        title: titleToUse,
+        title_hi: liveForm.title_hi.trim() || titleToUse,
+        description: `${selectedClass} • ${subName} • ${chapName}`,
         youtube_video_id: videoId,
         duration_minutes: parseInt(liveForm.duration_minutes) || 60,
         status: liveForm.start_immediately ? 'live' : 'scheduled',
-        scheduled_at: new Date().toISOString(),
+        scheduled_at: liveForm.scheduled_at,
+        chapter_id: selectedChapter?.id,
+        subject_id: selectedSubject?.id,
       });
 
       setSelectedStream(newLive);
@@ -157,18 +253,16 @@ export default function StudentLiveScreen() {
       setLiveForm({
         title: '',
         title_hi: '',
-        subject_name: 'Science (Chemistry)',
-        chapter_title: 'Chapter 1: Chemical Reactions',
-        class_name: 'Class 10',
         youtube_video_id: '',
         duration_minutes: '60',
         start_immediately: true,
         scheduled_at: new Date().toISOString(),
+        scheduledDisplay: 'Today at 6:00 PM',
       });
-      loadLiveClasses();
+      loadData();
       Alert.alert(
-        liveForm.start_immediately ? '🔴 Now Streaming Live!' : '📅 Class Scheduled!',
-        'Students can now join this session inside the app.'
+        liveForm.start_immediately ? '🔴 Now Streaming Live!' : '📅 Live Class Scheduled!',
+        'Session is directly linked to the syllabus chapter and students can join in-app.'
       );
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to schedule live class');
@@ -178,9 +272,9 @@ export default function StudentLiveScreen() {
   const handleUpdateStatus = async (id: string, status: 'live' | 'completed') => {
     try {
       await academicService.updateLiveClassStatus(id, status);
-      loadLiveClasses();
+      loadData();
       Alert.alert(
-        'Stream Updated',
+        'Stream Status Updated',
         status === 'live' ? 'Live stream has started!' : 'Stream marked as completed.'
       );
     } catch (err: any) {
@@ -206,12 +300,8 @@ export default function StudentLiveScreen() {
   };
 
   const filtered = liveClasses.filter((item) => {
-    if (activeTab === 'live') {
-      return item.status === 'live';
-    }
-    if (activeTab === 'upcoming') {
-      return item.status === 'scheduled';
-    }
+    if (activeTab === 'live') return item.status === 'live';
+    if (activeTab === 'upcoming') return item.status === 'scheduled';
     return true;
   });
 
@@ -227,12 +317,12 @@ export default function StudentLiveScreen() {
     setNewComment('');
   };
 
-  const studentWatermark = `${user?.full_name || 'ICC Student'} • +91 ${user?.mobile_number || '9876543210'} • ICC PROTECTED STREAM`;
+  const studentWatermark = `${user?.full_name || 'ICC Student'} • +91 ${user?.mobile_number || '9771350910'} • ICC PROTECTED STREAM`;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
-      <CoachingHeader onRefresh={loadLiveClasses} isSyncing={isSyncing} />
+      <CoachingHeader onRefresh={loadData} isSyncing={isSyncing} />
 
       {/* Embedded In-App Player Section (Strictly In-App, Anti-Escape, No YouTube app redirection) */}
       {selectedStream && (
@@ -298,7 +388,7 @@ export default function StudentLiveScreen() {
         <View style={styles.adminBar}>
           <View style={styles.adminBadgeRow}>
             <ShieldCheck size={14} color="#B45309" />
-            <Text style={styles.adminBadgeText}>Director Live Console</Text>
+            <Text style={styles.adminBadgeText}>Director Live Broadcast</Text>
           </View>
           <TouchableOpacity
             style={styles.goLiveBtn}
@@ -342,9 +432,7 @@ export default function StudentLiveScreen() {
           onPress={() => setActiveTab('all')}
           activeOpacity={0.8}
         >
-          <Text
-            style={[styles.tabBtnText, activeTab === 'all' && styles.tabBtnTextActive]}
-          >
+          <Text style={[styles.tabBtnText, activeTab === 'all' && styles.tabBtnTextActive]}>
             All Archives
           </Text>
         </TouchableOpacity>
@@ -355,7 +443,7 @@ export default function StudentLiveScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isSyncing}
-            onRefresh={loadLiveClasses}
+            onRefresh={loadData}
             colors={['#2563EB']}
             tintColor="#2563EB"
           />
@@ -463,8 +551,8 @@ export default function StudentLiveScreen() {
         {/* In-App Live Doubt Q&A Section */}
         <View style={styles.chatSection}>
           <View style={styles.chatHeader}>
-            <Text style={styles.chatTitle}>💬 Live Classroom Doubts (लाइव प्रश्न)</Text>
-            <Text style={styles.chatSub}>Chat directly with teacher during stream</Text>
+            <Text style={styles.chatTitle}>💬 Live Classroom Doubts</Text>
+            <Text style={styles.chatSub}>Chat directly with BADE SIR during live stream</Text>
           </View>
 
           <View style={styles.chatBox}>
@@ -482,7 +570,7 @@ export default function StudentLiveScreen() {
           <View style={styles.inputRow}>
             <TextInput
               style={styles.commentInput}
-              placeholder="Ask a doubt directly to बड़े सर..."
+              placeholder="Ask a doubt directly to BADE SIR..."
               placeholderTextColor="#94A3B8"
               value={newComment}
               onChangeText={setNewComment}
@@ -494,7 +582,7 @@ export default function StudentLiveScreen() {
         </View>
       </ScrollView>
 
-      {/* Admin Schedule / Go Live Modal */}
+      {/* Admin Schedule / Go Live Modal with Cascading Dropdowns */}
       <Modal
         visible={isLiveModalOpen}
         animationType="slide"
@@ -514,7 +602,125 @@ export default function StudentLiveScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
-              <Text style={styles.inputLabel}>Session Title (English) *</Text>
+              {/* AI Auto-Fill Helper */}
+              <TouchableOpacity
+                style={styles.aiHelperBanner}
+                onPress={handleAiAutoFill}
+                disabled={aiGenerating}
+              >
+                <Sparkles size={16} color="#7C3AED" />
+                <Text style={styles.aiHelperText}>
+                  {aiGenerating ? 'AI Generating Session...' : '✨ Auto-Fill Session with AI'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* 1. Class Dropdown Selector */}
+              <Text style={styles.inputLabel}>1. Select Target Class *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {CLASSES_LIST.map((cls) => (
+                    <TouchableOpacity
+                      key={cls}
+                      style={[
+                        styles.dropdownPill,
+                        selectedClass === cls && styles.dropdownPillActive,
+                      ]}
+                      onPress={() => setSelectedClass(cls)}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownPillText,
+                          selectedClass === cls && styles.dropdownPillTextActive,
+                        ]}
+                      >
+                        {cls}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* 2. Subject Dropdown Selector */}
+              <Text style={styles.inputLabel}>2. Select Subject *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {subjectsList.map((sub) => (
+                    <TouchableOpacity
+                      key={sub.id}
+                      style={[
+                        styles.dropdownPill,
+                        selectedSubject?.id === sub.id && styles.dropdownPillActive,
+                      ]}
+                      onPress={() => handleSelectSubject(sub)}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownPillText,
+                          selectedSubject?.id === sub.id && styles.dropdownPillTextActive,
+                        ]}
+                      >
+                        {sub.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* 3. Sub-Subject Dropdown Selector (If Multi-Disciplinary) */}
+              {selectedSubject?.has_sub_subjects && selectedSubject.sub_subjects ? (
+                <View style={{ marginBottom: 6 }}>
+                  <Text style={styles.inputLabel}>3. Select Sub-Subject (Discipline) *</Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {selectedSubject.sub_subjects.map((subSub) => (
+                      <TouchableOpacity
+                        key={subSub.id}
+                        style={[
+                          styles.dropdownPill,
+                          selectedSubSubject?.id === subSub.id && styles.dropdownPillActiveGreen,
+                        ]}
+                        onPress={() => handleSelectSubSubject(subSub)}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownPillText,
+                            selectedSubSubject?.id === subSub.id && styles.dropdownPillTextActive,
+                          ]}
+                        >
+                          {subSub.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {/* 4. Chapter Dropdown Selector */}
+              <Text style={styles.inputLabel}>4. Select Curriculum Chapter (Auto-Linked) *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {chaptersList.map((ch) => (
+                    <TouchableOpacity
+                      key={ch.id}
+                      style={[
+                        styles.dropdownPill,
+                        selectedChapter?.id === ch.id && styles.dropdownPillActiveBlue,
+                      ]}
+                      onPress={() => setSelectedChapter(ch)}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownPillText,
+                          selectedChapter?.id === ch.id && styles.dropdownPillTextActive,
+                        ]}
+                      >
+                        Ch {ch.chapter_number}: {ch.title}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              <Text style={styles.inputLabel}>Session Title *</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="e.g. Chemical Reactions: Balance Equation Practice"
@@ -522,46 +728,7 @@ export default function StudentLiveScreen() {
                 onChangeText={(text) => setLiveForm((prev) => ({ ...prev, title: text }))}
               />
 
-              <Text style={styles.inputLabel}>Title (Hindi)</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g. रासायनिक अभिक्रियाएँ: संतुलित समीकरण अभ्यास"
-                value={liveForm.title_hi}
-                onChangeText={(text) => setLiveForm((prev) => ({ ...prev, title_hi: text }))}
-              />
-
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Class</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Class 10"
-                    value={liveForm.class_name}
-                    onChangeText={(text) => setLiveForm((prev) => ({ ...prev, class_name: text }))}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Subject</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Science (Chemistry)"
-                    value={liveForm.subject_name}
-                    onChangeText={(text) =>
-                      setLiveForm((prev) => ({ ...prev, subject_name: text }))
-                    }
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.inputLabel}>Chapter Name</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Chapter 1: Chemical Reactions & Equations"
-                value={liveForm.chapter_title}
-                onChangeText={(text) => setLiveForm((prev) => ({ ...prev, chapter_title: text }))}
-              />
-
-              <Text style={styles.inputLabel}>YouTube Live URL or Video ID *</Text>
+              <Text style={styles.inputLabel}>YouTube Live URL or Stream ID *</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="Paste YouTube Link or Video ID (e.g. jfKfPfyJRdk)"
@@ -570,6 +737,17 @@ export default function StudentLiveScreen() {
                   setLiveForm((prev) => ({ ...prev, youtube_video_id: text }))
                 }
               />
+
+              {/* Start Date & Time Selection (No Manual Typing) */}
+              <Text style={styles.inputLabel}>Date & Time of Session *</Text>
+              <TouchableOpacity
+                style={styles.datePickerTrigger}
+                onPress={() => setIsDateTimePickerOpen(true)}
+              >
+                <Calendar size={16} color="#2563EB" />
+                <Text style={styles.datePickerTriggerText}>{liveForm.scheduledDisplay}</Text>
+                <Text style={styles.datePickerChangeHint}>Tap to change</Text>
+              </TouchableOpacity>
 
               <View style={styles.formRow}>
                 <View style={{ flex: 1 }}>
@@ -585,7 +763,7 @@ export default function StudentLiveScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Live Status</Text>
+                  <Text style={styles.inputLabel}>Status Mode</Text>
                   <View style={styles.statusToggleRow}>
                     <TouchableOpacity
                       style={[
@@ -633,13 +811,28 @@ export default function StudentLiveScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveLiveBtn} onPress={handleScheduleLive}>
                 <Text style={styles.saveLiveBtnText}>
-                  {liveForm.start_immediately ? '🔴 Start Live Now' : '📅 Schedule Session'}
+                  {liveForm.start_immediately ? '🔴 Start Live Stream' : '📅 Schedule Session'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Interactive Date & Time Picker */}
+      <DateTimePickerModal
+        visible={isDateTimePickerOpen}
+        mode="datetime"
+        title="Select Live Stream Date & Time"
+        onClose={() => setIsDateTimePickerOpen(false)}
+        onSelect={(date, formatted) => {
+          setLiveForm((prev) => ({
+            ...prev,
+            scheduled_at: date.toISOString(),
+            scheduledDisplay: formatted,
+          }));
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -1060,12 +1253,52 @@ const styles = StyleSheet.create({
   modalBody: {
     padding: 16,
   },
+  aiHelperBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F5F3FF',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    borderRadius: 8,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  aiHelperText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
     color: '#475569',
     marginBottom: 4,
     marginTop: 8,
+  },
+  dropdownPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+  },
+  dropdownPillActive: {
+    backgroundColor: '#2563EB',
+  },
+  dropdownPillActiveGreen: {
+    backgroundColor: '#059669',
+  },
+  dropdownPillActiveBlue: {
+    backgroundColor: '#2563EB',
+  },
+  dropdownPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  dropdownPillTextActive: {
+    color: '#FFFFFF',
   },
   textInput: {
     backgroundColor: '#F8FAFC',
@@ -1076,6 +1309,28 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     fontSize: 13,
     color: '#0F172A',
+  },
+  datePickerTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  datePickerTriggerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  datePickerChangeHint: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#2563EB',
   },
   formRow: {
     flexDirection: 'row',

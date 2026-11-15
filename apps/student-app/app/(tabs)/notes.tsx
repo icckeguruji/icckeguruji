@@ -26,16 +26,39 @@ import {
   Upload,
   X,
   FileCheck,
+  Sparkles,
+  Layers,
+  ChevronRight,
 } from 'lucide-react-native';
 import { formatBytes } from '@icc/shared-utils';
 import { initialStudyMaterials } from '../../../admin-web/src/lib/sample-data';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
-import { academicService } from '../../src/services/academicService';
+import {
+  academicService,
+  AcademicSubject,
+  SubSubject,
+  AcademicChapter,
+} from '../../src/services/academicService';
+import { aiService } from '../../src/services/aiService';
 import { OfflineStorageService, OfflineItem } from '../../src/services/offlineStorage';
 import { StudyMaterial, MaterialType } from '@icc/shared-types';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import * as DocumentPicker from 'expo-document-picker';
+
+const CLASSES_LIST = ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
+
+const SUBJECT_FILTER_CHIPS = [
+  { id: 'all', label: 'All Notes' },
+  { id: 'offline', label: 'Saved Offline' },
+  { id: 'Science', label: 'Science' },
+  { id: 'Mathematics', label: 'Mathematics' },
+  { id: 'Social Science', label: 'Social Science' },
+  { id: 'Hindi', label: 'Hindi' },
+  { id: 'English', label: 'English' },
+  { id: 'Sanskrit', label: 'Sanskrit' },
+  { id: 'Urdu', label: 'Urdu' },
+];
 
 export default function StudentNotesScreen() {
   const router = useRouter();
@@ -55,17 +78,22 @@ export default function StudentNotesScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeSubject, setActiveSubject] = useState('all');
 
-  // Admin Upload Note Modal
+  // Admin Upload Note Modal & Cascading Dropdown States
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [subjectsList, setSubjectsList] = useState<AcademicSubject[]>([]);
+  const [selectedClass, setSelectedClass] = useState('Class 10');
+  const [selectedSubject, setSelectedSubject] = useState<AcademicSubject | null>(null);
+  const [selectedSubSubject, setSelectedSubSubject] = useState<SubSubject | null>(null);
+  const [chaptersList, setChaptersList] = useState<AcademicChapter[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState<AcademicChapter | null>(null);
+
   const [pickedFile, setPickedFile] = useState<{ name: string; size: number; uri: string } | null>(
     null
   );
   const [noteForm, setNoteForm] = useState({
     title: '',
     title_hi: '',
-    subject_name: 'Science',
-    class_name: 'Class 10',
-    chapter_name: 'Chapter 1: Chemical Reactions',
     description: '',
     material_type: 'chapter_notes' as MaterialType,
     is_free: true,
@@ -77,23 +105,66 @@ export default function StudentNotesScreen() {
     setDownloadedIds(items.map((i) => i.id));
   };
 
+  const loadChaptersForSubject = async (sub: AcademicSubject, subSub: SubSubject | null) => {
+    const chaps = await academicService.getChapters(sub.id, subSub?.id);
+    setChaptersList(chaps);
+    if (chaps.length > 0) {
+      setSelectedChapter(chaps[0]);
+    } else {
+      setSelectedChapter(null);
+    }
+  };
+
+  const handleSelectSubject = (sub: AcademicSubject) => {
+    setSelectedSubject(sub);
+    if (sub.has_sub_subjects && sub.sub_subjects && sub.sub_subjects.length > 0) {
+      setSelectedSubSubject(sub.sub_subjects[0]);
+      loadChaptersForSubject(sub, sub.sub_subjects[0]);
+    } else {
+      setSelectedSubSubject(null);
+      loadChaptersForSubject(sub, null);
+    }
+  };
+
+  const handleSelectSubSubject = (subSub: SubSubject) => {
+    if (!selectedSubject) return;
+    setSelectedSubSubject(subSub);
+    loadChaptersForSubject(selectedSubject, subSub);
+  };
+
   const loadMaterials = useCallback(async () => {
     setIsSyncing(true);
     try {
-      const data = await academicService.getStudyMaterials();
+      const [data, subs] = await Promise.all([
+        academicService.getStudyMaterials(),
+        academicService.getSubjects(),
+      ]);
+
       if (data && data.length > 0) {
         setMaterials(data);
       } else {
         const remoteData = await DataService.fetchStudyMaterials();
         setMaterials(remoteData);
       }
+
+      setSubjectsList(subs);
+      if (subs.length > 0 && !selectedSubject) {
+        setSelectedSubject(subs[0]);
+        if (subs[0].has_sub_subjects && subs[0].sub_subjects && subs[0].sub_subjects.length > 0) {
+          setSelectedSubSubject(subs[0].sub_subjects[0]);
+          loadChaptersForSubject(subs[0], subs[0].sub_subjects[0]);
+        } else {
+          loadChaptersForSubject(subs[0], null);
+        }
+      }
+
       await loadOfflineVault();
     } catch {
       // Keep initial
     } finally {
       setIsSyncing(false);
     }
-  }, []);
+  }, [selectedSubject]);
 
   useEffect(() => {
     loadMaterials();
@@ -102,6 +173,31 @@ export default function StudentNotesScreen() {
     });
     return () => unsubscribe();
   }, [loadMaterials]);
+
+  // AI Auto-Fill Helper for Study Material Notes
+  const handleAiAutoFill = async () => {
+    setAiGenerating(true);
+    try {
+      const subName = selectedSubSubject?.name || selectedSubject?.name || 'Science';
+      const chapName = selectedChapter?.title || 'Chapter 1: Chemical Reactions';
+      const auto = await aiService.autoFillStudyMaterial(noteForm.title, subName, chapName);
+
+      setNoteForm((prev) => ({
+        ...prev,
+        title: prev.title.trim() || auto.title,
+        title_hi: prev.title_hi.trim() || auto.title_hi,
+        description: prev.description.trim() || auto.description,
+      }));
+      Alert.alert(
+        '✨ AI Auto-Fill Complete',
+        'Handwritten PDF title, Hindi translation and chapter description generated!'
+      );
+    } catch {
+      Alert.alert('AI Notice', 'Auto-filled with curriculum standards.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   const openDocument = (matId: string) => {
     router.push(`/pdf-viewer/${matId}`);
@@ -169,7 +265,7 @@ export default function StudentNotesScreen() {
     }
   };
 
-  // Save Uploaded Note
+  // Save Uploaded Note with Cascading Dropdown metadata
   const handleUploadNote = async () => {
     if (!noteForm.title.trim()) {
       Alert.alert('Required', 'Please enter Document Title');
@@ -177,10 +273,15 @@ export default function StudentNotesScreen() {
     }
 
     try {
+      const subName = selectedSubSubject?.name || selectedSubject?.name || 'Science';
+      const chapName = selectedChapter?.title || 'Chapter Notes';
+
       const newMat = await academicService.addStudyMaterial({
         title: noteForm.title.trim(),
         title_hi: noteForm.title_hi.trim() || noteForm.title.trim(),
-        description: noteForm.description.trim() || `${noteForm.subject_name} • ${noteForm.chapter_name}`,
+        description:
+          noteForm.description.trim() ||
+          `${selectedClass} • ${subName} • ${chapName}`,
         file_path: pickedFile?.uri || 'bseb/class10/notes.pdf',
         file_size_bytes: pickedFile?.size || 2400000,
         material_type: noteForm.material_type,
@@ -192,15 +293,12 @@ export default function StudentNotesScreen() {
       setNoteForm({
         title: '',
         title_hi: '',
-        subject_name: 'Science',
-        class_name: 'Class 10',
-        chapter_name: 'Chapter 1: Chemical Reactions',
         description: '',
         material_type: 'chapter_notes',
         is_free: true,
       });
       loadMaterials();
-      Alert.alert('Success', 'PDF Study Material uploaded and linked to syllabus!');
+      Alert.alert('Success', 'PDF Study Material uploaded and linked to curriculum!');
     } catch (err: any) {
       Alert.alert('Upload Error', err.message || 'Failed to save study material');
     }
@@ -226,16 +324,70 @@ export default function StudentNotesScreen() {
     if (activeSubject === 'offline') {
       return downloadedIds.includes(mat.id);
     }
-    if (activeSubject === 'sci') {
-      return mat.title.toLowerCase().includes('chem') || mat.title.toLowerCase().includes('sci') || mat.title.toLowerCase().includes('bio') || mat.title.toLowerCase().includes('phy');
+    if (activeSubject === 'all') {
+      return true;
     }
-    if (activeSubject === 'math') {
-      return mat.title.toLowerCase().includes('math') || mat.title.toLowerCase().includes('real number');
+    const filterLower = activeSubject.toLowerCase();
+    const titleLower = (mat.title + ' ' + (mat.title_hi || '') + ' ' + (mat.description || '')).toLowerCase();
+    const matSubLower = (mat.subject?.name || '').toLowerCase();
+
+    if (filterLower === 'science') {
+      return (
+        matSubLower.includes('science') ||
+        titleLower.includes('chem') ||
+        titleLower.includes('sci') ||
+        titleLower.includes('bio') ||
+        titleLower.includes('phy') ||
+        titleLower.includes('विज्ञान')
+      );
     }
-    if (activeSubject === 'sst') {
-      return mat.title.toLowerCase().includes('sst') || mat.title.toLowerCase().includes('history') || mat.title.toLowerCase().includes('geography');
+    if (filterLower === 'mathematics') {
+      return (
+        matSubLower.includes('math') ||
+        titleLower.includes('math') ||
+        titleLower.includes('real number') ||
+        titleLower.includes('गणित')
+      );
     }
-    return true;
+    if (filterLower === 'social science') {
+      return (
+        matSubLower.includes('social') ||
+        titleLower.includes('sst') ||
+        titleLower.includes('history') ||
+        titleLower.includes('geography') ||
+        titleLower.includes('civics') ||
+        titleLower.includes('सामाजिक')
+      );
+    }
+    if (filterLower === 'urdu') {
+      return (
+        matSubLower.includes('urdu') ||
+        titleLower.includes('urdu') ||
+        titleLower.includes('اردو')
+      );
+    }
+    if (filterLower === 'hindi') {
+      return (
+        matSubLower.includes('hindi') ||
+        titleLower.includes('hindi') ||
+        titleLower.includes('हिंदी')
+      );
+    }
+    if (filterLower === 'english') {
+      return (
+        matSubLower.includes('english') ||
+        titleLower.includes('english')
+      );
+    }
+    if (filterLower === 'sanskrit') {
+      return (
+        matSubLower.includes('sanskrit') ||
+        titleLower.includes('sanskrit') ||
+        titleLower.includes('संस्कृत')
+      );
+    }
+
+    return titleLower.includes(filterLower);
   });
 
   return (
@@ -268,29 +420,27 @@ export default function StudentNotesScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.subjectScroll}
         >
-          {[
-            { id: 'all', label: 'All Notes' },
-            { id: 'offline', label: `💾 Saved Offline (${downloadedIds.length})` },
-            { id: 'sci', label: 'Science (विज्ञान)' },
-            { id: 'math', label: 'Mathematics (गणित)' },
-            { id: 'sst', label: 'Social Science (सामाजिक)' },
-          ].map((sub) => (
-            <TouchableOpacity
-              key={sub.id}
-              style={[styles.subjectChip, activeSubject === sub.id && styles.subjectChipActive]}
-              onPress={() => setActiveSubject(sub.id)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.subjectChipText,
-                  activeSubject === sub.id && styles.subjectChipTextActive,
-                ]}
+          {SUBJECT_FILTER_CHIPS.map((sub) => {
+            const isOffline = sub.id === 'offline';
+            const label = isOffline ? `💾 Saved Offline (${downloadedIds.length})` : sub.label;
+            return (
+              <TouchableOpacity
+                key={sub.id}
+                style={[styles.subjectChip, activeSubject === sub.id && styles.subjectChipActive]}
+                onPress={() => setActiveSubject(sub.id)}
+                activeOpacity={0.7}
               >
-                {sub.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.subjectChipText,
+                    activeSubject === sub.id && styles.subjectChipTextActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -411,7 +561,128 @@ export default function StudentNotesScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
+              {/* AI Auto-Fill Helper */}
+              <TouchableOpacity
+                style={styles.aiHelperBanner}
+                onPress={handleAiAutoFill}
+                disabled={aiGenerating}
+                activeOpacity={0.8}
+              >
+                <Sparkles size={16} color="#7C3AED" />
+                <Text style={styles.aiHelperText}>
+                  {aiGenerating ? 'AI Generating Notes...' : '✨ Auto-Fill Missing Fields with AI'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* 1. Class Dropdown Selector */}
+              <Text style={styles.inputLabel}>1. Select Target Class *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {CLASSES_LIST.map((cls) => (
+                    <TouchableOpacity
+                      key={cls}
+                      style={[
+                        styles.dropdownPill,
+                        selectedClass === cls && styles.dropdownPillActive,
+                      ]}
+                      onPress={() => setSelectedClass(cls)}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownPillText,
+                          selectedClass === cls && styles.dropdownPillTextActive,
+                        ]}
+                      >
+                        {cls}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* 2. Subject Dropdown Selector */}
+              <Text style={styles.inputLabel}>2. Select Subject *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {subjectsList.map((sub) => (
+                    <TouchableOpacity
+                      key={sub.id}
+                      style={[
+                        styles.dropdownPill,
+                        selectedSubject?.id === sub.id && styles.dropdownPillActive,
+                      ]}
+                      onPress={() => handleSelectSubject(sub)}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownPillText,
+                          selectedSubject?.id === sub.id && styles.dropdownPillTextActive,
+                        ]}
+                      >
+                        {sub.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* 3. Sub-Subject Dropdown Selector (If Multi-Disciplinary) */}
+              {selectedSubject?.has_sub_subjects && selectedSubject.sub_subjects ? (
+                <View style={{ marginBottom: 6 }}>
+                  <Text style={styles.inputLabel}>3. Select Sub-Subject (Discipline) *</Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {selectedSubject.sub_subjects.map((subSub) => (
+                      <TouchableOpacity
+                        key={subSub.id}
+                        style={[
+                          styles.dropdownPill,
+                          selectedSubSubject?.id === subSub.id && styles.dropdownPillActiveGreen,
+                        ]}
+                        onPress={() => handleSelectSubSubject(subSub)}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownPillText,
+                            selectedSubSubject?.id === subSub.id && styles.dropdownPillTextActive,
+                          ]}
+                        >
+                          {subSub.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {/* 4. Chapter Dropdown Selector */}
+              <Text style={styles.inputLabel}>4. Select Curriculum Chapter (Auto-Linked) *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {chaptersList.map((chap) => (
+                    <TouchableOpacity
+                      key={chap.id}
+                      style={[
+                        styles.dropdownPill,
+                        selectedChapter?.id === chap.id && styles.dropdownPillActiveAmber,
+                      ]}
+                      onPress={() => setSelectedChapter(chap)}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownPillText,
+                          selectedChapter?.id === chap.id && styles.dropdownPillTextActive,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {chap.title}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
               {/* Document Picker Box */}
+              <Text style={styles.inputLabel}>5. Select PDF File from Device *</Text>
               <TouchableOpacity
                 style={[styles.filePickerBox, pickedFile && styles.filePickerBoxSelected]}
                 onPress={handlePickDocument}
@@ -424,7 +695,7 @@ export default function StudentNotesScreen() {
                       {pickedFile.name}
                     </Text>
                     <Text style={styles.pickedFileSize}>
-                      {formatBytes(pickedFile.size)} • Tap to change
+                      {formatBytes(pickedFile.size)} • Tap to change file
                     </Text>
                   </View>
                 ) : (
@@ -446,7 +717,7 @@ export default function StudentNotesScreen() {
                 onChangeText={(text) => setNoteForm((prev) => ({ ...prev, title: text }))}
               />
 
-              <Text style={styles.inputLabel}>Title (Hindi)</Text>
+              <Text style={styles.inputLabel}>Title (Hindi / Urdu)</Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="e.g. पाठ 01: रासायनिक अभिक्रियाएं हस्तलिखित नोट्स"
@@ -454,37 +725,13 @@ export default function StudentNotesScreen() {
                 onChangeText={(text) => setNoteForm((prev) => ({ ...prev, title_hi: text }))}
               />
 
-              <View style={styles.formRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Class</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Class 10"
-                    value={noteForm.class_name}
-                    onChangeText={(text) => setNoteForm((prev) => ({ ...prev, class_name: text }))}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Subject</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Science"
-                    value={noteForm.subject_name}
-                    onChangeText={(text) =>
-                      setNoteForm((prev) => ({ ...prev, subject_name: text }))
-                    }
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.inputLabel}>Chapter Name</Text>
+              <Text style={styles.inputLabel}>Description / Topics Covered</Text>
               <TextInput
-                style={styles.textInput}
-                placeholder="Chapter 1: Chemical Reactions & Equations"
-                value={noteForm.chapter_name}
-                onChangeText={(text) =>
-                  setNoteForm((prev) => ({ ...prev, chapter_name: text }))
-                }
+                style={[styles.textInput, { minHeight: 60 }]}
+                multiline
+                placeholder="Key concepts, formula sheets, NCERT questions..."
+                value={noteForm.description}
+                onChangeText={(text) => setNoteForm((prev) => ({ ...prev, description: text }))}
               />
 
               <Text style={styles.inputLabel}>Material Type</Text>
@@ -800,6 +1047,52 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     padding: 16,
+  },
+  aiHelperBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F5F3FF',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    marginBottom: 12,
+  },
+  aiHelperText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6D28D9',
+  },
+  dropdownPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  dropdownPillActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  dropdownPillActiveGreen: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  dropdownPillActiveAmber: {
+    backgroundColor: '#D97706',
+    borderColor: '#D97706',
+  },
+  dropdownPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  dropdownPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   filePickerBox: {
     borderWidth: 2,

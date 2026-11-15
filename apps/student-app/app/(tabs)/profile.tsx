@@ -50,6 +50,7 @@ import {
   Search,
   CheckCircle,
   XCircle,
+  Award,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -90,6 +91,13 @@ export default function StudentProfileScreen() {
     user?.email === 'icckeguruji@gmail.com' ||
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
+
+  const currentBadge =
+    user?.badges && user.badges.length > 0
+      ? user.badges[user.badges.length - 1]
+      : (user?.quiz_points || 0) >= 50
+      ? 'Bronze Scholar'
+      : 'Novice Student';
 
   // Admin Hub States
   const [payments, setPayments] = useState<any[]>(initialPayments);
@@ -510,16 +518,33 @@ export default function StudentProfileScreen() {
           </View>
         </View>
 
-        {/* Academic Details & Guardian Summary Card */}
+        {/* Academic Details & Quiz Performance Summary Card */}
         <View style={styles.academicCard}>
           <View style={styles.academicRow}>
             <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Board</Text>
-              <Text style={styles.academicValue}>{selectedBoard === 'BSEB' ? 'Bihar Board (BSEB)' : 'Jharkhand (JAC)'}</Text>
+              <Text style={styles.academicLabel}>Quiz Points</Text>
+              <Text style={[styles.academicValue, { color: '#2563EB', fontWeight: '800' }]}>
+                {user?.quiz_points || 0} PTS
+              </Text>
             </View>
             <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Class</Text>
+              <Text style={styles.academicLabel}>Rank Badge</Text>
+              <Text style={[styles.academicValue, { color: '#D97706', fontWeight: '800' }]}>
+                {currentBadge}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.academicDivider} />
+
+          <View style={styles.academicRow}>
+            <View style={styles.academicCol}>
+              <Text style={styles.academicLabel}>Enrolled Class</Text>
               <Text style={styles.academicValue}>{selectedClass || 'Class 10'}</Text>
+            </View>
+            <View style={styles.academicCol}>
+              <Text style={styles.academicLabel}>Status</Text>
+              <Text style={[styles.academicValue, { color: '#059669' }]}>Active Student</Text>
             </View>
           </View>
 
@@ -556,33 +581,46 @@ export default function StudentProfileScreen() {
           </View>
         </View>
 
-        {/* Board Selection */}
+        {/* AI Speed Quiz Badges Showcase */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <GraduationCap size={16} color="#2563EB" />
-            <Text style={styles.sectionTitle}>Change Target Board</Text>
+            <Award size={16} color="#D97706" />
+            <Text style={styles.sectionTitle}>AI Speed Quiz Rank Badges</Text>
           </View>
-          <View style={styles.chipRow}>
-            <TouchableOpacity
-              style={[styles.chip, selectedBoard === 'BSEB' && styles.chipActive]}
-              onPress={() => setBoard('BSEB')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.chipText, selectedBoard === 'BSEB' && styles.chipTextActive]}>
-                Bihar Board (BSEB)
-              </Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.chip, selectedBoard === 'JAC' && styles.chipActive]}
-              onPress={() => setBoard('JAC')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.chipText, selectedBoard === 'JAC' && styles.chipTextActive]}>
-                Jharkhand Board (JAC)
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+            {[
+              { name: 'Bronze Scholar', minPts: 50, icon: '🥉' },
+              { name: 'Silver Achiever', minPts: 150, icon: '🥈' },
+              { name: 'Gold Topper', minPts: 300, icon: '🥇' },
+              { name: 'State Ranker', minPts: 500, icon: '🏆' },
+              { name: 'BADE SIR Mastermind', minPts: 1000, icon: '👑' },
+            ].map((badge) => {
+              const isUnlocked = (user?.quiz_points || 0) >= badge.minPts || user?.badges?.includes(badge.name);
+              return (
+                <View
+                  key={badge.name}
+                  style={[
+                    styles.badgeCard,
+                    isUnlocked ? styles.badgeCardUnlocked : styles.badgeCardLocked,
+                  ]}
+                >
+                  <Text style={{ fontSize: 24, marginBottom: 4 }}>{badge.icon}</Text>
+                  <Text
+                    style={[
+                      styles.badgeCardTitle,
+                      isUnlocked ? styles.badgeCardTitleUnlocked : styles.badgeCardTitleLocked,
+                    ]}
+                  >
+                    {badge.name}
+                  </Text>
+                  <Text style={styles.badgeCardSub}>
+                    {isUnlocked ? 'Unlocked ✨' : `${badge.minPts} Pts Needed`}
+                  </Text>
+                </View>
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* General Options & Actions */}
@@ -593,7 +631,7 @@ export default function StudentProfileScreen() {
               <View style={styles.directorCardHeader}>
                 <View style={styles.directorBadge}>
                   <ShieldCheck size={16} color="#92400E" />
-                  <Text style={styles.directorBadgeTitle}>👑 बड़े सर (DIRECTOR HUB)</Text>
+                  <Text style={styles.directorBadgeTitle}>👑 Director Command Center (BADE SIR)</Text>
                 </View>
                 <Text style={styles.directorCardSub}>Unified administrative control inside mobile app</Text>
               </View>
@@ -1644,6 +1682,39 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#2563EB',
+  },
+  badgeCard: {
+    width: 130,
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  badgeCardUnlocked: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
+  badgeCardLocked: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    opacity: 0.6,
+  },
+  badgeCardTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  badgeCardTitleUnlocked: {
+    color: '#92400E',
+  },
+  badgeCardTitleLocked: {
+    color: '#94A3B8',
+  },
+  badgeCardSub: {
+    fontSize: 9,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '600',
   },
   menuSection: {
     backgroundColor: '#FFFFFF',
