@@ -45,6 +45,7 @@ jobs:
         run: |
           echo "android.kotlinVersion=1.9.25" >> apps/student-app/android/gradle.properties
           echo "kotlinVersion=1.9.25" >> apps/student-app/android/gradle.properties
+          sed -i 's/org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m/' apps/student-app/android/gradle.properties || echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m" >> apps/student-app/android/gradle.properties
           sed -i 's/reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a/' apps/student-app/android/gradle.properties || echo "reactNativeArchitectures=arm64-v8a" >> apps/student-app/android/gradle.properties
           sed -i 's/expo.useLegacyPackaging=false/expo.useLegacyPackaging=true/' apps/student-app/android/gradle.properties || echo "expo.useLegacyPackaging=true" >> apps/student-app/android/gradle.properties
           echo "android.enableProguardInReleaseBuilds=true" >> apps/student-app/android/gradle.properties
@@ -85,7 +86,7 @@ jobs:
         run: |
           cd apps/student-app/android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon -Pandroid.kotlinVersion=1.9.25 -PkotlinVersion=1.9.25 -PreactNativeArchitectures=arm64-v8a -Pexpo.useLegacyPackaging=true
+          ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m" -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease -Pandroid.kotlinVersion=1.9.25 -PkotlinVersion=1.9.25 -PreactNativeArchitectures=arm64-v8a -Pexpo.useLegacyPackaging=true
 
       - name: Rename APK
         run: |
