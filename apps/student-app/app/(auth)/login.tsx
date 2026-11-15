@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations } from '@icc/shared-utils';
 import { supabase } from '../../src/lib/supabase';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { UserProfile } from '@icc/shared-types';
 
 export default function LoginScreen() {
@@ -25,6 +26,7 @@ export default function LoginScreen() {
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -75,14 +77,19 @@ export default function LoginScreen() {
     try {
       let emailToUse = trimmedId;
 
-      if (isMobile(trimmedId)) {
+      if (!trimmedId.includes('@')) {
         try {
-          const { data: rpcData } = await supabase.rpc('get_email_by_phone', {
-            phone: '+91' + trimmedId,
+          const { data: rpcData } = await supabase.rpc('get_email_by_identifier', {
+            p_identifier: trimmedId,
           });
           if (rpcData) emailToUse = rpcData as string;
         } catch {
-          // Fallback
+          try {
+            const { data: phoneData } = await supabase.rpc('get_email_by_phone', {
+              phone_number: trimmedId,
+            });
+            if (phoneData) emailToUse = phoneData as string;
+          } catch {}
         }
       }
 
@@ -180,13 +187,13 @@ export default function LoginScreen() {
             {/* Login Form */}
             <View style={styles.form}>
               <Text style={styles.label}>
-                Email or Mobile Number
+                Mobile Number, Username, or Email
               </Text>
               <TextInput
                 style={styles.input}
                 value={identifier}
                 onChangeText={setIdentifier}
-                placeholder="9876543210 or rohit@example.com"
+                placeholder="9876543210, rohit_kumar, or email"
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -195,16 +202,28 @@ export default function LoginScreen() {
               <Text style={styles.label}>
                 Password
               </Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter your password"
-                placeholderTextColor="#94A3B8"
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={styles.passwordWrapper}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#94A3B8"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={styles.eyeBtn}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color="#64748B" />
+                  ) : (
+                    <Eye size={18} color="#64748B" />
+                  )}
+                </TouchableOpacity>
+              </View>
 
               {/* Forgot Password Link */}
               <TouchableOpacity
@@ -375,6 +394,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0F172A',
     marginBottom: 10,
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    marginBottom: 10,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 14,
+    top: 14,
+    padding: 4,
   },
   forgotRow: {
     alignItems: 'flex-end',

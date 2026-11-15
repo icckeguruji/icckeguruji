@@ -34,18 +34,27 @@ export default function AdminLoginPage() {
     /^(\+91)?\d{10}$/.test(val.replace(/\s/g, ''));
 
   const resolveEmail = async (val: string): Promise<string | null> => {
-    if (!isMobile(val)) return val.trim();
+    const clean = val.trim();
+    if (clean.includes('@')) return clean;
+
     try {
-      const phone = val.replace(/\s/g, '').replace(/^\+91/, '');
-      const { data } = await supabase.rpc('get_email_by_phone', {
-        phone_number: phone,
+      const { data } = await supabase.rpc('get_email_by_identifier', {
+        p_identifier: clean,
       });
       if (data) return data as string;
     } catch {
-      // Fallback
+      try {
+        const phone = clean.replace(/\s/g, '').replace(/^\+91/, '');
+        const { data: phoneData } = await supabase.rpc('get_email_by_phone', {
+          phone_number: phone,
+        });
+        if (phoneData) return phoneData as string;
+      } catch {
+        // Fallback
+      }
     }
-    const rawDigits = val.replace(/\D/g, '');
-    if (rawDigits.endsWith('9771350910')) return 'icckeguruji@gmail.com';
+    const rawDigits = clean.replace(/\D/g, '');
+    if (rawDigits.endsWith('9771350910') || clean.toLowerCase() === 'admin') return 'icckeguruji@gmail.com';
     return null;
   };
 
@@ -246,7 +255,7 @@ export default function AdminLoginPage() {
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">
-                Email Address or Mobile Number
+                Mobile Number, Username, or Email
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
@@ -255,7 +264,7 @@ export default function AdminLoginPage() {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="icckeguruji@gmail.com or 9771350910"
+                  placeholder="9771350910, admin, or icckeguruji@gmail.com"
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                 />
               </div>
