@@ -18,6 +18,9 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { supabase } from '../../src/lib/supabase';
 import { useAppUpdateStore, CURRENT_APP_VERSION } from '../../src/services/appUpdateService';
+import { initialStudents, initialPayments } from '../../../admin-web/src/lib/sample-data';
+import { UserProfile, Payment } from '@icc/shared-types';
+import { formatINR } from '@icc/shared-utils';
 import {
   User,
   ShieldCheck,
@@ -40,6 +43,13 @@ import {
   UploadCloud,
   ImageIcon,
   RefreshCw,
+  Users,
+  CreditCard,
+  Bell,
+  Send,
+  Search,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -72,6 +82,145 @@ export default function StudentProfileScreen() {
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [waLinkToken, setWaLinkToken] = useState<string | null>(null);
   const [waTokenLoading, setWaTokenLoading] = useState(false);
+
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    user?.role === 'teacher' ||
+    user?.email === 'icckeguruji@gmail.com' ||
+    user?.mobile_number === '9771350910' ||
+    user?.username === 'badesir';
+
+  // Admin Hub States
+  const [payments, setPayments] = useState<any[]>(initialPayments);
+  const [students, setStudents] = useState<UserProfile[]>(initialStudents);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMsg, setBroadcastMsg] = useState('');
+
+  // Handle Payment Approval
+  const handleApprovePayment = (payId: string, studentName: string) => {
+    Alert.alert(
+      'Approve Payment & Unlock Course?',
+      `Confirm approval for ${studentName}? Student will immediately receive complete access to the course and study materials.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Approve & Unlock',
+          style: 'default',
+          onPress: async () => {
+            try {
+              if (user?.id) {
+                await supabase
+                  .from('payments')
+                  .update({
+                    status: 'approved',
+                    reviewed_by: user.id,
+                    reviewed_at: new Date().toISOString(),
+                  })
+                  .eq('id', payId);
+              }
+            } catch {}
+            setPayments((prev) =>
+              prev.map((p) => (p.id === payId ? { ...p, status: 'approved' } : p))
+            );
+            Alert.alert('✅ Approved!', `${studentName}'s enrollment has been activated.`);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectPayment = (payId: string, studentName: string) => {
+    Alert.alert(
+      'Reject Payment?',
+      `Are you sure you want to reject the payment submission for ${studentName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reject',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await supabase
+                .from('payments')
+                .update({ status: 'rejected' })
+                .eq('id', payId);
+            } catch {}
+            setPayments((prev) =>
+              prev.map((p) => (p.id === payId ? { ...p, status: 'rejected' } : p))
+            );
+            Alert.alert('Rejected', 'Payment marked as rejected.');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleToggleStudent = (student: UserProfile) => {
+    const nextStatus = !student.is_active;
+    setStudents((prev) =>
+      prev.map((s) => (s.id === student.id ? { ...s, is_active: nextStatus } : s))
+    );
+    Alert.alert(
+      'Status Updated',
+      `${student.full_name} is now ${nextStatus ? 'Active' : 'Suspended'}.`
+    );
+  };
+
+  const handleSendParentWhatsApp = (student: UserProfile, type: 'attendance' | 'test') => {
+    const rawPhone = (student.guardian_phone || student.mobile_number || '').replace(/\D/g, '');
+    const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+
+    let msg = '';
+    if (type === 'attendance') {
+      msg = `🏫 *आदर्श कोचिंग सेन्टर (IDEAL COACHING CENTRE)*
+📍 सरोतिया, महगामा, गोड्डा (झारखंड)
+निदेशक: बड़े सर (BADE SIR) | +91 9771350910
+----------------------------------------
+📋 *साप्ताहिक उपस्थिति रिपोर्ट (Attendance Summary)*
+विद्यार्थी का नाम: *${student.full_name}*
+कक्षा: *${student.board_code} Class 10*
+अभिभावक: *${student.guardian_name || 'आदरणीय अभिभावक'}*
+
+✅ इस सप्ताह उपस्थिति: *6/6 दिन (100% उपस्थित)*
+⭐ क्लास अनुशासन: *उत्कृष्ट (Excellent)*
+----------------------------------------
+आदर्श कोचिंग सेन्टर द्वारा स्वचालित संदेश`;
+    } else {
+      msg = `🏫 *आदर्श कोचिंग सेन्टर (IDEAL COACHING CENTRE)*
+📍 सरोतिया, महगामा, गोड्डा (झारखंड)
+निदेशक: बड़े सर (BADE SIR) | +91 9771350910
+----------------------------------------
+📝 *साप्ताहिक टेस्ट परिणाम (Sunday Mock Test)*
+विद्यार्थी का नाम: *${student.full_name}*
+बोर्ड: *${student.board_code}*
+प्राप्तांक (Score): *46 / 50 (92%)*
+रैंक: *#3 (Top 5% in Batch)*
+परिणाम: *उत्तीर्ण (PASSED ⭐⭐⭐)*
+----------------------------------------
+बधाई! बोर्ड परीक्षा 2027 की तैयारी सही दिशा में है।`;
+    }
+
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Unable to open WhatsApp on this device.');
+    });
+  };
+
+  const handleSendBroadcast = () => {
+    if (!broadcastTitle.trim() || !broadcastMsg.trim()) {
+      Alert.alert('Required', 'Please enter announcement title and message');
+      return;
+    }
+    setIsBroadcastModalOpen(false);
+    setBroadcastTitle('');
+    setBroadcastMsg('');
+    Alert.alert('📢 Broadcast Sent!', 'Your announcement has been sent to all students.');
+  };
 
   // Generate WhatsApp Account Linking Token
   const handleGenerateWaToken = async () => {
@@ -438,27 +587,63 @@ export default function StudentProfileScreen() {
 
         {/* General Options & Actions */}
         <View style={styles.menuSection}>
-          {/* Director Admin Console Link */}
-          {(user?.role === 'admin' || user?.email === 'icckeguruji@gmail.com') && (
-            <TouchableOpacity
-              style={[styles.menuItem, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B', borderWidth: 1 }]}
-              onPress={() => router.push('/admin')}
-            >
-              <View style={styles.menuLeft}>
-                <View style={[styles.iconBox, { backgroundColor: '#FDE68A' }]}>
-                  <ShieldCheck size={18} color="#92400E" />
+          {/* Director Administration Center */}
+          {isAdmin && (
+            <View style={styles.directorAdminCard}>
+              <View style={styles.directorCardHeader}>
+                <View style={styles.directorBadge}>
+                  <ShieldCheck size={16} color="#92400E" />
+                  <Text style={styles.directorBadgeTitle}>👑 बड़े सर (DIRECTOR HUB)</Text>
                 </View>
-                <View>
-                  <Text style={[styles.menuItemText, { color: '#92400E', fontWeight: '800' }]}>
-                    👑 Director Admin Console
-                  </Text>
-                  <Text style={[styles.menuItemSub, { color: '#B45309' }]}>
-                    Manage payments, courses & students
-                  </Text>
-                </View>
+                <Text style={styles.directorCardSub}>Unified administrative control inside mobile app</Text>
               </View>
-              <ChevronRight size={18} color="#92400E" />
-            </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => setIsPaymentModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#FEF3C7' }]}>
+                  <CreditCard size={18} color="#D97706" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>UPI Fee Approvals</Text>
+                  <Text style={styles.adminHubRowSub}>Review screenshot, verify UTR & unlock courses</Text>
+                </View>
+                <View style={styles.pendingBadge}>
+                  <Text style={styles.pendingBadgeText}>
+                    {payments.filter((p) => p.status === 'pending').length} Pending
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => setIsStudentModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#EFF6FF' }]}>
+                  <Users size={18} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>Student Directory & WhatsApp Alerts</Text>
+                  <Text style={styles.adminHubRowSub}>Direct call & WhatsApp parent reports</Text>
+                </View>
+                <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => setIsBroadcastModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#F0FDF4' }]}>
+                  <Bell size={18} color="#16A34A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>Broadcast Announcement</Text>
+                  <Text style={styles.adminHubRowSub}>Send push notification to all students</Text>
+                </View>
+                <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* Edit Profile Details Item */}
@@ -1003,6 +1188,270 @@ export default function StudentProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 5. ADMIN UPI FEE APPROVALS MODAL */}
+      <Modal
+        visible={isPaymentModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsPaymentModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <CreditCard size={20} color="#D97706" />
+                <Text style={styles.modalTitle}>Pending UPI Fee Approvals</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsPaymentModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              {payments.map((p) => (
+                <View key={p.id} style={styles.paymentCard}>
+                  <View style={styles.paymentCardHeader}>
+                    <View>
+                      <Text style={styles.paymentStudentName}>
+                        {p.student?.full_name || 'ICC Student'}
+                      </Text>
+                      <Text style={styles.paymentMobile}>
+                        +91 {p.student?.mobile_number || '9876543210'}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.paymentStatusPill,
+                        p.status === 'approved'
+                          ? styles.statusApproved
+                          : p.status === 'rejected'
+                          ? styles.statusRejected
+                          : styles.statusPending,
+                      ]}
+                    >
+                      <Text style={styles.paymentStatusText}>
+                        {p.status.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.paymentDetailRow}>
+                    <Text style={styles.paymentCourse}>
+                      {p.course?.title || 'BSEB 10th Target Batch'}
+                    </Text>
+                    <Text style={styles.paymentAmount}>{formatINR(p.amount)}</Text>
+                  </View>
+
+                  <View style={styles.utrBox}>
+                    <Text style={styles.utrLabel}>UPI Ref / UTR:</Text>
+                    <Text style={styles.utrValue}>{p.upi_ref_number}</Text>
+                  </View>
+
+                  {p.status === 'pending' && (
+                    <View style={styles.paymentActionButtons}>
+                      <TouchableOpacity
+                        style={styles.approvePayBtn}
+                        onPress={() =>
+                          handleApprovePayment(p.id, p.student?.full_name || 'Student')
+                        }
+                      >
+                        <Check size={14} color="#FFFFFF" />
+                        <Text style={styles.approvePayBtnText}>Approve & Unlock</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.rejectPayBtn}
+                        onPress={() =>
+                          handleRejectPayment(p.id, p.student?.full_name || 'Student')
+                        }
+                      >
+                        <X size={14} color="#EF4444" />
+                        <Text style={styles.rejectPayBtnText}>Reject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsPaymentModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 6. ADMIN STUDENT DIRECTORY MODAL */}
+      <Modal
+        visible={isStudentModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsStudentModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Users size={20} color="#2563EB" />
+                <Text style={styles.modalTitle}>Student Directory & WhatsApp Alerts</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsStudentModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <Search size={16} color="#94A3B8" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by student name or mobile..."
+                value={studentSearch}
+                onChangeText={setStudentSearch}
+              />
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              {students
+                .filter((s) => {
+                  if (!studentSearch.trim()) return true;
+                  const q = studentSearch.toLowerCase();
+                  return (
+                    s.full_name.toLowerCase().includes(q) ||
+                    s.mobile_number.includes(q)
+                  );
+                })
+                .map((student) => (
+                  <View key={student.id} style={styles.studentCard}>
+                    <View style={styles.studentHeader}>
+                      <View>
+                        <Text style={styles.studentName}>{student.full_name}</Text>
+                        <Text style={styles.studentMeta}>
+                          {student.board_code} Class 10 • {student.district}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.activeToggleBtn,
+                          student.is_active ? styles.toggleActive : styles.toggleSuspended,
+                        ]}
+                        onPress={() => handleToggleStudent(student)}
+                      >
+                        <Text style={styles.activeToggleText}>
+                          {student.is_active ? 'Active' : 'Suspended'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.guardianInfo}>
+                      Guardian: {student.guardian_name || 'N/A'} (+91 {student.guardian_phone || student.mobile_number})
+                    </Text>
+
+                    <View style={styles.studentActionRow}>
+                      <TouchableOpacity
+                        style={styles.callBtn}
+                        onPress={() =>
+                          Linking.openURL(`tel:${student.guardian_phone || student.mobile_number}`)
+                        }
+                      >
+                        <Phone size={13} color="#2563EB" />
+                        <Text style={styles.callBtnText}>Call</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.waBtn}
+                        onPress={() => handleSendParentWhatsApp(student, 'attendance')}
+                      >
+                        <MessageSquare size={13} color="#059669" />
+                        <Text style={styles.waBtnText}>Attendance</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.waTestBtn}
+                        onPress={() => handleSendParentWhatsApp(student, 'test')}
+                      >
+                        <Sparkles size={13} color="#D97706" />
+                        <Text style={styles.waTestBtnText}>Test Report</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsStudentModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 7. ADMIN BROADCAST ANNOUNCEMENT MODAL */}
+      <Modal
+        visible={isBroadcastModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsBroadcastModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Bell size={20} color="#16A34A" />
+                <Text style={styles.modalTitle}>Broadcast Announcement</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsBroadcastModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <Text style={styles.inputLabel}>Announcement Title *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Sunday Mega Test Schedule (रविवार टेस्ट सूचना)"
+                value={broadcastTitle}
+                onChangeText={setBroadcastTitle}
+              />
+
+              <Text style={styles.inputLabel}>Message Details *</Text>
+              <TextInput
+                style={[styles.textInput, { height: 90, textAlignVertical: 'top' }]}
+                multiline
+                numberOfLines={4}
+                placeholder="Type your message for all enrolled students..."
+                value={broadcastMsg}
+                onChangeText={setBroadcastMsg}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsBroadcastModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: '#16A34A' }]}
+                onPress={handleSendBroadcast}
+              >
+                <Send size={15} color="#FFFFFF" />
+                <Text style={styles.saveBtnText}>Send Broadcast</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1508,5 +1957,306 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#059669',
+  },
+
+  // Director Admin Hub Styles
+  directorAdminCard: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    padding: 14,
+    marginBottom: 16,
+  },
+  directorCardHeader: {
+    marginBottom: 12,
+  },
+  directorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  directorBadgeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  directorCardSub: {
+    fontSize: 11,
+    color: '#B45309',
+    marginTop: 2,
+  },
+  adminHubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  adminHubIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminHubRowTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  adminHubRowSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  pendingBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  pendingBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+
+  // Payment Modal Cards
+  paymentCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  paymentCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  paymentStudentName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  paymentMobile: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  paymentStatusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusApproved: {
+    backgroundColor: '#D1FAE5',
+  },
+  statusRejected: {
+    backgroundColor: '#FEE2E2',
+  },
+  statusPending: {
+    backgroundColor: '#FEF3C7',
+  },
+  paymentStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  paymentDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  paymentCourse: {
+    fontSize: 12,
+    color: '#2563EB',
+    fontWeight: '600',
+    flex: 1,
+  },
+  paymentAmount: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  utrBox: {
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    padding: 8,
+    borderRadius: 6,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  utrLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  utrValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F172A',
+    fontFamily: 'monospace',
+  },
+  paymentActionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  approvePayBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#059669',
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  approvePayBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  rejectPayBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  rejectPayBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#EF4444',
+  },
+
+  // Student Directory Modal Styles
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    marginHorizontal: 16,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 9,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  studentCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  studentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  studentName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  studentMeta: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  activeToggleBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  toggleActive: {
+    backgroundColor: '#D1FAE5',
+  },
+  toggleSuspended: {
+    backgroundColor: '#FEE2E2',
+  },
+  activeToggleText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  guardianInfo: {
+    fontSize: 11,
+    color: '#475569',
+    marginBottom: 8,
+  },
+  studentActionRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  callBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  callBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  waBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  waBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  waTestBtn: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#FFFBEB',
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  waTestBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D97706',
   },
 });

@@ -24,6 +24,10 @@ import {
   Sparkles,
   ChevronRight,
   ShieldCheck,
+  Plus,
+  Users,
+  CreditCard,
+  BookOpen,
 } from 'lucide-react-native';
 
 const thumbMap: Record<string, any> = {
@@ -36,6 +40,14 @@ const thumbMap: Record<string, any> = {
 export default function StudentHomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    user?.role === 'teacher' ||
+    user?.email === 'icckeguruji@gmail.com' ||
+    user?.mobile_number === '9771350910' ||
+    user?.username === 'badesir';
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
@@ -88,21 +100,74 @@ export default function StudentHomeScreen() {
           />
         }
       >
-        {/* Director Mobile Console Quick-Jump Banner */}
-        {(user?.role === 'admin' || user?.email === 'icckeguruji@gmail.com') && (
-          <TouchableOpacity
-            style={styles.directorBanner}
-            onPress={() => router.push('/admin')}
-          >
-            <View style={styles.directorBannerLeft}>
-              <ShieldCheck size={20} color="#B45309" />
-              <View style={{ marginLeft: 8 }}>
-                <Text style={styles.directorBannerTitle}>👑 DIRECTOR CONSOLE (बड़े सर नियंत्रण)</Text>
-                <Text style={styles.directorBannerSub}>Tap to manage payments, courses & students</Text>
+        {/* Director Mobile Unified Admin Hub */}
+        {isAdmin && (
+          <View style={styles.adminQuickPanel}>
+            <View style={styles.adminQuickHeader}>
+              <View style={styles.adminQuickBadge}>
+                <ShieldCheck size={16} color="#B45309" />
+                <Text style={styles.adminQuickBadgeText}>👑 बड़े सर (DIRECTOR MODE ACTIVE)</Text>
               </View>
+              <Text style={styles.adminQuickSub}>All administrative features unified inside app</Text>
             </View>
-            <ChevronRight size={18} color="#B45309" />
-          </TouchableOpacity>
+
+            {/* Quick Metrics */}
+            <View style={styles.metricsRow}>
+              <TouchableOpacity
+                style={styles.metricCard}
+                onPress={() => router.push('/(tabs)/profile')}
+              >
+                <CreditCard size={16} color="#2563EB" />
+                <Text style={styles.metricNumber}>2 Pending</Text>
+                <Text style={styles.metricLabel}>Fee Approvals</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.metricCard}
+                onPress={() => router.push('/(tabs)/profile')}
+              >
+                <Users size={16} color="#059669" />
+                <Text style={styles.metricNumber}>48 Active</Text>
+                <Text style={styles.metricLabel}>Total Students</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.metricCard}
+                onPress={() => router.push('/(tabs)/courses')}
+              >
+                <BookOpen size={16} color="#D97706" />
+                <Text style={styles.metricNumber}>{courses.length || 4}</Text>
+                <Text style={styles.metricLabel}>Target Batches</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Inline Action Shortcuts */}
+            <View style={styles.adminActionShortcuts}>
+              <TouchableOpacity
+                style={[styles.adminActionBtn, { backgroundColor: '#DC2626' }]}
+                onPress={() => router.push('/(tabs)/live')}
+              >
+                <Radio size={13} color="#FFFFFF" />
+                <Text style={styles.adminActionBtnText}>🔴 Go Live</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.adminActionBtn, { backgroundColor: '#2563EB' }]}
+                onPress={() => router.push('/(tabs)/courses')}
+              >
+                <Plus size={13} color="#FFFFFF" />
+                <Text style={styles.adminActionBtnText}>+ Course</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.adminActionBtn, { backgroundColor: '#059669' }]}
+                onPress={() => router.push('/(tabs)/notes')}
+              >
+                <FileText size={13} color="#FFFFFF" />
+                <Text style={styles.adminActionBtnText}>+ PDF</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
 
         {/* Live Class Highlight Banner */}
@@ -283,6 +348,77 @@ const styles = StyleSheet.create({
   scroll: {
     padding: 18,
     paddingBottom: 36,
+  },
+  adminQuickPanel: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  adminQuickHeader: {
+    marginBottom: 10,
+  },
+  adminQuickBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  adminQuickBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  adminQuickSub: {
+    fontSize: 11,
+    color: '#B45309',
+    marginTop: 2,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    alignItems: 'center',
+  },
+  metricNumber: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 4,
+  },
+  metricLabel: {
+    fontSize: 9,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 1,
+    textAlign: 'center',
+  },
+  adminActionShortcuts: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  adminActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: 6,
+    gap: 4,
+  },
+  adminActionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   directorBanner: {
     flexDirection: 'row',

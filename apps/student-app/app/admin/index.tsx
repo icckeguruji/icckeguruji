@@ -567,6 +567,37 @@ export default function MobileAdminDashboard() {
         </View>
       </View>
 
+      {/* Unified App Notification Banner */}
+      <TouchableOpacity
+        style={{
+          marginHorizontal: 16,
+          marginTop: 10,
+          marginBottom: 6,
+          backgroundColor: '#EFF6FF',
+          borderWidth: 1.5,
+          borderColor: '#2563EB',
+          borderRadius: 12,
+          padding: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+        onPress={() => router.replace('/(tabs)')}
+        activeOpacity={0.8}
+      >
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E40AF' }}>
+            🚀 Unified Mobile App Active!
+          </Text>
+          <Text style={{ fontSize: 11, color: '#3B82F6', marginTop: 2 }}>
+            All Director controls are now built directly into the standard tabs (Courses, Live, Notes, Profile).
+          </Text>
+        </View>
+        <View style={{ backgroundColor: '#2563EB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Open App ➔</Text>
+        </View>
+      </TouchableOpacity>
+
       {/* Real-time Summary Cards */}
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { borderLeftColor: '#3B82F6' }]}>

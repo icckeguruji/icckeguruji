@@ -73,7 +73,7 @@ export default function LoginScreen() {
 
   const handleQuickAdminLogin = () => {
     setUser(defaultAdminUser);
-    router.replace('/admin');
+    router.replace('/(tabs)');
   };
 
   const handleLogin = async () => {
@@ -125,7 +125,7 @@ export default function LoginScreen() {
 
       if (isAdminLogin) {
         setUser(defaultAdminUser);
-        router.replace('/admin');
+        router.replace('/(tabs)');
         return;
       }
 
