@@ -40,8 +40,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-sqlite",
-      "expo-intent-launcher"
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
