@@ -9,6 +9,7 @@ const ADMIN_ONLY_PATHS = [
   '/academics',
   '/examinations',
   '/teachers',
+  '/whatsapp',
 ];
 
 function decodeJwtPayload(token: string): any {

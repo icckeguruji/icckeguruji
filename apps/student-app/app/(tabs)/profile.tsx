@@ -9,6 +9,7 @@ import {
   TextInput,
   Modal,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -33,6 +34,7 @@ import {
   School,
   MapPin,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -62,6 +64,31 @@ export default function StudentProfileScreen() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  const [waLinkToken, setWaLinkToken] = useState<string | null>(null);
+  const [waTokenLoading, setWaTokenLoading] = useState(false);
+
+  // Generate WhatsApp Account Linking Token
+  const handleGenerateWaToken = async () => {
+    setWaTokenLoading(true);
+    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+
+    try {
+      if (user?.id) {
+        await supabase.from('whatsapp_link_tokens').insert({
+          token_code: randomHex,
+          user_id: user.id,
+          user_role: 'student',
+          expires_at: expiresAt,
+        });
+      }
+    } catch {}
+
+    setWaLinkToken(randomHex);
+    setWaTokenLoading(false);
+    setIsWhatsAppModalOpen(true);
+  };
 
   // Edit details form state
   const [fullName, setFullName] = useState(user?.full_name || '');
@@ -403,6 +430,24 @@ export default function StudentProfileScreen() {
               <View>
                 <Text style={styles.menuItemText}>Upload / Change Photo</Text>
                 <Text style={styles.menuItemSub}>Select profile avatar or custom image</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
+
+          {/* Link WhatsApp Account */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleGenerateWaToken}
+            disabled={waTokenLoading}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.iconBox, { backgroundColor: '#ECFDF5' }]}>
+                <MessageSquare size={18} color="#059669" />
+              </View>
+              <View>
+                <Text style={styles.menuItemText}>Link WhatsApp AI Assistant</Text>
+                <Text style={styles.menuItemSub}>Get live class alerts & notes on WhatsApp</Text>
               </View>
             </View>
             <ChevronRight size={18} color="#94A3B8" />
@@ -762,6 +807,71 @@ export default function StudentProfileScreen() {
                 onPress={() => setIsPhotoModalOpen(false)}
               >
                 <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 4. WHATSAPP ACCOUNT LINKING MODAL */}
+      <Modal
+        visible={isWhatsAppModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsWhatsAppModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MessageSquare size={20} color="#059669" />
+                <Text style={styles.modalTitle}>Link WhatsApp Assistant</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsWhatsAppModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.modalBody, { paddingVertical: 16 }]}>
+              <Text style={{ fontSize: 13, color: '#475569', lineHeight: 18, marginBottom: 14 }}>
+                Send this secure verification code to the IDEAL COACHING CENTRE WhatsApp bot to link your student profile.
+              </Text>
+
+              {waLinkToken ? (
+                <View style={{ backgroundColor: '#EFF6FF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#BFDBFE', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E40AF', textTransform: 'uppercase' }}>
+                    One-Time Verification Code (Valid 5 Mins)
+                  </Text>
+                  <Text style={{ fontSize: 24, fontWeight: '800', fontFamily: 'monospace', color: '#1D4ED8', letterSpacing: 2 }}>
+                    #LINK {waLinkToken}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#2563EB', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, width: '100%', alignItems: 'center', marginTop: 8 }}
+                    onPress={() => {
+                      Linking.openURL(`https://wa.me/919771350910?text=${encodeURIComponent('#LINK ' + waLinkToken)}`);
+                    }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+                      📲 Open WhatsApp & Send Code
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <View style={{ marginTop: 14, backgroundColor: '#FEF3C7', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#FDE68A' }}>
+                <Text style={{ fontSize: 11, color: '#92400E', lineHeight: 16 }}>
+                  💡 Once linked, you can ask for your live class schedule, study notes, and Sunday test results directly on WhatsApp 24/7!
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsWhatsAppModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>

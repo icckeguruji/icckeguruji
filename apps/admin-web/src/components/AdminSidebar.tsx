@@ -22,6 +22,7 @@ import {
   LogOut,
   HelpCircle,
   Bell,
+  MessageSquare,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -70,6 +71,7 @@ export function AdminSidebar() {
     { href: '/payments', icon: CreditCard, label: 'Payments & UTR' },
     { href: '/examinations', icon: FileCheck2, label: 'Examinations' },
     { href: '/notifications', icon: Bell, label: 'Push Notifications' },
+    { href: '/whatsapp', icon: MessageSquare, label: 'WhatsApp AI Bot' },
     { href: '/teachers', icon: UserCheck, label: 'Faculty Management' },
     { href: '/reports', icon: BarChart3, label: 'Reports' },
     { href: '/settings', icon: Settings, label: 'Settings & Quota' },
