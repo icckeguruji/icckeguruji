@@ -11,6 +11,10 @@ out/
 
 # Expo & React Native
 .expo/
+apps/student-app/android/
+apps/student-app/ios/
+android/
+ios/
 *.jks
 *.p8
 *.p12

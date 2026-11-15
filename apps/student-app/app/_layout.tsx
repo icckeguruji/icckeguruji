@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { initLocalDatabase } from '../src/store/useLocalDb';
+import { AppUpdateModal } from '../src/components/AppUpdateModal';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -147,6 +148,7 @@ export default function RootLayout() {
               }}
             />
           </Stack>
+          <AppUpdateModal />
         </PaperProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

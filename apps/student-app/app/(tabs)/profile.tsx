@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { supabase } from '../../src/lib/supabase';
+import { useAppUpdateStore, CURRENT_APP_VERSION } from '../../src/services/appUpdateService';
 import {
   User,
   ShieldCheck,
@@ -38,6 +39,7 @@ import {
   MessageSquare,
   UploadCloud,
   ImageIcon,
+  RefreshCw,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -581,6 +583,31 @@ export default function StudentProfileScreen() {
               <View>
                 <Text style={styles.menuItemText}>Institute Information & Contact</Text>
                 <Text style={styles.menuItemSub}>Director: BADE SIR (+91 9771350910)</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
+
+          {/* Check App Updates */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={async () => {
+              const res = await useAppUpdateStore.getState().checkForUpdate();
+              if (!res.hasUpdate) {
+                Alert.alert(
+                  'Up to Date! 🎉',
+                  `You are running the latest version of IDEAL COACHING CENTRE (v${CURRENT_APP_VERSION}).`
+                );
+              }
+            }}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.iconBox, { backgroundColor: '#EFF6FF' }]}>
+                <RefreshCw size={18} color="#2563EB" />
+              </View>
+              <View>
+                <Text style={styles.menuItemText}>Check for App Updates</Text>
+                <Text style={styles.menuItemSub}>Version v{CURRENT_APP_VERSION} (Build 1)</Text>
               </View>
             </View>
             <ChevronRight size={18} color="#94A3B8" />

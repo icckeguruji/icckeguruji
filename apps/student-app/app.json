@@ -2,7 +2,7 @@
   "expo": {
     "name": "IDEAL COACHING CENTRE",
     "slug": "ideal-coaching-centre",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "idealcoaching",
@@ -22,7 +22,7 @@
         "backgroundColor": "#1E3A8A"
       },
       "package": "com.idealcoaching.app",
-      "versionCode": 1,
+      "versionCode": 2,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -32,13 +32,16 @@
         "READ_MEDIA_AUDIO",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "CAMERA"
+        "CAMERA",
+        "REQUEST_INSTALL_PACKAGES",
+        "DOWNLOAD_WITHOUT_NOTIFICATION"
       ]
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-intent-launcher"
     ],
     "experiments": {
       "typedRoutes": true
