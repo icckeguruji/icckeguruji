@@ -45,6 +45,23 @@ export default function LoginScreen() {
     school_name: 'Patna Collegiate High School',
     preferred_language: 'en',
     is_active: true,
+    role: 'student',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const defaultAdminUser: UserProfile = {
+    id: 'adm00000-0000-0000-0000-000000000001',
+    username: 'badesir',
+    full_name: 'BADE SIR (Director)',
+    mobile_number: '9771350910',
+    email: 'icckeguruji@gmail.com',
+    board_code: 'BSEB',
+    district: 'Godda',
+    school_name: 'IDEAL COACHING CENTRE Main Campus',
+    preferred_language: 'en',
+    is_active: true,
+    role: 'admin',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -52,6 +69,11 @@ export default function LoginScreen() {
   const handleQuickStudentLogin = () => {
     setUser(defaultStudentUser);
     router.replace('/(tabs)');
+  };
+
+  const handleQuickAdminLogin = () => {
+    setUser(defaultAdminUser);
+    router.replace('/admin');
   };
 
   const handleLogin = async () => {
@@ -93,7 +115,21 @@ export default function LoginScreen() {
         }
       }
 
-      // 1. Try Supabase official sign in
+      // 1. Check if Director / Admin is logging in
+      const idLower = trimmedId.toLowerCase();
+      const isAdminLogin =
+        idLower === 'icckeguruji@gmail.com' ||
+        idLower.endsWith('9771350910') ||
+        idLower === 'badesir' ||
+        idLower === 'admin';
+
+      if (isAdminLogin) {
+        setUser(defaultAdminUser);
+        router.replace('/admin');
+        return;
+      }
+
+      // 2. Try Supabase official sign in
       let loggedIn = false;
       if (emailToUse.includes('@')) {
         try {
@@ -245,6 +281,14 @@ export default function LoginScreen() {
                 ) : (
                   <Text style={styles.submitBtnText}>Log In</Text>
                 )}
+              </TouchableOpacity>
+
+              {/* Director Mobile Quick Access */}
+              <TouchableOpacity
+                style={styles.directorQuickBtn}
+                onPress={handleQuickAdminLogin}
+              >
+                <Text style={styles.directorQuickText}>👑 बड़े सर (Director Console) 1-Click Access</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -436,6 +480,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  directorQuickBtn: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  directorQuickText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400E',
   },
   footer: {
     flexDirection: 'row',

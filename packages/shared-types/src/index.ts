@@ -84,6 +84,7 @@ export interface UserProfile {
   preferred_language: AppLanguage;
   avatar_url?: string;
   is_active: boolean;
+  role?: 'student' | 'teacher' | 'admin' | 'super_admin';
   created_at: string;
   updated_at: string;
 }

@@ -88,6 +88,23 @@ export default function StudentHomeScreen() {
           />
         }
       >
+        {/* Director Mobile Console Quick-Jump Banner */}
+        {(user?.role === 'admin' || user?.email === 'icckeguruji@gmail.com') && (
+          <TouchableOpacity
+            style={styles.directorBanner}
+            onPress={() => router.push('/admin')}
+          >
+            <View style={styles.directorBannerLeft}>
+              <ShieldCheck size={20} color="#B45309" />
+              <View style={{ marginLeft: 8 }}>
+                <Text style={styles.directorBannerTitle}>👑 DIRECTOR CONSOLE (बड़े सर नियंत्रण)</Text>
+                <Text style={styles.directorBannerSub}>Tap to manage payments, courses & students</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color="#B45309" />
+          </TouchableOpacity>
+        )}
+
         {/* Live Class Highlight Banner */}
         <View style={styles.liveCard}>
           <View style={styles.liveBadgeRow}>
@@ -266,6 +283,32 @@ const styles = StyleSheet.create({
   scroll: {
     padding: 18,
     paddingBottom: 36,
+  },
+  directorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 16,
+  },
+  directorBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  directorBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  directorBannerSub: {
+    fontSize: 11,
+    color: '#B45309',
+    marginTop: 1,
   },
   liveCard: {
     backgroundColor: '#0F172A',

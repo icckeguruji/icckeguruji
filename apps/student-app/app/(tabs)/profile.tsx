@@ -384,6 +384,29 @@ export default function StudentProfileScreen() {
 
         {/* General Options & Actions */}
         <View style={styles.menuSection}>
+          {/* Director Admin Console Link */}
+          {(user?.role === 'admin' || user?.email === 'icckeguruji@gmail.com') && (
+            <TouchableOpacity
+              style={[styles.menuItem, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B', borderWidth: 1 }]}
+              onPress={() => router.push('/admin')}
+            >
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconBox, { backgroundColor: '#FDE68A' }]}>
+                  <ShieldCheck size={18} color="#92400E" />
+                </View>
+                <View>
+                  <Text style={[styles.menuItemText, { color: '#92400E', fontWeight: '800' }]}>
+                    👑 Director Admin Console
+                  </Text>
+                  <Text style={[styles.menuItemSub, { color: '#B45309' }]}>
+                    Manage payments, courses & students
+                  </Text>
+                </View>
+              </View>
+              <ChevronRight size={18} color="#92400E" />
+            </TouchableOpacity>
+          )}
+
           {/* Edit Profile Details Item */}
           <TouchableOpacity
             style={styles.menuItem}

@@ -140,6 +140,12 @@ export default function RootLayout() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen
+              name="admin/index"
+              options={{
+                headerShown: false,
+              }}
+            />
           </Stack>
         </PaperProvider>
       </QueryClientProvider>
