@@ -18,7 +18,7 @@ const { width } = Dimensions.get('window');
 
 export default function IndexScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [animationComplete, setAnimationComplete] = useState(false);
 
   // Animated values
@@ -128,19 +128,37 @@ export default function IndexScreen() {
       useNativeDriver: false,
     }).start();
 
-    // 5. Automatic transition for logged-in students
+    // 5. Automatic transition for logged-in students or director
     const timer = setTimeout(() => {
       if (isAuthenticated) {
-        router.replace('/(tabs)');
+        const isAdmin =
+          user?.role === 'admin' ||
+          user?.role === 'super_admin' ||
+          user?.email === 'icckeguruji@gmail.com' ||
+          user?.mobile_number === '9771350910';
+        if (isAdmin) {
+          router.replace('/admin');
+        } else {
+          router.replace('/(tabs)');
+        }
       }
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const handleStart = () => {
     if (isAuthenticated) {
-      router.replace('/(tabs)');
+      const isAdmin =
+        user?.role === 'admin' ||
+        user?.role === 'super_admin' ||
+        user?.email === 'icckeguruji@gmail.com' ||
+        user?.mobile_number === '9771350910';
+      if (isAdmin) {
+        router.replace('/admin');
+      } else {
+        router.replace('/(tabs)');
+      }
     } else {
       router.push('/(auth)/login');
     }

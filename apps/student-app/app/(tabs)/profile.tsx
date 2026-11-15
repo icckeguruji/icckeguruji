@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { supabase } from '../../src/lib/supabase';
@@ -35,6 +36,8 @@ import {
   MapPin,
   Sparkles,
   MessageSquare,
+  UploadCloud,
+  ImageIcon,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -213,6 +216,55 @@ export default function StudentProfileScreen() {
       setIsChangePasswordOpen(false);
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  // Pick photo from device gallery
+  const handlePickFromGallery = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Denied', 'Storage / gallery permission is required to select photos from device.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        updateProfile({ avatar_url: result.assets[0].uri });
+        setIsPhotoModalOpen(false);
+        Alert.alert('Photo Updated', 'Profile photo updated from device gallery!');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not pick photo from device.');
+    }
+  };
+
+  // Capture photo with camera
+  const handleCaptureCamera = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Denied', 'Camera permission is required to capture a photo.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        updateProfile({ avatar_url: result.assets[0].uri });
+        setIsPhotoModalOpen(false);
+        Alert.alert('Photo Updated', 'Profile photo captured and updated successfully!');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not take photo.');
     }
   };
 
@@ -792,7 +844,31 @@ export default function StudentProfileScreen() {
             </View>
 
             <ScrollView style={styles.modalBody}>
-              <Text style={styles.presetHeading}>Select Curated Student Avatar</Text>
+              {/* Device Upload Actions */}
+              <View style={styles.deviceUploadCard}>
+                <Text style={styles.deviceUploadTitle}>Upload from Your Device</Text>
+                <View style={styles.deviceActionRow}>
+                  <TouchableOpacity
+                    style={styles.galleryUploadBtn}
+                    onPress={handlePickFromGallery}
+                    activeOpacity={0.8}
+                  >
+                    <ImageIcon size={18} color="#2563EB" />
+                    <Text style={styles.galleryUploadBtnText}>Device Gallery</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.cameraUploadBtn}
+                    onPress={handleCaptureCamera}
+                    activeOpacity={0.8}
+                  >
+                    <Camera size={18} color="#059669" />
+                    <Text style={styles.cameraUploadBtnText}>Take Photo</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text style={styles.presetHeading}>Or Select Curated Student Avatar</Text>
               <View style={styles.avatarGrid}>
                 {PRESET_AVATARS.map((url, idx) => (
                   <TouchableOpacity
@@ -1351,5 +1427,59 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#2563EB',
+  },
+  deviceUploadCard: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  deviceUploadTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  deviceActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  galleryUploadBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  galleryUploadBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  cameraUploadBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  cameraUploadBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
   },
 });

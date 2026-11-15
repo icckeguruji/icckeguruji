@@ -17,9 +17,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
-import { initialCourses, initialStudents, initialPayments } from '../../../admin-web/src/lib/sample-data';
-import { Course, UserProfile, Payment } from '@icc/shared-types';
+import { initialCourses, initialStudents, initialPayments, initialStudyMaterials } from '../../../admin-web/src/lib/sample-data';
+import { Course, UserProfile, Payment, StudyMaterial } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import {
   ShieldCheck,
@@ -45,9 +47,15 @@ import {
   X,
   Phone,
   Send,
+  FileText,
+  Camera,
+  UploadCloud,
+  ImageIcon,
+  FileCheck,
+  Download,
 } from 'lucide-react-native';
 
-type AdminTab = 'payments' | 'courses' | 'students' | 'broadcast';
+type AdminTab = 'payments' | 'courses' | 'notes' | 'students' | 'broadcast';
 
 export default function MobileAdminDashboard() {
   const router = useRouter();
@@ -60,6 +68,7 @@ export default function MobileAdminDashboard() {
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [students, setStudents] = useState<UserProfile[]>(initialStudents);
   const [payments, setPayments] = useState<any[]>(initialPayments);
+  const [studyMaterials, setStudyMaterials] = useState<StudyMaterial[]>(initialStudyMaterials);
 
   // Student Search
   const [studentSearch, setStudentSearch] = useState('');
@@ -76,6 +85,21 @@ export default function MobileAdminDashboard() {
     discount_price: '499',
     validity_days: '365',
     description: '',
+    thumbnail_url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
+  });
+
+  // Note / Study Material Modal (Add)
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [noteForm, setNoteForm] = useState({
+    title: '',
+    title_hi: '',
+    board_code: 'BSEB',
+    class_name: 'Class 10',
+    description: '',
+    is_free: false,
+    fileName: '',
+    fileUri: '',
+    fileSize: 0,
   });
 
   // Broadcast Notification Form
@@ -89,10 +113,11 @@ export default function MobileAdminDashboard() {
     setRefreshing(true);
     try {
       if (isSupabaseConfigured) {
-        const [coursesRes, studentsRes, paymentsRes] = await Promise.all([
+        const [coursesRes, studentsRes, paymentsRes, materialsRes] = await Promise.all([
           supabase.from('courses').select('*').order('created_at', { ascending: false }),
           supabase.from('profiles').select('*').order('created_at', { ascending: false }),
           supabase.from('payments').select('*, student:profiles(*), course:courses(*)').order('created_at', { ascending: false }),
+          supabase.from('study_materials').select('*').order('created_at', { ascending: false }),
         ]);
 
         if (coursesRes.data && coursesRes.data.length > 0) {
@@ -103,6 +128,9 @@ export default function MobileAdminDashboard() {
         }
         if (paymentsRes.data && paymentsRes.data.length > 0) {
           setPayments(paymentsRes.data);
+        }
+        if (materialsRes.data && materialsRes.data.length > 0) {
+          setStudyMaterials(materialsRes.data as StudyMaterial[]);
         }
       }
     } catch (err) {
@@ -232,6 +260,142 @@ export default function MobileAdminDashboard() {
     });
   };
 
+  // Course Thumbnail Pickers
+  const handlePickCourseThumbnail = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Gallery access is needed to select course thumbnail.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        setCourseForm((prev) => ({ ...prev, thumbnail_url: result.assets[0].uri }));
+        Alert.alert('Thumbnail Selected', 'Course cover photo selected from device gallery!');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not pick thumbnail.');
+    }
+  };
+
+  const handleCaptureCourseThumbnail = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Camera access is needed.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        setCourseForm((prev) => ({ ...prev, thumbnail_url: result.assets[0].uri }));
+        Alert.alert('Thumbnail Captured', 'Course photo captured from camera!');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not capture photo.');
+    }
+  };
+
+  // PDF Document Picker for Study Materials
+  const handlePickPdfNotes = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const file = result.assets[0];
+        setNoteForm((prev) => ({
+          ...prev,
+          fileName: file.name,
+          fileUri: file.uri,
+          fileSize: file.size || 1024000,
+          title: prev.title || file.name.replace(/\.pdf$/i, ''),
+        }));
+        Alert.alert('PDF Selected', `Selected file: ${file.name}`);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Could not select PDF.');
+    }
+  };
+
+  // Save Study Material
+  const handleSaveNote = async () => {
+    if (!noteForm.title.trim()) {
+      Alert.alert('Required', 'Please enter note title.');
+      return;
+    }
+    const newMaterial: StudyMaterial = {
+      id: `mat-${Date.now()}`,
+      board_id: noteForm.board_code === 'BSEB' ? 'b0000000-0000-0000-0000-000000000001' : 'b0000000-0000-0000-0000-000000000002',
+      class_id: 'c0000000-0000-0000-0000-000000000010',
+      subject_id: 'sub00000-0000-0000-0000-000000000002',
+      chapter_id: 'ch000000-0000-0000-0000-000000000001',
+      title: noteForm.title.trim(),
+      title_hi: noteForm.title_hi.trim() || noteForm.title.trim(),
+      description: noteForm.description.trim() || 'Handwritten coaching notes',
+      file_path: noteForm.fileUri || 'bseb/class10/science/notes.pdf',
+      file_size_bytes: noteForm.fileSize || 1500000,
+      material_type: 'chapter_notes',
+      is_free: noteForm.is_free,
+      version: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('study_materials').insert(newMaterial);
+      } catch {}
+    }
+
+    setStudyMaterials((prev) => [newMaterial, ...prev]);
+    setIsNoteModalOpen(false);
+    setNoteForm({
+      title: '',
+      title_hi: '',
+      board_code: 'BSEB',
+      class_name: 'Class 10',
+      description: '',
+      is_free: false,
+      fileName: '',
+      fileUri: '',
+      fileSize: 0,
+    });
+    Alert.alert('Uploaded! 📚', 'New notes/study material uploaded successfully.');
+  };
+
+  const handleDeleteNote = (item: StudyMaterial) => {
+    Alert.alert(
+      'Delete Study Material',
+      `Permanently delete "${item.title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (isSupabaseConfigured) {
+              try {
+                await supabase.from('study_materials').delete().eq('id', item.id);
+              } catch {}
+            }
+            setStudyMaterials((prev) => prev.filter((m) => m.id !== item.id));
+            Alert.alert('Deleted', 'Note removed from library.');
+          },
+        },
+      ]
+    );
+  };
+
   // Save Course (Create or Update)
   const handleSaveCourse = async () => {
     if (!courseForm.title.trim()) {
@@ -248,6 +412,7 @@ export default function MobileAdminDashboard() {
         discount_price: Number(courseForm.discount_price) || 0,
         validity_days: Number(courseForm.validity_days) || 365,
         description: courseForm.description.trim(),
+        thumbnail_url: courseForm.thumbnail_url,
       };
 
       if (isSupabaseConfigured) {
@@ -273,7 +438,7 @@ export default function MobileAdminDashboard() {
         discount_price: Number(courseForm.discount_price) || 0,
         validity_days: Number(courseForm.validity_days) || 365,
         is_free: Number(courseForm.price) === 0,
-        thumbnail_url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
+        thumbnail_url: courseForm.thumbnail_url || 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
         is_published: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -405,23 +570,29 @@ export default function MobileAdminDashboard() {
       {/* Real-time Summary Cards */}
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { borderLeftColor: '#3B82F6' }]}>
-          <Users size={16} color="#2563EB" />
+          <Users size={15} color="#2563EB" />
           <Text style={styles.statNum}>{students.length}</Text>
           <Text style={styles.statLabel}>Students</Text>
         </View>
 
         <View style={[styles.statCard, { borderLeftColor: '#F59E0B' }]}>
-          <CreditCard size={16} color="#D97706" />
+          <CreditCard size={15} color="#D97706" />
           <Text style={[styles.statNum, { color: pendingPayments.length > 0 ? '#DC2626' : '#D97706' }]}>
             {pendingPayments.length}
           </Text>
-          <Text style={styles.statLabel}>Pending Pay</Text>
+          <Text style={styles.statLabel}>Pending</Text>
         </View>
 
         <View style={[styles.statCard, { borderLeftColor: '#10B981' }]}>
-          <BookOpen size={16} color="#059669" />
+          <BookOpen size={15} color="#059669" />
           <Text style={styles.statNum}>{courses.length}</Text>
           <Text style={styles.statLabel}>Courses</Text>
+        </View>
+
+        <View style={[styles.statCard, { borderLeftColor: '#8B5CF6' }]}>
+          <FileText size={15} color="#7C3AED" />
+          <Text style={styles.statNum}>{studyMaterials.length}</Text>
+          <Text style={styles.statLabel}>Notes</Text>
         </View>
       </View>
 
@@ -431,9 +602,9 @@ export default function MobileAdminDashboard() {
           style={[styles.tabItem, activeTab === 'payments' && styles.tabItemActive]}
           onPress={() => setActiveTab('payments')}
         >
-          <CreditCard size={14} color={activeTab === 'payments' ? '#FFFFFF' : '#64748B'} />
+          <CreditCard size={13} color={activeTab === 'payments' ? '#FFFFFF' : '#64748B'} />
           <Text style={[styles.tabText, activeTab === 'payments' && styles.tabTextActive]}>
-            Payments ({pendingPayments.length})
+            Pay ({pendingPayments.length})
           </Text>
         </TouchableOpacity>
 
@@ -441,9 +612,19 @@ export default function MobileAdminDashboard() {
           style={[styles.tabItem, activeTab === 'courses' && styles.tabItemActive]}
           onPress={() => setActiveTab('courses')}
         >
-          <BookOpen size={14} color={activeTab === 'courses' ? '#FFFFFF' : '#64748B'} />
+          <BookOpen size={13} color={activeTab === 'courses' ? '#FFFFFF' : '#64748B'} />
           <Text style={[styles.tabText, activeTab === 'courses' && styles.tabTextActive]}>
             Courses
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabItem, activeTab === 'notes' && styles.tabItemActive]}
+          onPress={() => setActiveTab('notes')}
+        >
+          <FileText size={13} color={activeTab === 'notes' ? '#FFFFFF' : '#64748B'} />
+          <Text style={[styles.tabText, activeTab === 'notes' && styles.tabTextActive]}>
+            Notes
           </Text>
         </TouchableOpacity>
 
@@ -451,7 +632,7 @@ export default function MobileAdminDashboard() {
           style={[styles.tabItem, activeTab === 'students' && styles.tabItemActive]}
           onPress={() => setActiveTab('students')}
         >
-          <Users size={14} color={activeTab === 'students' ? '#FFFFFF' : '#64748B'} />
+          <Users size={13} color={activeTab === 'students' ? '#FFFFFF' : '#64748B'} />
           <Text style={[styles.tabText, activeTab === 'students' && styles.tabTextActive]}>
             Students
           </Text>
@@ -461,7 +642,7 @@ export default function MobileAdminDashboard() {
           style={[styles.tabItem, activeTab === 'broadcast' && styles.tabItemActive]}
           onPress={() => setActiveTab('broadcast')}
         >
-          <Bell size={14} color={activeTab === 'broadcast' ? '#FFFFFF' : '#64748B'} />
+          <Bell size={13} color={activeTab === 'broadcast' ? '#FFFFFF' : '#64748B'} />
           <Text style={[styles.tabText, activeTab === 'broadcast' && styles.tabTextActive]}>
             Notice
           </Text>
@@ -558,6 +739,7 @@ export default function MobileAdminDashboard() {
                     discount_price: '499',
                     validity_days: '365',
                     description: '',
+                    thumbnail_url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
                   });
                   setIsCourseModalOpen(true);
                 }}
@@ -596,6 +778,7 @@ export default function MobileAdminDashboard() {
                         discount_price: String(course.discount_price || 499),
                         validity_days: String(course.validity_days || 365),
                         description: course.description || '',
+                        thumbnail_url: course.thumbnail_url || 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
                       });
                       setIsCourseModalOpen(true);
                     }}
@@ -617,7 +800,79 @@ export default function MobileAdminDashboard() {
           </View>
         )}
 
-        {/* TAB 3: STUDENTS */}
+        {/* TAB 3: STUDY MATERIALS / PDF NOTES */}
+        {activeTab === 'notes' && (
+          <View style={styles.sectionWrap}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Study Materials & Notes ({studyMaterials.length})</Text>
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={() => {
+                  setNoteForm({
+                    title: '',
+                    title_hi: '',
+                    board_code: 'BSEB',
+                    class_name: 'Class 10',
+                    description: '',
+                    is_free: false,
+                    fileName: '',
+                    fileUri: '',
+                    fileSize: 0,
+                  });
+                  setIsNoteModalOpen(true);
+                }}
+              >
+                <Plus size={14} color="#FFFFFF" />
+                <Text style={styles.addBtnText}>Upload PDF</Text>
+              </TouchableOpacity>
+            </View>
+
+            {studyMaterials.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No study materials uploaded yet.</Text>
+              </View>
+            ) : (
+              studyMaterials.map((note) => (
+                <View key={note.id} style={styles.noteItemCard}>
+                  <View style={styles.noteItemHeader}>
+                    <View style={styles.pdfIconBadge}>
+                      <FileText size={20} color="#DC2626" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.noteItemTitle}>{note.title}</Text>
+                      {note.title_hi ? (
+                        <Text style={styles.noteItemHi}>{note.title_hi}</Text>
+                      ) : null}
+                      <View style={styles.noteMetaRow}>
+                        <Text style={styles.noteBoardBadge}>
+                          {note.board_id?.includes('1') ? 'BSEB' : 'JAC'}
+                        </Text>
+                        <Text style={styles.noteSizeText}>
+                          {(note.file_size_bytes / 1024 / 1024).toFixed(1)} MB
+                        </Text>
+                        <Text style={[styles.noteAccessTag, note.is_free ? styles.noteFree : styles.notePaid]}>
+                          {note.is_free ? 'FREE' : 'STUDENT VAULT'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.noteItemFooter}>
+                    <TouchableOpacity
+                      style={styles.noteDelBtn}
+                      onPress={() => handleDeleteNote(note)}
+                    >
+                      <Trash2 size={13} color="#EF4444" />
+                      <Text style={styles.noteDelBtnText}>Delete Note</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {/* TAB 4: STUDENTS */}
         {activeTab === 'students' && (
           <View style={styles.sectionWrap}>
             <View style={styles.searchBox}>
@@ -749,6 +1004,21 @@ export default function MobileAdminDashboard() {
             </View>
 
             <ScrollView style={{ maxHeight: 420 }}>
+              <Text style={styles.inputLabel}>Education Board</Text>
+              <View style={styles.boardSelectRow}>
+                {['BSEB', 'JAC'].map((b) => (
+                  <TouchableOpacity
+                    key={b}
+                    style={[styles.boardPill, courseForm.board_code === b && styles.boardPillActive]}
+                    onPress={() => setCourseForm({ ...courseForm, board_code: b })}
+                  >
+                    <Text style={[styles.boardPillText, courseForm.board_code === b && styles.boardPillTextActive]}>
+                      {b} Board
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               <Text style={styles.inputLabel}>Course Title (English)</Text>
               <TextInput
                 style={styles.textInput}
@@ -764,6 +1034,39 @@ export default function MobileAdminDashboard() {
                 value={courseForm.title_hi}
                 onChangeText={(t) => setCourseForm({ ...courseForm, title_hi: t })}
               />
+
+              <Text style={styles.inputLabel}>Course Thumbnail (16:9 Uncropped)</Text>
+              <View style={styles.thumbnailPreviewContainer}>
+                {courseForm.thumbnail_url ? (
+                  <Image
+                    source={{ uri: courseForm.thumbnail_url }}
+                    style={styles.thumbnailPreviewImg}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.thumbnailPlaceholder}>
+                    <ImageIcon size={28} color="#64748B" />
+                    <Text style={styles.thumbnailPlaceholderText}>No thumbnail selected</Text>
+                  </View>
+                )}
+                <View style={styles.thumbnailActionsRow}>
+                  <TouchableOpacity
+                    style={styles.thumbActionBtn}
+                    onPress={handlePickCourseThumbnail}
+                  >
+                    <ImageIcon size={14} color="#2563EB" />
+                    <Text style={styles.thumbActionBtnText}>Device Gallery</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.thumbActionBtn, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}
+                    onPress={handleCaptureCourseThumbnail}
+                  >
+                    <Camera size={14} color="#059669" />
+                    <Text style={[styles.thumbActionBtnText, { color: '#059669' }]}>Camera</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
               <View style={styles.rowTwo}>
                 <View style={{ flex: 1, marginRight: 8 }}>
@@ -816,6 +1119,102 @@ export default function MobileAdminDashboard() {
                 <Text style={styles.modalSaveText}>
                   {editingCourseId ? 'Save Changes' : 'Create Course'}
                 </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add / Upload Study Material Modal */}
+      <Modal visible={isNoteModalOpen} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Upload Study Material (PDF)</Text>
+              <TouchableOpacity onPress={() => setIsNoteModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 420 }}>
+              <Text style={styles.inputLabel}>Note Title (English)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Science Chapter 1 Handwritten Notes"
+                value={noteForm.title}
+                onChangeText={(t) => setNoteForm({ ...noteForm, title: t })}
+              />
+
+              <Text style={styles.inputLabel}>Note Title (Hindi)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="उदा. विज्ञान अध्याय 1 हस्तलिखित नोट्स"
+                value={noteForm.title_hi}
+                onChangeText={(t) => setNoteForm({ ...noteForm, title_hi: t })}
+              />
+
+              <Text style={styles.inputLabel}>Education Board</Text>
+              <View style={styles.boardSelectRow}>
+                {['BSEB', 'JAC'].map((b) => (
+                  <TouchableOpacity
+                    key={b}
+                    style={[styles.boardPill, noteForm.board_code === b && styles.boardPillActive]}
+                    onPress={() => setNoteForm({ ...noteForm, board_code: b })}
+                  >
+                    <Text style={[styles.boardPillText, noteForm.board_code === b && styles.boardPillTextActive]}>
+                      {b} Board
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inputLabel}>Select PDF File from Device</Text>
+              <TouchableOpacity
+                style={styles.filePickerBox}
+                onPress={handlePickPdfNotes}
+              >
+                <UploadCloud size={24} color="#2563EB" />
+                <Text style={styles.filePickerMainText}>
+                  {noteForm.fileName ? noteForm.fileName : 'Choose PDF from Device Storage'}
+                </Text>
+                <Text style={styles.filePickerSubText}>
+                  {noteForm.fileSize
+                    ? `${(noteForm.fileSize / 1024 / 1024).toFixed(2)} MB • Ready to save`
+                    : 'Tap to browse files (PDF only)'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.freeToggleRow}>
+                <TouchableOpacity
+                  style={[styles.freeToggleBtn, noteForm.is_free && styles.freeToggleBtnActive]}
+                  onPress={() => setNoteForm({ ...noteForm, is_free: !noteForm.is_free })}
+                >
+                  <Text style={[styles.freeToggleText, noteForm.is_free && styles.freeToggleTextActive]}>
+                    {noteForm.is_free ? '✓ Free for All Students' : '🔒 Paid / Enrolled Students Only'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.inputLabel}>Description / Topics Covered</Text>
+              <TextInput
+                style={[styles.textInput, { height: 60, textAlignVertical: 'top' }]}
+                multiline
+                placeholder="Summary, formula sheets, chapter name..."
+                value={noteForm.description}
+                onChangeText={(t) => setNoteForm({ ...noteForm, description: t })}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setIsNoteModalOpen(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSaveNote}>
+                <Text style={styles.modalSaveText}>Upload & Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1404,5 +1803,189 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  // Notes Styles
+  noteItemCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  noteItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  pdfIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  noteItemTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  noteItemHi: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  noteMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  noteBoardBadge: {
+    backgroundColor: '#1E3A8A',
+    color: '#93C5FD',
+    fontSize: 10,
+    fontWeight: '700',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  noteSizeText: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  noteAccessTag: {
+    fontSize: 9,
+    fontWeight: '800',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  noteFree: {
+    backgroundColor: '#064E3B',
+    color: '#6EE7B7',
+  },
+  notePaid: {
+    backgroundColor: '#3730A3',
+    color: '#C7D2FE',
+  },
+  noteItemFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#334155',
+  },
+  noteDelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: '#450A0A',
+  },
+  noteDelBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FCA5A5',
+  },
+  // Thumbnail Container Styles
+  thumbnailPreviewContainer: {
+    marginBottom: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#334155',
+    padding: 8,
+  },
+  thumbnailPreviewImg: {
+    width: '100%',
+    height: 140,
+    borderRadius: 6,
+  },
+  thumbnailPlaceholder: {
+    height: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E293B',
+    borderRadius: 6,
+  },
+  thumbnailPlaceholderText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 4,
+  },
+  thumbnailActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  thumbActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  thumbActionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  // Document File Picker Styles
+  filePickerBox: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#3B82F6',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E293B',
+    marginBottom: 12,
+  },
+  filePickerMainText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#93C5FD',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  filePickerSubText: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  freeToggleRow: {
+    marginBottom: 12,
+  },
+  freeToggleBtn: {
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#334155',
+    alignItems: 'center',
+  },
+  freeToggleBtnActive: {
+    backgroundColor: '#065F46',
+  },
+  freeToggleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#E2E8F0',
+  },
+  freeToggleTextActive: {
+    color: '#A7F3D0',
   },
 });
