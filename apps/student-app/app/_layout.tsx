@@ -47,6 +47,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     initLocalDatabase();
+    useAuthStore.getState().initAuthStore();
   }, []);
 
   return (

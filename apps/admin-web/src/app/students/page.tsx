@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi } from '@/lib/api';
-import { UserProfile } from '@icc/shared-types';
+import { UserProfile, BoardCode } from '@icc/shared-types';
 import {
   Search,
   Filter,
@@ -20,6 +20,9 @@ import {
   Clock,
   Eye,
   MessageCircle,
+  Plus,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 
 export default function StudentsPage() {
@@ -28,7 +31,45 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBoard, setSelectedBoard] = useState<string>('');
   const [loading, setLoading] = useState(true);
+
   const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<UserProfile | null>(null);
+
+  const [formData, setFormData] = useState({
+    full_name: '',
+    username: '',
+    mobile_number: '',
+    email: '',
+    board_code: 'BSEB' as BoardCode,
+    district: 'Godda',
+    school_name: '',
+    guardian_name: '',
+    guardian_phone: '',
+  });
+
+  const [editFormData, setEditFormData] = useState<{
+    full_name: string;
+    username: string;
+    mobile_number: string;
+    email: string;
+    board_code: BoardCode;
+    district: string;
+    school_name: string;
+    guardian_name: string;
+    guardian_phone: string;
+  }>({
+    full_name: '',
+    username: '',
+    mobile_number: '',
+    email: '',
+    board_code: 'BSEB',
+    district: '',
+    school_name: '',
+    guardian_name: '',
+    guardian_phone: '',
+  });
 
   const loadStudents = () => {
     setLoading(true);
@@ -47,6 +88,69 @@ export default function StudentsPage() {
     setStudents((prev) =>
       prev.map((s) => (s.id === student.id ? { ...s, is_active: nextStatus } : s))
     );
+  };
+
+  const handleCreateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const created = await AdminApi.createStudent({
+      ...formData,
+      preferred_language: 'en',
+      is_active: true,
+    });
+    setStudents((prev) => [created, ...prev]);
+    setIsAddModalOpen(false);
+    setFormData({
+      full_name: '',
+      username: '',
+      mobile_number: '',
+      email: '',
+      board_code: 'BSEB',
+      district: 'Godda',
+      school_name: '',
+      guardian_name: '',
+      guardian_phone: '',
+    });
+  };
+
+  const openEditModal = (student: UserProfile) => {
+    setEditingStudent(student);
+    setEditFormData({
+      full_name: student.full_name,
+      username: student.username,
+      mobile_number: student.mobile_number,
+      email: student.email,
+      board_code: student.board_code,
+      district: student.district || 'Godda',
+      school_name: student.school_name || '',
+      guardian_name: student.guardian_name || '',
+      guardian_phone: student.guardian_phone || '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+
+    const updated = await AdminApi.updateStudent(editingStudent.id, {
+      ...editFormData,
+    });
+
+    if (updated) {
+      setStudents((prev) => prev.map((s) => (s.id === editingStudent.id ? updated : s)));
+    }
+    setIsEditModalOpen(false);
+    setEditingStudent(null);
+  };
+
+  const handleDeleteStudent = async (student: UserProfile) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete student:\n"${student.full_name}" (@${student.username})?\n\nThis will remove the student account from database.`
+    );
+    if (!confirmed) return;
+
+    await AdminApi.deleteStudent(student.id);
+    setStudents((prev) => prev.filter((s) => s.id !== student.id));
   };
 
   const sendParentWhatsApp = (student: UserProfile, reportType: 'attendance' | 'performance') => {
@@ -96,7 +200,7 @@ export default function StudentsPage() {
         titleHi="विद्यार्थी प्रबंधन"
         titleEn="Student Management"
         subtitleHi="बिहार एवं झारखंड बोर्ड नामांकित छात्रों का विवरण एवं नियंत्रण"
-        subtitleEn="Manage registered students, board enrollments and account status"
+        subtitleEn="Manage registered students, board enrollments, editing and account status"
       />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -114,16 +218,26 @@ export default function StudentsPage() {
           </div>
 
           <div className="flex items-center space-x-2 w-full sm:w-auto">
-            <Filter className="w-4 h-4 text-slate-500" />
-            <select
-              value={selectedBoard}
-              onChange={(e) => setSelectedBoard(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-slate-500" />
+              <select
+                value={selectedBoard}
+                onChange={(e) => setSelectedBoard(e.target.value)}
+                className="border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">{t('सभी बोर्ड (All Boards)', 'All Boards')}</option>
+                <option value="BSEB">बिहार बोर्ड (BSEB)</option>
+                <option value="JAC">झारखंड बोर्ड (JAC)</option>
+              </select>
+            </div>
+
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
             >
-              <option value="">{t('सभी बोर्ड (All Boards)', 'All Boards')}</option>
-              <option value="BSEB">बिहार बोर्ड (BSEB)</option>
-              <option value="JAC">झारखंड बोर्ड (JAC)</option>
-            </select>
+              <Plus className="w-4 h-4" />
+              <span>{t('नया छात्र जोड़ें', 'Add Student')}</span>
+            </button>
           </div>
         </div>
 
@@ -188,7 +302,7 @@ export default function StudentsPage() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
+                      <div className="flex items-center justify-end space-x-1.5">
                         <button
                           onClick={() => sendParentWhatsApp(student, 'attendance')}
                           title="Send WhatsApp Attendance Report to Parent"
@@ -199,19 +313,34 @@ export default function StudentsPage() {
                         </button>
                         <button
                           onClick={() => setSelectedStudent(student)}
-                          className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition"
+                          title="View Details"
+                          className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          onClick={() => openEditModal(student)}
+                          title="Edit Student"
+                          className="p-1.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => handleToggleStatus(student)}
-                          className={`px-2.5 py-1 rounded font-medium transition ${
+                          className={`px-2 py-1 rounded font-medium text-[11px] transition ${
                             student.is_active
-                              ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                              ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
                               : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                           }`}
                         >
-                          {student.is_active ? t('ब्लॉक करें', 'Block') : t('सक्रिय करें', 'Activate')}
+                          {student.is_active ? t('ब्लॉक', 'Block') : t('सक्रिय', 'Activate')}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(student)}
+                          title="Delete Student"
+                          className="p-1.5 rounded bg-rose-50 text-rose-700 hover:bg-rose-100 font-medium transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -222,10 +351,272 @@ export default function StudentsPage() {
           </div>
         </div>
 
+        {/* Add Student Modal */}
+        {isAddModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="font-bold text-base text-slate-900">{t('नया विद्यार्थी जोड़ें', 'Add New Student')}</h3>
+                <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 font-bold">✕</button>
+              </div>
+
+              <form onSubmit={handleCreateStudent} className="space-y-4 pt-4 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('पूरा नाम', 'Full Name')}</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      placeholder="e.g. Ramesh Kumar"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('यूज़रनेम', 'Username')}</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      placeholder="e.g. ramesh_k"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('मोबाइल नंबर', 'Mobile Number')}</label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.mobile_number}
+                      onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
+                      placeholder="10-digit mobile"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('ईमेल', 'Email')}</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="ramesh@example.com"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('बोर्ड', 'Board')}</label>
+                    <select
+                      value={formData.board_code}
+                      onChange={(e) => setFormData({ ...formData, board_code: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="BSEB">बिहार बोर्ड (BSEB)</option>
+                      <option value="JAC">झारखंड बोर्ड (JAC)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('ज़िला', 'District')}</label>
+                    <input
+                      type="text"
+                      value={formData.district}
+                      onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                      placeholder="e.g. Godda / Patna"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('विद्यालय / कॉलेज', 'School / College')}</label>
+                  <input
+                    type="text"
+                    value={formData.school_name}
+                    onChange={(e) => setFormData({ ...formData, school_name: e.target.value })}
+                    placeholder="e.g. High School Mahagama"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('अभिभावक का नाम', 'Guardian Name')}</label>
+                    <input
+                      type="text"
+                      value={formData.guardian_name}
+                      onChange={(e) => setFormData({ ...formData, guardian_name: e.target.value })}
+                      placeholder="Shri ..."
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('अभिभावक फोन / WhatsApp', 'Guardian Phone')}</label>
+                    <input
+                      type="tel"
+                      value={formData.guardian_phone}
+                      onChange={(e) => setFormData({ ...formData, guardian_phone: e.target.value })}
+                      placeholder="10-digit mobile"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-3 flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold"
+                  >
+                    {t('रद्द करें', 'Cancel')}
+                  </button>
+                  <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">
+                    {t('सहेजें', 'Save Student')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Student Modal */}
+        {isEditModalOpen && editingStudent && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="font-bold text-base text-slate-900">{t('विद्यार्थी विवरण संशोधित करें', 'Edit Student Details')}</h3>
+                <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 font-bold">✕</button>
+              </div>
+
+              <form onSubmit={handleUpdateStudent} className="space-y-4 pt-4 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('पूरा नाम', 'Full Name')}</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFormData.full_name}
+                      onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('यूज़रनेम', 'Username')}</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFormData.username}
+                      onChange={(e) => setEditFormData({ ...editFormData, username: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('मोबाइल नंबर', 'Mobile Number')}</label>
+                    <input
+                      type="tel"
+                      required
+                      value={editFormData.mobile_number}
+                      onChange={(e) => setEditFormData({ ...editFormData, mobile_number: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('ईमेल', 'Email')}</label>
+                    <input
+                      type="email"
+                      required
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('बोर्ड', 'Board')}</label>
+                    <select
+                      value={editFormData.board_code}
+                      onChange={(e) => setEditFormData({ ...editFormData, board_code: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="BSEB">बिहार बोर्ड (BSEB)</option>
+                      <option value="JAC">झारखंड बोर्ड (JAC)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('ज़िला', 'District')}</label>
+                    <input
+                      type="text"
+                      value={editFormData.district}
+                      onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('विद्यालय / कॉलेज', 'School / College')}</label>
+                  <input
+                    type="text"
+                    value={editFormData.school_name}
+                    onChange={(e) => setEditFormData({ ...editFormData, school_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('अभिभावक का नाम', 'Guardian Name')}</label>
+                    <input
+                      type="text"
+                      value={editFormData.guardian_name}
+                      onChange={(e) => setEditFormData({ ...editFormData, guardian_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">{t('अभिभावक फोन / WhatsApp', 'Guardian Phone')}</label>
+                    <input
+                      type="tel"
+                      value={editFormData.guardian_phone}
+                      onChange={(e) => setEditFormData({ ...editFormData, guardian_phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-3 flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold"
+                  >
+                    {t('रद्द करें', 'Cancel')}
+                  </button>
+                  <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">
+                    {t('परिवर्तन सहेजें', 'Save Changes')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Student Profile Modal */}
         {selectedStudent && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="font-bold text-base text-slate-900">
                   {t('विद्यार्थी विवरण', 'Student Details')}
@@ -250,52 +641,44 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('बोर्ड', 'Board')}</span>
-                    <span className="font-bold text-slate-700 text-xs">
-                      {selectedStudent.board_code === 'BSEB' ? 'बिहार बोर्ड (BSEB)' : 'झारखंड बोर्ड (JAC)'}
-                    </span>
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span className="text-slate-400 text-[10px] block font-semibold uppercase">{t('बोर्ड', 'Board')}</span>
+                    <span className="font-bold text-slate-800 text-sm">{selectedStudent.board_code}</span>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('ज़िला', 'District')}</span>
-                    <span className="font-bold text-slate-700 text-xs">{selectedStudent.district}</span>
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span className="text-slate-400 text-[10px] block font-semibold uppercase">{t('ज़िला', 'District')}</span>
+                    <span className="font-bold text-slate-800 text-sm">{selectedStudent.district}</span>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('मोबाइल / व्हाट्सएप', 'Mobile / WhatsApp')}</span>
-                    <span className="font-bold text-slate-700 text-xs">+91 {selectedStudent.mobile_number}</span>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center space-x-2 text-slate-700">
+                    <Phone className="w-4 h-4 text-blue-600" />
+                    <span>+91 {selectedStudent.mobile_number}</span>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('ईमेल', 'Email')}</span>
-                    <span className="font-bold text-slate-700 text-xs truncate block">{selectedStudent.email}</span>
+                  <div className="flex items-center space-x-2 text-slate-700">
+                    <Mail className="w-4 h-4 text-blue-600" />
+                    <span>{selectedStudent.email}</span>
                   </div>
-                  {selectedStudent.dob && (
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('जन्म तिथि', 'Date of Birth')}</span>
-                      <span className="font-bold text-slate-700 text-xs">{selectedStudent.dob}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center space-x-2 text-slate-700">
+                    <School className="w-4 h-4 text-blue-600" />
+                    <span>{selectedStudent.school_name || 'Government High School'}</span>
+                  </div>
                   {selectedStudent.guardian_name && (
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('अभिभावक का नाम', 'Guardian Name')}</span>
-                      <span className="font-bold text-slate-700 text-xs">{selectedStudent.guardian_name}</span>
-                    </div>
-                  )}
-                  {selectedStudent.guardian_phone && (
-                    <div className="p-3 bg-slate-50 rounded-lg col-span-2">
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">{t('अभिभावक संपर्क नंबर', 'Guardian Contact')}</span>
-                      <span className="font-bold text-slate-700 text-xs">+91 {selectedStudent.guardian_phone}</span>
+                    <div className="flex items-center space-x-2 text-slate-700">
+                      <Clock className="w-4 h-4 text-blue-600" />
+                      <span>{t('अभिभावक: ', 'Guardian: ')}{selectedStudent.guardian_name} ({selectedStudent.guardian_phone || selectedStudent.mobile_number})</span>
                     </div>
                   )}
                 </div>
 
+                {/* WhatsApp Direct Parent Alert Actions */}
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
                     <MessageCircle className="w-4 h-4 text-emerald-600" />
-                    <span className="font-bold text-emerald-900 text-xs">
-                      {t('अभिभावक व्हाट्सएप अलर्ट (Parent WhatsApp Alerts)', 'Parent WhatsApp Alerts')}
-                    </span>
+                    <span>{t('व्हाट्सएप अभिभावक सूचना (WhatsApp Parent Alert)', 'WhatsApp Parent Alert Engine')}</span>
                   </div>
-                  <p className="text-[11px] text-emerald-700">
+                  <p className="text-emerald-700 text-[11px] leading-relaxed">
                     {t(
                       'सीधे माता-पिता के व्हाट्सएप नंबर (+91 ' + (selectedStudent.guardian_phone || selectedStudent.mobile_number) + ') पर 1-क्लिक में रिपोर्ट भेजें:',
                       'Send instant reports directly to guardian WhatsApp (+91 ' + (selectedStudent.guardian_phone || selectedStudent.mobile_number) + '):'
@@ -332,7 +715,16 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end">
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  onClick={() => {
+                    setSelectedStudent(null);
+                    openEditModal(selectedStudent);
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition"
+                >
+                  {t('संशोधित करें', 'Edit Student')}
+                </button>
                 <button
                   onClick={() => setSelectedStudent(null)}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition"

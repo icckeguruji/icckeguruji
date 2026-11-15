@@ -10,6 +10,7 @@ interface AuthState {
   selectedBoard: BoardCode;
   selectedClass: string;
   isDarkMode: boolean;
+  initAuthStore: () => Promise<void>;
   setLanguage: (lang: AppLanguage) => void;
   setUser: (user: UserProfile | null) => void;
   setBoard: (board: BoardCode) => void;
@@ -46,6 +47,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   selectedClass: 'Class 10',
   isDarkMode: false,
 
+  initAuthStore: async () => {
+    try {
+      if (Platform.OS !== 'web') {
+        const storedProfile = await SecureStore.getItemAsync('icc_user_profile');
+        if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          set({
+            user: parsed,
+            isAuthenticated: true,
+            selectedBoard: parsed.board_code || get().selectedBoard,
+          });
+        }
+      } else if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('icc_user_profile');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          set({
+            user: parsed,
+            isAuthenticated: true,
+            selectedBoard: parsed.board_code || get().selectedBoard,
+          });
+        }
+      }
+    } catch {}
+  },
+
   setLanguage: (language: AppLanguage) => {
     set({ language });
     if (Platform.OS !== 'web') {
@@ -59,6 +86,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: !!user,
       selectedBoard: user?.board_code || get().selectedBoard,
     });
+    if (user) {
+      if (Platform.OS !== 'web') {
+        SecureStore.setItemAsync('icc_user_profile', JSON.stringify(user)).catch(() => {});
+      } else if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('icc_user_profile', JSON.stringify(user));
+        } catch {}
+      }
+    }
   },
 
   setBoard: (selectedBoard: BoardCode) => set({ selectedBoard }),
@@ -77,6 +113,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
       if (Platform.OS !== 'web') {
         SecureStore.setItemAsync('icc_user_profile', JSON.stringify(updatedUser)).catch(() => {});
+      } else if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('icc_user_profile', JSON.stringify(updatedUser));
+        } catch {}
       }
       return {
         user: updatedUser,
@@ -87,7 +127,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     if (Platform.OS !== 'web') {
-      await SecureStore.deleteItemAsync('icc_session');
+      await SecureStore.deleteItemAsync('icc_session').catch(() => {});
+      await SecureStore.deleteItemAsync('icc_user_profile').catch(() => {});
+    } else if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('icc_user_profile');
+      } catch {}
     }
     set({ isAuthenticated: false, user: null });
   },

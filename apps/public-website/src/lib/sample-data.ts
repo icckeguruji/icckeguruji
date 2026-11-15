@@ -90,9 +90,9 @@ export const initialPlatformConfig: PlatformConfig = {
     bank_name: 'YES Bank / YBL UPI',
     account_number: 'azhargodda@ybl',
     ifsc_code: 'YESB0YBLUPI',
-    qr_code_url: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=azhargodda@ybl&pn=IDEAL%20COACHING%20CENTRE&cu=INR',
-    instructions_hi: '1. दिए गए क्यूआर कोड या UPI ID (azhargodda@ybl) पर फोनपे, गूगल पे या पेटीएम से भुगतान करें।\n2. भुगतान के उपरांत 12 अंकों का UTR/Transaction ID दर्ज करें।\n3. रसीद का स्क्रीनशॉट संलग्न करें और सबमिट करें। 15 मिनट के अंदर आपका बैच एक्टिवेट हो जाएगा।',
-    instructions_en: '1. Pay using PhonePe, Google Pay, or Paytm to UPI ID (azhargodda@ybl) or Scan the QR code.\n2. Note down the 12-digit UTR/Transaction Reference ID.\n3. Upload screenshot and submit. Batch access will be activated within 15 minutes.',
+    qr_code_url: '',
+    instructions_hi: '1. दिए गए UPI ID (azhargodda@ybl) पर फोनपे, गूगल पे या पेटीएम से भुगतान करें।\n2. भुगतान के उपरांत 12 अंकों का UTR/Transaction ID दर्ज करें।\n3. रसीद का स्क्रीनशॉट संलग्न करें और सबमिट करें। 15 मिनट के अंदर आपका बैच एक्टिवेट हो जाएगा।',
+    instructions_en: '1. Pay using PhonePe, Google Pay, or Paytm to UPI ID (azhargodda@ybl).\n2. Note down the 12-digit UTR/Transaction Reference ID.\n3. Upload screenshot and submit. Batch access will be activated within 15 minutes.',
   },
   academic_config: {
     supported_boards: ['BSEB', 'JAC'],

@@ -18,6 +18,7 @@ import {
   CheckCircle,
   ExternalLink,
   ShieldCheck,
+  Edit3,
 } from 'lucide-react';
 
 export default function StudyMaterialsPage() {
@@ -26,6 +27,8 @@ export default function StudyMaterialsPage() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<StudyMaterial | null>(null);
   const [previewItem, setPreviewItem] = useState<StudyMaterial | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileSizeBytes, setFileSizeBytes] = useState<number>(2150000);
@@ -38,6 +41,13 @@ export default function StudyMaterialsPage() {
     subject_id: 'sub00000-0000-0000-0000-000000000002',
     material_type: 'chapter_notes' as const,
     file_name: 'notes.pdf',
+    is_free: false,
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    title_hi: '',
+    material_type: 'chapter_notes' as const,
     is_free: false,
   });
 
@@ -87,6 +97,45 @@ export default function StudyMaterialsPage() {
       file_name: 'notes.pdf',
       is_free: false,
     });
+  };
+
+  const openEditModal = (mat: StudyMaterial) => {
+    setEditingItem(mat);
+    setEditFormData({
+      title: mat.title,
+      title_hi: mat.title_hi || mat.title,
+      material_type: (mat.material_type as any) || 'chapter_notes',
+      is_free: mat.is_free,
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+
+    const updated = await AdminApi.updateStudyMaterial(editingItem.id, {
+      title: editFormData.title,
+      title_hi: editFormData.title_hi,
+      material_type: editFormData.material_type,
+      is_free: editFormData.is_free,
+    });
+
+    if (updated) {
+      setMaterials((prev) => prev.map((m) => (m.id === editingItem.id ? updated : m)));
+    }
+    setIsEditOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleDelete = async (mat: StudyMaterial) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this study material:\n"${mat.title}"?\n\nThis cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    await AdminApi.deleteStudyMaterial(mat.id);
+    setMaterials((prev) => prev.filter((m) => m.id !== mat.id));
   };
 
   const filteredMaterials = materials.filter((m) => {
@@ -148,6 +197,7 @@ export default function StudyMaterialsPage() {
               <option value="chapter_notes">{t('अध्याय नोट्स (Chapter Notes)', 'Chapter Notes')}</option>
               <option value="formula_sheet">{t('सूत्र पुस्तिका (Formula Sheet)', 'Formula Sheet')}</option>
               <option value="pyq">{t('पिछले वर्ष के प्रश्न (PYQ)', 'PYQ')}</option>
+              <option value="worksheet">{t('कार्यपत्रक (Worksheet)', 'Worksheet')}</option>
             </select>
           </div>
 
@@ -213,12 +263,27 @@ export default function StudyMaterialsPage() {
                     )}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end space-x-2">
+                    <div className="flex items-center justify-end space-x-1.5">
                       <button
                         onClick={() => setPreviewItem(mat)}
-                        className="px-2.5 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold transition"
+                        title="Preview Details"
+                        className="p-1.5 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
                       >
                         <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openEditModal(mat)}
+                        title="Edit Details"
+                        className="p-1.5 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(mat)}
+                        title="Delete Material"
+                        className="p-1.5 rounded bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -231,7 +296,7 @@ export default function StudyMaterialsPage() {
         {/* Upload Modal with Academic Mapping */}
         {isUploadOpen && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="font-bold text-base text-slate-900">
                   {t('पीडीएफ अध्ययन सामग्री अपलोड करें', 'Upload Study Material PDF')}
@@ -392,6 +457,83 @@ export default function StudyMaterialsPage() {
                     className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
                   >
                     {t('अपलोड एवं स्वतः मैप करें', 'Upload & Auto Map')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Material Modal */}
+        {isEditOpen && editingItem && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="font-bold text-base text-slate-900">
+                  {t('अध्ययन सामग्री संशोधित करें', 'Edit Study Material')}
+                </h3>
+                <button onClick={() => setIsEditOpen(false)} className="text-slate-400 font-bold">✕</button>
+              </div>
+
+              <form onSubmit={handleUpdate} className="space-y-4 pt-4 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('शीर्षक (English)', 'Title (English)')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('शीर्षक (हिंदी)', 'Title (Hindi)')}</label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.title_hi}
+                    onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('प्रकार', 'Type')}</label>
+                  <select
+                    value={editFormData.material_type}
+                    onChange={(e) => setEditFormData({ ...editFormData, material_type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="chapter_notes">अध्याय नोट्स (Chapter Notes)</option>
+                    <option value="formula_sheet">सूत्र पुस्तिका (Formula Sheet)</option>
+                    <option value="pyq">पिछले वर्षों के प्रश्न (PYQ)</option>
+                    <option value="worksheet">अभ्यास कार्यपत्रक (Worksheet)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="edit_mat_free"
+                    checked={editFormData.is_free}
+                    onChange={(e) => setEditFormData({ ...editFormData, is_free: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300"
+                  />
+                  <label htmlFor="edit_mat_free" className="font-semibold text-slate-700">
+                    {t('सभी के लिए निःशुल्क उपलब्ध कराएं', 'Make accessible for free')}
+                  </label>
+                </div>
+
+                <div className="pt-3 flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditOpen(false)}
+                    className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold"
+                  >
+                    {t('रद्द करें', 'Cancel')}
+                  </button>
+                  <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">
+                    {t('परिवर्तन सहेजें', 'Save Changes')}
                   </button>
                 </div>
               </form>
