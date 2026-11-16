@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -126,6 +126,22 @@ export default function StudentProfileScreen() {
       closeDirectorModal();
     }
   }, [activeModal]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const modal = useDirectorStore.getState().activeModal;
+      if (modal === 'payment') {
+        setIsPaymentModalOpen(true);
+        closeDirectorModal();
+      } else if (modal === 'student') {
+        setIsStudentModalOpen(true);
+        closeDirectorModal();
+      } else if (modal === 'broadcast') {
+        setIsBroadcastModalOpen(true);
+        closeDirectorModal();
+      }
+    }, [closeDirectorModal])
+  );
 
   // Handle Payment Approval
   const handleApprovePayment = (payId: string, studentName: string) => {
@@ -404,37 +420,31 @@ export default function StudentProfileScreen() {
         Alert.alert('Permission Denied', 'Storage / gallery permission is required to select photos from device.');
         return;
       }
-      let result;
+      let pickedUri: string | null = null;
       try {
-        result = await ImagePicker.launchImageLibraryAsync({
+        const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.8,
+          allowsEditing: false,
+          quality: 1,
         });
-      } catch {
-        try {
-          result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          });
-        } catch {
-          const docRes = await DocumentPicker.getDocumentAsync({
-            type: 'image/*',
-            copyToCacheDirectory: true,
-          });
-          if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
-            updateProfile({ avatar_url: docRes.assets[0].uri });
-            setIsPhotoModalOpen(false);
-            Alert.alert('Photo Updated', 'Profile photo updated successfully!');
-            return;
-          }
+        if (!result.canceled && result.assets && result.assets[0]?.uri) {
+          pickedUri = result.assets[0].uri;
+        }
+      } catch (pickerErr) {
+        console.warn('ImagePicker gallery failed, falling back to DocumentPicker:', pickerErr);
+        const docRes = await DocumentPicker.getDocumentAsync({
+          type: ['image/*'],
+          copyToCacheDirectory: true,
+        });
+        if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
+          pickedUri = docRes.assets[0].uri;
         }
       }
 
-      if (result && !result.canceled && result.assets && result.assets[0]?.uri) {
-        updateProfile({ avatar_url: result.assets[0].uri });
+      if (pickedUri) {
+        updateProfile({ avatar_url: pickedUri });
         setIsPhotoModalOpen(false);
-        Alert.alert('Photo Updated', 'Profile photo updated from device gallery!');
+        Alert.alert('Photo Updated', 'Profile photo updated successfully!');
       }
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Could not pick photo from device.');
@@ -449,14 +459,21 @@ export default function StudentProfileScreen() {
         Alert.alert('Permission Denied', 'Camera permission is required to capture a photo.');
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+      let pickedUri: string | null = null;
+      try {
+        const result = await ImagePicker.launchCameraAsync({
+          allowsEditing: false,
+          quality: 1,
+        });
+        if (!result.canceled && result.assets && result.assets[0]?.uri) {
+          pickedUri = result.assets[0].uri;
+        }
+      } catch (cameraErr) {
+        console.warn('Camera capture failed:', cameraErr);
+      }
 
-      if (!result.canceled && result.assets && result.assets[0]?.uri) {
-        updateProfile({ avatar_url: result.assets[0].uri });
+      if (pickedUri) {
+        updateProfile({ avatar_url: pickedUri });
         setIsPhotoModalOpen(false);
         Alert.alert('Photo Updated', 'Profile photo captured and updated successfully!');
       }

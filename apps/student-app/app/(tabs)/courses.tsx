@@ -87,7 +87,7 @@ export default function StudentCoursesScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeClassFilter, setActiveClassFilter] = useState('ALL');
 
@@ -115,14 +115,9 @@ export default function StudentCoursesScreen() {
     setIsSyncing(true);
     try {
       const data = await academicService.getCourses();
-      if (data && data.length > 0) {
-        setCourses(data);
-      } else {
-        const remoteData = await DataService.fetchCourses();
-        setCourses(remoteData);
-      }
+      setCourses(data);
     } catch {
-      // Keep initial
+      // Keep current
     } finally {
       setIsSyncing(false);
     }
@@ -295,33 +290,29 @@ export default function StudentCoursesScreen() {
         Alert.alert('Permission Denied', 'Storage permission required to choose photo.');
         return;
       }
-      let result;
+      let pickedUri: string | null = null;
       try {
-        result = await ImagePicker.launchImageLibraryAsync({
+        const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [16, 9],
-          quality: 0.8,
+          allowsEditing: false,
+          quality: 1,
         });
-      } catch {
-        try {
-          result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          });
-        } catch {
-          const docRes = await DocumentPicker.getDocumentAsync({
-            type: 'image/*',
-            copyToCacheDirectory: true,
-          });
-          if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
-            setCourseForm((prev) => ({ ...prev, thumbnail_url: docRes.assets[0].uri }));
-            return;
-          }
+        if (!result.canceled && result.assets && result.assets[0]?.uri) {
+          pickedUri = result.assets[0].uri;
+        }
+      } catch (pickerErr) {
+        console.warn('ImagePicker library failed, falling back to DocumentPicker:', pickerErr);
+        const docRes = await DocumentPicker.getDocumentAsync({
+          type: ['image/*'],
+          copyToCacheDirectory: true,
+        });
+        if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
+          pickedUri = docRes.assets[0].uri;
         }
       }
 
-      if (result && !result.canceled && result.assets && result.assets[0]?.uri) {
-        setCourseForm((prev) => ({ ...prev, thumbnail_url: result.assets[0].uri }));
+      if (pickedUri) {
+        setCourseForm((prev) => ({ ...prev, thumbnail_url: pickedUri! }));
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not pick image');
@@ -336,19 +327,21 @@ export default function StudentCoursesScreen() {
         Alert.alert('Permission Denied', 'Camera permission required.');
         return;
       }
-      let result;
+      let pickedUri: string | null = null;
       try {
-        result = await ImagePicker.launchCameraAsync({
-          allowsEditing: true,
-          aspect: [16, 9],
-          quality: 0.8,
+        const result = await ImagePicker.launchCameraAsync({
+          allowsEditing: false,
+          quality: 1,
         });
-      } catch {
-        result = await ImagePicker.launchCameraAsync();
+        if (!result.canceled && result.assets && result.assets[0]?.uri) {
+          pickedUri = result.assets[0].uri;
+        }
+      } catch (cameraErr) {
+        console.warn('Camera capture failed:', cameraErr);
       }
 
-      if (result && !result.canceled && result.assets && result.assets[0]?.uri) {
-        setCourseForm((prev) => ({ ...prev, thumbnail_url: result.assets[0].uri }));
+      if (pickedUri) {
+        setCourseForm((prev) => ({ ...prev, thumbnail_url: pickedUri! }));
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not capture photo');
@@ -409,97 +402,113 @@ export default function StudentCoursesScreen() {
         <Text style={styles.pageTitle}>Target Board Examination Courses</Text>
 
         <View style={styles.courseList}>
-          {filteredCourses.map((course) => (
-            <TouchableOpacity
-              key={course.id}
-              style={styles.card}
-              activeOpacity={0.9}
-              onPress={() => router.push(`/course/${course.id}`)}
-            >
-              <View style={styles.imageBox}>
-                <Image
-                  source={thumbMap[course.id] || { uri: course.thumbnail_url }}
-                  style={styles.thumbnail}
-                  resizeMode="contain"
-                />
-                <View style={styles.tagBadge}>
-                  <Text style={styles.tagBadgeText}>
-                    {course.is_free ? 'FREE ACCESS' : formatINR(course.discount_price || course.price)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{course.title}</Text>
-                {course.tagline ? (
-                  <Text style={styles.cardTagline} numberOfLines={1}>
-                    ✨ {course.tagline}
-                  </Text>
-                ) : null}
-
-                <Text style={styles.cardDesc} numberOfLines={2}>
-                  {course.description}
-                </Text>
-
-                {/* Course Metadata Stats */}
-                <View style={styles.statsRow}>
-                  <Text style={styles.stat}>
-                    📅 Starts: {course.start_date || 'Enrolling Now'}
-                  </Text>
-                  <Text style={styles.stat}>⏱️ {course.validity_days} Days</Text>
-                  <Text style={styles.stat}>📹 {course.lecture_count || 40} Videos</Text>
+          {filteredCourses.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <BookOpen size={44} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>
+                {activeClassFilter === 'ALL'
+                  ? 'No Courses Available'
+                  : `No Courses in ${activeClassFilter}`}
+              </Text>
+              <Text style={styles.emptySub}>
+                {isAdmin
+                  ? 'Tap "+ Add Batch Course" above to create and publish a new course.'
+                  : 'New courses will be announced and updated soon.'}
+              </Text>
+            </View>
+          ) : (
+            filteredCourses.map((course) => (
+              <TouchableOpacity
+                key={course.id}
+                style={styles.card}
+                activeOpacity={0.9}
+                onPress={() => router.push(`/course/${course.id}`)}
+              >
+                <View style={styles.imageBox}>
+                  <Image
+                    source={thumbMap[course.id] || { uri: course.thumbnail_url }}
+                    style={styles.thumbnail}
+                    resizeMode="contain"
+                  />
+                  <View style={styles.tagBadge}>
+                    <Text style={styles.tagBadgeText}>
+                      {course.is_free ? 'FREE ACCESS' : formatINR(course.discount_price || course.price)}
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Normal Student Action Row */}
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={styles.viewCourseBtn}
-                    onPress={() => router.push(`/course/${course.id}`)}
-                  >
-                    <BookOpen size={14} color="#2563EB" />
-                    <Text style={styles.viewCourseBtnText}>Open Syllabus & Chapters</Text>
-                  </TouchableOpacity>
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardTitle}>{course.title}</Text>
+                  {course.tagline ? (
+                    <Text style={styles.cardTagline} numberOfLines={1}>
+                      ✨ {course.tagline}
+                    </Text>
+                  ) : null}
 
-                  {course.is_free ? (
+                  <Text style={styles.cardDesc} numberOfLines={2}>
+                    {course.description}
+                  </Text>
+
+                  {/* Course Metadata Stats */}
+                  <View style={styles.statsRow}>
+                    <Text style={styles.stat}>
+                      📅 Starts: {course.start_date || 'Enrolling Now'}
+                    </Text>
+                    <Text style={styles.stat}>⏱️ {course.validity_days} Days</Text>
+                    <Text style={styles.stat}>📹 {course.lecture_count || 40} Videos</Text>
+                  </View>
+
+                  {/* Normal Student Action Row */}
+                  <View style={styles.actionRow}>
                     <TouchableOpacity
-                      style={styles.freeBtn}
+                      style={styles.viewCourseBtn}
                       onPress={() => router.push(`/course/${course.id}`)}
                     >
-                      <Text style={styles.freeBtnText}>Free Access</Text>
+                      <BookOpen size={14} color="#2563EB" />
+                      <Text style={styles.viewCourseBtnText}>Open Syllabus & Chapters</Text>
                     </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.payBtn}
-                      onPress={() => router.push(`/payment/${course.id}`)}
-                    >
-                      <Text style={styles.payBtnText}>Enroll Now</Text>
-                    </TouchableOpacity>
+
+                    {course.is_free ? (
+                      <TouchableOpacity
+                        style={styles.freeBtn}
+                        onPress={() => router.push(`/course/${course.id}`)}
+                      >
+                        <Text style={styles.freeBtnText}>Free Access</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.payBtn}
+                        onPress={() => router.push(`/payment/${course.id}`)}
+                      >
+                        <Text style={styles.payBtnText}>Enroll Now</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* Admin Management Buttons (Edit / Delete) */}
+                  {isAdmin && (
+                    <View style={styles.adminCardActionRow}>
+                      <TouchableOpacity
+                        style={styles.adminEditBtn}
+                        onPress={() => openCourseModal(course)}
+                      >
+                        <Edit3 size={13} color="#2563EB" />
+                        <Text style={styles.adminEditBtnText}>Edit Course</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.adminDeleteBtn}
+                        onPress={() => handleDeleteCourse(course.id, course.title)}
+                      >
+                        <Trash2 size={13} color="#EF4444" />
+                        <Text style={styles.adminDeleteBtnText}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </View>
-
-                {/* Admin Management Buttons (Edit / Delete) */}
-                {isAdmin && (
-                  <View style={styles.adminCardActionRow}>
-                    <TouchableOpacity
-                      style={styles.adminEditBtn}
-                      onPress={() => openCourseModal(course)}
-                    >
-                      <Edit3 size={13} color="#2563EB" />
-                      <Text style={styles.adminEditBtnText}>Edit Course</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.adminDeleteBtn}
-                      onPress={() => handleDeleteCourse(course.id, course.title)}
-                    >
-                      <Trash2 size={13} color="#EF4444" />
-                      <Text style={styles.adminDeleteBtnText}>Delete</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -1120,5 +1129,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginVertical: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

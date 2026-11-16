@@ -85,7 +85,7 @@ export default function StudentNotesScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const [materials, setMaterials] = useState<StudyMaterial[]>(initialStudyMaterials);
+  const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [offlineItems, setOfflineItems] = useState<OfflineItem[]>([]);
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -174,12 +174,7 @@ export default function StudentNotesScreen() {
         academicService.getSubjects(undefined, selectedClass),
       ]);
 
-      if (data && data.length > 0) {
-        setMaterials(data);
-      } else {
-        const remoteData = await DataService.fetchStudyMaterials();
-        setMaterials(remoteData);
-      }
+      setMaterials(data);
 
       setSubjectsList(subs);
       if (subs.length > 0 && !selectedSubject) {
@@ -194,11 +189,11 @@ export default function StudentNotesScreen() {
 
       await loadOfflineVault();
     } catch {
-      // Keep initial
+      // Keep current
     } finally {
       setIsSyncing(false);
     }
-  }, [selectedSubject]);
+  }, [selectedClass, selectedSubject]);
 
   useEffect(() => {
     loadMaterials();
@@ -493,88 +488,100 @@ export default function StudentNotesScreen() {
         }
       >
         <View style={styles.notesList}>
-          {filteredMaterials.map((mat) => {
-            const isSaved = downloadedIds.includes(mat.id);
-            return (
-              <View key={mat.id} style={styles.noteCard}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.noteIconBox}>
-                    <BookOpen size={22} color="#2563EB" />
-                  </View>
-
-                  <View style={styles.noteHeaderMeta}>
-                    <View style={styles.noteTypeRow}>
-                      <Text style={styles.noteType}>
-                        {mat.material_type.toUpperCase().replace('_', ' ')}
-                      </Text>
-                      <Text style={styles.fileSize}>{formatBytes(mat.file_size_bytes)}</Text>
-                      {isSaved && (
-                        <View style={styles.offlinePill}>
-                          <Text style={styles.offlinePillText}>💾 Offline Ready</Text>
-                        </View>
-                      )}
-                      {mat.is_free && (
-                        <View style={styles.freePill}>
-                          <Text style={styles.freePillText}>FREE</Text>
-                        </View>
-                      )}
+          {filteredMaterials.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <BookOpen size={44} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Study Materials</Text>
+              <Text style={styles.emptySub}>
+                {isAdmin
+                  ? 'Tap "+ Upload PDF" above to upload study materials or chapter notes.'
+                  : 'No notes uploaded for this filter yet. Please check back soon.'}
+              </Text>
+            </View>
+          ) : (
+            filteredMaterials.map((mat) => {
+              const isSaved = downloadedIds.includes(mat.id);
+              return (
+                <View key={mat.id} style={styles.noteCard}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.noteIconBox}>
+                      <BookOpen size={22} color="#2563EB" />
                     </View>
-                    <Text style={styles.noteTitle} numberOfLines={2}>
-                      {mat.title}
+
+                    <View style={styles.noteHeaderMeta}>
+                      <View style={styles.noteTypeRow}>
+                        <Text style={styles.noteType}>
+                          {mat.material_type.toUpperCase().replace('_', ' ')}
+                        </Text>
+                        <Text style={styles.fileSize}>{formatBytes(mat.file_size_bytes)}</Text>
+                        {isSaved && (
+                          <View style={styles.offlinePill}>
+                            <Text style={styles.offlinePillText}>💾 Offline Ready</Text>
+                          </View>
+                        )}
+                        {mat.is_free && (
+                          <View style={styles.freePill}>
+                            <Text style={styles.freePillText}>FREE</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.noteTitle} numberOfLines={2}>
+                        {mat.title}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {mat.description ? (
+                    <Text style={styles.noteDesc} numberOfLines={2}>
+                      {mat.description}
                     </Text>
+                  ) : null}
+
+                  {/* Actions: In-App Reader & Offline Download */}
+                  <View style={styles.actionButtonGroup}>
+                    <TouchableOpacity
+                      style={styles.readBtn}
+                      onPress={() => openDocument(mat.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Eye size={16} color="#FFFFFF" />
+                      <Text style={styles.readBtnText}>Read (Secure)</Text>
+                    </TouchableOpacity>
+
+                    {isSaved ? (
+                      <TouchableOpacity
+                        style={styles.downloadedBtn}
+                        onPress={() => handleRemoveOffline(mat.id, mat.title)}
+                        activeOpacity={0.7}
+                      >
+                        <CheckCircle2 size={16} color="#059669" />
+                        <Text style={styles.downloadedBtnText}>Saved 💾</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.downloadBtn}
+                        onPress={() => handleDownloadOffline(mat)}
+                        activeOpacity={0.7}
+                      >
+                        <HardDriveDownload size={16} color="#2563EB" />
+                        <Text style={styles.downloadBtnText}>Save Offline</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Admin Delete Action */}
+                    {isAdmin && (
+                      <TouchableOpacity
+                        style={styles.deleteNoteBtn}
+                        onPress={() => handleDeleteNote(mat.id, mat.title)}
+                      >
+                        <Trash2 size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
-
-                {mat.description ? (
-                  <Text style={styles.noteDesc} numberOfLines={2}>
-                    {mat.description}
-                  </Text>
-                ) : null}
-
-                {/* Actions: In-App Reader & Offline Download */}
-                <View style={styles.actionButtonGroup}>
-                  <TouchableOpacity
-                    style={styles.readBtn}
-                    onPress={() => openDocument(mat.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Eye size={16} color="#FFFFFF" />
-                    <Text style={styles.readBtnText}>Read (Secure)</Text>
-                  </TouchableOpacity>
-
-                  {isSaved ? (
-                    <TouchableOpacity
-                      style={styles.downloadedBtn}
-                      onPress={() => handleRemoveOffline(mat.id, mat.title)}
-                      activeOpacity={0.7}
-                    >
-                      <CheckCircle2 size={16} color="#059669" />
-                      <Text style={styles.downloadedBtnText}>Saved 💾</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.downloadBtn}
-                      onPress={() => handleDownloadOffline(mat)}
-                      activeOpacity={0.7}
-                    >
-                      <HardDriveDownload size={16} color="#2563EB" />
-                      <Text style={styles.downloadBtnText}>Save Offline</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Admin Delete Action */}
-                  {isAdmin && (
-                    <TouchableOpacity
-                      style={styles.deleteNoteBtn}
-                      onPress={() => handleDeleteNote(mat.id, mat.title)}
-                    >
-                      <Trash2 size={16} color="#EF4444" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            );
-          })}
+              );
+            })
+          )}
         </View>
       </ScrollView>
 
@@ -1260,5 +1267,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginVertical: 8,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

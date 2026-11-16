@@ -80,11 +80,9 @@ export default function StudentLiveScreen() {
     user?.username === 'badesir';
 
   const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'all'>('live');
-  const [liveClasses, setLiveClasses] = useState<LiveClass[]>(initialLiveClasses);
+  const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [selectedStream, setSelectedStream] = useState<LiveClass | null>(
-    initialLiveClasses[0] || null
-  );
+  const [selectedStream, setSelectedStream] = useState<LiveClass | null>(null);
   const [playing, setPlaying] = useState(true);
 
   // In-App Live Doubts / Chat state
@@ -134,18 +132,15 @@ export default function StudentLiveScreen() {
         academicService.getLiveClasses(),
         academicService.getSubjects(undefined, selectedClass),
       ]);
-      if (lives && lives.length > 0) {
-        setLiveClasses(lives);
-        if (!selectedStream) {
+
+      setLiveClasses(lives);
+      if (lives.length > 0) {
+        if (!selectedStream || !lives.some((l) => l.id === selectedStream.id)) {
           const liveNow = lives.find((c) => c.status === 'live') || lives[0];
           setSelectedStream(liveNow);
         }
       } else {
-        const remoteData = await DataService.fetchLiveClasses();
-        if (remoteData && remoteData.length > 0) {
-          setLiveClasses(remoteData);
-          if (!selectedStream) setSelectedStream(remoteData[0]);
-        }
+        setSelectedStream(null);
       }
 
       setSubjectsList(subs);
@@ -154,11 +149,11 @@ export default function StudentLiveScreen() {
         loadChaptersForSubject(subs[0], null);
       }
     } catch {
-      // Keep initial
+      // Keep current
     } finally {
       setIsSyncing(false);
     }
-  }, [selectedStream, selectedSubject]);
+  }, [selectedClass, selectedStream, selectedSubject]);
 
   useEffect(() => {
     loadData();
@@ -324,11 +319,17 @@ export default function StudentLiveScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          setLiveClasses((prev) => prev.filter((item) => item.id !== id));
-          if (selectedStream?.id === id) {
-            setSelectedStream(liveClasses.find((item) => item.id !== id) || null);
+          try {
+            await academicService.deleteLiveClass(id);
+            setLiveClasses((prev) => prev.filter((item) => item.id !== id));
+            if (selectedStream?.id === id) {
+              const remaining = liveClasses.filter((item) => item.id !== id);
+              setSelectedStream(remaining[0] || null);
+            }
+            Alert.alert('Deleted', 'Stream session permanently deleted.');
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to delete stream');
           }
-          Alert.alert('Deleted', 'Stream session deleted.');
         },
       },
     ]);
@@ -486,7 +487,18 @@ export default function StudentLiveScreen() {
       >
         {/* Stream Cards */}
         <View style={styles.classesList}>
-          {(filtered.length > 0 ? filtered : liveClasses).map((item) => {
+          {filtered.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Video size={44} color="#94A3B8" />
+              <Text style={styles.emptyTitle}>No Live Sessions</Text>
+              <Text style={styles.emptySub}>
+                {isAdmin
+                  ? 'Tap "+ Go Live / Schedule" above to broadcast live or schedule a class.'
+                  : 'No active streams at this moment. Scheduled masterclasses will appear here.'}
+              </Text>
+            </View>
+          ) : (
+            filtered.map((item) => {
             const isSelected = selectedStream?.id === item.id;
             return (
               <TouchableOpacity
@@ -580,7 +592,7 @@ export default function StudentLiveScreen() {
                 )}
               </TouchableOpacity>
             );
-          })}
+          }))}
         </View>
 
         {/* In-App Live Doubt Q&A Section */}
@@ -1426,5 +1438,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginVertical: 8,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

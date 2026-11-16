@@ -329,47 +329,63 @@ export default function StudentHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {enrolledCourses.map((c) => (
-            <TouchableOpacity
-              key={c.id}
-              style={styles.courseCard}
-              onPress={() => router.push(`/course/${c.id}`)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.courseImageBox}>
-                <Image
-                  source={thumbMap[c.id] || { uri: c.thumbnail_url }}
-                  style={styles.courseThumbnail}
-                  resizeMode="contain"
-                />
-                <View style={styles.courseTagBadge}>
-                  <Text style={styles.courseTagBadgeText}>
-                    Board Batch 2027
-                  </Text>
+          {enrolledCourses.length === 0 ? (
+            <View style={styles.emptyCoursesBox}>
+              <BookOpen size={36} color="#94A3B8" />
+              <Text style={styles.emptyCoursesTitle}>No Active Batches Enrolled</Text>
+              <Text style={styles.emptyCoursesSub}>
+                Explore full syllabus courses and enroll to start watching masterclasses.
+              </Text>
+              <TouchableOpacity
+                style={styles.browseBatchesBtn}
+                onPress={() => router.push('/(tabs)/courses')}
+              >
+                <Text style={styles.browseBatchesBtnText}>Browse Course Catalog</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            enrolledCourses.map((c) => (
+              <TouchableOpacity
+                key={c.id}
+                style={styles.courseCard}
+                onPress={() => router.push(`/course/${c.id}`)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.courseImageBox}>
+                  <Image
+                    source={thumbMap[c.id] || { uri: c.thumbnail_url }}
+                    style={styles.courseThumbnail}
+                    resizeMode="contain"
+                  />
+                  <View style={styles.courseTagBadge}>
+                    <Text style={styles.courseTagBadgeText}>
+                      Board Batch 2027
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.courseCardContent}>
-                <Text style={styles.courseTitle}>
-                  {c.title}
-                </Text>
-                <Text style={styles.courseDesc} numberOfLines={2}>
-                  {c.description}
-                </Text>
-                <View style={styles.courseMetaRow}>
-                  <Text style={styles.courseMeta}>
-                    {c.lecture_count || 45} In-App Lectures
+                <View style={styles.courseCardContent}>
+                  <Text style={styles.courseTitle}>
+                    {c.title}
                   </Text>
-                  <Text style={styles.courseMeta}>
-                    {c.material_count || 24} PDF Notes
+                  <Text style={styles.courseDesc} numberOfLines={2}>
+                    {c.description}
                   </Text>
-                  <Text style={styles.courseActiveStatus}>
-                    Active
-                  </Text>
+                  <View style={styles.courseMetaRow}>
+                    <Text style={styles.courseMeta}>
+                      {c.lecture_count || 45} In-App Lectures
+                    </Text>
+                    <Text style={styles.courseMeta}>
+                      {c.material_count || 24} PDF Notes
+                    </Text>
+                    <Text style={styles.courseActiveStatus}>
+                      Active
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -762,5 +778,40 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#059669',
+  },
+  emptyCoursesBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+    marginTop: 4,
+  },
+  emptyCoursesTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#334155',
+    marginTop: 10,
+  },
+  emptyCoursesSub: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  browseBatchesBtn: {
+    backgroundColor: '#0F2B48',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  browseBatchesBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

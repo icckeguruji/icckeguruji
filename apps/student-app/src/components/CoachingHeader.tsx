@@ -281,10 +281,8 @@ export function CoachingHeader({
                     style={styles.menuItem}
                     onPress={() => {
                       setIsDrawerOpen(false);
-                      setTimeout(() => {
-                        useDirectorStore.getState().openModal('payment');
-                        router.push('/(tabs)/profile');
-                      }, 200);
+                      useDirectorStore.getState().openModal('payment');
+                      router.push('/(tabs)/profile');
                     }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#FEF3C7' }]}>
@@ -301,10 +299,8 @@ export function CoachingHeader({
                     style={styles.menuItem}
                     onPress={() => {
                       setIsDrawerOpen(false);
-                      setTimeout(() => {
-                        useDirectorStore.getState().openModal('student');
-                        router.push('/(tabs)/profile');
-                      }, 200);
+                      useDirectorStore.getState().openModal('student');
+                      router.push('/(tabs)/profile');
                     }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
@@ -321,10 +317,8 @@ export function CoachingHeader({
                     style={styles.menuItem}
                     onPress={() => {
                       setIsDrawerOpen(false);
-                      setTimeout(() => {
-                        useDirectorStore.getState().openModal('broadcast');
-                        router.push('/(tabs)/profile');
-                      }, 200);
+                      useDirectorStore.getState().openModal('broadcast');
+                      router.push('/(tabs)/profile');
                     }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#FDF2F8' }]}>
