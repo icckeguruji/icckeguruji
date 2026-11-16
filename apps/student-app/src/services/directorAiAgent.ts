@@ -302,19 +302,19 @@ class DirectorAiAgentService {
           action: 'create_course',
           ready_to_execute: true,
           parameters: {
-            title: `${detectedClass} Board Toppers Target Batch 2027`,
+            title: `${detectedClass} Board Toppers Target Course 2027`,
             class_name: detectedClass,
             price: 999,
             discount_price: discountPrice,
           },
-          reply_text: `जी बड़े सर! ${detectedClass} के लिए ₹${discountPrice} में नया टॉपर बैच बनाया जा रहा है...`,
+          reply_text: `जी बड़े सर! ${detectedClass} के लिए ₹${discountPrice} में नया टॉपर कोर्स बनाया जा रहा है...`,
         };
       }
       return {
         action: 'create_course',
         ready_to_execute: false,
         missing_fields: ['title', 'class_name', 'discount_price'],
-        reply_text: 'हाँ बड़े सर! नया कोर्स जोड़ने के लिए कृपया बताएं:\n1. कौन सी कक्षा के लिए है? (Class 1 से 12)\n2. कोर्स का नाम क्या रखना है?\n3. ऑफर फीस (प्राइस) कितनी होगी?\n(उदाहरण: "Class 10 ke liye Math Topper Batch bana do 499 me")',
+        reply_text: 'हाँ बड़े सर! नया कोर्स जोड़ने के लिए कृपया बताएं:\n1. कौन सी कक्षा के लिए है? (Class 1 से 12)\n2. कोर्स का नाम क्या रखना है?\n3. ऑफर फीस (प्राइस) कितनी होगी?\n(उदाहरण: "Class 10 ke liye Math Topper Course bana do 499 me")',
       };
     }
 
@@ -334,16 +334,16 @@ class DirectorAiAgentService {
 
     switch (intent.action) {
       case 'create_course': {
-        const title = params.title || 'New Target Board Batch';
+        const title = params.title || 'New Target Board Course';
         const className = params.class_name || 'Class 10';
         const discountPrice = params.discount_price || 499;
         const regularPrice = params.price || discountPrice * 2;
 
         const newCourse = await academicService.addCourse({
           title,
-          title_hi: `${className} बोर्ड परीक्षा 2027 टारगेट बैच`,
+          title_hi: `${className} बोर्ड परीक्षा 2027 टारगेट कोर्स`,
           tagline: `Complete Curriculum Mastery for ${className} with BADE SIR`,
-          description: `Special target batch designed for ${className} students covering entire NCERT syllabus, live interactive masterclasses, formula sheets and weekly 30-second speed tests.`,
+          description: `Special target course designed for ${className} students covering entire NCERT syllabus, live interactive masterclasses, formula sheets and weekly 30-second speed tests.`,
           price: regularPrice,
           discount_price: discountPrice,
           validity_days: 365,
@@ -515,7 +515,7 @@ class DirectorAiAgentService {
             type: 'summary_view',
             status: 'success',
             title: 'ICC Institute Overview',
-            subtitle: `${courses.length} Batches • ${students.length} Students • ${pendingPay} Pending Fees`,
+            subtitle: `${courses.length} Courses • ${students.length} Students • ${pendingPay} Pending Fees`,
             badge: 'ONLINE',
           },
         };

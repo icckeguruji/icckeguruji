@@ -272,11 +272,11 @@ class AIService {
    * Auto-completes course metadata if left blank
    */
   async autoFillCourse(title: string, className: string = 'Class 10') {
-    const cleanTitle = title.trim() || `${className} State Board Topper Batch 2027`;
+    const cleanTitle = title.trim() || `${className} State Board Topper Course 2027`;
 
     return {
       title: cleanTitle,
-      title_hi: `${className} बोर्ड परीक्षा 2027 टॉपर बैच`,
+      title_hi: `${className} बोर्ड परीक्षा 2027 टॉपर कोर्स`,
       tagline: `Complete Board Examination 2027 Syllabus Mastery with BADE SIR`,
       description: `Comprehensive coaching program covering full syllabus with daily HD live interactive sessions, handwritten PDF master notes, chapter-wise NCERT solutions, and weekly 30-second live test series.`,
       features: [

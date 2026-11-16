@@ -35,7 +35,7 @@ interface DirectorAiModalProps {
 }
 
 const QUICK_PROMPT_PILLS = [
-  { label: '✨ + नया कोर्स बनाएं', prompt: 'Class 10 ke liye naya Topper Batch add kar do ₹499 me' },
+  { label: '✨ + नया कोर्स बनाएं', prompt: 'Class 10 ke liye naya Topper Course add kar do ₹499 me' },
   { label: '🗑️ सब डमी डेटा खाली करें', prompt: 'Sabhi purane dummy course aur notes khali kar do, mujhe shuru se add karna hai' },
   { label: '🔴 लाइव क्लास शुरू करें', prompt: 'Aaj shaam 7 baje Class 10 Math ka Live Class schedule kar do' },
   { label: '📑 PDF नोट्स जोड़ें', prompt: 'Class 10 Science Chapter 1 ka handwritten notes add kar do' },

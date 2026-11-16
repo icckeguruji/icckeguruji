@@ -173,8 +173,8 @@ export default function StudentHomeScreen() {
                 onPress={() => router.push('/(tabs)/courses')}
               >
                 <BookOpen size={16} color="#D97706" />
-                <Text style={styles.metricNumber}>{courses.length || 4}</Text>
-                <Text style={styles.metricLabel}>Target Batches</Text>
+                <Text style={styles.metricNumber}>{courses.length || 0}</Text>
+                <Text style={styles.metricLabel}>Target Courses</Text>
               </TouchableOpacity>
             </View>
 
@@ -358,15 +358,15 @@ export default function StudentHomeScreen() {
           {enrolledCourses.length === 0 ? (
             <View style={styles.emptyCoursesBox}>
               <BookOpen size={36} color="#94A3B8" />
-              <Text style={styles.emptyCoursesTitle}>No Active Batches Enrolled</Text>
+              <Text style={styles.emptyCoursesTitle}>No Active Courses Enrolled</Text>
               <Text style={styles.emptyCoursesSub}>
                 Explore full syllabus courses and enroll to start watching masterclasses.
               </Text>
               <TouchableOpacity
-                style={styles.browseBatchesBtn}
+                style={styles.browseCoursesBtn}
                 onPress={() => router.push('/(tabs)/courses')}
               >
-                <Text style={styles.browseBatchesBtnText}>Browse Course Catalog</Text>
+                <Text style={styles.browseCoursesBtnText}>Browse Course Catalog</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -385,7 +385,7 @@ export default function StudentHomeScreen() {
                   />
                   <View style={styles.courseTagBadge}>
                     <Text style={styles.courseTagBadgeText}>
-                      Board Batch 2027
+                      Board Course 2027
                     </Text>
                   </View>
                 </View>
@@ -881,13 +881,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 16,
   },
-  browseBatchesBtn: {
+  browseCoursesBtn: {
     backgroundColor: '#0F2B48',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,
   },
-  browseBatchesBtnText: {
+  browseCoursesBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',

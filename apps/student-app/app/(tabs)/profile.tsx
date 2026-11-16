@@ -248,7 +248,7 @@ export default function StudentProfileScreen() {
 विद्यार्थी का नाम: *${student.full_name}*
 बोर्ड: *${student.board_code}*
 प्राप्तांक (Score): *46 / 50 (92%)*
-रैंक: *#3 (Top 5% in Batch)*
+रैंक: *#3 (Top 5% in Class)*
 परिणाम: *उत्तीर्ण (PASSED ⭐⭐⭐)*
 ----------------------------------------
 बधाई! बोर्ड परीक्षा 2027 की तैयारी सही दिशा में है।`;
@@ -1445,7 +1445,7 @@ export default function StudentProfileScreen() {
 
                       <View style={styles.paymentDetailRow}>
                         <Text style={styles.paymentCourse}>
-                          {p.course?.title || 'BSEB 10th Target Batch'}
+                          {p.course?.title || 'Target Course'}
                         </Text>
                         <Text style={styles.paymentAmount}>{formatINR(p.amount)}</Text>
                       </View>

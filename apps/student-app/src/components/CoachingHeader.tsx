@@ -203,7 +203,7 @@ export function CoachingHeader({
                     </View>
                   ) : (
                     <View style={styles.studentRoleBadge}>
-                      <Text style={styles.studentRoleText}>🎓 Matric Batch 2027</Text>
+                      <Text style={styles.studentRoleText}>🎓 Student</Text>
                     </View>
                   )}
                   <View style={styles.ptsBadge}>
@@ -233,7 +233,7 @@ export function CoachingHeader({
                 <View style={[styles.menuIconBox, { backgroundColor: '#FDF4FF' }]}>
                   <BookOpen size={18} color="#9333EA" />
                 </View>
-                <Text style={styles.menuItemText}>Target Batch Courses</Text>
+                <Text style={styles.menuItemText}>Target Courses</Text>
                 <ChevronRight size={16} color="#CBD5E1" />
               </TouchableOpacity>
 

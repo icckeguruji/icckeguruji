@@ -200,12 +200,12 @@ class AcademicRepository {
       }
 
       // Filter out any tombstoned / deleted items
-      this.courses = this.courses.filter((c) => !this.isDeleted(c.id, c.title));
-      this.subjects = this.subjects.filter((s) => !this.isDeleted(s.id, s.name));
-      this.chapters = this.chapters.filter((ch) => !this.isDeleted(ch.id, ch.title));
-      this.lectures = this.lectures.filter((l) => !this.isDeleted(l.id, l.title));
-      this.liveClasses = this.liveClasses.filter((lc) => !this.isDeleted(lc.id, lc.title));
-      this.materials = this.materials.filter((m) => !this.isDeleted(m.id, m.title));
+      this.courses = this.courses.filter((c) => !this.isDeleted(c.id));
+      this.subjects = this.subjects.filter((s) => !this.isDeleted(s.id));
+      this.chapters = this.chapters.filter((ch) => !this.isDeleted(ch.id));
+      this.lectures = this.lectures.filter((l) => !this.isDeleted(l.id));
+      this.liveClasses = this.liveClasses.filter((lc) => !this.isDeleted(lc.id));
+      this.materials = this.materials.filter((m) => !this.isDeleted(m.id));
 
       this.isLoaded = true;
     } catch {
@@ -228,68 +228,43 @@ class AcademicRepository {
     return null;
   }
 
-  private isDeleted(id: string, title?: string): boolean {
-    if (this.deletedIds.has(id)) return true;
-    if (title) {
-      const cleanTitle = title.trim().toLowerCase();
-      const norm = this.normalizeKey(title);
-      const noYear = cleanTitle.replace(/\(.*\)/g, '').trim();
-      const normNoYear = this.normalizeKey(noYear);
-
-      if (this.deletedIds.has(`title:${cleanTitle}`)) return true;
-      if (this.deletedIds.has(`title:${noYear}`)) return true;
-      if (this.deletedIds.has(`norm:${norm}`)) return true;
-      if (this.deletedIds.has(`norm:${normNoYear}`)) return true;
-
-      if (this.deletedIds.has(`live:${cleanTitle}`)) return true;
-      if (this.deletedIds.has(`live:${noYear}`)) return true;
-      if (this.deletedIds.has(`material:${cleanTitle}`)) return true;
-      if (this.deletedIds.has(`material:${noYear}`)) return true;
-    }
-    return false;
+  private isDeleted(id: string): boolean {
+    return this.deletedIds.has(id);
   }
 
-  // Non-destructive cloud sync that NEVER resurrects deleted items or sample courses
+  // Non-destructive cloud sync that NEVER deletes locally created courses
   async syncFromCloud() {
     if (!isSupabaseConfigured) return;
     try {
-      const isCoursesModified = (await this.getItem('icc_courses_modified')) === 'true';
-
       const { data: remoteCourses } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (remoteCourses && remoteCourses.length > 0) {
-        // If director has deliberately cleared all courses, do NOT revive old remote courses
-        if (isCoursesModified && this.courses.length === 0) {
-          return;
-        }
-
         const valid = remoteCourses.filter((c) => {
-          if (this.isDeleted(c.id, c.title)) return false;
+          if (this.deletedIds.has(c.id)) return false;
           // NEVER EVER re-import initial sample / seed IDs under any condition
           if (SAMPLE_RESERVED_IDS.has(c.id)) return false;
           if (c.id.startsWith('cr000000-') || c.id.startsWith('10000000-')) return false;
           return true;
         });
 
+        // Merge: Local courses created by user/AI MUST ALWAYS be preserved
         const courseMap = new Map(this.courses.map((c) => [c.id, c]));
         for (const rem of valid) {
           const existing = courseMap.get(rem.id);
           if (existing) {
-            // Keep local version if newer
             const localDate = new Date(existing.updated_at || existing.created_at || 0).getTime();
             const remoteDate = new Date(rem.updated_at || rem.created_at || 0).getTime();
-            if (remoteDate >= localDate) {
+            if (remoteDate > localDate) {
               courseMap.set(rem.id, { ...existing, ...rem });
             }
-          } else if (!isCoursesModified) {
-            // Only add if not previously modified
+          } else {
             courseMap.set(rem.id, rem);
           }
         }
-        this.courses = Array.from(courseMap.values()).filter((c) => !this.isDeleted(c.id, c.title));
+        this.courses = Array.from(courseMap.values()).filter((c) => !this.deletedIds.has(c.id));
         await this.persist('icc_courses', this.courses);
         this.notify();
       }
@@ -297,12 +272,12 @@ class AcademicRepository {
       // Sync subjects non-destructively
       const { data: remoteSubs } = await supabase.from('subjects').select('*');
       if (remoteSubs && remoteSubs.length > 0) {
-        const validSubs = remoteSubs.filter((s) => !this.isDeleted(s.id, s.name));
+        const validSubs = remoteSubs.filter((s) => !this.isDeleted(s.id));
         const subMap = new Map(this.subjects.map((s) => [s.id, s]));
         for (const remSub of validSubs) {
           subMap.set(remSub.id, { ...subMap.get(remSub.id), ...remSub });
         }
-        this.subjects = Array.from(subMap.values()).filter((s) => !this.isDeleted(s.id, s.name));
+        this.subjects = Array.from(subMap.values()).filter((s) => !this.isDeleted(s.id));
         await this.persist('icc_academic_subjects', this.subjects);
         this.notify();
       }
@@ -379,15 +354,8 @@ class AcademicRepository {
     } catch {}
   }
 
-  private async markAsDeleted(id: string, extraKeys: string[] = []) {
+  private async markAsDeleted(id: string) {
     this.deletedIds.add(id);
-    for (const key of extraKeys) {
-      if (key) {
-        const clean = key.trim().toLowerCase();
-        this.deletedIds.add(clean);
-        this.deletedIds.add(`norm:${this.normalizeKey(clean)}`);
-      }
-    }
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
   }
 
@@ -448,20 +416,26 @@ class AcademicRepository {
   // --- COURSES ---
   async getCourses(): Promise<Course[]> {
     await this.ensureLoaded();
-    return this.courses.filter((c) => !this.isDeleted(c.id, c.title));
+    return this.courses.filter((c) => !this.deletedIds.has(c.id));
   }
 
   async getCourseById(id: string): Promise<Course | undefined> {
     await this.ensureLoaded();
     const found = this.courses.find((c) => c.id === id);
-    if (!found || this.isDeleted(found.id, found.title)) return undefined;
+    if (!found || this.deletedIds.has(found.id)) return undefined;
     return found;
   }
 
   async addCourse(data: Partial<Course>): Promise<Course> {
     await this.ensureLoaded();
+    const courseId = data.id || `c0000000-0000-0000-0000-${Date.now().toString(16).padStart(12, '0')}`;
+
+    // Remove any previous tombstone for this course ID
+    this.deletedIds.delete(courseId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     const newCourse: Course = {
-      id: data.id || `c0000000-0000-0000-0000-${Date.now().toString(16).padStart(12, '0')}`,
+      id: courseId,
       title: data.title || 'New Target Course',
       title_hi: data.title_hi || data.title || 'नया कोर्स',
       tagline: data.tagline || 'Complete Board Exam Syllabus Mastery with BADE SIR',
@@ -491,12 +465,17 @@ class AcademicRepository {
     };
     if ((data as any).class_name) (newCourse as any).class_name = (data as any).class_name;
 
+    // Deduplicate in memory and place at top
+    this.courses = this.courses.filter((c) => c.id !== courseId);
     this.courses.unshift(newCourse);
+    await this.persist('icc_courses_modified', 'true');
     await this.persist('icc_courses', this.courses);
+    this.notify();
 
     try {
       if (isSupabaseConfigured) {
         await supabase.from('courses').upsert({
+          id: newCourse.id,
           title: newCourse.title,
           title_hi: newCourse.title_hi,
           description: newCourse.description,
@@ -505,10 +484,15 @@ class AcademicRepository {
           price: newCourse.price,
           discount_price: newCourse.discount_price,
           validity_days: newCourse.validity_days,
+          class_name: (newCourse as any).class_name || 'Class 10',
           is_published: true,
+          created_at: newCourse.created_at,
+          updated_at: newCourse.updated_at,
         });
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Supabase course upsert warning:', e);
+    }
 
     return newCourse;
   }
@@ -518,7 +502,7 @@ class AcademicRepository {
     await this.ensureLoaded();
     let idx = this.courses.findIndex((c) => c.id === id);
 
-    // Fallback search by title or normalized ID
+    // Fallback search by title
     if (idx === -1 && updates.title) {
       idx = this.courses.findIndex(
         (c) => c.title.trim().toLowerCase() === updates.title!.trim().toLowerCase()
@@ -526,16 +510,9 @@ class AcademicRepository {
     }
 
     if (idx === -1) {
-      // Find in allInitialCourses
-      const seedMatch = allInitialCourses.find((c) => c.id === id || c.title === updates.title);
-      if (seedMatch) {
-        this.courses.push({ ...seedMatch });
-        idx = this.courses.length - 1;
-      } else {
-        // Create it cleanly
-        const created = await this.addCourse({ ...updates, id } as any);
-        return created;
-      }
+      // Create it cleanly
+      const created = await this.addCourse({ ...updates, id } as any);
+      return created;
     }
 
     this.courses[idx] = {
@@ -543,7 +520,9 @@ class AcademicRepository {
       ...updates,
       updated_at: new Date().toISOString(),
     };
+    await this.persist('icc_courses_modified', 'true');
     await this.persist('icc_courses', this.courses);
+    this.notify();
 
     try {
       if (isSupabaseConfigured) {
@@ -559,9 +538,11 @@ class AcademicRepository {
             validity_days: updates.validity_days,
             updated_at: new Date().toISOString(),
           })
-          .eq('title', this.courses[idx].title);
+          .eq('id', this.courses[idx].id);
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Supabase update warning:', e);
+    }
 
     return this.courses[idx];
   }
@@ -569,17 +550,13 @@ class AcademicRepository {
   async deleteCourse(id: string): Promise<void> {
     await this.ensureLoaded();
     const course = this.courses.find((c) => c.id === id);
-    const extraKeys: string[] = [];
-    if (course?.title) {
-      const clean = course.title.trim().toLowerCase();
-      extraKeys.push(`title:${clean}`);
-      const noYear = clean.replace(/\(.*\)/g, '').trim();
-      extraKeys.push(`title:${noYear}`);
-    }
-    await this.markAsDeleted(id, extraKeys);
+    this.deletedIds.add(id);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     this.courses = this.courses.filter((c) => c.id !== id);
     await this.persist('icc_courses_modified', 'true');
     await this.persist('icc_courses', this.courses);
+    this.notify();
 
     try {
       if (isSupabaseConfigured) {
@@ -588,13 +565,15 @@ class AcademicRepository {
           await supabase.from('courses').delete().eq('title', course.title);
         }
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Supabase delete warning:', e);
+    }
   }
 
   // --- SUBJECTS (Class Scoped from Class 1 to 12) ---
   async getSubjects(courseId?: string, className?: string): Promise<AcademicSubject[]> {
     await this.ensureLoaded();
-    let list = this.subjects.filter((s) => !this.isDeleted(s.id, s.name));
+    let list = this.subjects.filter((s) => !this.isDeleted(s.id));
 
     if (className) {
       const targetClass = className.trim().toLowerCase();
@@ -631,8 +610,12 @@ class AcademicRepository {
 
   async addSubject(sub: Partial<AcademicSubject>): Promise<AcademicSubject> {
     await this.ensureLoaded();
+    const subId = sub.id || `sub-${Date.now()}`;
+    this.deletedIds.delete(subId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     const newSub: AcademicSubject = {
-      id: sub.id || `sub-${Date.now()}`,
+      id: subId,
       course_id: sub.course_id,
       class_id: sub.class_id,
       class_name: sub.class_name || 'Class 10',
@@ -652,12 +635,11 @@ class AcademicRepository {
 
   async deleteSubject(id: string): Promise<void> {
     await this.ensureLoaded();
-    const sub = this.subjects.find((s) => s.id === id);
-    const extraKeys: string[] = [];
-    if (sub?.name) extraKeys.push(`sub:${sub.name.trim().toLowerCase()}`);
-    await this.markAsDeleted(id, extraKeys);
+    this.deletedIds.add(id);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
     this.subjects = this.subjects.filter((s) => s.id !== id);
     await this.persist('icc_academic_subjects', this.subjects);
+    this.notify();
   }
 
   // --- SUB-SUBJECTS ---
@@ -686,7 +668,7 @@ class AcademicRepository {
   async getChapters(subjectId: string, subSubjectId?: string): Promise<AcademicChapter[]> {
     await this.ensureLoaded();
     return this.chapters.filter((ch) => {
-      if (this.isDeleted(ch.id, ch.title)) return false;
+      if (this.isDeleted(ch.id)) return false;
       if (ch.subject_id !== subjectId) return false;
       if (subSubjectId) return ch.sub_subject_id === subSubjectId;
       return true;
@@ -695,8 +677,12 @@ class AcademicRepository {
 
   async addChapter(data: Partial<AcademicChapter>): Promise<AcademicChapter> {
     await this.ensureLoaded();
+    const chapterId = data.id || `ch-${Date.now()}`;
+    this.deletedIds.delete(chapterId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     const newChapter: AcademicChapter = {
-      id: data.id || `ch-${Date.now()}`,
+      id: chapterId,
       subject_id: data.subject_id!,
       sub_subject_id: data.sub_subject_id,
       course_id: data.course_id,
@@ -717,24 +703,27 @@ class AcademicRepository {
 
   async deleteChapter(id: string): Promise<void> {
     await this.ensureLoaded();
-    const ch = this.chapters.find((c) => c.id === id);
-    const extraKeys: string[] = [];
-    if (ch?.title) extraKeys.push(`ch:${ch.title.trim().toLowerCase()}`);
-    await this.markAsDeleted(id, extraKeys);
+    this.deletedIds.add(id);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
     this.chapters = this.chapters.filter((c) => c.id !== id);
     await this.persist('icc_academic_chapters', this.chapters);
+    this.notify();
   }
 
   // --- CHAPTER CONTENT: RECORDED VIDEOS ---
   async getRecordedLectures(chapterId: string): Promise<RecordedLecture[]> {
     await this.ensureLoaded();
-    return this.lectures.filter((l) => !this.isDeleted(l.id, l.title) && l.chapter_id === chapterId);
+    return this.lectures.filter((l) => !this.isDeleted(l.id) && l.chapter_id === chapterId);
   }
 
   async addRecordedLecture(data: Partial<RecordedLecture>): Promise<RecordedLecture> {
     await this.ensureLoaded();
+    const lecId = data.id || `lec-${Date.now()}`;
+    this.deletedIds.delete(lecId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     const newLec: RecordedLecture = {
-      id: `lec-${Date.now()}`,
+      id: lecId,
       course_id: data.course_id || 'c0000000-0000-0000-0000-000000000010',
       subject_id: data.subject_id || '',
       chapter_id: data.chapter_id || '',
@@ -754,23 +743,23 @@ class AcademicRepository {
       ch.lecture_count = (ch.lecture_count || 0) + 1;
       await this.persist('icc_academic_chapters', this.chapters);
     }
+    this.notify();
     return newLec;
   }
 
   async deleteRecordedLecture(id: string): Promise<void> {
     await this.ensureLoaded();
-    const lec = this.lectures.find((l) => l.id === id);
-    const extraKeys: string[] = [];
-    if (lec?.title) extraKeys.push(`lec:${lec.title.trim().toLowerCase()}`);
-    await this.markAsDeleted(id, extraKeys);
+    this.deletedIds.add(id);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
     this.lectures = this.lectures.filter((l) => l.id !== id);
     await this.persist('icc_recorded_lectures', this.lectures);
+    this.notify();
   }
 
   // --- CHAPTER CONTENT: LIVE CLASSES ---
   async getLiveClasses(chapterId?: string): Promise<LiveClass[]> {
     await this.ensureLoaded();
-    const list = this.liveClasses.filter((l) => !this.isDeleted(l.id, l.title));
+    const list = this.liveClasses.filter((l) => !this.isDeleted(l.id));
     if (chapterId) {
       return list.filter((l) => (l as any).chapter_id === chapterId);
     }
@@ -779,8 +768,12 @@ class AcademicRepository {
 
   async scheduleLiveClass(data: Partial<LiveClass> & { chapter_id?: string; subject_id?: string; class_name?: string }): Promise<LiveClass> {
     await this.ensureLoaded();
+    const liveId = data.id || `live-${Date.now()}`;
+    this.deletedIds.delete(liveId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     const newLive: LiveClass = {
-      id: `live-${Date.now()}`,
+      id: liveId,
       course_id: data.course_id || 'c0000000-0000-0000-0000-000000000010',
       batch_id: data.batch_id || 'ba000000-0000-0000-0000-000000000001',
       title: data.title || 'Live Class Session',
@@ -808,23 +801,20 @@ class AcademicRepository {
     if (item) {
       item.status = status;
       await this.persist('icc_live_classes', this.liveClasses);
+      this.notify();
     }
   }
 
   async deleteLiveClass(id: string): Promise<void> {
     await this.ensureLoaded();
     const item = this.liveClasses.find((l) => l.id === id);
-    const extraKeys: string[] = [];
-    if (item?.title) {
-      const clean = item.title.trim().toLowerCase();
-      extraKeys.push(`live:${clean}`);
-      const noYear = clean.replace(/\(.*\)/g, '').trim();
-      extraKeys.push(`live:${noYear}`);
-    }
-    await this.markAsDeleted(id, extraKeys);
+    this.deletedIds.add(id);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     this.liveClasses = this.liveClasses.filter((l) => l.id !== id);
     await this.persist('icc_live_modified', 'true');
     await this.persist('icc_live_classes', this.liveClasses);
+    this.notify();
 
     try {
       if (isSupabaseConfigured) {
@@ -839,7 +829,7 @@ class AcademicRepository {
   // --- CHAPTER CONTENT: STUDY MATERIALS PDF ---
   async getStudyMaterials(chapterId?: string): Promise<StudyMaterial[]> {
     await this.ensureLoaded();
-    const list = this.materials.filter((m) => !this.isDeleted(m.id, m.title));
+    const list = this.materials.filter((m) => !this.isDeleted(m.id));
     if (chapterId) {
       return list.filter((m) => m.chapter_id === chapterId);
     }
@@ -848,8 +838,12 @@ class AcademicRepository {
 
   async addStudyMaterial(data: Partial<StudyMaterial> & { class_name?: string }): Promise<StudyMaterial> {
     await this.ensureLoaded();
+    const matId = data.id || `mat-${Date.now()}`;
+    this.deletedIds.delete(matId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     const newMat: StudyMaterial = {
-      id: `mat-${Date.now()}`,
+      id: matId,
       board_id: data.board_id || 'b0000000-0000-0000-0000-000000000001',
       class_id: data.class_id || 'c0000000-0000-0000-0000-000000000010',
       subject_id: data.subject_id || '',
@@ -883,17 +877,13 @@ class AcademicRepository {
   async deleteStudyMaterial(id: string): Promise<void> {
     await this.ensureLoaded();
     const item = this.materials.find((m) => m.id === id);
-    const extraKeys: string[] = [];
-    if (item?.title) {
-      const clean = item.title.trim().toLowerCase();
-      extraKeys.push(`material:${clean}`);
-      const noYear = clean.replace(/\(.*\)/g, '').trim();
-      extraKeys.push(`material:${noYear}`);
-    }
-    await this.markAsDeleted(id, extraKeys);
+    this.deletedIds.add(id);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+
     this.materials = this.materials.filter((m) => m.id !== id);
     await this.persist('icc_materials_modified', 'true');
     await this.persist('icc_study_materials', this.materials);
+    this.notify();
 
     try {
       if (isSupabaseConfigured) {

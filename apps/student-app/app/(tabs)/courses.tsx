@@ -210,7 +210,7 @@ export default function StudentCoursesScreen() {
     let desc = courseForm.description.trim();
 
     if (!titleToUse) {
-      titleToUse = `${courseForm.class_name} Comprehensive Board Exam Topper Batch 2027`;
+      titleToUse = `${courseForm.class_name} Comprehensive Board Exam Topper Course 2027`;
     }
     if (!tagline) {
       tagline = `Full Syllabus Live Coaching & Handwritten Notes with BADE SIR`;
@@ -247,7 +247,7 @@ export default function StudentCoursesScreen() {
           is_free: false,
           is_published: true,
         });
-        Alert.alert('Course Published! 🎓', 'New course batch is now live and ready for student enrollment!');
+        Alert.alert('Course Published! 🎓', 'New course is now live and ready for student enrollment!');
       }
 
       setIsCourseModalOpen(false);
@@ -411,7 +411,7 @@ export default function StudentCoursesScreen() {
               </Text>
               <Text style={styles.emptySub}>
                 {isAdmin
-                  ? 'Tap "+ Add Batch Course" above to create and publish a new course.'
+                  ? 'Tap "+ Add Course" above to create and publish a new course.'
                   : 'New courses will be announced and updated soon.'}
               </Text>
             </View>
@@ -548,7 +548,7 @@ export default function StudentCoursesScreen() {
               <Text style={styles.inputLabel}>Course Title (Name) *</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. Class 10 State Board Topper Batch 2027"
+                placeholder="e.g. Class 10 State Board Topper Course 2027"
                 value={courseForm.title}
                 onChangeText={(text) => setCourseForm((prev) => ({ ...prev, title: text }))}
               />
@@ -587,7 +587,7 @@ export default function StudentCoursesScreen() {
               </ScrollView>
 
               {/* Start Date Picker (Touch Selection - No Typing) */}
-              <Text style={styles.inputLabel}>Batch Start Date *</Text>
+              <Text style={styles.inputLabel}>Course Start Date *</Text>
               <TouchableOpacity
                 style={styles.datePickerTrigger}
                 onPress={() => setIsDatePickerOpen(true)}
