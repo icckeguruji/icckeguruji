@@ -16,7 +16,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { formatINR } from '@icc/shared-utils';
-import { initialCourses } from '../../../admin-web/src/lib/sample-data';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import { academicService } from '../../src/services/academicService';

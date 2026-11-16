@@ -33,7 +33,6 @@ import {
   BookOpen,
 } from 'lucide-react-native';
 import { formatIST } from '@icc/shared-utils';
-import { initialLiveClasses } from '../../../admin-web/src/lib/sample-data';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import {

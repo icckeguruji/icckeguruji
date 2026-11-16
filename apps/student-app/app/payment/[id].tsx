@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { formatINR } from '@icc/shared-utils';
-import { initialCourses } from '../../../admin-web/src/lib/sample-data';
+import { Course } from '@icc/shared-types';
+import { academicService } from '../../src/services/academicService';
 import { supabase } from '../../src/lib/supabase';
 import {
   CheckCircle2,
@@ -39,8 +40,24 @@ export default function ManualUpiPaymentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, selectedBoard, selectedClass } = useAuthStore();
 
-  const course = initialCourses.find((c) => c.id === id) || initialCourses[0];
-  const payableAmount = course.discount_price || course.price;
+  const [course, setCourse] = useState<Course | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      academicService.getCourseById(id).then((c) => {
+        if (c) {
+          setCourse(c);
+          if (c.title?.includes('JAC')) {
+            setBoardCode('JAC');
+          }
+        }
+      });
+    }
+  }, [id]);
+
+  const courseTitle = course?.title || 'Target Board Course';
+  const courseId = course?.id || id || 'course-default';
+  const payableAmount = course?.discount_price || course?.price || 499;
 
   // Student Details Form State
   const [fullName, setFullName] = useState(user?.full_name || '');
@@ -48,9 +65,7 @@ export default function ManualUpiPaymentScreen() {
   const [mobileNumber, setMobileNumber] = useState(user?.mobile_number || '');
   const [email, setEmail] = useState(user?.email || '');
   const [dob, setDob] = useState(user?.dob || '2009-08-15');
-  const [boardCode, setBoardCode] = useState<'BSEB' | 'JAC'>(
-    course.title.includes('JAC') ? 'JAC' : 'BSEB'
-  );
+  const [boardCode, setBoardCode] = useState<'BSEB' | 'JAC'>('BSEB');
   const [className, setClassName] = useState(selectedClass || 'Class 10');
   const [district, setDistrict] = useState(user?.district || 'Godda');
   const [schoolName, setSchoolName] = useState(user?.school_name || '');
@@ -65,7 +80,7 @@ export default function ManualUpiPaymentScreen() {
 
   const upiId = 'azhargodda@ybl';
   const payeeName = 'IDEAL COACHING CENTRE';
-  const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${payableAmount}&cu=INR&tn=ICC+Enrollment+${encodeURIComponent(course.title.slice(0, 30))}`;
+  const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${payableAmount}&cu=INR&tn=ICC+Enrollment+${encodeURIComponent(courseTitle.slice(0, 30))}`;
 
   const handleCopyUpi = () => {
     Alert.alert('UPI VPA Copied', `${upiId} copied to clipboard! Paste it into PhonePe, GPay, or Paytm.`);
@@ -180,14 +195,14 @@ export default function ManualUpiPaymentScreen() {
       await supabase.from('payments').insert({
         id: `pay-${Date.now()}`,
         student_id: studentId,
-        course_id: course.id,
+        course_id: courseId,
         amount: payableAmount,
         utr_number: cleanUtr,
         status: 'pending',
         student_name: cleanName,
         student_phone: cleanMobile,
         student_email: cleanEmail,
-        course_title: course.title,
+        course_title: courseTitle,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -196,7 +211,7 @@ export default function ManualUpiPaymentScreen() {
       await supabase.from('enrollments').insert({
         id: `enr-${Date.now()}`,
         student_id: studentId,
-        course_id: course.id,
+        course_id: courseId,
         status: 'pending',
         enrolled_at: new Date().toISOString(),
       });
@@ -268,10 +283,10 @@ export default function ManualUpiPaymentScreen() {
             {/* Course Summary Card */}
             <View style={styles.courseCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.courseTag}>{((course as any).board_code || (course as any).board_id || 'BSEB')} Board</Text>
-                <Text style={styles.courseTitle}>{course.title}</Text>
+                <Text style={styles.courseTag}>{((course as any)?.board_code || (course as any)?.board_id || 'BSEB')} Board</Text>
+                <Text style={styles.courseTitle}>{courseTitle}</Text>
                 <Text style={styles.courseValidity}>
-                  {course.validity_days || 365} Days Validity • Complete Curriculum
+                  {course?.validity_days || 365} Days Validity • Complete Curriculum
                 </Text>
               </View>
               <View style={styles.priceContainer}>

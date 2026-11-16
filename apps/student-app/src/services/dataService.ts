@@ -28,9 +28,11 @@ export const DataService = {
     return academicService.getStudyMaterials();
   },
 
-  // 4. Subscribe to Realtime Updates
+  // 4. Subscribe to Realtime Updates (Local Reactive + Cloud Supabase)
   subscribeToChanges: (onUpdate: () => void) => {
-    if (!isSupabaseConfigured) return () => {};
+    const unsubscribeLocal = academicService.subscribe(onUpdate);
+
+    if (!isSupabaseConfigured) return unsubscribeLocal;
 
     try {
       const channel = supabase
@@ -47,10 +49,11 @@ export const DataService = {
         .subscribe();
 
       return () => {
+        unsubscribeLocal();
         supabase.removeChannel(channel);
       };
     } catch {
-      return () => {};
+      return unsubscribeLocal;
     }
   },
 };

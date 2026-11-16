@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { initialStudyMaterials } from '../../../admin-web/src/lib/sample-data';
+import { StudyMaterial } from '@icc/shared-types';
+import { academicService } from '../../src/services/academicService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,9 +20,41 @@ export default function SecurePdfViewerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
+  const [material, setMaterial] = useState<StudyMaterial | null>(null);
 
-  const material =
-    initialStudyMaterials.find((m) => m.id === id) || initialStudyMaterials[0];
+  useEffect(() => {
+    if (id) {
+      academicService.getStudyMaterials().then((mats) => {
+        const found = mats.find((m) => m.id === id);
+        if (found) setMaterial(found);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [id]);
+
+  if (!material && !loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 8, textAlign: 'center' }}>
+          नोट्स उपलब्ध नहीं है (Material Not Found)
+        </Text>
+        <Text style={{ fontSize: 14, color: '#94A3B8', textAlign: 'center', marginBottom: 20 }}>
+          यह स्टडी मटेरियल हटा दिया गया है या उपलब्ध नहीं है।
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}
+          onPress={() => router.back()}
+        >
+          <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>वापस जाएँ</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const matTitle = material?.title || 'Study Material PDF';
+  const matType = (material?.material_type || 'notes').toUpperCase().replace('_', ' ');
 
   // Dynamic watermark text with student identity to prevent external recording/leakage
   const watermarkText = `${user?.full_name || 'Student'} • +91 ${user?.mobile_number || '9876543210'} • ICC DRM`;
@@ -33,7 +66,7 @@ export default function SecurePdfViewerScreen() {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <title>${material.title}</title>
+      <title>${matTitle}</title>
       <style>
         * {
           box-sizing: border-box;
@@ -120,8 +153,8 @@ export default function SecurePdfViewerScreen() {
     <body>
       <div class="header-box">
         <span class="badge">IDEAL COACHING CENTRE • NCERT / SCERT NOTES</span>
-        <h1>${material.title}</h1>
-        <p class="desc">${material.description || 'Verified Study Material for Board Preparation'}</p>
+        <h1>${material?.title || matTitle}</h1>
+        <p class="desc">${material?.description || 'Verified Study Material for Board Preparation'}</p>
       </div>
 
       <div class="content-card">
@@ -211,10 +244,10 @@ export default function SecurePdfViewerScreen() {
       <View style={styles.bottomBar}>
         <View style={{ flex: 1 }}>
           <Text style={styles.docTitle} numberOfLines={1}>
-            {material.title}
+            {matTitle}
           </Text>
           <Text style={styles.docMeta}>
-            {material.material_type.toUpperCase().replace('_', ' ')} • Class 10
+            {matType}
           </Text>
         </View>
 

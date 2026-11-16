@@ -31,7 +31,6 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import { formatBytes } from '@icc/shared-utils';
-import { initialStudyMaterials } from '../../../admin-web/src/lib/sample-data';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import {

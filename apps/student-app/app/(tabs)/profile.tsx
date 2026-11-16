@@ -21,9 +21,9 @@ import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { supabase } from '../../src/lib/supabase';
 import { useAppUpdateStore, CURRENT_APP_VERSION } from '../../src/services/appUpdateService';
 import { academicService } from '../../src/services/academicService';
-import { initialStudents, initialPayments } from '../../../admin-web/src/lib/sample-data';
 import { UserProfile, Payment } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
+import { DirectorAiModal } from '../../src/components/DirectorAiModal';
 import {
   User,
   ShieldCheck,
@@ -54,6 +54,8 @@ import {
   CheckCircle,
   XCircle,
   Award,
+  Bot,
+  Trash2,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -103,13 +105,14 @@ export default function StudentProfileScreen() {
       : 'Novice Student';
 
   // Admin Hub States
-  const [payments, setPayments] = useState<any[]>(initialPayments);
-  const [students, setStudents] = useState<UserProfile[]>(initialStudents);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [students, setStudents] = useState<UserProfile[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastMsg, setBroadcastMsg] = useState('');
 
@@ -142,6 +145,9 @@ export default function StudentProfileScreen() {
     } else if (activeModal === 'broadcast') {
       setIsBroadcastModalOpen(true);
       closeDirectorModal();
+    } else if (activeModal === 'ai_copilot') {
+      setIsAiModalOpen(true);
+      closeDirectorModal();
     }
   }, [activeModal]);
 
@@ -157,6 +163,9 @@ export default function StudentProfileScreen() {
         closeDirectorModal();
       } else if (modal === 'broadcast') {
         setIsBroadcastModalOpen(true);
+        closeDirectorModal();
+      } else if (modal === 'ai_copilot') {
+        setIsAiModalOpen(true);
         closeDirectorModal();
       }
     }, [closeDirectorModal, loadDirectorData])
@@ -689,6 +698,27 @@ export default function StudentProfileScreen() {
                 <Text style={styles.directorCardSub}>Unified administrative control inside mobile app</Text>
               </View>
 
+              {/* 🤖 Director AI Copilot Autonomous Agent Trigger */}
+              <TouchableOpacity
+                style={[styles.adminHubRow, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5 }]}
+                onPress={() => setIsAiModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#DBEAFE' }]}>
+                  <Bot size={20} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.adminHubRowTitle, { color: '#1E3A8A', fontWeight: '800' }]}>
+                    🤖 Director AI Copilot
+                  </Text>
+                  <Text style={styles.adminHubRowSub}>
+                    Bolkar/likhkar courses, live classes aur fees manage karein
+                  </Text>
+                </View>
+                <View style={[styles.pendingBadge, { backgroundColor: '#2563EB' }]}>
+                  <Text style={[styles.pendingBadgeText, { color: '#FFFFFF' }]}>LIVE AI</Text>
+                </View>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.adminHubRow}
                 onPress={() => setIsPaymentModalOpen(true)}
@@ -733,6 +763,48 @@ export default function StudentProfileScreen() {
                   <Text style={styles.adminHubRowSub}>Send push notification to all students</Text>
                 </View>
                 <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {/* 🗑️ Blank Slate: Wipe All Dummy Data */}
+              <TouchableOpacity
+                style={[styles.adminHubRow, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1 }]}
+                onPress={() => {
+                  Alert.alert(
+                    '⚠️ 100% Blank Slate (सब खाली करें)',
+                    'क्या आप वाकई सभी पुराने कोर्सेस, नोट्स और डमी डेटा को हटाकर ऐप को पूरी तरह खाली (Blank Slate) करना चाहते हैं? इसके बाद आप शुरू से अपने नए कोर्सेस मैन्युअली जोड़ सकेंगे।',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'हाँ, सब खाली करें (Wipe All)',
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            await academicService.purgeAllData();
+                            await loadDirectorData();
+                            Alert.alert('सफलता!', 'सभी पुराना डेटा पूरी तरह हटा दिया गया है। अब आपका ऐप 100% ब्लैंक स्लेट है!');
+                          } catch {
+                            Alert.alert('Error', 'डेटा खाली करने में समस्या आई।');
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#FEE2E2' }]}>
+                  <Trash2 size={18} color="#DC2626" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.adminHubRowTitle, { color: '#DC2626', fontWeight: '800' }]}>
+                    🗑️ Blank Slate: Wipe All Dummy Data
+                  </Text>
+                  <Text style={styles.adminHubRowSub}>
+                    शुरू से नया डेटा डालने के लिए सभी पुराने कोर्सेस खाली करें
+                  </Text>
+                </View>
+                <View style={[styles.pendingBadge, { backgroundColor: '#DC2626' }]}>
+                  <Text style={[styles.pendingBadgeText, { color: '#FFFFFF' }]}>WIPE</Text>
+                </View>
               </TouchableOpacity>
             </View>
           )}
@@ -1609,6 +1681,15 @@ export default function StudentProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 8. DIRECTOR AI COPILOT AUTONOMOUS AGENT MODAL */}
+      <DirectorAiModal
+        visible={isAiModalOpen}
+        onClose={() => {
+          setIsAiModalOpen(false);
+          loadDirectorData();
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -16,7 +16,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations, formatINR } from '@icc/shared-utils';
-import { initialCourses } from '../../../admin-web/src/lib/sample-data';
 import {
   academicService,
   AcademicSubject,
@@ -80,9 +79,7 @@ export default function CourseDetailsScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const [currentCourse, setCurrentCourse] = useState<Course>(
-    () => initialCourses.find((c) => c.id === id) || initialCourses[0]
-  );
+  const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const course = currentCourse;
 
   // Hierarchy Navigation States:
@@ -124,14 +121,13 @@ export default function CourseDetailsScreen() {
   const loadAcademicData = async () => {
     setLoading(true);
     try {
-      const found =
-        (await academicService.getCourseById(id)) ||
-        initialCourses.find((c) => c.id === id) ||
-        initialCourses[0];
-      setCurrentCourse(found);
-      const className = academicService.getClassNameFromCourse(found);
-      const subs = await academicService.getSubjects(id, className);
-      setSubjects(subs);
+      const found = await academicService.getCourseById(id);
+      setCurrentCourse(found || null);
+      if (found) {
+        const className = academicService.getClassNameFromCourse(found);
+        const subs = await academicService.getSubjects(id, className);
+        setSubjects(subs);
+      }
     } catch (e) {
       console.warn('Error loading academic data:', e);
     } finally {
@@ -177,6 +173,7 @@ export default function CourseDetailsScreen() {
   // --- ADMIN ACTIONS ---
 
   const handleCreateSubject = async () => {
+    if (!currentCourse) return;
     if (!formTitle.trim()) {
       Alert.alert('Required', 'Please enter subject name');
       return;
@@ -229,7 +226,7 @@ export default function CourseDetailsScreen() {
   };
 
   const handleCreateChapter = async () => {
-    if (!selectedSubject || !formTitle.trim()) {
+    if (!currentCourse || !selectedSubject || !formTitle.trim()) {
       Alert.alert('Required', 'Please enter chapter title');
       return;
     }
@@ -265,7 +262,7 @@ export default function CourseDetailsScreen() {
   };
 
   const handleAddVideoLecture = async () => {
-    if (!selectedChapter || !formTitle.trim() || !formVideoId.trim()) {
+    if (!currentCourse || !selectedChapter || !formTitle.trim() || !formVideoId.trim()) {
       Alert.alert('Required', 'Please enter lecture title and YouTube Video ID / Link');
       return;
     }
@@ -279,7 +276,7 @@ export default function CourseDetailsScreen() {
     }
 
     const newLec = await academicService.addRecordedLecture({
-      course_id: course.id,
+      course_id: currentCourse.id,
       subject_id: selectedSubject?.id,
       sub_subject_id: selectedSubSubject?.id,
       chapter_id: selectedChapter.id,
@@ -296,7 +293,7 @@ export default function CourseDetailsScreen() {
   };
 
   const handleScheduleLiveClass = async () => {
-    if (!selectedChapter || !formTitle.trim()) {
+    if (!currentCourse || !selectedChapter || !formTitle.trim()) {
       Alert.alert('Required', 'Please enter live class title');
       return;
     }
@@ -346,7 +343,7 @@ export default function CourseDetailsScreen() {
   };
 
   const handleSaveUploadedPdfNotes = async () => {
-    if (!selectedChapter || !formTitle.trim()) {
+    if (!currentCourse || !selectedChapter || !formTitle.trim()) {
       Alert.alert('Required', 'Please enter notes title');
       return;
     }
@@ -395,6 +392,49 @@ export default function CourseDetailsScreen() {
       router.back();
     }
   };
+
+  if (loading && !course) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.navBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={20} color="#0F172A" />
+          </TouchableOpacity>
+          <Text style={styles.navTitle}>Course Details</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#2563EB" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!course) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.navBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={20} color="#0F172A" />
+          </TouchableOpacity>
+          <Text style={styles.navTitle}>Course Details</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 8, textAlign: 'center' }}>
+            कोर्स उपलब्ध नहीं है (Course Not Available)
+          </Text>
+          <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center', marginBottom: 20 }}>
+            यह कोर्स हटा दिया गया है या उपलब्ध नहीं है।
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}
+            onPress={() => router.replace('/courses')}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>सभी कोर्सेस देखें</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

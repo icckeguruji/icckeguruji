@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DirectorModalType = 'none' | 'payment' | 'student' | 'broadcast' | 'sync';
+export type DirectorModalType = 'none' | 'payment' | 'student' | 'broadcast' | 'sync' | 'ai_copilot';
 
 interface DirectorStore {
   activeModal: DirectorModalType;

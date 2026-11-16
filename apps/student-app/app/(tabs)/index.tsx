@@ -28,7 +28,9 @@ import {
   Users,
   CreditCard,
   BookOpen,
+  Bot,
 } from 'lucide-react-native';
+import { DirectorAiModal } from '../../src/components/DirectorAiModal';
 
 const thumbMap: Record<string, any> = {
   'c0000000-0000-0000-0000-000000000010': require('../../assets/thumbnails/batch-b3-class10.jpg'),
@@ -63,6 +65,7 @@ export default function StudentHomeScreen() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsSyncing(true);
@@ -121,6 +124,29 @@ export default function StudentHomeScreen() {
               </View>
               <Text style={styles.adminQuickSub}>All administrative features unified inside app</Text>
             </View>
+
+            {/* Director AI Copilot Assistant Trigger */}
+            <TouchableOpacity
+              style={styles.adminAiBanner}
+              onPress={() => setIsAiModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.adminAiIconBox}>
+                <Bot size={22} color="#2563EB" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.adminAiBannerTitle}>🤖 Director AI Copilot</Text>
+                  <View style={styles.aiLiveBadge}>
+                    <Text style={styles.aiLiveBadgeText}>AUTONOMOUS</Text>
+                  </View>
+                </View>
+                <Text style={styles.adminAiBannerSub}>
+                  बोलकर या लिखकर नए कोर्स, लाइव क्लास व फीस अप्रूवल कराएं
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#2563EB" />
+            </TouchableOpacity>
 
             {/* Quick Metrics */}
             <View style={styles.metricsRow}>
@@ -388,6 +414,15 @@ export default function StudentHomeScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Director AI Copilot Assistant Modal */}
+      <DirectorAiModal
+        visible={isAiModalOpen}
+        onClose={() => {
+          setIsAiModalOpen(false);
+          loadData();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -426,6 +461,49 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#B45309',
     marginTop: 2,
+  },
+  adminAiBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    gap: 10,
+  },
+  adminAiIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  adminAiBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1E3A8A',
+  },
+  aiLiveBadge: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  aiLiveBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  adminAiBannerSub: {
+    fontSize: 10.5,
+    color: '#475569',
+    marginTop: 2,
+    lineHeight: 14,
   },
   metricsRow: {
     flexDirection: 'row',

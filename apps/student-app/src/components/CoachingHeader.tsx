@@ -21,6 +21,8 @@ import {
   LogOut,
   ChevronRight,
   ExternalLink,
+  Bot,
+  Sparkles,
 } from 'lucide-react-native';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNotificationStore } from '../services/notificationService';
@@ -276,6 +278,26 @@ export function CoachingHeader({
                     <Text style={styles.adminHeaderHeading}>👑 DIRECTOR CONTROLS (BADE SIR)</Text>
                     <Text style={styles.adminHeaderSub}>Full administrative management inside app</Text>
                   </View>
+
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      useDirectorStore.getState().openModal('ai_copilot');
+                      router.push('/(tabs)/profile');
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
+                      <Bot size={18} color="#2563EB" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: '#2563EB', fontWeight: '800' }]}>
+                        🤖 Director AI Copilot
+                      </Text>
+                      <Text style={styles.menuItemSubText}>Voice/Text: Add courses, schedule live, approve fees</Text>
+                    </View>
+                    <ChevronRight size={16} color="#2563EB" />
+                  </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.menuItem}
