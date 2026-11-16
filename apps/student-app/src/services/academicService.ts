@@ -1,7 +1,7 @@
 // IDEAL COACHING CENTRE — UNIFIED ACADEMIC HIERARCHY & DATA SERVICE
 // Manages Course -> Subject -> Sub-Subject -> Chapter -> Content (Live, Videos, PDFs)
 // Provides full CRUD operations for Director BADE SIR & Teachers in Android App
-// Supports Supabase cloud persistence + persistent offline local fallback
+// Supports Supabase cloud persistence + persistent offline local fallback with deletion blacklist
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import * as SecureStore from 'expo-secure-store';
@@ -22,6 +22,7 @@ export interface AcademicSubject {
   id: string;
   course_id?: string;
   class_id?: string;
+  class_name?: string;
   name: string;
   name_hi: string;
   code: string;
@@ -35,6 +36,8 @@ export interface AcademicChapter {
   id: string;
   subject_id: string;
   sub_subject_id?: string;
+  course_id?: string;
+  class_name?: string;
   chapter_number: number;
   title: string;
   title_hi: string;
@@ -65,10 +68,12 @@ export interface RecordedLecture {
 // -------------------------------------------------------------
 
 export const initialAcademicSubjects: AcademicSubject[] = [
+  // --- CLASS 10 SUBJECTS ---
   {
     id: 'sub-math-10',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
+    class_name: 'Class 10',
     name: 'Mathematics',
     name_hi: 'गणित',
     code: 'MATH-10',
@@ -80,6 +85,7 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     id: 'sub-science-10',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
+    class_name: 'Class 10',
     name: 'Science (Physics, Chemistry, Biology)',
     name_hi: 'विज्ञान (भौतिकी, रसायन, जीव विज्ञान)',
     code: 'SCI-10',
@@ -117,6 +123,7 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     id: 'sub-sst-10',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
+    class_name: 'Class 10',
     name: 'Social Science',
     name_hi: 'सामाजिक विज्ञान',
     code: 'SST-10',
@@ -158,6 +165,7 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     id: 'sub-hindi-10',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
+    class_name: 'Class 10',
     name: 'Hindi (Godhuli & Varnika)',
     name_hi: 'हिंदी (गोधूलि एवं वर्णिका)',
     code: 'HIN-10',
@@ -169,8 +177,9 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     id: 'sub-sanskrit-10',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
-    name: 'Sanskrit / Urdu',
-    name_hi: 'संस्कृत / उर्दू',
+    class_name: 'Class 10',
+    name: 'Sanskrit / Non-Hindi',
+    name_hi: 'संस्कृत / अहिंदी',
     code: 'SKT-10',
     icon_name: 'languages',
     has_sub_subjects: false,
@@ -180,6 +189,7 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     id: 'sub-english-10',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
+    class_name: 'Class 10',
     name: 'English (Panorama)',
     name_hi: 'अंग्रेज़ी',
     code: 'ENG-10',
@@ -191,6 +201,7 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     id: 'sub-urdu-10',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
+    class_name: 'Class 10',
     name: 'Urdu (Darakhshan & Roshni)',
     name_hi: 'उर्दू (درخشاں اور روشنی)',
     code: 'URD-10',
@@ -198,10 +209,358 @@ export const initialAcademicSubjects: AcademicSubject[] = [
     has_sub_subjects: false,
     display_order: 7,
   },
+
+  // --- CLASS 9 SUBJECTS ---
+  {
+    id: 'sub-math-09',
+    course_id: 'cr000000-0000-0000-0000-000000000002',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    class_name: 'Class 9',
+    name: 'Mathematics',
+    name_hi: 'गणित',
+    code: 'MATH-09',
+    icon_name: 'calculator',
+    has_sub_subjects: false,
+    display_order: 1,
+  },
+  {
+    id: 'sub-science-09',
+    course_id: 'cr000000-0000-0000-0000-000000000002',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    class_name: 'Class 9',
+    name: 'Science (Physics, Chemistry, Biology)',
+    name_hi: 'विज्ञान (भौतिकी, रसायन, जीव विज्ञान)',
+    code: 'SCI-09',
+    icon_name: 'flask',
+    has_sub_subjects: true,
+    sub_subjects: [
+      {
+        id: 'subsub-chem-09',
+        subject_id: 'sub-science-09',
+        name: 'Chemistry',
+        name_hi: 'रसायन विज्ञान',
+        icon_name: 'flask-conical',
+        display_order: 1,
+      },
+      {
+        id: 'subsub-phy-09',
+        subject_id: 'sub-science-09',
+        name: 'Physics',
+        name_hi: 'भौतिक विज्ञान',
+        icon_name: 'zap',
+        display_order: 2,
+      },
+      {
+        id: 'subsub-bio-09',
+        subject_id: 'sub-science-09',
+        name: 'Biology',
+        name_hi: 'जीव विज्ञान',
+        icon_name: 'dna',
+        display_order: 3,
+      },
+    ],
+    display_order: 2,
+  },
+  {
+    id: 'sub-sst-09',
+    course_id: 'cr000000-0000-0000-0000-000000000002',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    class_name: 'Class 9',
+    name: 'Social Science',
+    name_hi: 'सामाजिक विज्ञान',
+    code: 'SST-09',
+    icon_name: 'globe',
+    has_sub_subjects: false,
+    display_order: 3,
+  },
+  {
+    id: 'sub-hindi-09',
+    course_id: 'cr000000-0000-0000-0000-000000000002',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    class_name: 'Class 9',
+    name: 'Hindi',
+    name_hi: 'हिंदी',
+    code: 'HIN-09',
+    icon_name: 'book-open',
+    has_sub_subjects: false,
+    display_order: 4,
+  },
+  {
+    id: 'sub-sanskrit-09',
+    course_id: 'cr000000-0000-0000-0000-000000000002',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    class_name: 'Class 9',
+    name: 'Sanskrit / Urdu',
+    name_hi: 'संस्कृत / उर्दू',
+    code: 'SKT-09',
+    icon_name: 'languages',
+    has_sub_subjects: false,
+    display_order: 5,
+  },
+  {
+    id: 'sub-english-09',
+    course_id: 'cr000000-0000-0000-0000-000000000002',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    class_name: 'Class 9',
+    name: 'English',
+    name_hi: 'अंग्रेज़ी',
+    code: 'ENG-09',
+    icon_name: 'feather',
+    has_sub_subjects: false,
+    display_order: 6,
+  },
+
+  // --- CLASS 8 SUBJECTS ---
+  {
+    id: 'sub-math-08',
+    course_id: 'cr000000-0000-0000-0000-000000000003',
+    class_id: 'c0000000-0000-0000-0000-000000000008',
+    class_name: 'Class 8',
+    name: 'Mathematics',
+    name_hi: 'गणित',
+    code: 'MATH-08',
+    icon_name: 'calculator',
+    has_sub_subjects: false,
+    display_order: 1,
+  },
+  {
+    id: 'sub-science-08',
+    course_id: 'cr000000-0000-0000-0000-000000000003',
+    class_id: 'c0000000-0000-0000-0000-000000000008',
+    class_name: 'Class 8',
+    name: 'Science',
+    name_hi: 'विज्ञान',
+    code: 'SCI-08',
+    icon_name: 'flask',
+    has_sub_subjects: false,
+    display_order: 2,
+  },
+  {
+    id: 'sub-sst-08',
+    course_id: 'cr000000-0000-0000-0000-000000000003',
+    class_id: 'c0000000-0000-0000-0000-000000000008',
+    class_name: 'Class 8',
+    name: 'Social Science',
+    name_hi: 'सामाजिक अध्ययन',
+    code: 'SST-08',
+    icon_name: 'globe',
+    has_sub_subjects: false,
+    display_order: 3,
+  },
+  {
+    id: 'sub-hindi-08',
+    course_id: 'cr000000-0000-0000-0000-000000000003',
+    class_id: 'c0000000-0000-0000-0000-000000000008',
+    class_name: 'Class 8',
+    name: 'Hindi',
+    name_hi: 'हिंदी',
+    code: 'HIN-08',
+    icon_name: 'book-open',
+    has_sub_subjects: false,
+    display_order: 4,
+  },
+  {
+    id: 'sub-english-08',
+    course_id: 'cr000000-0000-0000-0000-000000000003',
+    class_id: 'c0000000-0000-0000-0000-000000000008',
+    class_name: 'Class 8',
+    name: 'English',
+    name_hi: 'अंग्रेज़ी',
+    code: 'ENG-08',
+    icon_name: 'feather',
+    has_sub_subjects: false,
+    display_order: 5,
+  },
+
+  // --- CLASS 7 SUBJECTS ---
+  {
+    id: 'sub-math-07',
+    course_id: 'cr000000-0000-0000-0000-000000000004',
+    class_id: 'c0000000-0000-0000-0000-000000000007',
+    class_name: 'Class 7',
+    name: 'Mathematics',
+    name_hi: 'गणित',
+    code: 'MATH-07',
+    icon_name: 'calculator',
+    has_sub_subjects: false,
+    display_order: 1,
+  },
+  {
+    id: 'sub-science-07',
+    course_id: 'cr000000-0000-0000-0000-000000000004',
+    class_id: 'c0000000-0000-0000-0000-000000000007',
+    class_name: 'Class 7',
+    name: 'Science',
+    name_hi: 'विज्ञान',
+    code: 'SCI-07',
+    icon_name: 'flask',
+    has_sub_subjects: false,
+    display_order: 2,
+  },
+  {
+    id: 'sub-sst-07',
+    course_id: 'cr000000-0000-0000-0000-000000000004',
+    class_id: 'c0000000-0000-0000-0000-000000000007',
+    class_name: 'Class 7',
+    name: 'Social Science',
+    name_hi: 'सामाजिक विज्ञान',
+    code: 'SST-07',
+    icon_name: 'globe',
+    has_sub_subjects: false,
+    display_order: 3,
+  },
+  {
+    id: 'sub-hindi-07',
+    course_id: 'cr000000-0000-0000-0000-000000000004',
+    class_id: 'c0000000-0000-0000-0000-000000000007',
+    class_name: 'Class 7',
+    name: 'Hindi',
+    name_hi: 'हिंदी',
+    code: 'HIN-07',
+    icon_name: 'book-open',
+    has_sub_subjects: false,
+    display_order: 4,
+  },
+  {
+    id: 'sub-english-07',
+    course_id: 'cr000000-0000-0000-0000-000000000004',
+    class_id: 'c0000000-0000-0000-0000-000000000007',
+    class_name: 'Class 7',
+    name: 'English',
+    name_hi: 'अंग्रेज़ी',
+    code: 'ENG-07',
+    icon_name: 'feather',
+    has_sub_subjects: false,
+    display_order: 5,
+  },
+
+  // --- CLASS 11 SUBJECTS ---
+  {
+    id: 'sub-phy-11',
+    class_name: 'Class 11',
+    name: 'Physics',
+    name_hi: 'भौतिक विज्ञान',
+    code: 'PHY-11',
+    icon_name: 'zap',
+    has_sub_subjects: false,
+    display_order: 1,
+  },
+  {
+    id: 'sub-chem-11',
+    class_name: 'Class 11',
+    name: 'Chemistry',
+    name_hi: 'रसायन विज्ञान',
+    code: 'CHEM-11',
+    icon_name: 'flask-conical',
+    has_sub_subjects: false,
+    display_order: 2,
+  },
+  {
+    id: 'sub-math-11',
+    class_name: 'Class 11',
+    name: 'Mathematics',
+    name_hi: 'गणित',
+    code: 'MATH-11',
+    icon_name: 'calculator',
+    has_sub_subjects: false,
+    display_order: 3,
+  },
+  {
+    id: 'sub-bio-11',
+    class_name: 'Class 11',
+    name: 'Biology',
+    name_hi: 'जीव विज्ञान',
+    code: 'BIO-11',
+    icon_name: 'dna',
+    has_sub_subjects: false,
+    display_order: 4,
+  },
+  {
+    id: 'sub-eng-11',
+    class_name: 'Class 11',
+    name: 'English Core',
+    name_hi: 'अंग्रेज़ी',
+    code: 'ENG-11',
+    icon_name: 'feather',
+    has_sub_subjects: false,
+    display_order: 5,
+  },
+  {
+    id: 'sub-hin-11',
+    class_name: 'Class 11',
+    name: 'Hindi / Urdu',
+    name_hi: 'हिंदी / उर्दू',
+    code: 'HIN-11',
+    icon_name: 'book-open',
+    has_sub_subjects: false,
+    display_order: 6,
+  },
+
+  // --- CLASS 12 SUBJECTS ---
+  {
+    id: 'sub-phy-12',
+    class_name: 'Class 12',
+    name: 'Physics',
+    name_hi: 'भौतिक विज्ञान',
+    code: 'PHY-12',
+    icon_name: 'zap',
+    has_sub_subjects: false,
+    display_order: 1,
+  },
+  {
+    id: 'sub-chem-12',
+    class_name: 'Class 12',
+    name: 'Chemistry',
+    name_hi: 'रसायन विज्ञान',
+    code: 'CHEM-12',
+    icon_name: 'flask-conical',
+    has_sub_subjects: false,
+    display_order: 2,
+  },
+  {
+    id: 'sub-math-12',
+    class_name: 'Class 12',
+    name: 'Mathematics',
+    name_hi: 'गणित',
+    code: 'MATH-12',
+    icon_name: 'calculator',
+    has_sub_subjects: false,
+    display_order: 3,
+  },
+  {
+    id: 'sub-bio-12',
+    class_name: 'Class 12',
+    name: 'Biology',
+    name_hi: 'जीव विज्ञान',
+    code: 'BIO-12',
+    icon_name: 'dna',
+    has_sub_subjects: false,
+    display_order: 4,
+  },
+  {
+    id: 'sub-eng-12',
+    class_name: 'Class 12',
+    name: 'English Core',
+    name_hi: 'अंग्रेज़ी',
+    code: 'ENG-12',
+    icon_name: 'feather',
+    has_sub_subjects: false,
+    display_order: 5,
+  },
+  {
+    id: 'sub-hin-12',
+    class_name: 'Class 12',
+    name: 'Hindi / Urdu',
+    name_hi: 'हिंदी / उर्दू',
+    code: 'HIN-12',
+    icon_name: 'book-open',
+    has_sub_subjects: false,
+    display_order: 6,
+  },
 ];
 
 export const initialAcademicChapters: AcademicChapter[] = [
-  // Mathematics Chapters
+  // Class 10 - Mathematics Chapters
   {
     id: 'ch-math-01',
     subject_id: 'sub-math-10',
@@ -247,7 +606,7 @@ export const initialAcademicChapters: AcademicChapter[] = [
     material_count: 4,
   },
 
-  // Science -> Chemistry Chapters
+  // Class 10 - Science -> Chemistry Chapters
   {
     id: 'ch-chem-01',
     subject_id: 'sub-science-10',
@@ -255,7 +614,7 @@ export const initialAcademicChapters: AcademicChapter[] = [
     chapter_number: 1,
     title: 'Chemical Reactions and Equations',
     title_hi: 'रासायनिक अभिक्रियाएँ एवं समीकरण',
-    description: 'Balancing chemical equations, types of reactions, oxidation, reduction, rancidity.',
+    description: 'Balancing chemical equations, combination, decomposition, displacement, redox reactions.',
     live_count: 1,
     lecture_count: 6,
     material_count: 3,
@@ -267,47 +626,23 @@ export const initialAcademicChapters: AcademicChapter[] = [
     chapter_number: 2,
     title: 'Acids, Bases and Salts',
     title_hi: 'अम्ल, क्षारक एवं लवण',
-    description: 'Indicators, pH scale, preparation of Bleaching Powder, Baking Soda, Plaster of Paris.',
+    description: 'pH scale, indicators, bleaching powder, baking soda, washing soda, plaster of paris.',
     live_count: 0,
     lecture_count: 5,
     material_count: 2,
-  },
-  {
-    id: 'ch-chem-03',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-chem-10',
-    chapter_number: 3,
-    title: 'Metals and Non-metals',
-    title_hi: 'धातु एवं अधातु',
-    description: 'Physical & chemical properties, reactivity series, metallurgy, corrosion prevention.',
-    live_count: 0,
-    lecture_count: 5,
-    material_count: 2,
-  },
-  {
-    id: 'ch-chem-04',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-chem-10',
-    chapter_number: 4,
-    title: 'Carbon and its Compounds',
-    title_hi: 'कार्बन एवं उसके यौगिक',
-    description: 'Covalent bonding, homologous series, functional groups, soap & detergents.',
-    live_count: 0,
-    lecture_count: 6,
-    material_count: 3,
   },
 
-  // Science -> Physics Chapters
+  // Class 10 - Science -> Physics Chapters
   {
     id: 'ch-phy-01',
     subject_id: 'sub-science-10',
     sub_subject_id: 'subsub-phy-10',
     chapter_number: 1,
-    title: 'Light - Reflection and Refraction',
-    title_hi: 'प्रकाश - परावर्तन तथा अपवर्तन',
+    title: 'Light: Reflection and Refraction',
+    title_hi: 'प्रकाश: परावर्तन तथा अपवर्तन',
     description: 'Spherical mirrors, mirror formula, magnification, refraction, lens formula.',
     live_count: 1,
-    lecture_count: 6,
+    lecture_count: 8,
     material_count: 3,
   },
   {
@@ -315,27 +650,15 @@ export const initialAcademicChapters: AcademicChapter[] = [
     subject_id: 'sub-science-10',
     sub_subject_id: 'subsub-phy-10',
     chapter_number: 2,
-    title: 'Human Eye and Colourful World',
-    title_hi: 'मानव नेत्र तथा रंगबिरंगा संसार',
-    description: 'Defects of vision (Myopia, Hypermetropia), prism dispersion, atmospheric refraction.',
-    live_count: 0,
-    lecture_count: 4,
-    material_count: 2,
-  },
-  {
-    id: 'ch-phy-03',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-phy-10',
-    chapter_number: 3,
     title: 'Electricity',
     title_hi: 'विद्युत',
-    description: 'Ohm’s law, resistance, series and parallel circuits, Joule’s heating effect.',
+    description: "Ohm's law, resistance in series and parallel, electric power and heating effect.",
     live_count: 0,
-    lecture_count: 5,
+    lecture_count: 7,
     material_count: 3,
   },
 
-  // Science -> Biology Chapters
+  // Class 10 - Science -> Biology Chapters
   {
     id: 'ch-bio-01',
     subject_id: 'sub-science-10',
@@ -343,55 +666,85 @@ export const initialAcademicChapters: AcademicChapter[] = [
     chapter_number: 1,
     title: 'Life Processes',
     title_hi: 'जैव प्रक्रम',
-    description: 'Nutrition (Autotrophic, Heterotrophic), human digestive system, respiration, excretion.',
+    description: 'Nutrition (autotrophic & heterotrophic), respiration, transportation, excretion.',
     live_count: 1,
     lecture_count: 6,
-    material_count: 3,
+    material_count: 4,
   },
+
+  // Class 9 - Mathematics Chapters
   {
-    id: 'ch-bio-02',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-bio-10',
-    chapter_number: 2,
-    title: 'Control and Coordination',
-    title_hi: 'नियंत्रण एवं समन्वय',
-    description: 'Nervous system, neuron structure, reflex arc, human brain, plant hormones.',
-    live_count: 0,
+    id: 'ch-math-09-01',
+    subject_id: 'sub-math-09',
+    chapter_number: 1,
+    title: 'Number Systems',
+    title_hi: 'संख्या पद्धति',
+    description: 'Real numbers, rationalization, laws of exponents for real numbers.',
+    live_count: 1,
     lecture_count: 4,
     material_count: 2,
   },
   {
-    id: 'ch-bio-03',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-bio-10',
-    chapter_number: 3,
-    title: 'How do Organisms Reproduce?',
-    title_hi: 'जीव जनन कैसे करते हैं?',
-    description: 'Asexual reproduction, sexual reproduction in plants & humans, reproductive health.',
+    id: 'ch-math-09-02',
+    subject_id: 'sub-math-09',
+    chapter_number: 2,
+    title: 'Polynomials',
+    title_hi: 'बहुपद',
+    description: 'Definition, coefficients, remainder theorem, factor theorem, algebraic identities.',
     live_count: 0,
     lecture_count: 5,
     material_count: 2,
   },
+
+  // Class 9 - Science Chapters
   {
-    id: 'ch-urdu-01',
-    subject_id: 'sub-urdu-10',
+    id: 'ch-chem-09-01',
+    subject_id: 'sub-science-09',
+    sub_subject_id: 'subsub-chem-09',
     chapter_number: 1,
-    title: 'Hamd (حمد) — Khuda ki Tareef',
-    title_hi: 'हम्द — सबनम कमाली',
-    description: 'Sabnam Kamali ki likhi hui mashhoor Hamd ki tashreeh aur ahem sawalat.',
-    live_count: 0,
-    lecture_count: 3,
+    title: 'Matter in Our Surroundings',
+    title_hi: 'हमारे आस-पास के पदार्थ',
+    description: 'Physical nature of matter, states of matter, evaporation, latent heat.',
+    live_count: 1,
+    lecture_count: 4,
     material_count: 2,
   },
   {
-    id: 'ch-urdu-02',
-    subject_id: 'sub-urdu-10',
-    chapter_number: 2,
-    title: 'Bhabhi Jaan (Afsaana)',
-    title_hi: 'भाभी जान — सोहैल अज़ीमाबादी',
-    description: 'Suhail Azimabadi ka mashhoor afsaana Bhabhi Jaan ka khulasa aur maroosi sawalat.',
+    id: 'ch-phy-09-01',
+    subject_id: 'sub-science-09',
+    sub_subject_id: 'subsub-phy-09',
+    chapter_number: 1,
+    title: 'Motion',
+    title_hi: 'गति',
+    description: 'Distance, displacement, uniform and non-uniform motion, velocity, acceleration.',
     live_count: 0,
-    lecture_count: 4,
+    lecture_count: 6,
+    material_count: 3,
+  },
+
+  // Class 8 - Mathematics Chapters
+  {
+    id: 'ch-math-08-01',
+    subject_id: 'sub-math-08',
+    chapter_number: 1,
+    title: 'Rational Numbers',
+    title_hi: 'परिमेय संख्याएँ',
+    description: 'Properties of rational numbers, representation on number line.',
+    live_count: 1,
+    lecture_count: 3,
+    material_count: 2,
+  },
+
+  // Class 7 - Mathematics Chapters
+  {
+    id: 'ch-math-07-01',
+    subject_id: 'sub-math-07',
+    chapter_number: 1,
+    title: 'Integers',
+    title_hi: 'पूर्णांक',
+    description: 'Addition, subtraction, multiplication and division of integers.',
+    live_count: 1,
+    lecture_count: 3,
     material_count: 2,
   },
 ];
@@ -426,20 +779,6 @@ export const initialRecordedLectures: RecordedLecture[] = [
     lecture_order: 2,
   },
   {
-    id: 'lec-ch1-03',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-chem-10',
-    chapter_id: 'ch-chem-01',
-    title: 'Lec 03: Displacement, Double Displacement & Redox Reactions',
-    title_hi: 'लेक्चर 03: विस्थापन, द्विविस्थापन एवं रेडॉक्स अभिक्रिया',
-    description: 'Understanding oxidation-reduction in everyday life with director guidance.',
-    youtube_video_id: 'jfKfPfyJRdk',
-    duration_seconds: 2750,
-    is_free_preview: false,
-    lecture_order: 3,
-  },
-  {
     id: 'lec-math-01',
     course_id: 'cr000000-0000-0000-0000-000000000001',
     subject_id: 'sub-math-10',
@@ -463,7 +802,7 @@ export const initialChapterLiveClasses: LiveClass[] = [
     title_hi: 'लाइव डाउट सेशन: रासायनिक अभिक्रियाएँ',
     description: 'Live interactive doubt session with Director BADE SIR.',
     youtube_video_id: 'jfKfPfyJRdk',
-    scheduled_at: new Date(Date.now() + 1000 * 60 * 30).toISOString(), // starts in 30 mins
+    scheduled_at: new Date(Date.now() + 1000 * 60 * 30).toISOString(),
     duration_minutes: 60,
     status: 'live',
     created_at: new Date().toISOString(),
@@ -474,7 +813,7 @@ export const initialChapterLiveClasses: LiveClass[] = [
     batch_id: 'ba000000-0000-0000-0000-000000000001',
     title: '🔴 Real Numbers: Board Model Papers & Rapid Solving',
     title_hi: 'वास्तविक संख्याएं: बोर्ड मॉडल पेपर लाइव सॉल्यूशन',
-    description: 'Class 10 Live Sunday Special with BADE SIR.',
+    description: 'Class 10 Live Special with BADE SIR.',
     youtube_video_id: 'dQw4w9WgXcQ',
     scheduled_at: new Date(Date.now() + 1000 * 60 * 180).toISOString(),
     duration_minutes: 90,
@@ -496,23 +835,6 @@ export const initialChapterStudyMaterials: StudyMaterial[] = [
     file_path: 'bseb/class10/science/ch01_chemical_reactions_notes.pdf',
     file_size_bytes: 2800000,
     material_type: 'chapter_notes',
-    is_free: true,
-    version: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'pdf-ch1-02',
-    board_id: 'b0000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
-    subject_id: 'sub-science-10',
-    chapter_id: 'ch-chem-01',
-    title: 'Ch 01: All Balanced Equations Formula Cheat Sheet',
-    title_hi: 'पाठ 01: समस्त संतुलित रासायनिक अभिक्रियाएं फॉर्मूला शीट',
-    description: 'One page quick reference sheet for matric exam revision.',
-    file_path: 'bseb/class10/science/ch01_chemical_reactions_formula.pdf',
-    file_size_bytes: 1200000,
-    material_type: 'formula_sheet',
     is_free: true,
     version: 1,
     created_at: new Date().toISOString(),
@@ -548,46 +870,103 @@ class AcademicRepository {
   private lectures: RecordedLecture[] = initialRecordedLectures;
   private liveClasses: LiveClass[] = initialChapterLiveClasses;
   private materials: StudyMaterial[] = initialChapterStudyMaterials;
+  private deletedIds: Set<string> = new Set();
+  private isLoaded: boolean = false;
 
   constructor() {
-    this.loadFromStorage();
+    this.init();
+  }
+
+  private async init() {
+    await this.loadFromStorage();
+    this.syncFromCloud().catch(() => {});
   }
 
   private async loadFromStorage() {
     try {
+      let rawDeleted = null;
+      let sCourses = null, sSubs = null, sChaps = null, sLecs = null, sLive = null, sMats = null;
+
       if (Platform.OS !== 'web') {
-        const storedCourses = await SecureStore.getItemAsync('icc_courses');
-        if (storedCourses) this.courses = JSON.parse(storedCourses);
-
-        const storedSubs = await SecureStore.getItemAsync('icc_academic_subjects');
-        if (storedSubs) this.subjects = JSON.parse(storedSubs);
-
-        const storedChaps = await SecureStore.getItemAsync('icc_academic_chapters');
-        if (storedChaps) this.chapters = JSON.parse(storedChaps);
-
-        const storedLecs = await SecureStore.getItemAsync('icc_recorded_lectures');
-        if (storedLecs) this.lectures = JSON.parse(storedLecs);
-
-        const storedLive = await SecureStore.getItemAsync('icc_live_classes');
-        if (storedLive) this.liveClasses = JSON.parse(storedLive);
-
-        const storedMats = await SecureStore.getItemAsync('icc_study_materials');
-        if (storedMats) this.materials = JSON.parse(storedMats);
+        rawDeleted = await SecureStore.getItemAsync('icc_deleted_ids');
+        sCourses = await SecureStore.getItemAsync('icc_courses');
+        sSubs = await SecureStore.getItemAsync('icc_academic_subjects');
+        sChaps = await SecureStore.getItemAsync('icc_academic_chapters');
+        sLecs = await SecureStore.getItemAsync('icc_recorded_lectures');
+        sLive = await SecureStore.getItemAsync('icc_live_classes');
+        sMats = await SecureStore.getItemAsync('icc_study_materials');
       } else if (typeof window !== 'undefined') {
-        const sCourses = localStorage.getItem('icc_courses');
-        if (sCourses) this.courses = JSON.parse(sCourses);
-        const sSubs = localStorage.getItem('icc_academic_subjects');
-        if (sSubs) this.subjects = JSON.parse(sSubs);
-        const sChaps = localStorage.getItem('icc_academic_chapters');
-        if (sChaps) this.chapters = JSON.parse(sChaps);
-        const sLecs = localStorage.getItem('icc_recorded_lectures');
-        if (sLecs) this.lectures = JSON.parse(sLecs);
-        const sLive = localStorage.getItem('icc_live_classes');
-        if (sLive) this.liveClasses = JSON.parse(sLive);
-        const sMats = localStorage.getItem('icc_study_materials');
-        if (sMats) this.materials = JSON.parse(sMats);
+        rawDeleted = localStorage.getItem('icc_deleted_ids');
+        sCourses = localStorage.getItem('icc_courses');
+        sSubs = localStorage.getItem('icc_academic_subjects');
+        sChaps = localStorage.getItem('icc_academic_chapters');
+        sLecs = localStorage.getItem('icc_recorded_lectures');
+        sLive = localStorage.getItem('icc_live_classes');
+        sMats = localStorage.getItem('icc_study_materials');
       }
-    } catch {}
+
+      if (rawDeleted) {
+        const arr = JSON.parse(rawDeleted);
+        if (Array.isArray(arr)) this.deletedIds = new Set(arr);
+      }
+
+      if (sCourses) this.courses = JSON.parse(sCourses);
+      if (sSubs) this.subjects = JSON.parse(sSubs);
+      if (sChaps) this.chapters = JSON.parse(sChaps);
+      if (sLecs) this.lectures = JSON.parse(sLecs);
+      if (sLive) this.liveClasses = JSON.parse(sLive);
+      if (sMats) this.materials = JSON.parse(sMats);
+
+      // Filter out any items in deletedIds
+      this.courses = this.courses.filter((c) => !this.deletedIds.has(c.id));
+      this.subjects = this.subjects.filter((s) => !this.deletedIds.has(s.id));
+      this.chapters = this.chapters.filter((ch) => !this.deletedIds.has(ch.id));
+      this.lectures = this.lectures.filter((l) => !this.deletedIds.has(l.id));
+      this.liveClasses = this.liveClasses.filter((lc) => !this.deletedIds.has(lc.id));
+      this.materials = this.materials.filter((m) => !this.deletedIds.has(m.id));
+
+      this.isLoaded = true;
+    } catch {
+      this.isLoaded = true;
+    }
+  }
+
+  private async syncFromCloud() {
+    if (!isSupabaseConfigured) return;
+    try {
+      // 1. Fetch live courses
+      const { data: remoteCourses } = await supabase.from('courses').select('*').order('created_at', { ascending: false });
+      if (remoteCourses && remoteCourses.length > 0) {
+        const valid = remoteCourses.filter((c) => !this.deletedIds.has(c.id));
+        if (valid.length > 0) {
+          this.courses = valid;
+          await this.persist('icc_courses', this.courses);
+        }
+      }
+
+      // 2. Fetch live subjects
+      const { data: remoteSubs } = await supabase.from('subjects').select('*');
+      if (remoteSubs && remoteSubs.length > 0) {
+        const validSubs = remoteSubs.filter((s) => !this.deletedIds.has(s.id));
+        // Merge with existing
+        const existingIds = new Set(validSubs.map((s) => s.id));
+        const mergedSubs = [...validSubs, ...this.subjects.filter((s) => !existingIds.has(s.id) && !this.deletedIds.has(s.id))];
+        this.subjects = mergedSubs;
+        await this.persist('icc_academic_subjects', this.subjects);
+      }
+
+      // 3. Fetch live chapters
+      const { data: remoteChaps } = await supabase.from('chapters').select('*');
+      if (remoteChaps && remoteChaps.length > 0) {
+        const validChaps = remoteChaps.filter((c) => !this.deletedIds.has(c.id));
+        const existingIds = new Set(validChaps.map((c) => c.id));
+        const mergedChaps = [...validChaps, ...this.chapters.filter((c) => !existingIds.has(c.id) && !this.deletedIds.has(c.id))];
+        this.chapters = mergedChaps;
+        await this.persist('icc_academic_chapters', this.chapters);
+      }
+    } catch (e) {
+      console.warn('Sync from cloud error:', e);
+    }
   }
 
   private async persist(key: string, data: any) {
@@ -601,22 +980,50 @@ class AcademicRepository {
     } catch {}
   }
 
+  private async markAsDeleted(id: string) {
+    this.deletedIds.add(id);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+  }
+
   getClasses(): string[] {
     return ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
   }
 
+  getClassNameFromCourse(course: Partial<Course>): string {
+    if ((course as any).class_name) return (course as any).class_name;
+    const t = (course.title || '').toLowerCase();
+    const d = (course.description || '').toLowerCase();
+    const tag = (course.tagline || '').toLowerCase();
+    const combined = `${t} ${d} ${tag}`;
+
+    if (combined.includes('10th') || combined.includes('class 10') || combined.includes('matric')) return 'Class 10';
+    if (combined.includes('9th') || combined.includes('class 9')) return 'Class 9';
+    if (combined.includes('8th') || combined.includes('class 8')) return 'Class 8';
+    if (combined.includes('7th') || combined.includes('class 7')) return 'Class 7';
+    if (combined.includes('11th') || combined.includes('class 11')) return 'Class 11';
+    if (combined.includes('12th') || combined.includes('class 12') || combined.includes('inter')) return 'Class 12';
+
+    if (course.class_id?.endsWith('10')) return 'Class 10';
+    if (course.class_id?.endsWith('09')) return 'Class 9';
+    if (course.class_id?.endsWith('08')) return 'Class 8';
+    if (course.class_id?.endsWith('07')) return 'Class 7';
+
+    return 'Class 10';
+  }
+
   // --- COURSES ---
   async getCourses(): Promise<Course[]> {
-    return this.courses;
+    return this.courses.filter((c) => !this.deletedIds.has(c.id));
   }
 
   async getCourseById(id: string): Promise<Course | undefined> {
+    if (this.deletedIds.has(id)) return undefined;
     return this.courses.find((c) => c.id === id);
   }
 
   async addCourse(data: Partial<Course>): Promise<Course> {
     const newCourse: Course = {
-      id: `cr-${Date.now()}`,
+      id: `cr000000-0000-0000-0000-${Date.now().toString(16).padStart(12, '0')}`,
       title: data.title || 'New Target Course',
       title_hi: data.title_hi || data.title || 'नया कोर्स',
       tagline: data.tagline || 'Complete Board Exam Syllabus Mastery with BADE SIR',
@@ -644,13 +1051,14 @@ class AcademicRepository {
       lecture_count: 0,
       material_count: 0,
     };
+    if ((data as any).class_name) (newCourse as any).class_name = (data as any).class_name;
+
     this.courses.unshift(newCourse);
     await this.persist('icc_courses', this.courses);
 
-    // Sync with Supabase if configured
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('courses').insert({
+        await supabase.from('courses').upsert({
           id: newCourse.id,
           title: newCourse.title,
           title_hi: newCourse.title_hi,
@@ -660,6 +1068,7 @@ class AcademicRepository {
           thumbnail_url: newCourse.thumbnail_url,
           board_id: newCourse.board_id,
           class_id: newCourse.class_id,
+          class_name: (newCourse as any).class_name || this.getClassNameFromCourse(newCourse),
           is_free: newCourse.is_free,
           price: newCourse.price,
           discount_price: newCourse.discount_price,
@@ -701,6 +1110,7 @@ class AcademicRepository {
               validity_days: updates.validity_days,
               start_date: updates.start_date,
               features: updates.features,
+              class_name: (updates as any).class_name,
               updated_at: new Date().toISOString(),
             })
             .eq('id', id);
@@ -714,6 +1124,7 @@ class AcademicRepository {
   }
 
   async deleteCourse(id: string): Promise<void> {
+    await this.markAsDeleted(id);
     this.courses = this.courses.filter((c) => c.id !== id);
     await this.persist('icc_courses', this.courses);
 
@@ -726,17 +1137,48 @@ class AcademicRepository {
     }
   }
 
-  // --- SUBJECTS ---
-  async getSubjects(courseId?: string): Promise<AcademicSubject[]> {
-    return this.subjects;
+  // --- SUBJECTS (Class Scoped) ---
+  async getSubjects(courseId?: string, className?: string): Promise<AcademicSubject[]> {
+    let list = this.subjects.filter((s) => !this.deletedIds.has(s.id));
+
+    if (className) {
+      const targetClass = className.trim().toLowerCase();
+      list = list.filter((s) => {
+        const sClass = (s.class_name || '').toLowerCase();
+        if (sClass && sClass === targetClass) return true;
+        if (targetClass.includes('10') && (s.code.includes('10') || sClass.includes('10'))) return true;
+        if (targetClass.includes('9') && (s.code.includes('09') || s.code.includes('9') || sClass.includes('9'))) return true;
+        if (targetClass.includes('8') && (s.code.includes('08') || s.code.includes('8') || sClass.includes('8'))) return true;
+        if (targetClass.includes('7') && (s.code.includes('07') || s.code.includes('7') || sClass.includes('7'))) return true;
+        if (targetClass.includes('11') && (s.code.includes('11') || sClass.includes('11'))) return true;
+        if (targetClass.includes('12') && (s.code.includes('12') || sClass.includes('12'))) return true;
+        return false;
+      });
+      return list;
+    }
+
+    if (courseId) {
+      const course = this.courses.find((c) => c.id === courseId);
+      if (course) {
+        const derivedClass = this.getClassNameFromCourse(course);
+        return this.getSubjects(undefined, derivedClass);
+      }
+      const courseSpecific = list.filter((s) => s.course_id === courseId);
+      if (courseSpecific.length > 0) return courseSpecific;
+    }
+
+    return list;
   }
 
   async addSubject(sub: Partial<AcademicSubject>): Promise<AcademicSubject> {
     const newSub: AcademicSubject = {
       id: `sub-${Date.now()}`,
+      course_id: sub.course_id,
+      class_id: sub.class_id,
+      class_name: sub.class_name || 'Class 10',
       name: sub.name || 'New Subject',
       name_hi: sub.name_hi || sub.name || 'नया विषय',
-      code: sub.code || `SUB-${this.subjects.length + 1}`,
+      code: sub.code || `SUB-${Date.now().toString().slice(-4)}`,
       icon_name: sub.icon_name || 'book-open',
       has_sub_subjects: Boolean(sub.has_sub_subjects),
       sub_subjects: sub.sub_subjects || [],
@@ -744,12 +1186,39 @@ class AcademicRepository {
     };
     this.subjects.push(newSub);
     await this.persist('icc_academic_subjects', this.subjects);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('subjects').upsert({
+          id: newSub.id,
+          name: newSub.name,
+          name_hi: newSub.name_hi,
+          code: newSub.code,
+          icon_name: newSub.icon_name,
+          class_name: newSub.class_name,
+          class_id: newSub.class_id,
+          display_order: newSub.display_order,
+        });
+      }
+    } catch (e) {
+      console.warn('Supabase addSubject error:', e);
+    }
+
     return newSub;
   }
 
   async deleteSubject(id: string): Promise<void> {
+    await this.markAsDeleted(id);
     this.subjects = this.subjects.filter((s) => s.id !== id);
     await this.persist('icc_academic_subjects', this.subjects);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('subjects').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase deleteSubject error:', e);
+    }
   }
 
   // --- SUB-SUBJECTS ---
@@ -773,9 +1242,10 @@ class AcademicRepository {
     return newSubSub;
   }
 
-  // --- CHAPTERS ---
+  // --- CHAPTERS (Subject Scoped) ---
   async getChapters(subjectId: string, subSubjectId?: string): Promise<AcademicChapter[]> {
     return this.chapters.filter((ch) => {
+      if (this.deletedIds.has(ch.id)) return false;
       if (ch.subject_id !== subjectId) return false;
       if (subSubjectId) return ch.sub_subject_id === subSubjectId;
       return true;
@@ -787,6 +1257,8 @@ class AcademicRepository {
       id: `ch-${Date.now()}`,
       subject_id: data.subject_id!,
       sub_subject_id: data.sub_subject_id,
+      course_id: data.course_id,
+      class_name: data.class_name,
       chapter_number: data.chapter_number || this.chapters.length + 1,
       title: data.title || 'New Chapter',
       title_hi: data.title_hi || data.title || 'नया पाठ',
@@ -797,17 +1269,42 @@ class AcademicRepository {
     };
     this.chapters.push(newChapter);
     await this.persist('icc_academic_chapters', this.chapters);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('chapters').upsert({
+          id: newChapter.id,
+          subject_id: newChapter.subject_id,
+          chapter_number: newChapter.chapter_number,
+          title: newChapter.title,
+          title_hi: newChapter.title_hi,
+          description: newChapter.description,
+        });
+      }
+    } catch (e) {
+      console.warn('Supabase addChapter error:', e);
+    }
+
     return newChapter;
   }
 
   async deleteChapter(id: string): Promise<void> {
+    await this.markAsDeleted(id);
     this.chapters = this.chapters.filter((c) => c.id !== id);
     await this.persist('icc_academic_chapters', this.chapters);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('chapters').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase deleteChapter error:', e);
+    }
   }
 
   // --- CHAPTER CONTENT: RECORDED VIDEOS ---
   async getRecordedLectures(chapterId: string): Promise<RecordedLecture[]> {
-    return this.lectures.filter((l) => l.chapter_id === chapterId);
+    return this.lectures.filter((l) => !this.deletedIds.has(l.id) && l.chapter_id === chapterId);
   }
 
   async addRecordedLecture(data: Partial<RecordedLecture>): Promise<RecordedLecture> {
@@ -827,29 +1324,57 @@ class AcademicRepository {
     this.lectures.push(newLec);
     await this.persist('icc_recorded_lectures', this.lectures);
 
-    // Update chapter lecture count
     const ch = this.chapters.find((c) => c.id === data.chapter_id);
     if (ch) {
       ch.lecture_count = (ch.lecture_count || 0) + 1;
       await this.persist('icc_academic_chapters', this.chapters);
     }
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('recorded_lectures').upsert({
+          id: newLec.id,
+          course_id: newLec.course_id,
+          subject_id: newLec.subject_id,
+          chapter_id: newLec.chapter_id,
+          title: newLec.title,
+          description: newLec.description,
+          video_url: newLec.youtube_video_id,
+          duration_seconds: newLec.duration_seconds,
+          is_free_preview: newLec.is_free_preview,
+        });
+      }
+    } catch (e) {
+      console.warn('Supabase addRecordedLecture error:', e);
+    }
+
     return newLec;
   }
 
   async deleteRecordedLecture(id: string): Promise<void> {
+    await this.markAsDeleted(id);
     this.lectures = this.lectures.filter((l) => l.id !== id);
     await this.persist('icc_recorded_lectures', this.lectures);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('recorded_lectures').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase deleteRecordedLecture error:', e);
+    }
   }
 
   // --- CHAPTER CONTENT: LIVE CLASSES ---
   async getLiveClasses(chapterId?: string): Promise<LiveClass[]> {
+    const list = this.liveClasses.filter((l) => !this.deletedIds.has(l.id));
     if (chapterId) {
-      return this.liveClasses.filter((l) => (l as any).chapter_id === chapterId);
+      return list.filter((l) => (l as any).chapter_id === chapterId);
     }
-    return this.liveClasses;
+    return list;
   }
 
-  async scheduleLiveClass(data: Partial<LiveClass> & { chapter_id?: string; subject_id?: string }): Promise<LiveClass> {
+  async scheduleLiveClass(data: Partial<LiveClass> & { chapter_id?: string; subject_id?: string; class_name?: string }): Promise<LiveClass> {
     const newLive: LiveClass = {
       id: `live-${Date.now()}`,
       course_id: data.course_id || 'cr000000-0000-0000-0000-000000000001',
@@ -865,9 +1390,29 @@ class AcademicRepository {
     };
     if (data.chapter_id) (newLive as any).chapter_id = data.chapter_id;
     if (data.subject_id) (newLive as any).subject_id = data.subject_id;
+    if (data.class_name) (newLive as any).class_name = data.class_name;
 
     this.liveClasses.unshift(newLive);
     await this.persist('icc_live_classes', this.liveClasses);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('live_classes').upsert({
+          id: newLive.id,
+          course_id: newLive.course_id,
+          batch_id: newLive.batch_id,
+          title: newLive.title,
+          description: newLive.description,
+          scheduled_at: newLive.scheduled_at,
+          duration_minutes: newLive.duration_minutes,
+          status: newLive.status,
+          created_at: newLive.created_at,
+        });
+      }
+    } catch (e) {
+      console.warn('Supabase scheduleLiveClass error:', e);
+    }
+
     return newLive;
   }
 
@@ -876,18 +1421,41 @@ class AcademicRepository {
     if (item) {
       item.status = status;
       await this.persist('icc_live_classes', this.liveClasses);
+
+      try {
+        if (isSupabaseConfigured) {
+          await supabase.from('live_classes').update({ status }).eq('id', id);
+        }
+      } catch (e) {
+        console.warn('Supabase updateLiveClassStatus error:', e);
+      }
+    }
+  }
+
+  async deleteLiveClass(id: string): Promise<void> {
+    await this.markAsDeleted(id);
+    this.liveClasses = this.liveClasses.filter((l) => l.id !== id);
+    await this.persist('icc_live_classes', this.liveClasses);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('live_classes').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase deleteLiveClass error:', e);
     }
   }
 
   // --- CHAPTER CONTENT: STUDY MATERIALS PDF ---
   async getStudyMaterials(chapterId?: string): Promise<StudyMaterial[]> {
+    const list = this.materials.filter((m) => !this.deletedIds.has(m.id));
     if (chapterId) {
-      return this.materials.filter((m) => m.chapter_id === chapterId);
+      return list.filter((m) => m.chapter_id === chapterId);
     }
-    return this.materials;
+    return list;
   }
 
-  async addStudyMaterial(data: Partial<StudyMaterial>): Promise<StudyMaterial> {
+  async addStudyMaterial(data: Partial<StudyMaterial> & { class_name?: string }): Promise<StudyMaterial> {
     const newMat: StudyMaterial = {
       id: `mat-${Date.now()}`,
       board_id: data.board_id || 'b0000000-0000-0000-0000-000000000001',
@@ -905,21 +1473,53 @@ class AcademicRepository {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    if ((data as any).class_name) (newMat as any).class_name = (data as any).class_name;
+
     this.materials.unshift(newMat);
     await this.persist('icc_study_materials', this.materials);
 
-    // Update chapter material count
     const ch = this.chapters.find((c) => c.id === data.chapter_id);
     if (ch) {
       ch.material_count = (ch.material_count || 0) + 1;
       await this.persist('icc_academic_chapters', this.chapters);
     }
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('study_materials').upsert({
+          id: newMat.id,
+          title: newMat.title,
+          description: newMat.description,
+          file_path: newMat.file_path,
+          file_size_bytes: newMat.file_size_bytes,
+          material_type: newMat.material_type,
+          is_free: newMat.is_free,
+          board_id: newMat.board_id,
+          class_id: newMat.class_id,
+          subject_id: newMat.subject_id,
+          chapter_id: newMat.chapter_id,
+          version: newMat.version,
+        });
+      }
+    } catch (e) {
+      console.warn('Supabase addStudyMaterial error:', e);
+    }
+
     return newMat;
   }
 
   async deleteStudyMaterial(id: string): Promise<void> {
+    await this.markAsDeleted(id);
     this.materials = this.materials.filter((m) => m.id !== id);
     await this.persist('icc_study_materials', this.materials);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('study_materials').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase deleteStudyMaterial error:', e);
+    }
   }
 }
 

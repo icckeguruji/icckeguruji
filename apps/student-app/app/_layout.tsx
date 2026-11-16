@@ -43,8 +43,8 @@ const customDarkTheme = {
 export default function RootLayout() {
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
 
-  // Anti-Piracy DRM: Block Screenshots & Screen Recording globally across Android app
-  ScreenCapture.usePreventScreenCapture();
+  // Screen capture restriction temporarily disabled per user request for debugging & screenshots
+  // ScreenCapture.usePreventScreenCapture();
 
   useEffect(() => {
     initLocalDatabase();

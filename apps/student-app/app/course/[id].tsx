@@ -73,8 +73,10 @@ export default function CourseDetailsScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const course: Course =
-    initialCourses.find((c) => c.id === id) || initialCourses[0];
+  const [currentCourse, setCurrentCourse] = useState<Course>(
+    () => initialCourses.find((c) => c.id === id) || initialCourses[0]
+  );
+  const course = currentCourse;
 
   // Hierarchy Navigation States:
   // 'subjects' -> 'sub_subjects' (if applicable) -> 'chapters' -> 'chapter_content'
@@ -115,7 +117,13 @@ export default function CourseDetailsScreen() {
   const loadAcademicData = async () => {
     setLoading(true);
     try {
-      const subs = await academicService.getSubjects(id);
+      const found =
+        (await academicService.getCourseById(id)) ||
+        initialCourses.find((c) => c.id === id) ||
+        initialCourses[0];
+      setCurrentCourse(found);
+      const className = academicService.getClassNameFromCourse(found);
+      const subs = await academicService.getSubjects(id, className);
       setSubjects(subs);
     } catch (e) {
       console.warn('Error loading academic data:', e);
@@ -166,8 +174,10 @@ export default function CourseDetailsScreen() {
       Alert.alert('Required', 'Please enter subject name');
       return;
     }
+    const className = academicService.getClassNameFromCourse(currentCourse);
     const newSub = await academicService.addSubject({
-      course_id: course.id,
+      course_id: currentCourse.id,
+      class_name: className,
       name: formTitle.trim(),
       name_hi: formTitleHi.trim() || formTitle.trim(),
       has_sub_subjects: false,
@@ -216,9 +226,12 @@ export default function CourseDetailsScreen() {
       Alert.alert('Required', 'Please enter chapter title');
       return;
     }
+    const className = academicService.getClassNameFromCourse(currentCourse);
     const newChap = await academicService.addChapter({
       subject_id: selectedSubject.id,
       sub_subject_id: selectedSubSubject?.id,
+      course_id: currentCourse.id,
+      class_name: className,
       chapter_number: chapters.length + 1,
       title: formTitle.trim(),
       title_hi: formTitleHi.trim() || formTitle.trim(),
@@ -288,10 +301,12 @@ export default function CourseDetailsScreen() {
       cleanVideoId = cleanVideoId.split('youtu.be/')[1]?.split('?')[0] || cleanVideoId;
     }
 
+    const className = academicService.getClassNameFromCourse(currentCourse);
     const newLive = await academicService.scheduleLiveClass({
-      course_id: course.id,
+      course_id: currentCourse.id,
       chapter_id: selectedChapter.id,
       subject_id: selectedSubject?.id,
+      class_name: className,
       title: formTitle.trim(),
       title_hi: formTitleHi.trim() || formTitle.trim(),
       youtube_video_id: cleanVideoId,
@@ -328,9 +343,11 @@ export default function CourseDetailsScreen() {
       Alert.alert('Required', 'Please enter notes title');
       return;
     }
+    const className = academicService.getClassNameFromCourse(currentCourse);
     const newMat = await academicService.addStudyMaterial({
       subject_id: selectedSubject?.id,
       chapter_id: selectedChapter.id,
+      class_name: className,
       title: formTitle.trim(),
       title_hi: formTitleHi.trim() || formTitle.trim(),
       description: formDesc.trim(),

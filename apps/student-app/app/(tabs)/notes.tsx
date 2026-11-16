@@ -115,6 +115,27 @@ export default function StudentNotesScreen() {
     }
   };
 
+  const handleSelectClass = async (cls: string) => {
+    setSelectedClass(cls);
+    const subs = await academicService.getSubjects(undefined, cls);
+    setSubjectsList(subs);
+    if (subs.length > 0) {
+      setSelectedSubject(subs[0]);
+      if (subs[0].has_sub_subjects && subs[0].sub_subjects && subs[0].sub_subjects.length > 0) {
+        setSelectedSubSubject(subs[0].sub_subjects[0]);
+        loadChaptersForSubject(subs[0], subs[0].sub_subjects[0]);
+      } else {
+        setSelectedSubSubject(null);
+        loadChaptersForSubject(subs[0], null);
+      }
+    } else {
+      setSelectedSubject(null);
+      setSelectedSubSubject(null);
+      setChaptersList([]);
+      setSelectedChapter(null);
+    }
+  };
+
   const handleSelectSubject = (sub: AcademicSubject) => {
     setSelectedSubject(sub);
     if (sub.has_sub_subjects && sub.sub_subjects && sub.sub_subjects.length > 0) {
@@ -137,7 +158,7 @@ export default function StudentNotesScreen() {
     try {
       const [data, subs] = await Promise.all([
         academicService.getStudyMaterials(),
-        academicService.getSubjects(),
+        academicService.getSubjects(undefined, selectedClass),
       ]);
 
       if (data && data.length > 0) {
@@ -286,6 +307,9 @@ export default function StudentNotesScreen() {
         file_size_bytes: pickedFile?.size || 2400000,
         material_type: noteForm.material_type,
         is_free: noteForm.is_free,
+        class_name: selectedClass,
+        subject_id: selectedSubject?.id,
+        chapter_id: selectedChapter?.id,
       });
 
       setIsUploadModalOpen(false);
@@ -585,7 +609,7 @@ export default function StudentNotesScreen() {
                         styles.dropdownPill,
                         selectedClass === cls && styles.dropdownPillActive,
                       ]}
-                      onPress={() => setSelectedClass(cls)}
+                      onPress={() => handleSelectClass(cls)}
                     >
                       <Text
                         style={[

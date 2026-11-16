@@ -375,7 +375,7 @@ export default function StudentCoursesScreen() {
                 <Image
                   source={thumbMap[course.id] || { uri: course.thumbnail_url }}
                   style={styles.thumbnail}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
                 <View style={styles.tagBadge}>
                   <Text style={styles.tagBadgeText}>
@@ -596,7 +596,7 @@ export default function StudentCoursesScreen() {
                   <Image
                     source={{ uri: courseForm.thumbnail_url }}
                     style={styles.previewImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                   <TouchableOpacity
                     style={styles.clearThumbBtn}
@@ -754,10 +754,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   imageBox: {
-    height: 150,
     width: '100%',
-    backgroundColor: '#1E293B',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#0F172A',
     position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   thumbnail: {
     width: '100%',
@@ -998,11 +1001,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   thumbnailPreviewContainer: {
-    height: 120,
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#0F172A',
     borderRadius: 8,
     overflow: 'hidden',
     position: 'relative',
     marginVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   previewImage: {
     width: '100%',

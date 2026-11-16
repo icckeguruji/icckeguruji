@@ -52,10 +52,7 @@ export const DataService = {
         material_count: 24 + (idx * 3),
       }));
 
-      // Combine with local courses if fewer than local so student sees all batches
-      const existingIds = new Set(liveCourses.map((c) => c.id));
-      const fallbacksToAdd = initialCourses.filter((c) => !existingIds.has(c.id));
-      return [...liveCourses, ...fallbacksToAdd];
+      return liveCourses;
     } catch {
       return initialCourses;
     }
@@ -130,10 +127,8 @@ export const DataService = {
         updated_at: row.updated_at || new Date().toISOString(),
       }));
 
-      // Combine with initial list to ensure student gets comprehensive study notes
-      const existingIds = new Set(materials.map((m) => m.id));
-      const fallbacksToAdd = initialStudyMaterials.filter((m) => !existingIds.has(m.id));
-      return [...materials, ...fallbacksToAdd];
+      // Return live materials from Supabase
+      return materials;
     } catch {
       return initialStudyMaterials;
     }

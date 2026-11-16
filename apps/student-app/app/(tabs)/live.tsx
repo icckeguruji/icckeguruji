@@ -119,7 +119,7 @@ export default function StudentLiveScreen() {
     try {
       const [lives, subs] = await Promise.all([
         academicService.getLiveClasses(),
-        academicService.getSubjects(),
+        academicService.getSubjects(undefined, selectedClass),
       ]);
       if (lives && lives.length > 0) {
         setLiveClasses(lives);
@@ -162,6 +162,27 @@ export default function StudentLiveScreen() {
     if (chaps.length > 0) {
       setSelectedChapter(chaps[0]);
     } else {
+      setSelectedChapter(null);
+    }
+  };
+
+  const handleSelectClass = async (cls: string) => {
+    setSelectedClass(cls);
+    const subs = await academicService.getSubjects(undefined, cls);
+    setSubjectsList(subs);
+    if (subs.length > 0) {
+      setSelectedSubject(subs[0]);
+      if (subs[0].has_sub_subjects && subs[0].sub_subjects && subs[0].sub_subjects.length > 0) {
+        setSelectedSubSubject(subs[0].sub_subjects[0]);
+        loadChaptersForSubject(subs[0], subs[0].sub_subjects[0]);
+      } else {
+        setSelectedSubSubject(null);
+        loadChaptersForSubject(subs[0], null);
+      }
+    } else {
+      setSelectedSubject(null);
+      setSelectedSubSubject(null);
+      setChaptersList([]);
       setSelectedChapter(null);
     }
   };
@@ -246,6 +267,7 @@ export default function StudentLiveScreen() {
         scheduled_at: liveForm.scheduled_at,
         chapter_id: selectedChapter?.id,
         subject_id: selectedSubject?.id,
+        class_name: selectedClass,
       });
 
       setSelectedStream(newLive);
@@ -625,7 +647,7 @@ export default function StudentLiveScreen() {
                         styles.dropdownPill,
                         selectedClass === cls && styles.dropdownPillActive,
                       ]}
-                      onPress={() => setSelectedClass(cls)}
+                      onPress={() => handleSelectClass(cls)}
                     >
                       <Text
                         style={[

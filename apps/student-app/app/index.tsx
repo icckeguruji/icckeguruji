@@ -131,16 +131,7 @@ export default function IndexScreen() {
     // 5. Automatic transition for logged-in students or director
     const timer = setTimeout(() => {
       if (isAuthenticated) {
-        const isAdmin =
-          user?.role === 'admin' ||
-          user?.role === 'super_admin' ||
-          user?.email === 'icckeguruji@gmail.com' ||
-          user?.mobile_number === '9771350910';
-        if (isAdmin) {
-          router.replace('/admin');
-        } else {
-          router.replace('/(tabs)');
-        }
+        router.replace('/(tabs)');
       }
     }, 2500);
 
@@ -149,16 +140,7 @@ export default function IndexScreen() {
 
   const handleStart = () => {
     if (isAuthenticated) {
-      const isAdmin =
-        user?.role === 'admin' ||
-        user?.role === 'super_admin' ||
-        user?.email === 'icckeguruji@gmail.com' ||
-        user?.mobile_number === '9771350910';
-      if (isAdmin) {
-        router.replace('/admin');
-      } else {
-        router.replace('/(tabs)');
-      }
+      router.replace('/(tabs)');
     } else {
       router.push('/(auth)/login');
     }
