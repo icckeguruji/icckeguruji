@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useDirectorStore } from '../../src/store/useDirectorStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { supabase } from '../../src/lib/supabase';
 import { useAppUpdateStore, CURRENT_APP_VERSION } from '../../src/services/appUpdateService';
@@ -108,6 +110,22 @@ export default function StudentProfileScreen() {
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastMsg, setBroadcastMsg] = useState('');
+
+  // Handle opening modals from Hamburger Director Menu
+  const { activeModal, closeModal: closeDirectorModal } = useDirectorStore();
+
+  useEffect(() => {
+    if (activeModal === 'payment') {
+      setIsPaymentModalOpen(true);
+      closeDirectorModal();
+    } else if (activeModal === 'student') {
+      setIsStudentModalOpen(true);
+      closeDirectorModal();
+    } else if (activeModal === 'broadcast') {
+      setIsBroadcastModalOpen(true);
+      closeDirectorModal();
+    }
+  }, [activeModal]);
 
   // Handle Payment Approval
   const handleApprovePayment = (payId: string, studentName: string) => {
@@ -386,14 +404,34 @@ export default function StudentProfileScreen() {
         Alert.alert('Permission Denied', 'Storage / gallery permission is required to select photos from device.');
         return;
       }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+      let result;
+      try {
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+      } catch {
+        try {
+          result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          });
+        } catch {
+          const docRes = await DocumentPicker.getDocumentAsync({
+            type: 'image/*',
+            copyToCacheDirectory: true,
+          });
+          if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
+            updateProfile({ avatar_url: docRes.assets[0].uri });
+            setIsPhotoModalOpen(false);
+            Alert.alert('Photo Updated', 'Profile photo updated successfully!');
+            return;
+          }
+        }
+      }
 
-      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+      if (result && !result.canceled && result.assets && result.assets[0]?.uri) {
         updateProfile({ avatar_url: result.assets[0].uri });
         setIsPhotoModalOpen(false);
         Alert.alert('Photo Updated', 'Profile photo updated from device gallery!');

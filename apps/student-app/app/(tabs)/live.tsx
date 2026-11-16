@@ -54,7 +54,20 @@ interface LiveChatMessage {
   time: string;
 }
 
-const CLASSES_LIST = ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
+const CLASSES_LIST = [
+  'Class 10',
+  'Class 9',
+  'Class 8',
+  'Class 7',
+  'Class 6',
+  'Class 5',
+  'Class 4',
+  'Class 3',
+  'Class 2',
+  'Class 1',
+  'Class 11',
+  'Class 12',
+];
 
 export default function StudentLiveScreen() {
   const { user } = useAuthStore();

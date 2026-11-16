@@ -46,7 +46,20 @@ import { StudyMaterial, MaterialType } from '@icc/shared-types';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import * as DocumentPicker from 'expo-document-picker';
 
-const CLASSES_LIST = ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
+const CLASSES_LIST = [
+  'Class 10',
+  'Class 9',
+  'Class 8',
+  'Class 7',
+  'Class 6',
+  'Class 5',
+  'Class 4',
+  'Class 3',
+  'Class 2',
+  'Class 1',
+  'Class 11',
+  'Class 12',
+];
 
 const SUBJECT_FILTER_CHIPS = [
   { id: 'all', label: 'All Notes' },

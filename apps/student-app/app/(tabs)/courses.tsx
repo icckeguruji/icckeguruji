@@ -24,6 +24,7 @@ import { aiService } from '../../src/services/aiService';
 import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { Course } from '@icc/shared-types';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   Plus,
   Edit3,
@@ -42,6 +43,10 @@ import {
 } from 'lucide-react-native';
 
 const thumbMap: Record<string, any> = {
+  'c0000000-0000-0000-0000-000000000010': require('../../assets/thumbnails/batch-b3-class10.jpg'),
+  'c0000000-0000-0000-0000-000000000009': require('../../assets/thumbnails/batch-b4-class9.jpg'),
+  'c0000000-0000-0000-0000-000000000008': require('../../assets/thumbnails/batch-b1-class8.jpg'),
+  'c0000000-0000-0000-0000-000000000007': require('../../assets/thumbnails/batch-b2-class7.jpg'),
   'cr000000-0000-0000-0000-000000000001': require('../../assets/thumbnails/batch-b3-class10.jpg'),
   'cr000000-0000-0000-0000-000000000002': require('../../assets/thumbnails/batch-b4-class9.jpg'),
   'cr000000-0000-0000-0000-000000000003': require('../../assets/thumbnails/batch-b1-class8.jpg'),
@@ -55,7 +60,20 @@ const thumbMap: Record<string, any> = {
   'batch-b2-class7': require('../../assets/thumbnails/batch-b2-class7.jpg'),
 };
 
-const CLASSES_LIST = ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
+const CLASSES_LIST = [
+  'Class 10',
+  'Class 9',
+  'Class 8',
+  'Class 7',
+  'Class 6',
+  'Class 5',
+  'Class 4',
+  'Class 3',
+  'Class 2',
+  'Class 1',
+  'Class 11',
+  'Class 12',
+];
 
 export default function StudentCoursesScreen() {
   const router = useRouter();
@@ -120,21 +138,25 @@ export default function StudentCoursesScreen() {
 
   const filteredCourses = courses.filter((c) => {
     if (activeClassFilter === 'ALL') return true;
-    return (
-      c.title.toLowerCase().includes(activeClassFilter.toLowerCase()) ||
-      (c.tagline && c.tagline.toLowerCase().includes(activeClassFilter.toLowerCase()))
-    );
+    const derivedClass = academicService.getClassNameFromCourse(c);
+    if (derivedClass.toLowerCase() === activeClassFilter.toLowerCase()) return true;
+    const pattern = new RegExp(`\\b${activeClassFilter}\\b`, 'i');
+    return pattern.test(c.title) || (c.tagline ? pattern.test(c.tagline) : false);
   });
 
   // Open modal for Create or Edit
   const openCourseModal = (course?: Course) => {
     if (course) {
       setEditingCourseId(course.id);
+      const courseClass =
+        (course as any).class_name ||
+        academicService.getClassNameFromCourse(course) ||
+        'Class 10';
       setCourseForm({
         title: course.title,
         title_hi: course.title_hi || course.title,
         tagline: course.tagline || 'Complete Board Examination Syllabus Mastery',
-        class_name: 'Class 10',
+        class_name: courseClass,
         start_date: course.start_date || new Date().toISOString().split('T')[0],
         price: course.price.toString(),
         discount_price: (course.discount_price || course.price).toString(),
@@ -273,14 +295,32 @@ export default function StudentCoursesScreen() {
         Alert.alert('Permission Denied', 'Storage permission required to choose photo.');
         return;
       }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      });
+      let result;
+      try {
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [16, 9],
+          quality: 0.8,
+        });
+      } catch {
+        try {
+          result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          });
+        } catch {
+          const docRes = await DocumentPicker.getDocumentAsync({
+            type: 'image/*',
+            copyToCacheDirectory: true,
+          });
+          if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
+            setCourseForm((prev) => ({ ...prev, thumbnail_url: docRes.assets[0].uri }));
+            return;
+          }
+        }
+      }
 
-      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+      if (result && !result.canceled && result.assets && result.assets[0]?.uri) {
         setCourseForm((prev) => ({ ...prev, thumbnail_url: result.assets[0].uri }));
       }
     } catch (err: any) {
@@ -296,13 +336,18 @@ export default function StudentCoursesScreen() {
         Alert.alert('Permission Denied', 'Camera permission required.');
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      });
+      let result;
+      try {
+        result = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          aspect: [16, 9],
+          quality: 0.8,
+        });
+      } catch {
+        result = await ImagePicker.launchCameraAsync();
+      }
 
-      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+      if (result && !result.canceled && result.assets && result.assets[0]?.uri) {
         setCourseForm((prev) => ({ ...prev, thumbnail_url: result.assets[0].uri }));
       }
     } catch (err: any) {

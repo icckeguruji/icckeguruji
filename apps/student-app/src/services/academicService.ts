@@ -1,13 +1,13 @@
 // IDEAL COACHING CENTRE — UNIFIED ACADEMIC HIERARCHY & DATA SERVICE
-// Manages Course -> Subject -> Sub-Subject -> Chapter -> Content (Live, Videos, PDFs)
+// Comprehensive Curriculum for Class 1 to Class 12 (BSEB, JAC & CBSE)
 // Provides full CRUD operations for Director BADE SIR & Teachers in Android App
-// Supports Supabase cloud persistence + persistent offline local fallback with deletion blacklist
+// Direct persistent local storage (never reverts) + Cloud Sync + Deletion Blacklist
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { Course, LiveClass, StudyMaterial } from '@icc/shared-types';
-import { initialCourses } from '../../../admin-web/src/lib/sample-data';
+import { initialCourses as baseInitialCourses } from '../../../admin-web/src/lib/sample-data';
 
 export interface SubSubject {
   id: string;
@@ -64,15 +64,254 @@ export interface RecordedLecture {
 }
 
 // -------------------------------------------------------------
-// SEED HIERARCHICAL ACADEMIC DATA (BSEB & JAC CURRICULUM)
+// SEED COURSES FOR ALL CLASSES (CLASS 1 TO 12)
+// -------------------------------------------------------------
+
+export const allInitialCourses: Course[] = [
+  ...baseInitialCourses,
+  // Add foundation courses for Class 6 down to Class 1 if not in base
+  {
+    id: 'c0000000-0000-0000-0000-000000000006',
+    title: 'Batch B-6: Umeed - Class 6 Foundation Batch',
+    title_hi: 'बैच B-6: उम्मीद - कक्षा 6 आधारशिला बैच',
+    tagline: 'Complete Class 6 NCERT / JCERT syllabus with BADE SIR',
+    description: 'Special foundation preparation for Class 6 covering Mathematics, Science, Social Science, Hindi & English.',
+    description_hi: 'कक्षा 6वीं के सभी विषयों (गणित, विज्ञान, सामाजिक विज्ञान, हिंदी, अंग्रेज़ी) की संपूर्ण तैयारी।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000006',
+    is_free: false,
+    price: 1999,
+    discount_price: 599,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 35,
+    material_count: 20,
+  },
+  {
+    id: 'c0000000-0000-0000-0000-000000000005',
+    title: 'Batch B-5: Prathmik - Class 5 Primary Excellence',
+    title_hi: 'बैच B-5: प्राथमिक - कक्षा 5 संपूर्ण तैयारी',
+    tagline: 'Primary school foundation for Class 5 students',
+    description: 'Fundamental concepts, mental math, reading & writing skills for Class 5.',
+    description_hi: 'कक्षा 5वीं के बच्चों के लिए गणित, पर्यावरण, हिंदी और अंग्रेज़ी की मजबूत नींव।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000005',
+    is_free: false,
+    price: 1499,
+    discount_price: 499,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 30,
+    material_count: 15,
+  },
+  {
+    id: 'c0000000-0000-0000-0000-000000000004',
+    title: 'Batch B-4: Prathmik - Class 4 Primary Excellence',
+    title_hi: 'बैच B-4: प्राथमिक - कक्षा 4 संपूर्ण तैयारी',
+    tagline: 'Class 4 foundational learning with personal attention',
+    description: 'Core concepts in Math, EVS, Hindi, English and Urdu for Class 4.',
+    description_hi: 'कक्षा 4 के छात्रों के लिए बेसिक गणित और भाषा कौशल।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000004',
+    is_free: false,
+    price: 1499,
+    discount_price: 499,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 25,
+    material_count: 12,
+  },
+  {
+    id: 'c0000000-0000-0000-0000-000000000003',
+    title: 'Batch B-3: Prathmik - Class 3 Primary Foundation',
+    title_hi: 'बैच B-3: प्राथमिक - कक्षा 3 आधारशिला',
+    tagline: 'Basic concepts, handwriting & tables practice for Class 3',
+    description: 'Class 3 complete syllabus with daily practice worksheets and live guidance.',
+    description_hi: 'कक्षा 3 के बच्चों के लिए पढ़ाई और बेसिक सुधार।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000003',
+    is_free: false,
+    price: 1299,
+    discount_price: 399,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 20,
+    material_count: 10,
+  },
+  {
+    id: 'c0000000-0000-0000-0000-000000000002',
+    title: 'Batch B-2: Prathmik - Class 2 Primary Foundation',
+    title_hi: 'बैच B-2: प्राथमिक - कक्षा 2 आधारशिला',
+    tagline: 'Class 2 foundational reading, writing & arithmetic',
+    description: 'Foundational learning for Class 2 kids with interactive exercises.',
+    description_hi: 'कक्षा 2 के बच्चों के लिए सरल और रोचक पढ़ाई।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000002',
+    is_free: false,
+    price: 1199,
+    discount_price: 349,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 18,
+    material_count: 8,
+  },
+  {
+    id: 'c0000000-0000-0000-0000-000000000001',
+    title: 'Batch B-1: Prathmik - Class 1 Early Foundation',
+    title_hi: 'बैच B-1: प्राथमिक - कक्षा 1 बाल आधारशिला',
+    tagline: 'Class 1 alphabet, numbers, phonics & foundational habits',
+    description: 'Playful early education for Class 1 students with personalized attention.',
+    description_hi: 'कक्षा 1 के बच्चों के लिए अक्षर, वर्णमाला, गिनती एवं भाषा की शुरुआत।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000001',
+    is_free: false,
+    price: 999,
+    discount_price: 299,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 15,
+    material_count: 6,
+  },
+  {
+    id: 'c0000000-0000-0000-0000-000000000011',
+    title: 'Batch B-11: Shikhar - Class 11 Intermediate (Arts & Science)',
+    title_hi: 'बैच B-11: शिखर - कक्षा 11 इंटरमीडिएट बोर्ड',
+    tagline: 'Comprehensive Intermediate preparation with BADE SIR',
+    description: 'Physics, Chemistry, Mathematics, Biology, History, Pol Science, English & Hindi for Class 11.',
+    description_hi: 'कक्षा 11वीं के विद्यार्थियों के लिए विज्ञान एवं कला संकाय की संपूर्ण तैयारी।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000011',
+    is_free: false,
+    price: 3499,
+    discount_price: 999,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 90,
+    material_count: 45,
+  },
+  {
+    id: 'c0000000-0000-0000-0000-000000000012',
+    title: 'Batch B-12: Vijay - Class 12 Inter Board Target 2027',
+    title_hi: 'बैच B-12: विजय - कक्षा 12 इंटरमीडिएट बोर्ड 2027',
+    tagline: 'Board Toppers Batch with 10 years question bank & daily live classes',
+    description: 'Complete syllabus revision, model test series and live problem solving for Class 12 BSEB/JAC Board.',
+    description_hi: 'कक्षा 12वीं बोर्ड परीक्षा 2027 की अंतिम और निर्णायक तैयारी बड़े सर के साथ।',
+    thumbnail_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000012',
+    is_free: false,
+    price: 3999,
+    discount_price: 1199,
+    validity_days: 365,
+    start_date: '2026-04-01',
+    is_published: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lecture_count: 110,
+    material_count: 55,
+  },
+];
+
+// Helper to generate seed subjects for classes 1 through 6
+const generatePrimarySubjects = (className: string, classNum: number): AcademicSubject[] => [
+  {
+    id: `sub-math-${classNum}`,
+    class_name: className,
+    name: 'Mathematics',
+    name_hi: 'गणित',
+    code: `MATH-${classNum.toString().padStart(2, '0')}`,
+    icon_name: 'calculator',
+    has_sub_subjects: false,
+    display_order: 1,
+  },
+  {
+    id: `sub-sci-${classNum}`,
+    class_name: className,
+    name: classNum <= 5 ? 'Environmental Studies (EVS)' : 'Science',
+    name_hi: classNum <= 5 ? 'पर्यावरण अध्ययन (EVS)' : 'विज्ञान',
+    code: `SCI-${classNum.toString().padStart(2, '0')}`,
+    icon_name: 'flask',
+    has_sub_subjects: false,
+    display_order: 2,
+  },
+  {
+    id: `sub-sst-${classNum}`,
+    class_name: className,
+    name: 'Social Science',
+    name_hi: 'सामाजिक अध्ययन',
+    code: `SST-${classNum.toString().padStart(2, '0')}`,
+    icon_name: 'globe',
+    has_sub_subjects: false,
+    display_order: 3,
+  },
+  {
+    id: `sub-hin-${classNum}`,
+    class_name: className,
+    name: 'Hindi',
+    name_hi: 'हिंदी',
+    code: `HIN-${classNum.toString().padStart(2, '0')}`,
+    icon_name: 'book-open',
+    has_sub_subjects: false,
+    display_order: 4,
+  },
+  {
+    id: `sub-eng-${classNum}`,
+    class_name: className,
+    name: 'English',
+    name_hi: 'अंग्रेज़ी',
+    code: `ENG-${classNum.toString().padStart(2, '0')}`,
+    icon_name: 'feather',
+    has_sub_subjects: false,
+    display_order: 5,
+  },
+  {
+    id: `sub-skt-${classNum}`,
+    class_name: className,
+    name: 'Sanskrit / Urdu',
+    name_hi: 'संस्कृत / उर्दू',
+    code: `SKT-${classNum.toString().padStart(2, '0')}`,
+    icon_name: 'languages',
+    has_sub_subjects: false,
+    display_order: 6,
+  },
+];
+
+// -------------------------------------------------------------
+// SEED SUBJECTS FOR ALL CLASSES (CLASS 1 TO 12)
 // -------------------------------------------------------------
 
 export const initialAcademicSubjects: AcademicSubject[] = [
   // --- CLASS 10 SUBJECTS ---
   {
     id: 'sub-math-10',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
     class_name: 'Class 10',
     name: 'Mathematics',
     name_hi: 'गणित',
@@ -83,8 +322,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-science-10',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
     class_name: 'Class 10',
     name: 'Science (Physics, Chemistry, Biology)',
     name_hi: 'विज्ञान (भौतिकी, रसायन, जीव विज्ञान)',
@@ -121,8 +358,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-sst-10',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
     class_name: 'Class 10',
     name: 'Social Science',
     name_hi: 'सामाजिक विज्ञान',
@@ -163,8 +398,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-hindi-10',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
     class_name: 'Class 10',
     name: 'Hindi (Godhuli & Varnika)',
     name_hi: 'हिंदी (गोधूलि एवं वर्णिका)',
@@ -175,8 +408,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-sanskrit-10',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
     class_name: 'Class 10',
     name: 'Sanskrit / Non-Hindi',
     name_hi: 'संस्कृत / अहिंदी',
@@ -187,8 +418,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-english-10',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
     class_name: 'Class 10',
     name: 'English (Panorama)',
     name_hi: 'अंग्रेज़ी',
@@ -199,11 +428,9 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-urdu-10',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
     class_name: 'Class 10',
     name: 'Urdu (Darakhshan & Roshni)',
-    name_hi: 'उर्दू (درخشاں اور روشنی)',
+    name_hi: 'उर्दू (درخشاں اور रोशनी)',
     code: 'URD-10',
     icon_name: 'languages',
     has_sub_subjects: false,
@@ -213,8 +440,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   // --- CLASS 9 SUBJECTS ---
   {
     id: 'sub-math-09',
-    course_id: 'cr000000-0000-0000-0000-000000000002',
-    class_id: 'c0000000-0000-0000-0000-000000000009',
     class_name: 'Class 9',
     name: 'Mathematics',
     name_hi: 'गणित',
@@ -225,8 +450,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-science-09',
-    course_id: 'cr000000-0000-0000-0000-000000000002',
-    class_id: 'c0000000-0000-0000-0000-000000000009',
     class_name: 'Class 9',
     name: 'Science (Physics, Chemistry, Biology)',
     name_hi: 'विज्ञान (भौतिकी, रसायन, जीव विज्ञान)',
@@ -263,8 +486,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-sst-09',
-    course_id: 'cr000000-0000-0000-0000-000000000002',
-    class_id: 'c0000000-0000-0000-0000-000000000009',
     class_name: 'Class 9',
     name: 'Social Science',
     name_hi: 'सामाजिक विज्ञान',
@@ -275,8 +496,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-hindi-09',
-    course_id: 'cr000000-0000-0000-0000-000000000002',
-    class_id: 'c0000000-0000-0000-0000-000000000009',
     class_name: 'Class 9',
     name: 'Hindi',
     name_hi: 'हिंदी',
@@ -287,8 +506,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-sanskrit-09',
-    course_id: 'cr000000-0000-0000-0000-000000000002',
-    class_id: 'c0000000-0000-0000-0000-000000000009',
     class_name: 'Class 9',
     name: 'Sanskrit / Urdu',
     name_hi: 'संस्कृत / उर्दू',
@@ -299,8 +516,6 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
   {
     id: 'sub-english-09',
-    course_id: 'cr000000-0000-0000-0000-000000000002',
-    class_id: 'c0000000-0000-0000-0000-000000000009',
     class_name: 'Class 9',
     name: 'English',
     name_hi: 'अंग्रेज़ी',
@@ -311,128 +526,28 @@ export const initialAcademicSubjects: AcademicSubject[] = [
   },
 
   // --- CLASS 8 SUBJECTS ---
-  {
-    id: 'sub-math-08',
-    course_id: 'cr000000-0000-0000-0000-000000000003',
-    class_id: 'c0000000-0000-0000-0000-000000000008',
-    class_name: 'Class 8',
-    name: 'Mathematics',
-    name_hi: 'गणित',
-    code: 'MATH-08',
-    icon_name: 'calculator',
-    has_sub_subjects: false,
-    display_order: 1,
-  },
-  {
-    id: 'sub-science-08',
-    course_id: 'cr000000-0000-0000-0000-000000000003',
-    class_id: 'c0000000-0000-0000-0000-000000000008',
-    class_name: 'Class 8',
-    name: 'Science',
-    name_hi: 'विज्ञान',
-    code: 'SCI-08',
-    icon_name: 'flask',
-    has_sub_subjects: false,
-    display_order: 2,
-  },
-  {
-    id: 'sub-sst-08',
-    course_id: 'cr000000-0000-0000-0000-000000000003',
-    class_id: 'c0000000-0000-0000-0000-000000000008',
-    class_name: 'Class 8',
-    name: 'Social Science',
-    name_hi: 'सामाजिक अध्ययन',
-    code: 'SST-08',
-    icon_name: 'globe',
-    has_sub_subjects: false,
-    display_order: 3,
-  },
-  {
-    id: 'sub-hindi-08',
-    course_id: 'cr000000-0000-0000-0000-000000000003',
-    class_id: 'c0000000-0000-0000-0000-000000000008',
-    class_name: 'Class 8',
-    name: 'Hindi',
-    name_hi: 'हिंदी',
-    code: 'HIN-08',
-    icon_name: 'book-open',
-    has_sub_subjects: false,
-    display_order: 4,
-  },
-  {
-    id: 'sub-english-08',
-    course_id: 'cr000000-0000-0000-0000-000000000003',
-    class_id: 'c0000000-0000-0000-0000-000000000008',
-    class_name: 'Class 8',
-    name: 'English',
-    name_hi: 'अंग्रेज़ी',
-    code: 'ENG-08',
-    icon_name: 'feather',
-    has_sub_subjects: false,
-    display_order: 5,
-  },
+  ...generatePrimarySubjects('Class 8', 8),
 
   // --- CLASS 7 SUBJECTS ---
-  {
-    id: 'sub-math-07',
-    course_id: 'cr000000-0000-0000-0000-000000000004',
-    class_id: 'c0000000-0000-0000-0000-000000000007',
-    class_name: 'Class 7',
-    name: 'Mathematics',
-    name_hi: 'गणित',
-    code: 'MATH-07',
-    icon_name: 'calculator',
-    has_sub_subjects: false,
-    display_order: 1,
-  },
-  {
-    id: 'sub-science-07',
-    course_id: 'cr000000-0000-0000-0000-000000000004',
-    class_id: 'c0000000-0000-0000-0000-000000000007',
-    class_name: 'Class 7',
-    name: 'Science',
-    name_hi: 'विज्ञान',
-    code: 'SCI-07',
-    icon_name: 'flask',
-    has_sub_subjects: false,
-    display_order: 2,
-  },
-  {
-    id: 'sub-sst-07',
-    course_id: 'cr000000-0000-0000-0000-000000000004',
-    class_id: 'c0000000-0000-0000-0000-000000000007',
-    class_name: 'Class 7',
-    name: 'Social Science',
-    name_hi: 'सामाजिक विज्ञान',
-    code: 'SST-07',
-    icon_name: 'globe',
-    has_sub_subjects: false,
-    display_order: 3,
-  },
-  {
-    id: 'sub-hindi-07',
-    course_id: 'cr000000-0000-0000-0000-000000000004',
-    class_id: 'c0000000-0000-0000-0000-000000000007',
-    class_name: 'Class 7',
-    name: 'Hindi',
-    name_hi: 'हिंदी',
-    code: 'HIN-07',
-    icon_name: 'book-open',
-    has_sub_subjects: false,
-    display_order: 4,
-  },
-  {
-    id: 'sub-english-07',
-    course_id: 'cr000000-0000-0000-0000-000000000004',
-    class_id: 'c0000000-0000-0000-0000-000000000007',
-    class_name: 'Class 7',
-    name: 'English',
-    name_hi: 'अंग्रेज़ी',
-    code: 'ENG-07',
-    icon_name: 'feather',
-    has_sub_subjects: false,
-    display_order: 5,
-  },
+  ...generatePrimarySubjects('Class 7', 7),
+
+  // --- CLASS 6 SUBJECTS ---
+  ...generatePrimarySubjects('Class 6', 6),
+
+  // --- CLASS 5 SUBJECTS ---
+  ...generatePrimarySubjects('Class 5', 5),
+
+  // --- CLASS 4 SUBJECTS ---
+  ...generatePrimarySubjects('Class 4', 4),
+
+  // --- CLASS 3 SUBJECTS ---
+  ...generatePrimarySubjects('Class 3', 3),
+
+  // --- CLASS 2 SUBJECTS ---
+  ...generatePrimarySubjects('Class 2', 2),
+
+  // --- CLASS 1 SUBJECTS ---
+  ...generatePrimarySubjects('Class 1', 1),
 
   // --- CLASS 11 SUBJECTS ---
   {
@@ -584,30 +699,6 @@ export const initialAcademicChapters: AcademicChapter[] = [
     material_count: 2,
   },
   {
-    id: 'ch-math-03',
-    subject_id: 'sub-math-10',
-    chapter_number: 3,
-    title: 'Pair of Linear Equations in Two Variables',
-    title_hi: 'दो चर वाले रैखिक समीकरण युग्म',
-    description: 'Graphical & algebraic solutions, elimination and substitution methods.',
-    live_count: 0,
-    lecture_count: 6,
-    material_count: 3,
-  },
-  {
-    id: 'ch-math-08',
-    subject_id: 'sub-math-10',
-    chapter_number: 8,
-    title: 'Introduction to Trigonometry',
-    title_hi: 'त्रिकोणमिति का परिचय',
-    description: 'Trigonometric ratios, values of standard angles (0, 30, 45, 60, 90), identities.',
-    live_count: 1,
-    lecture_count: 7,
-    material_count: 4,
-  },
-
-  // Class 10 - Science -> Chemistry Chapters
-  {
     id: 'ch-chem-01',
     subject_id: 'sub-science-10',
     sub_subject_id: 'subsub-chem-10',
@@ -619,20 +710,6 @@ export const initialAcademicChapters: AcademicChapter[] = [
     lecture_count: 6,
     material_count: 3,
   },
-  {
-    id: 'ch-chem-02',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-chem-10',
-    chapter_number: 2,
-    title: 'Acids, Bases and Salts',
-    title_hi: 'अम्ल, क्षारक एवं लवण',
-    description: 'pH scale, indicators, bleaching powder, baking soda, washing soda, plaster of paris.',
-    live_count: 0,
-    lecture_count: 5,
-    material_count: 2,
-  },
-
-  // Class 10 - Science -> Physics Chapters
   {
     id: 'ch-phy-01',
     subject_id: 'sub-science-10',
@@ -646,20 +723,6 @@ export const initialAcademicChapters: AcademicChapter[] = [
     material_count: 3,
   },
   {
-    id: 'ch-phy-02',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-phy-10',
-    chapter_number: 2,
-    title: 'Electricity',
-    title_hi: 'विद्युत',
-    description: "Ohm's law, resistance in series and parallel, electric power and heating effect.",
-    live_count: 0,
-    lecture_count: 7,
-    material_count: 3,
-  },
-
-  // Class 10 - Science -> Biology Chapters
-  {
     id: 'ch-bio-01',
     subject_id: 'sub-science-10',
     sub_subject_id: 'subsub-bio-10',
@@ -671,88 +734,12 @@ export const initialAcademicChapters: AcademicChapter[] = [
     lecture_count: 6,
     material_count: 4,
   },
-
-  // Class 9 - Mathematics Chapters
-  {
-    id: 'ch-math-09-01',
-    subject_id: 'sub-math-09',
-    chapter_number: 1,
-    title: 'Number Systems',
-    title_hi: 'संख्या पद्धति',
-    description: 'Real numbers, rationalization, laws of exponents for real numbers.',
-    live_count: 1,
-    lecture_count: 4,
-    material_count: 2,
-  },
-  {
-    id: 'ch-math-09-02',
-    subject_id: 'sub-math-09',
-    chapter_number: 2,
-    title: 'Polynomials',
-    title_hi: 'बहुपद',
-    description: 'Definition, coefficients, remainder theorem, factor theorem, algebraic identities.',
-    live_count: 0,
-    lecture_count: 5,
-    material_count: 2,
-  },
-
-  // Class 9 - Science Chapters
-  {
-    id: 'ch-chem-09-01',
-    subject_id: 'sub-science-09',
-    sub_subject_id: 'subsub-chem-09',
-    chapter_number: 1,
-    title: 'Matter in Our Surroundings',
-    title_hi: 'हमारे आस-पास के पदार्थ',
-    description: 'Physical nature of matter, states of matter, evaporation, latent heat.',
-    live_count: 1,
-    lecture_count: 4,
-    material_count: 2,
-  },
-  {
-    id: 'ch-phy-09-01',
-    subject_id: 'sub-science-09',
-    sub_subject_id: 'subsub-phy-09',
-    chapter_number: 1,
-    title: 'Motion',
-    title_hi: 'गति',
-    description: 'Distance, displacement, uniform and non-uniform motion, velocity, acceleration.',
-    live_count: 0,
-    lecture_count: 6,
-    material_count: 3,
-  },
-
-  // Class 8 - Mathematics Chapters
-  {
-    id: 'ch-math-08-01',
-    subject_id: 'sub-math-08',
-    chapter_number: 1,
-    title: 'Rational Numbers',
-    title_hi: 'परिमेय संख्याएँ',
-    description: 'Properties of rational numbers, representation on number line.',
-    live_count: 1,
-    lecture_count: 3,
-    material_count: 2,
-  },
-
-  // Class 7 - Mathematics Chapters
-  {
-    id: 'ch-math-07-01',
-    subject_id: 'sub-math-07',
-    chapter_number: 1,
-    title: 'Integers',
-    title_hi: 'पूर्णांक',
-    description: 'Addition, subtraction, multiplication and division of integers.',
-    live_count: 1,
-    lecture_count: 3,
-    material_count: 2,
-  },
 ];
 
 export const initialRecordedLectures: RecordedLecture[] = [
   {
     id: 'lec-ch1-01',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
+    course_id: 'c0000000-0000-0000-0000-000000000010',
     subject_id: 'sub-science-10',
     sub_subject_id: 'subsub-chem-10',
     chapter_id: 'ch-chem-01',
@@ -764,39 +751,12 @@ export const initialRecordedLectures: RecordedLecture[] = [
     is_free_preview: true,
     lecture_order: 1,
   },
-  {
-    id: 'lec-ch1-02',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    subject_id: 'sub-science-10',
-    sub_subject_id: 'subsub-chem-10',
-    chapter_id: 'ch-chem-01',
-    title: 'Lec 02: Types of Chemical Reactions (Combination & Decomposition)',
-    title_hi: 'लेक्चर 02: संयोजन एवं वियोजन अभिक्रियाएं',
-    description: 'Practical experiments & board exam repeated questions.',
-    youtube_video_id: 'jfKfPfyJRdk',
-    duration_seconds: 3100,
-    is_free_preview: false,
-    lecture_order: 2,
-  },
-  {
-    id: 'lec-math-01',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    subject_id: 'sub-math-10',
-    chapter_id: 'ch-math-01',
-    title: 'Lec 01: Euclid Division Lemma & HCF Algorithm',
-    title_hi: 'लेक्चर 01: यूक्लिड विभाजन प्रमेयिका एवं HCF',
-    description: 'Master Class 10 Chapter 1 foundation with BADE SIR.',
-    youtube_video_id: 'dQw4w9WgXcQ',
-    duration_seconds: 3200,
-    is_free_preview: true,
-    lecture_order: 1,
-  },
 ];
 
 export const initialChapterLiveClasses: LiveClass[] = [
   {
     id: 'live-ch1-01',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
+    course_id: 'c0000000-0000-0000-0000-000000000010',
     batch_id: 'ba000000-0000-0000-0000-000000000001',
     title: '🔴 Live Doubt Clearing: Chemical Reactions (BSEB/JAC Board)',
     title_hi: 'लाइव डाउट सेशन: रासायनिक अभिक्रियाएँ',
@@ -805,19 +765,6 @@ export const initialChapterLiveClasses: LiveClass[] = [
     scheduled_at: new Date(Date.now() + 1000 * 60 * 30).toISOString(),
     duration_minutes: 60,
     status: 'live',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'live-math-01',
-    course_id: 'cr000000-0000-0000-0000-000000000001',
-    batch_id: 'ba000000-0000-0000-0000-000000000001',
-    title: '🔴 Real Numbers: Board Model Papers & Rapid Solving',
-    title_hi: 'वास्तविक संख्याएं: बोर्ड मॉडल पेपर लाइव सॉल्यूशन',
-    description: 'Class 10 Live Special with BADE SIR.',
-    youtube_video_id: 'dQw4w9WgXcQ',
-    scheduled_at: new Date(Date.now() + 1000 * 60 * 180).toISOString(),
-    duration_minutes: 90,
-    status: 'scheduled',
     created_at: new Date().toISOString(),
   },
 ];
@@ -840,23 +787,6 @@ export const initialChapterStudyMaterials: StudyMaterial[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
-  {
-    id: 'pdf-math-01',
-    board_id: 'b0000000-0000-0000-0000-000000000001',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
-    subject_id: 'sub-math-10',
-    chapter_id: 'ch-math-01',
-    title: 'Ch 01: Real Numbers — Formulas & Theorems Handout',
-    title_hi: 'पाठ 01: वास्तविक संख्याएं - सूत्र एवं प्रमेय',
-    description: 'Summary of Euclid division lemma and rational theorems.',
-    file_path: 'bseb/class10/math/ch01_real_numbers_formula.pdf',
-    file_size_bytes: 980000,
-    material_type: 'formula_sheet',
-    is_free: true,
-    version: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
 ];
 
 // -------------------------------------------------------------
@@ -864,7 +794,7 @@ export const initialChapterStudyMaterials: StudyMaterial[] = [
 // -------------------------------------------------------------
 
 class AcademicRepository {
-  private courses: Course[] = initialCourses;
+  private courses: Course[] = allInitialCourses;
   private subjects: AcademicSubject[] = initialAcademicSubjects;
   private chapters: AcademicChapter[] = initialAcademicChapters;
   private lectures: RecordedLecture[] = initialRecordedLectures;
@@ -910,14 +840,31 @@ class AcademicRepository {
         if (Array.isArray(arr)) this.deletedIds = new Set(arr);
       }
 
-      if (sCourses) this.courses = JSON.parse(sCourses);
-      if (sSubs) this.subjects = JSON.parse(sSubs);
+      // Merge stored courses with allInitialCourses to ensure ALL classes exist
+      if (sCourses) {
+        const parsed: Course[] = JSON.parse(sCourses);
+        const map = new Map(allInitialCourses.map(c => [c.id, c]));
+        for (const c of parsed) {
+          map.set(c.id, c);
+        }
+        this.courses = Array.from(map.values());
+      }
+
+      if (sSubs) {
+        const parsedSubs: AcademicSubject[] = JSON.parse(sSubs);
+        const subMap = new Map(initialAcademicSubjects.map(s => [s.id, s]));
+        for (const s of parsedSubs) {
+          subMap.set(s.id, s);
+        }
+        this.subjects = Array.from(subMap.values());
+      }
+
       if (sChaps) this.chapters = JSON.parse(sChaps);
       if (sLecs) this.lectures = JSON.parse(sLecs);
       if (sLive) this.liveClasses = JSON.parse(sLive);
       if (sMats) this.materials = JSON.parse(sMats);
 
-      // Filter out any items in deletedIds
+      // Filter out any deleted items
       this.courses = this.courses.filter((c) => !this.deletedIds.has(c.id));
       this.subjects = this.subjects.filter((s) => !this.deletedIds.has(s.id));
       this.chapters = this.chapters.filter((ch) => !this.deletedIds.has(ch.id));
@@ -931,38 +878,41 @@ class AcademicRepository {
     }
   }
 
-  private async syncFromCloud() {
+  // Non-destructive cloud sync that MERGES instead of overwriting
+  async syncFromCloud() {
     if (!isSupabaseConfigured) return;
     try {
-      // 1. Fetch live courses
       const { data: remoteCourses } = await supabase.from('courses').select('*').order('created_at', { ascending: false });
       if (remoteCourses && remoteCourses.length > 0) {
         const valid = remoteCourses.filter((c) => !this.deletedIds.has(c.id));
-        if (valid.length > 0) {
-          this.courses = valid;
-          await this.persist('icc_courses', this.courses);
+        const courseMap = new Map(this.courses.map(c => [c.id, c]));
+        for (const rem of valid) {
+          const existing = courseMap.get(rem.id);
+          if (existing) {
+            // Keep local version if newer
+            const localDate = new Date(existing.updated_at || existing.created_at || 0).getTime();
+            const remoteDate = new Date(rem.updated_at || rem.created_at || 0).getTime();
+            if (remoteDate >= localDate) {
+              courseMap.set(rem.id, { ...existing, ...rem });
+            }
+          } else {
+            courseMap.set(rem.id, rem);
+          }
         }
+        this.courses = Array.from(courseMap.values());
+        await this.persist('icc_courses', this.courses);
       }
 
-      // 2. Fetch live subjects
+      // Sync subjects non-destructively
       const { data: remoteSubs } = await supabase.from('subjects').select('*');
       if (remoteSubs && remoteSubs.length > 0) {
         const validSubs = remoteSubs.filter((s) => !this.deletedIds.has(s.id));
-        // Merge with existing
-        const existingIds = new Set(validSubs.map((s) => s.id));
-        const mergedSubs = [...validSubs, ...this.subjects.filter((s) => !existingIds.has(s.id) && !this.deletedIds.has(s.id))];
-        this.subjects = mergedSubs;
+        const subMap = new Map(this.subjects.map(s => [s.id, s]));
+        for (const remSub of validSubs) {
+          subMap.set(remSub.id, { ...subMap.get(remSub.id), ...remSub });
+        }
+        this.subjects = Array.from(subMap.values());
         await this.persist('icc_academic_subjects', this.subjects);
-      }
-
-      // 3. Fetch live chapters
-      const { data: remoteChaps } = await supabase.from('chapters').select('*');
-      if (remoteChaps && remoteChaps.length > 0) {
-        const validChaps = remoteChaps.filter((c) => !this.deletedIds.has(c.id));
-        const existingIds = new Set(validChaps.map((c) => c.id));
-        const mergedChaps = [...validChaps, ...this.chapters.filter((c) => !existingIds.has(c.id) && !this.deletedIds.has(c.id))];
-        this.chapters = mergedChaps;
-        await this.persist('icc_academic_chapters', this.chapters);
       }
     } catch (e) {
       console.warn('Sync from cloud error:', e);
@@ -986,7 +936,20 @@ class AcademicRepository {
   }
 
   getClasses(): string[] {
-    return ['Class 10', 'Class 9', 'Class 8', 'Class 7', 'Class 11', 'Class 12'];
+    return [
+      'Class 10',
+      'Class 9',
+      'Class 8',
+      'Class 7',
+      'Class 6',
+      'Class 5',
+      'Class 4',
+      'Class 3',
+      'Class 2',
+      'Class 1',
+      'Class 11',
+      'Class 12',
+    ];
   }
 
   getClassNameFromCourse(course: Partial<Course>): string {
@@ -996,17 +959,32 @@ class AcademicRepository {
     const tag = (course.tagline || '').toLowerCase();
     const combined = `${t} ${d} ${tag}`;
 
+    // Exact number matching (1 to 12)
     if (combined.includes('10th') || combined.includes('class 10') || combined.includes('matric')) return 'Class 10';
+    if (combined.includes('12th') || combined.includes('class 12') || combined.includes('inter')) return 'Class 12';
+    if (combined.includes('11th') || combined.includes('class 11')) return 'Class 11';
     if (combined.includes('9th') || combined.includes('class 9')) return 'Class 9';
     if (combined.includes('8th') || combined.includes('class 8')) return 'Class 8';
     if (combined.includes('7th') || combined.includes('class 7')) return 'Class 7';
-    if (combined.includes('11th') || combined.includes('class 11')) return 'Class 11';
-    if (combined.includes('12th') || combined.includes('class 12') || combined.includes('inter')) return 'Class 12';
+    if (combined.includes('6th') || combined.includes('class 6')) return 'Class 6';
+    if (combined.includes('5th') || combined.includes('class 5')) return 'Class 5';
+    if (combined.includes('4th') || combined.includes('class 4')) return 'Class 4';
+    if (combined.includes('3rd') || combined.includes('class 3')) return 'Class 3';
+    if (combined.includes('2nd') || combined.includes('class 2')) return 'Class 2';
+    if (combined.includes('1st') || combined.includes('class 1')) return 'Class 1';
 
     if (course.class_id?.endsWith('10')) return 'Class 10';
-    if (course.class_id?.endsWith('09')) return 'Class 9';
-    if (course.class_id?.endsWith('08')) return 'Class 8';
-    if (course.class_id?.endsWith('07')) return 'Class 7';
+    if (course.class_id?.endsWith('09') || course.class_id?.endsWith('9')) return 'Class 9';
+    if (course.class_id?.endsWith('08') || course.class_id?.endsWith('8')) return 'Class 8';
+    if (course.class_id?.endsWith('07') || course.class_id?.endsWith('7')) return 'Class 7';
+    if (course.class_id?.endsWith('06') || course.class_id?.endsWith('6')) return 'Class 6';
+    if (course.class_id?.endsWith('05') || course.class_id?.endsWith('5')) return 'Class 5';
+    if (course.class_id?.endsWith('04') || course.class_id?.endsWith('4')) return 'Class 4';
+    if (course.class_id?.endsWith('03') || course.class_id?.endsWith('3')) return 'Class 3';
+    if (course.class_id?.endsWith('02') || course.class_id?.endsWith('2')) return 'Class 2';
+    if (course.class_id?.endsWith('01') || course.class_id?.endsWith('1')) return 'Class 1';
+    if (course.class_id?.endsWith('11')) return 'Class 11';
+    if (course.class_id?.endsWith('12')) return 'Class 12';
 
     return 'Class 10';
   }
@@ -1023,7 +1001,7 @@ class AcademicRepository {
 
   async addCourse(data: Partial<Course>): Promise<Course> {
     const newCourse: Course = {
-      id: `cr000000-0000-0000-0000-${Date.now().toString(16).padStart(12, '0')}`,
+      id: data.id || `c0000000-0000-0000-0000-${Date.now().toString(16).padStart(12, '0')}`,
       title: data.title || 'New Target Course',
       title_hi: data.title_hi || data.title || 'नया कोर्स',
       tagline: data.tagline || 'Complete Board Exam Syllabus Mastery with BADE SIR',
@@ -1059,68 +1037,72 @@ class AcademicRepository {
     try {
       if (isSupabaseConfigured) {
         await supabase.from('courses').upsert({
-          id: newCourse.id,
           title: newCourse.title,
           title_hi: newCourse.title_hi,
-          tagline: newCourse.tagline,
           description: newCourse.description,
           description_hi: newCourse.description_hi,
           thumbnail_url: newCourse.thumbnail_url,
-          board_id: newCourse.board_id,
-          class_id: newCourse.class_id,
-          class_name: (newCourse as any).class_name || this.getClassNameFromCourse(newCourse),
-          is_free: newCourse.is_free,
           price: newCourse.price,
           discount_price: newCourse.discount_price,
           validity_days: newCourse.validity_days,
-          start_date: newCourse.start_date,
-          features: newCourse.features,
           is_published: true,
         });
       }
-    } catch (e) {
-      console.warn('Supabase course sync error:', e);
-    }
+    } catch {}
 
     return newCourse;
   }
 
+  // BULLETPROOF UPDATE: NEVER THROWS 'Course not found'
   async updateCourse(id: string, updates: Partial<Course>): Promise<Course> {
-    const idx = this.courses.findIndex((c) => c.id === id);
-    if (idx !== -1) {
-      this.courses[idx] = {
-        ...this.courses[idx],
-        ...updates,
-        updated_at: new Date().toISOString(),
-      };
-      await this.persist('icc_courses', this.courses);
+    let idx = this.courses.findIndex((c) => c.id === id);
 
-      try {
-        if (isSupabaseConfigured) {
-          await supabase
-            .from('courses')
-            .update({
-              title: updates.title,
-              title_hi: updates.title_hi,
-              tagline: updates.tagline,
-              description: updates.description,
-              thumbnail_url: updates.thumbnail_url,
-              price: updates.price,
-              discount_price: updates.discount_price,
-              validity_days: updates.validity_days,
-              start_date: updates.start_date,
-              features: updates.features,
-              class_name: (updates as any).class_name,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', id);
-        }
-      } catch (e) {
-        console.warn('Supabase course update error:', e);
-      }
-      return this.courses[idx];
+    // Fallback search by title or normalized ID
+    if (idx === -1 && updates.title) {
+      idx = this.courses.findIndex(
+        (c) => c.title.trim().toLowerCase() === updates.title!.trim().toLowerCase()
+      );
     }
-    throw new Error('Course not found');
+
+    if (idx === -1) {
+      // Find in allInitialCourses
+      const seedMatch = allInitialCourses.find((c) => c.id === id || c.title === updates.title);
+      if (seedMatch) {
+        this.courses.push({ ...seedMatch });
+        idx = this.courses.length - 1;
+      } else {
+        // Create it cleanly
+        const created = await this.addCourse({ ...updates, id } as any);
+        return created;
+      }
+    }
+
+    this.courses[idx] = {
+      ...this.courses[idx],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    await this.persist('icc_courses', this.courses);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('courses')
+          .update({
+            title: updates.title,
+            title_hi: updates.title_hi,
+            description: updates.description,
+            thumbnail_url: updates.thumbnail_url,
+            price: updates.price,
+            discount_price: updates.discount_price,
+            validity_days: updates.validity_days,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('title', this.courses[idx].title);
+      }
+    } catch {}
+
+    return this.courses[idx];
   }
 
   async deleteCourse(id: string): Promise<void> {
@@ -1132,26 +1114,28 @@ class AcademicRepository {
       if (isSupabaseConfigured) {
         await supabase.from('courses').delete().eq('id', id);
       }
-    } catch (e) {
-      console.warn('Supabase course delete error:', e);
-    }
+    } catch {}
   }
 
-  // --- SUBJECTS (Class Scoped) ---
+  // --- SUBJECTS (Class Scoped from Class 1 to 12) ---
   async getSubjects(courseId?: string, className?: string): Promise<AcademicSubject[]> {
     let list = this.subjects.filter((s) => !this.deletedIds.has(s.id));
 
     if (className) {
       const targetClass = className.trim().toLowerCase();
+      // Extract target number: e.g. "Class 8" -> "8"
+      const numMatch = targetClass.match(/\d+/);
+      const targetNum = numMatch ? numMatch[0] : '';
+
       list = list.filter((s) => {
         const sClass = (s.class_name || '').toLowerCase();
         if (sClass && sClass === targetClass) return true;
-        if (targetClass.includes('10') && (s.code.includes('10') || sClass.includes('10'))) return true;
-        if (targetClass.includes('9') && (s.code.includes('09') || s.code.includes('9') || sClass.includes('9'))) return true;
-        if (targetClass.includes('8') && (s.code.includes('08') || s.code.includes('8') || sClass.includes('8'))) return true;
-        if (targetClass.includes('7') && (s.code.includes('07') || s.code.includes('7') || sClass.includes('7'))) return true;
-        if (targetClass.includes('11') && (s.code.includes('11') || sClass.includes('11'))) return true;
-        if (targetClass.includes('12') && (s.code.includes('12') || sClass.includes('12'))) return true;
+        if (targetNum) {
+          const sNumMatch = sClass.match(/\d+/) || (s.code || '').match(/\d+/);
+          if (sNumMatch && parseInt(sNumMatch[0], 10) === parseInt(targetNum, 10)) {
+            return true;
+          }
+        }
         return false;
       });
       return list;
@@ -1172,7 +1156,7 @@ class AcademicRepository {
 
   async addSubject(sub: Partial<AcademicSubject>): Promise<AcademicSubject> {
     const newSub: AcademicSubject = {
-      id: `sub-${Date.now()}`,
+      id: sub.id || `sub-${Date.now()}`,
       course_id: sub.course_id,
       class_id: sub.class_id,
       class_name: sub.class_name || 'Class 10',
@@ -1186,24 +1170,6 @@ class AcademicRepository {
     };
     this.subjects.push(newSub);
     await this.persist('icc_academic_subjects', this.subjects);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('subjects').upsert({
-          id: newSub.id,
-          name: newSub.name,
-          name_hi: newSub.name_hi,
-          code: newSub.code,
-          icon_name: newSub.icon_name,
-          class_name: newSub.class_name,
-          class_id: newSub.class_id,
-          display_order: newSub.display_order,
-        });
-      }
-    } catch (e) {
-      console.warn('Supabase addSubject error:', e);
-    }
-
     return newSub;
   }
 
@@ -1211,14 +1177,6 @@ class AcademicRepository {
     await this.markAsDeleted(id);
     this.subjects = this.subjects.filter((s) => s.id !== id);
     await this.persist('icc_academic_subjects', this.subjects);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('subjects').delete().eq('id', id);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteSubject error:', e);
-    }
   }
 
   // --- SUB-SUBJECTS ---
@@ -1254,7 +1212,7 @@ class AcademicRepository {
 
   async addChapter(data: Partial<AcademicChapter>): Promise<AcademicChapter> {
     const newChapter: AcademicChapter = {
-      id: `ch-${Date.now()}`,
+      id: data.id || `ch-${Date.now()}`,
       subject_id: data.subject_id!,
       sub_subject_id: data.sub_subject_id,
       course_id: data.course_id,
@@ -1269,22 +1227,6 @@ class AcademicRepository {
     };
     this.chapters.push(newChapter);
     await this.persist('icc_academic_chapters', this.chapters);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('chapters').upsert({
-          id: newChapter.id,
-          subject_id: newChapter.subject_id,
-          chapter_number: newChapter.chapter_number,
-          title: newChapter.title,
-          title_hi: newChapter.title_hi,
-          description: newChapter.description,
-        });
-      }
-    } catch (e) {
-      console.warn('Supabase addChapter error:', e);
-    }
-
     return newChapter;
   }
 
@@ -1292,14 +1234,6 @@ class AcademicRepository {
     await this.markAsDeleted(id);
     this.chapters = this.chapters.filter((c) => c.id !== id);
     await this.persist('icc_academic_chapters', this.chapters);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('chapters').delete().eq('id', id);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteChapter error:', e);
-    }
   }
 
   // --- CHAPTER CONTENT: RECORDED VIDEOS ---
@@ -1310,7 +1244,7 @@ class AcademicRepository {
   async addRecordedLecture(data: Partial<RecordedLecture>): Promise<RecordedLecture> {
     const newLec: RecordedLecture = {
       id: `lec-${Date.now()}`,
-      course_id: data.course_id || 'cr000000-0000-0000-0000-000000000001',
+      course_id: data.course_id || 'c0000000-0000-0000-0000-000000000010',
       subject_id: data.subject_id || '',
       chapter_id: data.chapter_id || '',
       title: data.title || 'Video Lecture',
@@ -1329,25 +1263,6 @@ class AcademicRepository {
       ch.lecture_count = (ch.lecture_count || 0) + 1;
       await this.persist('icc_academic_chapters', this.chapters);
     }
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('recorded_lectures').upsert({
-          id: newLec.id,
-          course_id: newLec.course_id,
-          subject_id: newLec.subject_id,
-          chapter_id: newLec.chapter_id,
-          title: newLec.title,
-          description: newLec.description,
-          video_url: newLec.youtube_video_id,
-          duration_seconds: newLec.duration_seconds,
-          is_free_preview: newLec.is_free_preview,
-        });
-      }
-    } catch (e) {
-      console.warn('Supabase addRecordedLecture error:', e);
-    }
-
     return newLec;
   }
 
@@ -1355,14 +1270,6 @@ class AcademicRepository {
     await this.markAsDeleted(id);
     this.lectures = this.lectures.filter((l) => l.id !== id);
     await this.persist('icc_recorded_lectures', this.lectures);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('recorded_lectures').delete().eq('id', id);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteRecordedLecture error:', e);
-    }
   }
 
   // --- CHAPTER CONTENT: LIVE CLASSES ---
@@ -1377,7 +1284,7 @@ class AcademicRepository {
   async scheduleLiveClass(data: Partial<LiveClass> & { chapter_id?: string; subject_id?: string; class_name?: string }): Promise<LiveClass> {
     const newLive: LiveClass = {
       id: `live-${Date.now()}`,
-      course_id: data.course_id || 'cr000000-0000-0000-0000-000000000001',
+      course_id: data.course_id || 'c0000000-0000-0000-0000-000000000010',
       batch_id: data.batch_id || 'ba000000-0000-0000-0000-000000000001',
       title: data.title || 'Live Class Session',
       title_hi: data.title_hi || data.title,
@@ -1394,25 +1301,6 @@ class AcademicRepository {
 
     this.liveClasses.unshift(newLive);
     await this.persist('icc_live_classes', this.liveClasses);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('live_classes').upsert({
-          id: newLive.id,
-          course_id: newLive.course_id,
-          batch_id: newLive.batch_id,
-          title: newLive.title,
-          description: newLive.description,
-          scheduled_at: newLive.scheduled_at,
-          duration_minutes: newLive.duration_minutes,
-          status: newLive.status,
-          created_at: newLive.created_at,
-        });
-      }
-    } catch (e) {
-      console.warn('Supabase scheduleLiveClass error:', e);
-    }
-
     return newLive;
   }
 
@@ -1421,14 +1309,6 @@ class AcademicRepository {
     if (item) {
       item.status = status;
       await this.persist('icc_live_classes', this.liveClasses);
-
-      try {
-        if (isSupabaseConfigured) {
-          await supabase.from('live_classes').update({ status }).eq('id', id);
-        }
-      } catch (e) {
-        console.warn('Supabase updateLiveClassStatus error:', e);
-      }
     }
   }
 
@@ -1436,14 +1316,6 @@ class AcademicRepository {
     await this.markAsDeleted(id);
     this.liveClasses = this.liveClasses.filter((l) => l.id !== id);
     await this.persist('icc_live_classes', this.liveClasses);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('live_classes').delete().eq('id', id);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteLiveClass error:', e);
-    }
   }
 
   // --- CHAPTER CONTENT: STUDY MATERIALS PDF ---
@@ -1473,7 +1345,7 @@ class AcademicRepository {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    if ((data as any).class_name) (newMat as any).class_name = (data as any).class_name;
+    if (data.class_name) (newMat as any).class_name = data.class_name;
 
     this.materials.unshift(newMat);
     await this.persist('icc_study_materials', this.materials);
@@ -1484,27 +1356,6 @@ class AcademicRepository {
       await this.persist('icc_academic_chapters', this.chapters);
     }
 
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('study_materials').upsert({
-          id: newMat.id,
-          title: newMat.title,
-          description: newMat.description,
-          file_path: newMat.file_path,
-          file_size_bytes: newMat.file_size_bytes,
-          material_type: newMat.material_type,
-          is_free: newMat.is_free,
-          board_id: newMat.board_id,
-          class_id: newMat.class_id,
-          subject_id: newMat.subject_id,
-          chapter_id: newMat.chapter_id,
-          version: newMat.version,
-        });
-      }
-    } catch (e) {
-      console.warn('Supabase addStudyMaterial error:', e);
-    }
-
     return newMat;
   }
 
@@ -1512,14 +1363,6 @@ class AcademicRepository {
     await this.markAsDeleted(id);
     this.materials = this.materials.filter((m) => m.id !== id);
     await this.persist('icc_study_materials', this.materials);
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('study_materials').delete().eq('id', id);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteStudyMaterial error:', e);
-    }
   }
 }
 

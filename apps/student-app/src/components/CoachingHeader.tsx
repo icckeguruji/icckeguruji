@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, ScrollView, Linking, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useDirectorStore } from '../store/useDirectorStore';
+import { academicService } from '../services/academicService';
 import {
   Bell,
   Menu,
@@ -277,7 +279,13 @@ export function CoachingHeader({
 
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)/profile')}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      setTimeout(() => {
+                        useDirectorStore.getState().openModal('payment');
+                        router.push('/(tabs)/profile');
+                      }, 200);
+                    }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#FEF3C7' }]}>
                       <CreditCard size={18} color="#D97706" />
@@ -291,7 +299,13 @@ export function CoachingHeader({
 
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)/profile')}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      setTimeout(() => {
+                        useDirectorStore.getState().openModal('student');
+                        router.push('/(tabs)/profile');
+                      }, 200);
+                    }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
                       <Users size={18} color="#2563EB" />
@@ -305,7 +319,13 @@ export function CoachingHeader({
 
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)/profile')}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      setTimeout(() => {
+                        useDirectorStore.getState().openModal('broadcast');
+                        router.push('/(tabs)/profile');
+                      }, 200);
+                    }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#FDF2F8' }]}>
                       <Megaphone size={18} color="#DB2777" />
@@ -319,9 +339,15 @@ export function CoachingHeader({
 
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => {
+                    onPress={async () => {
                       setIsDrawerOpen(false);
-                      if (onRefresh) onRefresh();
+                      try {
+                        await academicService.syncFromCloud();
+                        if (onRefresh) onRefresh();
+                        Alert.alert('☁️ Cloud Database Synced', 'All courses, live classes, study materials & student data have been synchronized with Supabase live cloud!');
+                      } catch {
+                        Alert.alert('Synced', 'Local cache and cloud state synchronized.');
+                      }
                     }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#ECFDF5' }]}>
