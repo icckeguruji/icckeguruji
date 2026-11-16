@@ -6,8 +6,12 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { Course, LiveClass, StudyMaterial } from '@icc/shared-types';
-import { initialCourses as baseInitialCourses } from '../../../admin-web/src/lib/sample-data';
+import { Course, LiveClass, StudyMaterial, UserProfile } from '@icc/shared-types';
+import {
+  initialCourses as baseInitialCourses,
+  initialPayments,
+  initialStudents,
+} from '../../../admin-web/src/lib/sample-data';
 
 export interface SubSubject {
   id: string;
@@ -793,6 +797,22 @@ export const initialChapterStudyMaterials: StudyMaterial[] = [
 // REACTIVE ACADEMIC REPOSITORY & ADMIN CRUD SERVICE
 // -------------------------------------------------------------
 
+const SAMPLE_RESERVED_IDS = new Set([
+  '10000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000002',
+  '10000000-0000-0000-0000-000000000003',
+  'cr000000-0000-0000-0000-000000000001',
+  'cr000000-0000-0000-0000-000000000002',
+  'cr000000-0000-0000-0000-000000000003',
+  'cr000000-0000-0000-0000-000000000004',
+  'mat00000-0000-0000-0000-000000000001',
+  'mat00000-0000-0000-0000-000000000002',
+  '30000000-0000-0000-0000-000000000002',
+  'live0000-0000-0000-0000-000000000001',
+  'live0000-0000-0000-0000-000000000002',
+  'live0000-0000-0000-0000-000000000003',
+]);
+
 class AcademicRepository {
   private courses: Course[] = allInitialCourses;
   private subjects: AcademicSubject[] = initialAcademicSubjects;
@@ -800,6 +820,8 @@ class AcademicRepository {
   private lectures: RecordedLecture[] = initialRecordedLectures;
   private liveClasses: LiveClass[] = initialChapterLiveClasses;
   private materials: StudyMaterial[] = initialChapterStudyMaterials;
+  private payments: any[] = initialPayments;
+  private students: UserProfile[] = initialStudents;
   private deletedIds: Set<string> = new Set();
   private isLoaded: boolean = false;
   private loadPromise: Promise<void> | null = null;
@@ -823,7 +845,7 @@ class AcademicRepository {
     try {
       let rawDeleted = null;
       let isInitialized = null;
-      let sCourses = null, sSubs = null, sChaps = null, sLecs = null, sLive = null, sMats = null;
+      let sCourses = null, sSubs = null, sChaps = null, sLecs = null, sLive = null, sMats = null, sPayments = null, sStudents = null;
 
       if (Platform.OS !== 'web') {
         rawDeleted = await SecureStore.getItemAsync('icc_deleted_ids');
@@ -834,6 +856,8 @@ class AcademicRepository {
         sLecs = await SecureStore.getItemAsync('icc_recorded_lectures');
         sLive = await SecureStore.getItemAsync('icc_live_classes');
         sMats = await SecureStore.getItemAsync('icc_study_materials');
+        sPayments = await SecureStore.getItemAsync('icc_payments');
+        sStudents = await SecureStore.getItemAsync('icc_students');
       } else if (typeof window !== 'undefined') {
         rawDeleted = localStorage.getItem('icc_deleted_ids');
         isInitialized = localStorage.getItem('icc_storage_initialized');
@@ -843,6 +867,8 @@ class AcademicRepository {
         sLecs = localStorage.getItem('icc_recorded_lectures');
         sLive = localStorage.getItem('icc_live_classes');
         sMats = localStorage.getItem('icc_study_materials');
+        sPayments = localStorage.getItem('icc_payments');
+        sStudents = localStorage.getItem('icc_students');
       }
 
       if (rawDeleted) {
@@ -858,6 +884,8 @@ class AcademicRepository {
         this.lectures = initialRecordedLectures;
         this.liveClasses = initialChapterLiveClasses;
         this.materials = initialChapterStudyMaterials;
+        this.payments = initialPayments;
+        this.students = initialStudents;
 
         await this.persist('icc_storage_initialized', 'true');
         await this.persist('icc_courses', this.courses);
@@ -866,6 +894,8 @@ class AcademicRepository {
         await this.persist('icc_recorded_lectures', this.lectures);
         await this.persist('icc_live_classes', this.liveClasses);
         await this.persist('icc_study_materials', this.materials);
+        await this.persist('icc_payments', this.payments);
+        await this.persist('icc_students', this.students);
       } else {
         // Authoritative load from persistent storage — never re-seed deleted items
         if (sCourses !== null) this.courses = JSON.parse(sCourses);
@@ -874,6 +904,8 @@ class AcademicRepository {
         if (sLecs !== null) this.lectures = JSON.parse(sLecs);
         if (sLive !== null) this.liveClasses = JSON.parse(sLive);
         if (sMats !== null) this.materials = JSON.parse(sMats);
+        if (sPayments !== null) this.payments = JSON.parse(sPayments);
+        if (sStudents !== null) this.students = JSON.parse(sStudents);
       }
 
       // Filter out any tombstoned / deleted items
@@ -890,28 +922,66 @@ class AcademicRepository {
     }
   }
 
+  private normalizeKey(text: string): string {
+    return (text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  private async getItem(key: string): Promise<string | null> {
+    try {
+      if (Platform.OS !== 'web') {
+        return await SecureStore.getItemAsync(key);
+      } else if (typeof window !== 'undefined') {
+        return localStorage.getItem(key);
+      }
+    } catch {}
+    return null;
+  }
+
   private isDeleted(id: string, title?: string): boolean {
     if (this.deletedIds.has(id)) return true;
     if (title) {
       const cleanTitle = title.trim().toLowerCase();
+      const norm = this.normalizeKey(title);
+      const noYear = cleanTitle.replace(/\(.*\)/g, '').trim();
+      const normNoYear = this.normalizeKey(noYear);
+
       if (this.deletedIds.has(`title:${cleanTitle}`)) return true;
+      if (this.deletedIds.has(`title:${noYear}`)) return true;
+      if (this.deletedIds.has(`norm:${norm}`)) return true;
+      if (this.deletedIds.has(`norm:${normNoYear}`)) return true;
+
       if (this.deletedIds.has(`live:${cleanTitle}`)) return true;
+      if (this.deletedIds.has(`live:${noYear}`)) return true;
       if (this.deletedIds.has(`material:${cleanTitle}`)) return true;
+      if (this.deletedIds.has(`material:${noYear}`)) return true;
     }
     return false;
   }
 
-  // Non-destructive cloud sync that NEVER resurrects deleted items
+  // Non-destructive cloud sync that NEVER resurrects deleted items or sample courses
   async syncFromCloud() {
     if (!isSupabaseConfigured) return;
     try {
+      const isCoursesModified = (await this.getItem('icc_courses_modified')) === 'true';
+
       const { data: remoteCourses } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (remoteCourses && remoteCourses.length > 0) {
-        const valid = remoteCourses.filter((c) => !this.isDeleted(c.id, c.title));
+        // If director has deliberately cleared all courses, do NOT revive old remote courses
+        if (isCoursesModified && this.courses.length === 0) {
+          return;
+        }
+
+        const valid = remoteCourses.filter((c) => {
+          if (this.isDeleted(c.id, c.title)) return false;
+          // If courses have been modified by director, NEVER re-import initial sample IDs
+          if (isCoursesModified && SAMPLE_RESERVED_IDS.has(c.id)) return false;
+          return true;
+        });
+
         const courseMap = new Map(this.courses.map((c) => [c.id, c]));
         for (const rem of valid) {
           const existing = courseMap.get(rem.id);
@@ -922,8 +992,8 @@ class AcademicRepository {
             if (remoteDate >= localDate) {
               courseMap.set(rem.id, { ...existing, ...rem });
             }
-          } else {
-            // Only add if not previously deleted
+          } else if (!isCoursesModified) {
+            // Only add if not previously modified
             courseMap.set(rem.id, rem);
           }
         }
@@ -961,7 +1031,11 @@ class AcademicRepository {
   private async markAsDeleted(id: string, extraKeys: string[] = []) {
     this.deletedIds.add(id);
     for (const key of extraKeys) {
-      if (key) this.deletedIds.add(key.trim().toLowerCase());
+      if (key) {
+        const clean = key.trim().toLowerCase();
+        this.deletedIds.add(clean);
+        this.deletedIds.add(`norm:${this.normalizeKey(clean)}`);
+      }
     }
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
   }
@@ -1145,9 +1219,15 @@ class AcademicRepository {
     await this.ensureLoaded();
     const course = this.courses.find((c) => c.id === id);
     const extraKeys: string[] = [];
-    if (course?.title) extraKeys.push(`title:${course.title.trim().toLowerCase()}`);
+    if (course?.title) {
+      const clean = course.title.trim().toLowerCase();
+      extraKeys.push(`title:${clean}`);
+      const noYear = clean.replace(/\(.*\)/g, '').trim();
+      extraKeys.push(`title:${noYear}`);
+    }
     await this.markAsDeleted(id, extraKeys);
     this.courses = this.courses.filter((c) => c.id !== id);
+    await this.persist('icc_courses_modified', 'true');
     await this.persist('icc_courses', this.courses);
 
     try {
@@ -1381,9 +1461,15 @@ class AcademicRepository {
     await this.ensureLoaded();
     const item = this.liveClasses.find((l) => l.id === id);
     const extraKeys: string[] = [];
-    if (item?.title) extraKeys.push(`live:${item.title.trim().toLowerCase()}`);
+    if (item?.title) {
+      const clean = item.title.trim().toLowerCase();
+      extraKeys.push(`live:${clean}`);
+      const noYear = clean.replace(/\(.*\)/g, '').trim();
+      extraKeys.push(`live:${noYear}`);
+    }
     await this.markAsDeleted(id, extraKeys);
     this.liveClasses = this.liveClasses.filter((l) => l.id !== id);
+    await this.persist('icc_live_modified', 'true');
     await this.persist('icc_live_classes', this.liveClasses);
 
     try {
@@ -1443,9 +1529,15 @@ class AcademicRepository {
     await this.ensureLoaded();
     const item = this.materials.find((m) => m.id === id);
     const extraKeys: string[] = [];
-    if (item?.title) extraKeys.push(`material:${item.title.trim().toLowerCase()}`);
+    if (item?.title) {
+      const clean = item.title.trim().toLowerCase();
+      extraKeys.push(`material:${clean}`);
+      const noYear = clean.replace(/\(.*\)/g, '').trim();
+      extraKeys.push(`material:${noYear}`);
+    }
     await this.markAsDeleted(id, extraKeys);
     this.materials = this.materials.filter((m) => m.id !== id);
+    await this.persist('icc_materials_modified', 'true');
     await this.persist('icc_study_materials', this.materials);
 
     try {
@@ -1456,6 +1548,94 @@ class AcademicRepository {
         }
       }
     } catch {}
+  }
+
+  // --- DIRECTOR CONTROLS: PAYMENTS ---
+  async getPayments(): Promise<any[]> {
+    await this.ensureLoaded();
+    return [...this.payments];
+  }
+
+  async approvePayment(payId: string, reviewedBy?: string): Promise<any[]> {
+    await this.ensureLoaded();
+    this.payments = this.payments.map((p) =>
+      p.id === payId
+        ? {
+            ...p,
+            status: 'approved',
+            reviewed_by: reviewedBy || 'u0000000-0000-0000-0000-000000000000',
+            reviewed_at: new Date().toISOString(),
+          }
+        : p
+    );
+    await this.persist('icc_payments', this.payments);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('payments')
+          .update({
+            status: 'approved',
+            reviewed_by: reviewedBy,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', payId);
+      }
+    } catch {}
+    return [...this.payments];
+  }
+
+  async rejectPayment(payId: string, reviewedBy?: string): Promise<any[]> {
+    await this.ensureLoaded();
+    this.payments = this.payments.map((p) =>
+      p.id === payId
+        ? {
+            ...p,
+            status: 'rejected',
+            reviewed_by: reviewedBy || 'u0000000-0000-0000-0000-000000000000',
+            reviewed_at: new Date().toISOString(),
+          }
+        : p
+    );
+    await this.persist('icc_payments', this.payments);
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('payments')
+          .update({
+            status: 'rejected',
+            reviewed_by: reviewedBy,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', payId);
+      }
+    } catch {}
+    return [...this.payments];
+  }
+
+  // --- DIRECTOR CONTROLS: STUDENTS ---
+  async getStudents(): Promise<UserProfile[]> {
+    await this.ensureLoaded();
+    return [...this.students];
+  }
+
+  async toggleStudentStatus(studentId: string): Promise<UserProfile[]> {
+    await this.ensureLoaded();
+    this.students = this.students.map((s) =>
+      s.id === studentId ? { ...s, is_active: !s.is_active, updated_at: new Date().toISOString() } : s
+    );
+    await this.persist('icc_students', this.students);
+    return [...this.students];
+  }
+
+  async updateStudent(studentId: string, updates: Partial<UserProfile>): Promise<UserProfile[]> {
+    await this.ensureLoaded();
+    this.students = this.students.map((s) =>
+      s.id === studentId ? { ...s, ...updates, updated_at: new Date().toISOString() } : s
+    );
+    await this.persist('icc_students', this.students);
+    return [...this.students];
   }
 }
 

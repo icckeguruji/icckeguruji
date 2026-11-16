@@ -20,6 +20,7 @@ import { useDirectorStore } from '../../src/store/useDirectorStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { supabase } from '../../src/lib/supabase';
 import { useAppUpdateStore, CURRENT_APP_VERSION } from '../../src/services/appUpdateService';
+import { academicService } from '../../src/services/academicService';
 import { initialStudents, initialPayments } from '../../../admin-web/src/lib/sample-data';
 import { UserProfile, Payment } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
@@ -105,11 +106,28 @@ export default function StudentProfileScreen() {
   const [payments, setPayments] = useState<any[]>(initialPayments);
   const [students, setStudents] = useState<UserProfile[]>(initialStudents);
   const [studentSearch, setStudentSearch] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastMsg, setBroadcastMsg] = useState('');
+
+  // Authoritative load of payments & students from persistent academicService
+  const loadDirectorData = useCallback(async () => {
+    try {
+      const [allPayments, allStudents] = await Promise.all([
+        academicService.getPayments(),
+        academicService.getStudents(),
+      ]);
+      setPayments(allPayments);
+      setStudents(allStudents);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadDirectorData();
+  }, [loadDirectorData]);
 
   // Handle opening modals from Hamburger Director Menu
   const { activeModal, closeModal: closeDirectorModal } = useDirectorStore();
@@ -129,6 +147,7 @@ export default function StudentProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      loadDirectorData();
       const modal = useDirectorStore.getState().activeModal;
       if (modal === 'payment') {
         setIsPaymentModalOpen(true);
@@ -140,10 +159,10 @@ export default function StudentProfileScreen() {
         setIsBroadcastModalOpen(true);
         closeDirectorModal();
       }
-    }, [closeDirectorModal])
+    }, [closeDirectorModal, loadDirectorData])
   );
 
-  // Handle Payment Approval
+  // Handle Payment Approval — Persistent & Irreversible
   const handleApprovePayment = (payId: string, studentName: string) => {
     Alert.alert(
       'Approve Payment & Unlock Course?',
@@ -154,22 +173,9 @@ export default function StudentProfileScreen() {
           text: 'Approve & Unlock',
           style: 'default',
           onPress: async () => {
-            try {
-              if (user?.id) {
-                await supabase
-                  .from('payments')
-                  .update({
-                    status: 'approved',
-                    reviewed_by: user.id,
-                    reviewed_at: new Date().toISOString(),
-                  })
-                  .eq('id', payId);
-              }
-            } catch {}
-            setPayments((prev) =>
-              prev.map((p) => (p.id === payId ? { ...p, status: 'approved' } : p))
-            );
-            Alert.alert('✅ Approved!', `${studentName}'s enrollment has been activated.`);
+            const updated = await academicService.approvePayment(payId, user?.id);
+            setPayments(updated);
+            Alert.alert('✅ Approved!', `${studentName}'s enrollment has been activated and permanently unlocked.`);
           },
         },
       ]
@@ -186,30 +192,22 @@ export default function StudentProfileScreen() {
           text: 'Reject',
           style: 'destructive',
           onPress: async () => {
-            try {
-              await supabase
-                .from('payments')
-                .update({ status: 'rejected' })
-                .eq('id', payId);
-            } catch {}
-            setPayments((prev) =>
-              prev.map((p) => (p.id === payId ? { ...p, status: 'rejected' } : p))
-            );
-            Alert.alert('Rejected', 'Payment marked as rejected.');
+            const updated = await academicService.rejectPayment(payId, user?.id);
+            setPayments(updated);
+            Alert.alert('Rejected', `Payment submission for ${studentName} has been rejected.`);
           },
         },
       ]
     );
   };
 
-  const handleToggleStudent = (student: UserProfile) => {
-    const nextStatus = !student.is_active;
-    setStudents((prev) =>
-      prev.map((s) => (s.id === student.id ? { ...s, is_active: nextStatus } : s))
-    );
+  const handleToggleStudent = async (student: UserProfile) => {
+    const updated = await academicService.toggleStudentStatus(student.id);
+    setStudents(updated);
+    const updatedStudent = updated.find((s) => s.id === student.id);
     Alert.alert(
       'Status Updated',
-      `${student.full_name} is now ${nextStatus ? 'Active' : 'Suspended'}.`
+      `${student.full_name} is now ${updatedStudent?.is_active ? 'Active' : 'Suspended'}.`
     );
   };
 
@@ -1301,71 +1299,137 @@ export default function StudentProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalBody}>
-              {payments.map((p) => (
-                <View key={p.id} style={styles.paymentCard}>
-                  <View style={styles.paymentCardHeader}>
-                    <View>
-                      <Text style={styles.paymentStudentName}>
-                        {p.student?.full_name || 'ICC Student'}
-                      </Text>
-                      <Text style={styles.paymentMobile}>
-                        +91 {p.student?.mobile_number || '9876543210'}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.paymentStatusPill,
-                        p.status === 'approved'
-                          ? styles.statusApproved
-                          : p.status === 'rejected'
-                          ? styles.statusRejected
-                          : styles.statusPending,
-                      ]}
-                    >
-                      <Text style={styles.paymentStatusText}>
-                        {p.status.toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.paymentDetailRow}>
-                    <Text style={styles.paymentCourse}>
-                      {p.course?.title || 'BSEB 10th Target Batch'}
-                    </Text>
-                    <Text style={styles.paymentAmount}>{formatINR(p.amount)}</Text>
-                  </View>
-
-                  <View style={styles.utrBox}>
-                    <Text style={styles.utrLabel}>UPI Ref / UTR:</Text>
-                    <Text style={styles.utrValue}>{p.upi_ref_number}</Text>
-                  </View>
-
-                  {p.status === 'pending' && (
-                    <View style={styles.paymentActionButtons}>
-                      <TouchableOpacity
-                        style={styles.approvePayBtn}
-                        onPress={() =>
-                          handleApprovePayment(p.id, p.student?.full_name || 'Student')
-                        }
-                      >
-                        <Check size={14} color="#FFFFFF" />
-                        <Text style={styles.approvePayBtnText}>Approve & Unlock</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.rejectPayBtn}
-                        onPress={() =>
-                          handleRejectPayment(p.id, p.student?.full_name || 'Student')
-                        }
-                      >
-                        <X size={14} color="#EF4444" />
-                        <Text style={styles.rejectPayBtnText}>Reject</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
+            {/* Filter Tabs: All, Pending, Approved, Rejected */}
+            <View style={styles.paymentFilterTabs}>
+              {[
+                { key: 'all', label: `All (${payments.length})` },
+                { key: 'pending', label: `Pending (${payments.filter((p) => p.status === 'pending').length})` },
+                { key: 'approved', label: `Approved (${payments.filter((p) => p.status === 'approved').length})` },
+                { key: 'rejected', label: `Rejected (${payments.filter((p) => p.status === 'rejected').length})` },
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[
+                    styles.paymentFilterTab,
+                    paymentFilter === tab.key && styles.paymentFilterTabActive,
+                  ]}
+                  onPress={() => setPaymentFilter(tab.key as any)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.paymentFilterTabText,
+                      paymentFilter === tab.key && styles.paymentFilterTabTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
               ))}
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              {payments
+                .filter((p) => (paymentFilter === 'all' ? true : p.status === paymentFilter))
+                .length === 0 ? (
+                <View style={styles.emptyPaymentsBox}>
+                  <CheckCircle size={38} color="#10B981" />
+                  <Text style={styles.emptyPaymentsTitle}>All Caught Up!</Text>
+                  <Text style={styles.emptyPaymentsSub}>
+                    {paymentFilter === 'pending'
+                      ? 'No pending fee verification requests at this moment.'
+                      : `No receipts found under ${paymentFilter} status.`}
+                  </Text>
+                </View>
+              ) : (
+                payments
+                  .filter((p) => (paymentFilter === 'all' ? true : p.status === paymentFilter))
+                  .map((p) => (
+                    <View key={p.id} style={styles.paymentCard}>
+                      <View style={styles.paymentCardHeader}>
+                        <View>
+                          <Text style={styles.paymentStudentName}>
+                            {p.student?.full_name || 'ICC Student'}
+                          </Text>
+                          <Text style={styles.paymentMobile}>
+                            +91 {p.student?.mobile_number || '9876543210'}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.paymentStatusPill,
+                            p.status === 'approved'
+                              ? styles.statusApproved
+                              : p.status === 'rejected'
+                              ? styles.statusRejected
+                              : styles.statusPending,
+                          ]}
+                        >
+                          <Text style={styles.paymentStatusText}>
+                            {p.status.toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.paymentDetailRow}>
+                        <Text style={styles.paymentCourse}>
+                          {p.course?.title || 'BSEB 10th Target Batch'}
+                        </Text>
+                        <Text style={styles.paymentAmount}>{formatINR(p.amount)}</Text>
+                      </View>
+
+                      <View style={styles.utrBox}>
+                        <Text style={styles.utrLabel}>UPI Ref / UTR:</Text>
+                        <Text style={styles.utrValue}>{p.upi_ref_number}</Text>
+                      </View>
+
+                      {/* Action buttons ONLY shown when pending — never for approved/rejected */}
+                      {p.status === 'pending' && (
+                        <View style={styles.paymentActionButtons}>
+                          <TouchableOpacity
+                            style={styles.approvePayBtn}
+                            onPress={() =>
+                              handleApprovePayment(p.id, p.student?.full_name || 'Student')
+                            }
+                          >
+                            <Check size={14} color="#FFFFFF" />
+                            <Text style={styles.approvePayBtnText}>Approve & Unlock</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.rejectPayBtn}
+                            onPress={() =>
+                              handleRejectPayment(p.id, p.student?.full_name || 'Student')
+                            }
+                          >
+                            <X size={14} color="#EF4444" />
+                            <Text style={styles.rejectPayBtnText}>Reject</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* Permanent Verification Confirmation for Approved */}
+                      {p.status === 'approved' && (
+                        <View style={styles.paymentApprovedBanner}>
+                          <CheckCircle size={15} color="#059669" />
+                          <Text style={styles.paymentApprovedBannerText}>
+                            ✓ Enrollment Active • Course Unlocked Permanently
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Permanent Rejection Notice for Rejected */}
+                      {p.status === 'rejected' && (
+                        <View style={styles.paymentRejectedBanner}>
+                          <XCircle size={15} color="#DC2626" />
+                          <Text style={styles.paymentRejectedBannerText}>
+                            ✕ Payment Submission Rejected by Director
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  ))
+              )}
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -2235,6 +2299,84 @@ const styles = StyleSheet.create({
   paymentActionButtons: {
     flexDirection: 'row',
     gap: 8,
+  },
+  paymentFilterTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  paymentFilterTab: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+  },
+  paymentFilterTabActive: {
+    backgroundColor: '#0F2B48',
+  },
+  paymentFilterTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  paymentFilterTabTextActive: {
+    color: '#FFFFFF',
+  },
+  paymentApprovedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  paymentApprovedBannerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  paymentRejectedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  paymentRejectedBannerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#991B1B',
+  },
+  emptyPaymentsBox: {
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyPaymentsTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 10,
+  },
+  emptyPaymentsSub: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
   },
   approvePayBtn: {
     flex: 2,
