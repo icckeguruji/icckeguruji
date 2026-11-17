@@ -23,6 +23,7 @@ import {
   HelpCircle,
   Bell,
   MessageSquare,
+  Globe,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -50,6 +51,10 @@ export function AdminSidebar() {
     });
   }, [pathname, isTeacherSection]);
 
+  if (pathname === '/login' || (!pathname.startsWith('/admin') && !pathname.startsWith('/teacher'))) {
+    return null;
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     if (typeof document !== 'undefined') {
@@ -60,21 +65,20 @@ export function AdminSidebar() {
   };
 
   const adminNavItems = [
-    { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/students', icon: Users, label: 'Students' },
-    { href: '/academics', icon: GraduationCap, label: 'Academics' },
-    { href: '/courses', icon: BookOpen, label: 'Courses' },
-    { href: '/batches', icon: Layers, label: 'Batches' },
-    { href: '/live-classes', icon: Video, label: 'Live Classes' },
-    { href: '/recorded-lectures', icon: PlaySquare, label: 'Recorded Videos' },
-    { href: '/study-materials', icon: FileText, label: 'Notes & PDFs' },
-    { href: '/payments', icon: CreditCard, label: 'Payments & UTR' },
-    { href: '/examinations', icon: FileCheck2, label: 'Examinations' },
-    { href: '/notifications', icon: Bell, label: 'Push Notifications' },
-    { href: '/whatsapp', icon: MessageSquare, label: 'WhatsApp AI Bot' },
-    { href: '/teachers', icon: UserCheck, label: 'Faculty Management' },
-    { href: '/reports', icon: BarChart3, label: 'Reports' },
-    { href: '/settings', icon: Settings, label: 'Settings & Quota' },
+    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/admin/students', icon: Users, label: 'Students' },
+    { href: '/admin/academics', icon: GraduationCap, label: 'Academics' },
+    { href: '/admin/courses', icon: BookOpen, label: 'Courses' },
+    { href: '/admin/live-classes', icon: Video, label: 'Live Classes' },
+    { href: '/admin/recorded-lectures', icon: PlaySquare, label: 'Recorded Videos' },
+    { href: '/admin/study-materials', icon: FileText, label: 'Notes & PDFs' },
+    { href: '/admin/payments', icon: CreditCard, label: 'Payments & UTR' },
+    { href: '/admin/examinations', icon: FileCheck2, label: 'Examinations' },
+    { href: '/admin/notifications', icon: Bell, label: 'Push Notifications' },
+    { href: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp AI Bot' },
+    { href: '/admin/teachers', icon: UserCheck, label: 'Faculty Management' },
+    { href: '/admin/reports', icon: BarChart3, label: 'Reports' },
+    { href: '/admin/settings', icon: Settings, label: 'Settings & Quota' },
   ];
 
   const teacherNavItems = [
@@ -84,7 +88,7 @@ export function AdminSidebar() {
     { href: '/teacher/doubts', icon: HelpCircle, label: 'Doubt Center' },
     { href: '/teacher/live-classes', icon: Video, label: 'Live Classes' },
     { href: '/teacher/study-materials', icon: FileText, label: 'Upload Notes' },
-    { href: '/notifications', icon: Bell, label: 'Push Broadcast' },
+    { href: '/admin/notifications', icon: Bell, label: 'Push Broadcast' },
   ];
 
   const currentNav = role === 'teacher' || isTeacherSection ? teacherNavItems : adminNavItems;
@@ -107,12 +111,23 @@ export function AdminSidebar() {
             </p>
           </div>
         </div>
+
+        {/* Quick Link to Public Website */}
+        <div className="mt-3">
+          <Link
+            href="/"
+            className="flex items-center justify-center space-x-1.5 w-full py-1.5 px-2.5 rounded-lg text-[11px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-400" />
+            <span>🌐 View Public Website</span>
+          </Link>
+        </div>
       </div>
 
       {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         {currentNav.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link

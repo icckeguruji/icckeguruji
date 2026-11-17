@@ -376,7 +376,7 @@ export const initialPlatformConfig: PlatformConfig = {
     contact_phone: '+91 9771350910',
     contact_email: 'icckeguruji@gmail.com',
     whatsapp_number: '919771350910',
-    website_url: 'https://icc-public-website.vercel.app',
+    website_url: 'https://icckeguruji.vercel.app',
     established_year: 2018,
   },
   payment_config: {

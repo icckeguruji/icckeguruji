@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mirror = searchParams.get('mirror');
 
-  const githubReleaseUrl = 'https://github.com/icckeguruji/icc/releases/latest/download/ideal-coaching-release.apk';
+  const githubReleaseUrl = 'https://github.com/icckeguruji/icckeguruji/releases/latest/download/ideal-coaching-release.apk';
   const cdnMirrorUrl = `https://ghproxy.net/${githubReleaseUrl}`;
 
   const targetUrl = mirror === 'cdn' ? cdnMirrorUrl : githubReleaseUrl;

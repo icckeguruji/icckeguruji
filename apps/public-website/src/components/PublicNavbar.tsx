@@ -1,13 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Smartphone, Menu, X } from 'lucide-react';
+import { Smartphone, Menu, X, Lock, ShieldCheck } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
+import { supabase } from '@/lib/supabase';
 
 export function PublicNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { t } = useLanguage();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
@@ -58,6 +70,23 @@ export function PublicNavbar() {
           >
             <Smartphone className="w-4 h-4" />
             <span>Download App</span>
+          </Link>
+
+          <Link
+            href={isLoggedIn ? '/admin' : '/login'}
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md border border-slate-700 transition"
+          >
+            {isLoggedIn ? (
+              <>
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Admin Dashboard</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>Admin Login</span>
+              </>
+            )}
           </Link>
         </div>
 
@@ -110,14 +139,32 @@ export function PublicNavbar() {
           >
             Contact
           </Link>
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
             <Link
               href="/download-app"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs"
+              className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-sm"
             >
               <Smartphone className="w-4 h-4" />
               <span>Download App</span>
+            </Link>
+
+            <Link
+              href={isLoggedIn ? '/admin' : '/login'}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs border border-slate-800 shadow-sm"
+            >
+              {isLoggedIn ? (
+                <>
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Admin Dashboard</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 text-amber-400" />
+                  <span>Admin Login</span>
+                </>
+              )}
             </Link>
           </div>
         </div>

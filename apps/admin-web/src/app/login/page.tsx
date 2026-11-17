@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
       if (targetRole === 'teacher') {
         router.push('/teacher');
       } else {
-        router.push('/');
+        router.push('/admin');
       }
     }, 400);
   };
@@ -144,7 +144,7 @@ export default function AdminLoginPage() {
       if (appRole === 'teacher') {
         router.push('/teacher');
       } else {
-        router.push('/');
+        router.push('/admin');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';

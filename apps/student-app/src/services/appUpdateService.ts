@@ -9,8 +9,8 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 export const CURRENT_VERSION_CODE = Constants.expoConfig?.android?.versionCode || 1;
 
-const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/icckeguruji/icc/releases/latest';
-const DEFAULT_APK_FALLBACK_URL = 'https://github.com/icckeguruji/icc/releases/latest/download/ideal-coaching-release.apk';
+const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/icckeguruji/icckeguruji/releases/latest';
+const DEFAULT_APK_FALLBACK_URL = 'https://github.com/icckeguruji/icckeguruji/releases/latest/download/ideal-coaching-release.apk';
 const CDN_MIRROR_PREFIX = 'https://ghproxy.net/';
 
 export interface UpdateInfo {

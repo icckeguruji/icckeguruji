@@ -1,225 +1,156 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AdminHeader } from '@/components/AdminHeader';
+import React from 'react';
+import Image from 'next/image';
+import { Award, Phone, Mail, CheckCircle, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { UserCheck, Plus, CheckCircle, Mail, Phone, BookOpen, Layers } from 'lucide-react';
 
-interface MockTeacher {
-  id: string;
-  full_name: string;
-  qualification: string;
-  subjects: string;
-  email: string;
-  mobile: string;
-  assignedBatches: number;
-}
-
-export default function TeachersPage() {
+export default function PublicTeachersPage() {
   const { lang, t } = useLanguage();
-  const [teachers, setTeachers] = useState<MockTeacher[]>([
-    {
-      id: 't-0',
-      full_name: 'BADE SIR (Director / बड़े सर)',
-      qualification: 'Founder & Academic Director - 12+ Years Experience',
-      subjects: 'Senior Physics, Mathematics & Board Strategy',
-      email: 'icckeguruji@gmail.com',
-      mobile: '+91 9771350910',
-      assignedBatches: 4,
-    },
-    {
-      id: 't-1',
-      full_name: 'Er. R. K. Sharma (इंजी. आर. के. शर्मा)',
-      qualification: 'B.Tech (NIT Patna) - 10+ Years Experience',
-      subjects: 'Physics & Mathematics (भौतिकी एवं गणित)',
-      email: 'rksharma@idealcoaching.in',
-      mobile: '9876543220',
-      assignedBatches: 3,
-    },
-    {
-      id: 't-2',
-      full_name: 'Dr. S. N. Mishra (डॉ. एस. एन. मिश्रा)',
-      qualification: 'M.Sc, Ph.D (Patna University)',
-      subjects: 'Chemistry & Biology (रसायन शास्त्र एवं जीव विज्ञान)',
-      email: 'snmishra@idealcoaching.in',
-      mobile: '9876543221',
-      assignedBatches: 2,
-    },
-  ]);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    qualification: '',
-    subjects: '',
-    email: '',
-    mobile: '',
-  });
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newTeacher: MockTeacher = {
-      id: `t-${Date.now()}`,
-      full_name: formData.full_name,
-      qualification: formData.qualification,
-      subjects: formData.subjects,
-      email: formData.email,
-      mobile: formData.mobile,
-      assignedBatches: 1,
-    };
-    setTeachers([newTeacher, ...teachers]);
-    setIsModalOpen(false);
-    setFormData({
-      full_name: '',
-      qualification: '',
-      subjects: '',
-      email: '',
-      mobile: '',
-    });
-  };
+  const faculty = [
+    {
+      nameHi: 'इंजी. आर. के. शर्मा',
+      nameEn: 'Er. R. K. Sharma',
+      degreeHi: 'B.Tech (NIT Patna) · 10+ वर्ष शिक्षण अनुभव',
+      degreeEn: 'B.Tech (NIT Patna) · 10+ Years Teaching Experience',
+      subjectHi: 'भौतिकी एवं गणित',
+      subjectEn: 'Physics & Mathematics',
+      descHi: 'बिहार एवं झारखंड बोर्ड के हज़ारों छात्रों को गणित और भौतिकी के कठिन सूत्रों को आसान बनाकर सिखाने का विशाल अनुभव। इनके पढ़ाए सैकड़ों छात्र राज्य मेरिट लिस्ट में आ चुके हैं।',
+      descEn: 'Extensive experience in teaching state board matric and intermediate physics and mathematics with simplified formulas and problem-solving techniques.',
+    },
+    {
+      nameHi: 'डॉ. एस. एन. मिश्रा',
+      nameEn: 'Dr. S. N. Mishra',
+      degreeHi: 'M.Sc, Ph.D (Patna University)',
+      degreeEn: 'M.Sc, Ph.D (Patna University)',
+      subjectHi: 'रसायन शास्त्र एवं जीव विज्ञान',
+      subjectEn: 'Chemistry & Biology',
+      descHi: 'रासायनिक अभिक्रियाओं और जीव विज्ञान के नामांकित चित्रों को सरलता से याद कराने की विशेष तकनीक के प्रणेता। बिहार बोर्ड के छात्रों के सर्वाधिक लोकप्रिय शिक्षक।',
+      descEn: 'Renowned expert in simplifying organic chemistry reactions and biological diagrams for board examinations.',
+    },
+    {
+      nameHi: 'प्रो. विजय कुमार सिंह',
+      nameEn: 'Prof. V. K. Singh',
+      degreeHi: 'M.A. (Gold Medalist), B.Ed',
+      degreeEn: 'M.A. (Gold Medalist), B.Ed',
+      subjectHi: 'सामाजिक विज्ञान एवं हिंदी',
+      subjectEn: 'Social Science & Hindi',
+      descHi: 'इतिहास, भूगोल, नागरिक शास्त्र एवं हिंदी व्याकरण में बोर्ड परीक्षा के मॉडल उत्तर लिखने की सटीक कला सिखाने में सिद्धहस्त।',
+      descEn: 'Specialist in teaching board-level answer writing, essay structuring, and grammar concepts for scoring full marks.',
+    },
+  ];
 
   return (
-    <div className="flex-1 pb-12">
-      <AdminHeader
-        titleHi="शिक्षक एवं संकाय प्रबंधन"
-        titleEn="Teacher & Faculty Management"
-        subtitleHi="संकाय खाते, विषय विशेषज्ञता एवं बैच आवंटन"
-        subtitleEn="Manage teacher profiles, subject assignments and portal permissions"
-      />
+    <div className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+      <div className="text-center max-w-2xl mx-auto space-y-3">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-900 text-xs font-bold uppercase tracking-wider">
+          <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+          <span>{t('अनुभवी संकाय एवं नेतृत्व', 'Expert Faculty & Leadership')}</span>
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-900">
+          {t('हमारे विशेषज्ञ शिक्षक एवं मार्गदर्शक', 'Our Faculty & Mentors')}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500">
+          {t(
+            'बिहार और झारखंड बोर्ड परीक्षा में छात्रों को टॉपर बनाने वाली अनुभवी शिक्षक टीम',
+            'Experienced faculty team dedicated to producing board toppers in BSEB & JAC examinations'
+          )}
+        </p>
+      </div>
 
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="font-bold text-slate-800 text-sm">
-              {t(`कुल शिक्षक: ${teachers.length}`, `Total Faculty: ${teachers.length}`)}
-            </h3>
-            <p className="text-xs text-slate-500">
-              {t('विशेषज्ञ संकाय - बिहार एवं झारखंड बोर्ड', 'Specialized State Board Faculty')}
-            </p>
+      {/* Featured Director Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-3xl p-6 sm:p-10 shadow-xl border border-indigo-900/60 flex flex-col md:flex-row items-center gap-8">
+        <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-2xl shrink-0 bg-slate-800">
+          <Image
+            src="/bade-sir.png"
+            alt="Director BADE SIR"
+            width={208}
+            height={208}
+            className="w-full h-full object-cover object-top"
+          />
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/90 to-transparent p-2 text-center">
+            <span className="text-[10px] font-black uppercase text-amber-300 tracking-wider">
+              Director
+            </span>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t('नया शिक्षक खाता जोड़ें', 'Add Faculty Member')}</span>
-          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {teachers.map((tItem) => (
-            <div
-              key={tItem.id}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 hover:shadow-md transition"
+        <div className="space-y-4 text-center md:text-left flex-1">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-black uppercase">
+            <Award className="w-3.5 h-3.5 text-slate-950" />
+            <span>{t('संस्थान निदेशक एवं मुख्य शिक्षक', 'Founder & Academic Director')}</span>
+          </div>
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center justify-center md:justify-start gap-2">
+              <span>BADE SIR (बड़े सर)</span>
+              <CheckCircle className="w-5 h-5 text-amber-400" />
+            </h2>
+            <p className="text-xs sm:text-sm text-amber-300 font-bold mt-1">
+              IDEAL COACHING CENTRE · Sarotiya, Godda (Jharkhand)
+            </p>
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+            {t(
+              'विगत 12 वर्षों से बिहार एवं झारखंड बोर्ड के छात्रों को गुणवत्तापूर्ण शिक्षा, व्यक्तिगत मार्गदर्शन एवं शत-प्रतिशत सफलता दिलाने में समर्पित। इनके मार्गदर्शन में सैकड़ों छात्र राज्य एवं जिला मेरिट सूची में स्थान प्राप्त कर चुके हैं।',
+              'Dedicated to state board academic excellence for over 12 years. Under his mentorship, hundreds of students have achieved top ranks in BSEB & JAC Matric and Intermediate exams.'
+            )}
+          </p>
+
+          <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs font-semibold">
+            <a
+              href="tel:+919771350910"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black transition"
             >
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-base">
-                  {tItem.full_name[0]}
+              <Phone className="w-3.5 h-3.5" />
+              <span>+91 9771350910</span>
+            </a>
+            <a
+              href="mailto:icckeguruji@gmail.com"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition border border-white/15"
+            >
+              <Mail className="w-3.5 h-3.5 text-amber-300" />
+              <span>icckeguruji@gmail.com</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Faculty Members Grid */}
+      <div className="space-y-6">
+        <h3 className="text-xl font-black text-slate-900">
+          {t('विषय विशेषज्ञ शिक्षक', 'Subject Specialist Faculty')}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {faculty.map((member, idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4"
+            >
+              <div className="space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 font-black text-xl flex items-center justify-center shadow-xs">
+                  {lang === 'hi' ? member.nameHi.slice(0, 1) : member.nameEn.slice(0, 1)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">{tItem.full_name}</h4>
-                  <p className="text-xs text-slate-500 font-medium">{tItem.qualification}</p>
+                  <h3 className="font-bold text-base text-slate-900">
+                    {lang === 'hi' ? member.nameHi : member.nameEn}
+                  </h3>
+                  <p className="text-xs text-blue-600 font-semibold mt-0.5">
+                    {lang === 'hi' ? member.degreeHi : member.degreeEn}
+                  </p>
+                  <p className="text-xs text-amber-600 font-bold mt-1">
+                    {t('विषय: ', 'Subject: ')}
+                    {lang === 'hi' ? member.subjectHi : member.subjectEn}
+                  </p>
                 </div>
-              </div>
-
-              <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">{t('अध्यापन विषय:', 'Subjects:')}</span>
-                  <span className="font-bold text-slate-800">{tItem.subjects}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">{t('आवंटित बैच:', 'Assigned Batches:')}</span>
-                  <span className="font-bold text-blue-700">{tItem.assignedBatches} Batches</span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span className="font-mono">{tItem.email}</span>
-                <span className="font-mono">+91 {tItem.mobile}</span>
+                <p className="text-xs text-slate-600 leading-relaxed pt-2 border-t border-slate-100">
+                  {lang === 'hi' ? member.descHi : member.descEn}
+                </p>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="font-bold text-base text-slate-900">{t('शिक्षक खाता जोड़ें', 'Add Teacher Account')}</h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 font-bold">✕</button>
-              </div>
-
-              <form onSubmit={handleCreate} className="space-y-4 pt-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('पूरा नाम', 'Full Name')}</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('योग्यता (Qualification)', 'Qualification')}</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.qualification}
-                    onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('विषय (Subjects)', 'Subjects')}</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.subjects}
-                    onChange={(e) => setFormData({ ...formData, subjects: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">{t('ईमेल', 'Email')}</label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">{t('मोबाइल', 'Mobile')}</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.mobile}
-                      onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-3 flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold"
-                  >
-                    {t('रद्द करें', 'Cancel')}
-                  </button>
-                  <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">
-                    {t('खाता सुरक्षित करें', 'Save Teacher')}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
