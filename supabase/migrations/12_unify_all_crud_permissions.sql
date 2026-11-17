@@ -97,9 +97,40 @@ CREATE POLICY "Allow all on profiles" ON public.profiles FOR ALL TO public, anon
 DROP POLICY IF EXISTS "Allow all on payments" ON public.payments;
 CREATE POLICY "Allow all on payments" ON public.payments FOR ALL TO public, anon, authenticated USING (true) WITH CHECK (true);
 
--- 4. Enable Supabase Realtime publication on all key tables
-ALTER PUBLICATION supabase_realtime ADD TABLE public.courses;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.live_classes;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.recorded_lectures;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.study_materials;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.examinations;
+-- 4. Enable Row Level Security and Permissive Policies
+ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.live_classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.recorded_lectures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.study_materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.examinations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+
+-- 5. Enable Supabase Realtime publication on all key tables safely
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.courses;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL;
+    END;
+
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.live_classes;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL;
+    END;
+
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.recorded_lectures;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL;
+    END;
+
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.study_materials;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL;
+    END;
+
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.examinations;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL;
+    END;
+END $$;
