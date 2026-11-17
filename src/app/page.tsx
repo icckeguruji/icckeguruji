@@ -79,12 +79,18 @@ export default function PublicHomePage() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link
-                href="/download-app"
+              <a
+                href="/api/download-apk"
                 className="flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition w-full sm:w-auto justify-center"
               >
                 <Smartphone className="w-5 h-5" />
-                <span>{t('एंड्रॉयड ऐप डाउनलोड करें', 'Download Android App')}</span>
+                <span>{t('एंड्रॉयड ऐप डाउनलोड करें (~20 MB)', 'Download Android App (~20 MB)')}</span>
+              </a>
+              <Link
+                href="/download-app"
+                className="flex items-center space-x-2 px-6 py-3.5 rounded-xl border-2 border-blue-200 hover:border-blue-300 bg-blue-50 text-blue-900 font-bold text-sm transition w-full sm:w-auto justify-center"
+              >
+                <span>{t('डाउनलोड पेज व गाइड', 'Download Page & Guide')}</span>
               </Link>
               <Link
                 href="/courses"
@@ -368,12 +374,18 @@ export default function PublicHomePage() {
               )}
             </p>
             <div className="pt-2 flex flex-wrap gap-3 justify-center md:justify-start">
-              <Link
-                href="/download-app"
+              <a
+                href="/api/download-apk"
                 className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-white text-blue-900 hover:bg-blue-50 font-bold text-sm shadow-md transition"
               >
                 <Smartphone className="w-4 h-4 text-blue-700" />
-                <span>{t('डायरेक्ट एपीके डाउनलोड', 'Direct APK Download')}</span>
+                <span>{t('डायरेक्ट एपीके डाउनलोड (~20 MB)', 'Direct APK Download (~20 MB)')}</span>
+              </a>
+              <Link
+                href="/download-app"
+                className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-sm border border-white/30 transition"
+              >
+                <span>{t('डाउनलोड पेज', 'Download Page')}</span>
               </Link>
               <a
                 href="https://t.me/icckeguruji_official"

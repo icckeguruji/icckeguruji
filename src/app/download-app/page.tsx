@@ -9,8 +9,8 @@ export default function DownloadAppPage() {
   const { t } = useLanguage();
   const [downloadingMirror, setDownloadingMirror] = useState<string | null>(null);
 
-  const directDownloadUrl = 'https://github.com/icckeguruji/icckeguruji/releases/latest/download/ideal-coaching-release.apk';
-  const cdnMirrorUrl = 'https://ghproxy.net/https://github.com/icckeguruji/icckeguruji/releases/latest/download/ideal-coaching-release.apk';
+  const directDownloadUrl = 'https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk';
+  const cdnMirrorUrl = 'https://ghproxy.net/https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk';
 
   const handleDownload = (mirror: string, url: string) => {
     setDownloadingMirror(mirror);
