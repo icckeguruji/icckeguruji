@@ -9,6 +9,9 @@
   ],
   "scripts": {
     "build:packages": "npm run --workspaces --if-present build",
+    "build": "npm --workspace=apps/public-website run build",
+    "vercel-build": "npm --workspace=apps/public-website run build && rm -rf .next && cp -r apps/public-website/.next .next && (cp -r apps/public-website/public ./ 2>/dev/null || true)",
+    "start": "npm --workspace=apps/public-website run start",
     "lint": "npm run --workspaces --if-present lint",
     "test": "npm run --workspaces --if-present test",
     "dev:admin": "npm --workspace=apps/admin-web run dev",
