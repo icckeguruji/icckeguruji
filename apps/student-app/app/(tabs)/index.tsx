@@ -57,7 +57,6 @@ export default function StudentHomeScreen() {
   const isAdmin =
     user?.role === 'admin' ||
     user?.role === 'super_admin' ||
-    user?.role === 'teacher' ||
     user?.email === 'icckeguruji@gmail.com' ||
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';

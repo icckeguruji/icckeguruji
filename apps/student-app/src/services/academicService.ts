@@ -232,10 +232,11 @@ class AcademicRepository {
     return this.deletedIds.has(id);
   }
 
-  // Non-destructive cloud sync that NEVER deletes locally created courses
+  // Non-destructive cloud sync with Supabase for Courses, Live Classes, Notes & Lectures
   async syncFromCloud() {
     if (!isSupabaseConfigured) return;
     try {
+      // 1. Sync Courses
       const { data: remoteCourses } = await supabase
         .from('courses')
         .select('*')
@@ -244,13 +245,10 @@ class AcademicRepository {
       if (remoteCourses && remoteCourses.length > 0) {
         const valid = remoteCourses.filter((c) => {
           if (this.deletedIds.has(c.id)) return false;
-          // NEVER EVER re-import initial sample / seed IDs under any condition
           if (SAMPLE_RESERVED_IDS.has(c.id)) return false;
-          if (c.id.startsWith('cr000000-') || c.id.startsWith('10000000-')) return false;
           return true;
         });
 
-        // Merge: Local courses created by user/AI MUST ALWAYS be preserved
         const courseMap = new Map(this.courses.map((c) => [c.id, c]));
         for (const rem of valid) {
           const existing = courseMap.get(rem.id);
@@ -266,10 +264,57 @@ class AcademicRepository {
         }
         this.courses = Array.from(courseMap.values()).filter((c) => !this.deletedIds.has(c.id));
         await this.persist('icc_courses', this.courses);
-        this.notify();
       }
 
-      // Sync subjects non-destructively
+      // 2. Sync Live Classes
+      const { data: remoteLive } = await supabase
+        .from('live_classes')
+        .select('*')
+        .order('scheduled_at', { ascending: false });
+
+      if (remoteLive && remoteLive.length > 0) {
+        const validLive = remoteLive.filter((l) => !this.deletedIds.has(l.id));
+        const liveMap = new Map(this.liveClasses.map((l) => [l.id, l]));
+        for (const rem of validLive) {
+          liveMap.set(rem.id, { ...liveMap.get(rem.id), ...rem });
+        }
+        this.liveClasses = Array.from(liveMap.values()).filter((l) => !this.deletedIds.has(l.id));
+        await this.persist('icc_live_classes', this.liveClasses);
+      }
+
+      // 3. Sync Study Materials
+      const { data: remoteMats } = await supabase
+        .from('study_materials')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (remoteMats && remoteMats.length > 0) {
+        const validMats = remoteMats.filter((m) => !this.deletedIds.has(m.id));
+        const matMap = new Map(this.materials.map((m) => [m.id, m]));
+        for (const rem of validMats) {
+          matMap.set(rem.id, { ...matMap.get(rem.id), ...rem });
+        }
+        this.materials = Array.from(matMap.values()).filter((m) => !this.deletedIds.has(m.id));
+        await this.persist('icc_study_materials', this.materials);
+      }
+
+      // 4. Sync Recorded Lectures
+      const { data: remoteLecs } = await supabase
+        .from('recorded_lectures')
+        .select('*')
+        .order('lecture_order', { ascending: true });
+
+      if (remoteLecs && remoteLecs.length > 0) {
+        const validLecs = remoteLecs.filter((l) => !this.deletedIds.has(l.id));
+        const lecMap = new Map(this.lectures.map((l) => [l.id, l]));
+        for (const rem of validLecs) {
+          lecMap.set(rem.id, { ...lecMap.get(rem.id), ...rem });
+        }
+        this.lectures = Array.from(lecMap.values()).filter((l) => !this.deletedIds.has(l.id));
+        await this.persist('icc_recorded_lectures', this.lectures);
+      }
+
+      // 5. Sync Subjects
       const { data: remoteSubs } = await supabase.from('subjects').select('*');
       if (remoteSubs && remoteSubs.length > 0) {
         const validSubs = remoteSubs.filter((s) => !this.isDeleted(s.id));
@@ -279,8 +324,9 @@ class AcademicRepository {
         }
         this.subjects = Array.from(subMap.values()).filter((s) => !this.isDeleted(s.id));
         await this.persist('icc_academic_subjects', this.subjects);
-        this.notify();
       }
+
+      this.notify();
     } catch (e) {
       console.warn('Sync from cloud error:', e);
     }
@@ -744,16 +790,44 @@ class AcademicRepository {
       await this.persist('icc_academic_chapters', this.chapters);
     }
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('recorded_lectures').insert({
+          course_id: newLec.course_id,
+          subject_id: newLec.subject_id || 'd0000000-0000-0000-0000-000000000002',
+          chapter_id: newLec.chapter_id || 'e0000000-0000-0000-0000-000000000001',
+          title: newLec.title,
+          title_hi: newLec.title_hi,
+          description: newLec.description,
+          youtube_video_id: newLec.youtube_video_id,
+          duration_seconds: newLec.duration_seconds,
+          is_free_preview: newLec.is_free_preview,
+          lecture_order: newLec.lecture_order,
+        });
+      }
+    } catch {}
+
     return newLec;
   }
 
   async deleteRecordedLecture(id: string): Promise<void> {
     await this.ensureLoaded();
+    const item = this.lectures.find((l) => l.id === id);
     this.deletedIds.add(id);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
     this.lectures = this.lectures.filter((l) => l.id !== id);
     await this.persist('icc_recorded_lectures', this.lectures);
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('recorded_lectures').delete().eq('id', id);
+        if (item?.title) {
+          await supabase.from('recorded_lectures').delete().eq('title', item.title);
+        }
+      }
+    } catch {}
   }
 
   // --- CHAPTER CONTENT: LIVE CLASSES ---
@@ -792,6 +866,22 @@ class AcademicRepository {
     this.liveClasses.unshift(newLive);
     await this.persist('icc_live_classes', this.liveClasses);
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('live_classes').insert({
+          course_id: newLive.course_id,
+          title: newLive.title,
+          title_hi: newLive.title_hi,
+          description: newLive.description,
+          youtube_video_id: newLive.youtube_video_id,
+          scheduled_at: newLive.scheduled_at,
+          duration_minutes: newLive.duration_minutes,
+          status: newLive.status,
+        });
+      }
+    } catch {}
+
     return newLive;
   }
 
@@ -871,6 +961,23 @@ class AcademicRepository {
     }
 
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('study_materials').insert({
+          board_id: newMat.board_id,
+          class_id: newMat.class_id,
+          title: newMat.title,
+          title_hi: newMat.title_hi,
+          description: newMat.description,
+          file_path: newMat.file_path,
+          file_size_bytes: newMat.file_size_bytes,
+          material_type: newMat.material_type,
+          is_free: newMat.is_free,
+        });
+      }
+    } catch {}
+
     return newMat;
   }
 

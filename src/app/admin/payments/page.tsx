@@ -17,6 +17,7 @@ import {
   Filter,
   Eye,
   FileCheck,
+  Trash2,
 } from 'lucide-react';
 
 export default function PaymentsPage() {
@@ -39,6 +40,15 @@ export default function PaymentsPage() {
   useEffect(() => {
     loadPayments();
   }, [filterStatus]);
+
+  const handleDeletePayment = async (p: Payment) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this payment record (Ref: ${p.upi_ref_number})?`
+    );
+    if (!confirmed) return;
+    await AdminApi.deletePayment(p.id);
+    setPayments((prev) => prev.filter((item) => item.id !== p.id));
+  };
 
   const handleApprove = async () => {
     if (!selectedPayment) return;
@@ -194,15 +204,24 @@ export default function PaymentsPage() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedPayment(p);
-                          setActionRemarks('');
-                        }}
-                        className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
-                      >
-                        {p.status === 'pending' ? t('जांचें एवं निर्णय लें', 'Audit & Decide') : t('विवरण', 'View Details')}
-                      </button>
+                      <div className="flex items-center justify-end space-x-1.5">
+                        <button
+                          onClick={() => {
+                            setSelectedPayment(p);
+                            setActionRemarks('');
+                          }}
+                          className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+                        >
+                          {p.status === 'pending' ? t('जांचें एवं निर्णय लें', 'Audit & Decide') : t('विवरण', 'View Details')}
+                        </button>
+                        <button
+                          onClick={() => handleDeletePayment(p)}
+                          title="Delete Payment Record"
+                          className="p-1.5 rounded bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
