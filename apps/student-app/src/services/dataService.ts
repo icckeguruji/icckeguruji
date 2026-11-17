@@ -12,6 +12,25 @@ export interface SyncStatus {
   error?: string | null;
 }
 
+// 4. Bandwidth-Protected Shared Realtime Channel
+let sharedChannel: any = null;
+let subscriberCount = 0;
+let lastSyncTime = 0;
+
+const debouncedCloudSync = async (onUpdate: () => void) => {
+  const now = Date.now();
+  // Throttle cloud sync to at most once every 10 seconds to protect egress quota
+  if (now - lastSyncTime < 10000) {
+    onUpdate();
+    return;
+  }
+  lastSyncTime = now;
+  try {
+    await academicService.syncFromCloud();
+    onUpdate();
+  } catch {}
+};
+
 export const DataService = {
   // 1. Authoritative courses from persistent academic repository
   fetchCourses: async (): Promise<Course[]> => {
@@ -28,32 +47,42 @@ export const DataService = {
     return academicService.getStudyMaterials();
   },
 
-  // 4. Subscribe to Realtime Updates (Local Reactive + Cloud Supabase)
+  // 4. Subscribe to Realtime Updates (Local Reactive + Bandwidth-Guarded Cloud Sync)
   subscribeToChanges: (onUpdate: () => void) => {
     const unsubscribeLocal = academicService.subscribe(onUpdate);
 
     if (!isSupabaseConfigured) return unsubscribeLocal;
 
-    try {
-      const channel = supabase
-        .channel('icc-student-app-sync')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
-          academicService.syncFromCloud().then(onUpdate).catch(() => {});
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
-          academicService.syncFromCloud().then(onUpdate).catch(() => {});
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
-          academicService.syncFromCloud().then(onUpdate).catch(() => {});
-        })
-        .subscribe();
-
-      return () => {
-        unsubscribeLocal();
-        supabase.removeChannel(channel);
-      };
-    } catch {
-      return unsubscribeLocal;
+    subscriberCount++;
+    if (!sharedChannel) {
+      try {
+        sharedChannel = supabase
+          .channel('icc-shared-sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+            debouncedCloudSync(onUpdate);
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
+            debouncedCloudSync(onUpdate);
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
+            debouncedCloudSync(onUpdate);
+          })
+          .subscribe();
+      } catch {
+        sharedChannel = null;
+      }
     }
+
+    return () => {
+      unsubscribeLocal();
+      subscriberCount--;
+      if (subscriberCount <= 0 && sharedChannel) {
+        try {
+          supabase.removeChannel(sharedChannel);
+        } catch {}
+        sharedChannel = null;
+        subscriberCount = 0;
+      }
+    };
   },
 };
