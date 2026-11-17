@@ -84,21 +84,40 @@ export default function CoursesPage() {
 
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
+    const boardIdMap: Record<string, string> = {
+      BSEB: 'b0000000-0000-0000-0000-000000000001',
+      JAC: 'b0000000-0000-0000-0000-000000000002',
+    };
+    const classIdMap: Record<string, string> = {
+      'Class 7': 'c0000000-0000-0000-0000-000000000007',
+      'Class 8': 'c0000000-0000-0000-0000-000000000008',
+      'Class 9': 'c0000000-0000-0000-0000-000000000009',
+      'Class 10': 'c0000000-0000-0000-0000-000000000010',
+      'Class 11': 'c0000000-0000-0000-0000-000000000011',
+      'Class 12': 'c0000000-0000-0000-0000-000000000012',
+    };
+
+    const board_id = boardIdMap[formData.board_code] || 'b0000000-0000-0000-0000-000000000001';
+    const class_id = classIdMap[formData.class_name] || 'c0000000-0000-0000-0000-000000000010';
+
     const created = await AdminApi.createCourse({
       title: formData.title,
       title_hi: formData.title_hi || formData.title,
       description: formData.description,
       description_hi: formData.description_hi,
       thumbnail_url: thumbnailUrl,
+      board_id,
+      class_id,
+      session_id: 'a0000000-0000-0000-0000-000000000001',
       is_free: formData.is_free,
       price: formData.is_free ? 0 : Number(formData.price),
       discount_price: formData.is_free ? 0 : Number(formData.discount_price),
       validity_days: Number(formData.validity_days),
       is_published: true,
     });
-    setCourses((prev) => [created, ...prev]);
+    setCourses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
     setIsModalOpen(false);
-    setThumbnailUrl('/thumbnails/batch-b3-class10.jpg');
+    setThumbnailUrl('/logo.png');
     setFormData({
       title: '',
       title_hi: '',

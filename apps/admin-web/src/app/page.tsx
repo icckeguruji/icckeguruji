@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -14,14 +14,25 @@ import {
   Phone,
   Youtube,
   MessageCircle,
+  BookOpen,
 } from 'lucide-react';
-import { initialCourses } from '@/lib/sample-data';
+import { AdminApi } from '@/lib/api';
+import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import { useLanguage } from '@/components/LanguageContext';
 import ToppersWallOfFame from '@/components/ToppersWallOfFame';
 
 export default function PublicHomePage() {
   const { lang, t } = useLanguage();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
+  useEffect(() => {
+    AdminApi.getCourses().then((data) => {
+      setCourses(data || []);
+      setLoadingCourses(false);
+    });
+  }, []);
 
   const stats = [
     { value: 'Class 1–12', label: t('BSEB & JAC Board', 'BSEB & JAC Board') },
@@ -79,7 +90,7 @@ export default function PublicHomePage() {
                 href="/courses"
                 className="flex items-center space-x-2 px-6 py-3.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 text-slate-800 font-bold text-sm transition w-full sm:w-auto justify-center"
               >
-                <span>{t('बैच देखें', 'Explore Batches')}</span>
+                <span>{t('कोर्स देखें', 'Explore Courses')}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -228,12 +239,12 @@ export default function PublicHomePage() {
         <div className="flex justify-between items-end mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              {t('सक्रिय बैच (Session 2026-27)', 'Active Batches (Session 2026-27)')}
+              {t('उपलब्ध पाठ्यक्रम (Session 2026-27)', 'Available Courses (Session 2026-27)')}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               {t(
-                'BSEB एवं JAC बोर्ड के लिए विशेष रूप से तैयार किए गए बैच',
-                'Target batches specialized for Bihar and Jharkhand board exams'
+                'BSEB एवं JAC बोर्ड परीक्षा की सर्वोच्च तैयारी के लिए आधिकारिक पाठ्यक्रम',
+                'Official course curriculum specialized for Bihar and Jharkhand board exams'
               )}
             </p>
           </div>
@@ -246,55 +257,92 @@ export default function PublicHomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {initialCourses.map((c) => (
-            <div
-              key={c.id}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
-            >
-              <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                <Image
-                  src={c.thumbnail_url || '/thumbnails/batch-b3-class10.jpg'}
-                  alt={c.title}
-                  width={400}
-                  height={176}
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute top-3 left-3 flex space-x-2">
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white">
-                    {c.title.includes('JAC') || c.title.includes('B-1') || c.title.includes('B-2') ? 'JAC' : 'BSEB & JAC'}
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500 text-slate-950">
-                    {c.is_free ? 'FREE' : formatINR(c.discount_price || c.price)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm leading-snug">
-                    {c.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
-                    {c.description}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-medium">
-                    ⏱ {c.validity_days} {t('दिन', 'Days')}
-                  </span>
-                  <Link
-                    href="/courses"
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
-                  >
-                    {t('प्रवेश लें', 'Enroll Now')}
-                  </Link>
-                </div>
-              </div>
+        {courses.length === 0 ? (
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 border border-blue-200/80 rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto space-y-5 shadow-xs">
+            <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
+              <BookOpen className="w-8 h-8" />
             </div>
-          ))}
-        </div>
+            <div className="space-y-2">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                {t('सत्र 2026-27 के नए पाठ्यक्रम शीघ्र लाइव होंगे', 'New Courses for Session 2026-27 Launching Shortly')}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
+                {t(
+                  'कक्षा 1 से 12वीं (बिहार एवं झारखंड बोर्ड) के लिए नए सत्र 2026-27 के आधिकारिक ऑनलाइन एवं ऑफलाइन कोर्स की सूची अपडेट की जा रही है। ऑफलाइन नामांकन प्रारंभ है।',
+                  'Official online and offline course curriculum for Classes 1–12 (BSEB & JAC Boards) for Session 2026-27 is being updated. Admissions are currently open.'
+                )}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <a
+                href="tel:+919771350910"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition"
+              >
+                <Phone className="w-4 h-4" />
+                <span>{t('डायरेक्टर से संपर्क करें: 9771350910', 'Call Director: 9771350910')}</span>
+              </a>
+              <a
+                href="https://wa.me/919771350910?text=Hello%20BADE%20SIR,%20I%20want%20information%20about%20new%20courses."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>{t('व्हाट्सएप पर जानकारी लें', 'WhatsApp Enquiry')}</span>
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {courses.map((c) => (
+              <div
+                key={c.id}
+                className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
+              >
+                <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
+                  <Image
+                    src={c.thumbnail_url || '/logo.png'}
+                    alt={c.title}
+                    width={400}
+                    height={176}
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute top-3 left-3 flex space-x-2">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white">
+                      {c.title.includes('JAC') ? 'JAC' : 'BSEB & JAC'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500 text-slate-950">
+                      {c.is_free ? 'FREE' : formatINR(c.discount_price || c.price)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm leading-snug">
+                      {c.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                      {c.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-xs text-slate-500 font-medium">
+                      ⏱ {c.validity_days} {t('दिन', 'Days')}
+                    </span>
+                    <Link
+                      href="/courses"
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
+                    >
+                      {t('प्रवेश लें', 'Enroll Now')}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Toppers Wall of Fame */}

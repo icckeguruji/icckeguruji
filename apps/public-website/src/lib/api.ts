@@ -53,45 +53,8 @@ export interface AdminProfileData {
   preferred_language?: string;
 }
 
-// Initial default batches matching initial courses
-const initialBatchesData: BatchWithMeta[] = [
-  {
-    id: 'ba000000-0000-0000-0000-000000000001',
-    course_id: initialCourses[0].id,
-    name: 'Morning Toppers Batch 2026-27',
-    name_hi: 'प्रातःकालीन टॉपर बैच 2026-27',
-    courseTitle: initialCourses[0].title,
-    schedule_info: 'Mon-Sat: 06:30 AM - 08:30 AM IST',
-    studentCount: 48,
-    thumbnail_url: '/thumbnails/batch-b3-class10.jpg',
-    is_active: true,
-    created_at: '2026-03-01T00:00:00Z',
-  },
-  {
-    id: 'ba000000-0000-0000-0000-000000000002',
-    course_id: initialCourses[0].id,
-    name: 'Evening Target Batch 2026-27',
-    name_hi: 'सायंकालीन टारगेट बैच 2026-27',
-    courseTitle: initialCourses[0].title,
-    schedule_info: 'Mon-Sat: 04:30 PM - 06:30 PM IST',
-    studentCount: 35,
-    thumbnail_url: '/thumbnails/batch-b4-class9.jpg',
-    is_active: true,
-    created_at: '2026-03-01T00:00:00Z',
-  },
-  {
-    id: 'ba000000-0000-0000-0000-000000000003',
-    course_id: initialCourses[2]?.id || initialCourses[0].id,
-    name: 'JAC Board Excellence Batch A',
-    name_hi: 'झारखंड बोर्ड सफलता बैच A',
-    courseTitle: initialCourses[2]?.title || initialCourses[0].title,
-    schedule_info: 'Mon-Sat: 07:00 AM - 09:00 AM IST',
-    studentCount: 29,
-    thumbnail_url: '/thumbnails/batch-b1-class8.jpg',
-    is_active: true,
-    created_at: '2026-03-01T00:00:00Z',
-  },
-];
+// Initial default batches matching initial courses (Clean slate - No dummy data)
+const initialBatchesData: BatchWithMeta[] = [];
 
 const defaultAdminProfile: AdminProfileData = {
   id: 'adm00000-0000-0000-0000-000000000001',
@@ -103,17 +66,34 @@ const defaultAdminProfile: AdminProfileData = {
   preferred_language: 'en',
 };
 
-// Persistent Storage Keys
+// Persistent Storage Keys (v3 Clean Slate)
 const STORAGE_KEYS = {
-  STUDENTS: 'icc_admin_persistent_students',
-  COURSES: 'icc_admin_persistent_courses',
-  BATCHES: 'icc_admin_persistent_batches',
-  PAYMENTS: 'icc_admin_persistent_payments',
-  MATERIALS: 'icc_admin_persistent_materials',
-  LIVE_CLASSES: 'icc_admin_persistent_live_classes',
-  SUBJECTS: 'icc_admin_persistent_subjects',
-  ADMIN_PROFILE: 'icc_admin_persistent_profile',
+  STUDENTS: 'icc_v3_clean_students',
+  COURSES: 'icc_v3_clean_courses',
+  BATCHES: 'icc_v3_clean_batches',
+  PAYMENTS: 'icc_v3_clean_payments',
+  MATERIALS: 'icc_v3_clean_materials',
+  LIVE_CLASSES: 'icc_v3_clean_live_classes',
+  SUBJECTS: 'icc_v3_clean_subjects',
+  ADMIN_PROFILE: 'icc_v3_clean_profile',
 };
+
+// Clear legacy dirty mock cache from localStorage
+if (typeof window !== 'undefined') {
+  try {
+    const legacyKeys = [
+      'icc_admin_persistent_students',
+      'icc_admin_persistent_courses',
+      'icc_admin_persistent_batches',
+      'icc_admin_persistent_payments',
+      'icc_admin_persistent_materials',
+      'icc_admin_persistent_live_classes',
+      'icc_courses_v1',
+      'icc_courses_v2',
+    ];
+    legacyKeys.forEach((k) => localStorage.removeItem(k));
+  } catch {}
+}
 
 // Helper to retrieve data from localStorage (browser-safe, permanent)
 function getPersistentState<T>(key: string, defaultData: T): T {
@@ -206,8 +186,6 @@ export const AdminApi = {
 
   // 2. Student Management
   getStudents: async (query?: string, board?: string) => {
-    localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
-
     if (isSupabaseConfigured) {
       try {
         let req = supabase.from('profiles').select('*');
@@ -216,14 +194,17 @@ export const AdminApi = {
           req = req.or(`full_name.ilike.%${query}%,mobile_number.ilike.%${query}%,email.ilike.%${query}%,username.ilike.%${query}%`);
         }
         const { data, error } = await req.order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           localStudents = data as UserProfile[];
           savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
           return localStudents;
         }
-      } catch {}
+      } catch (e) {
+        console.error('getStudents Supabase error:', e);
+      }
     }
 
+    localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, []);
     let filtered = [...localStudents];
     if (board) filtered = filtered.filter((s) => s.board_code === board);
     if (query) {
@@ -315,68 +296,92 @@ export const AdminApi = {
 
   // 3. Courses Management
   getCourses: async () => {
-    localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
-
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase
           .from('courses')
           .select('*, board:academic_boards(*), class:classes(*)')
           .order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           localCourses = data as Course[];
           savePersistentState(STORAGE_KEYS.COURSES, localCourses);
           return localCourses;
         }
-      } catch {}
+      } catch (e) {
+        console.error('getCourses Supabase error:', e);
+      }
     }
+    localCourses = getPersistentState(STORAGE_KEYS.COURSES, []);
     return localCourses;
   },
 
   createCourse: async (course: Partial<Course>) => {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
+
+    // Default valid Supabase foreign keys
+    const defaultBoardId = 'b0000000-0000-0000-0000-000000000001';
+    const defaultClassId = 'c0000000-0000-0000-0000-000000000010';
+    const defaultSessionId = 'a0000000-0000-0000-0000-000000000001';
+
+    const insertPayload: any = {
+      title: course.title || 'New Course',
+      title_hi: course.title_hi || course.title || 'नया कोर्स',
+      description: course.description || '',
+      description_hi: course.description_hi || course.description || '',
+      thumbnail_url: course.thumbnail_url || '/logo.png',
+      board_id: course.board_id || defaultBoardId,
+      class_id: course.class_id || defaultClassId,
+      session_id: course.session_id || defaultSessionId,
+      is_free: course.is_free ?? false,
+      price: course.is_free ? 0 : (course.price ?? 999),
+      discount_price: course.is_free ? 0 : (course.discount_price ?? 499),
+      validity_days: course.validity_days ?? 365,
+      is_published: true,
+    };
+
     if (isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase.from('courses').insert(course).select().single();
+        const { data, error } = await supabase
+          .from('courses')
+          .insert(insertPayload)
+          .select('*, board:academic_boards(*), class:classes(*)')
+          .single();
         if (!error && data) {
-          localCourses.unshift(data as Course);
+          localCourses = [data as Course, ...localCourses.filter((c) => c.id !== data.id)];
           savePersistentState(STORAGE_KEYS.COURSES, localCourses);
           return data as Course;
+        } else if (error) {
+          console.error('createCourse Supabase error:', error);
         }
-      } catch {}
+      } catch (err) {
+        console.error('createCourse exception:', err);
+      }
     }
 
-    const newCourse: Course = {
+    const fallbackCourse: Course = {
       id: `cr-${Date.now()}`,
-      title: course.title || '',
-      title_hi: course.title_hi,
-      description: course.description || '',
-      description_hi: course.description_hi,
-      thumbnail_url: course.thumbnail_url || '/thumbnails/batch-b3-class10.jpg',
-      board_id: course.board_id || initialBoards[0].id,
-      class_id: course.class_id || initialClasses[1].id,
-      price: course.price || 0,
-      discount_price: course.discount_price,
-      is_free: course.is_free || false,
-      validity_days: course.validity_days || 365,
-      is_published: true,
+      ...insertPayload,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       lecture_count: 0,
       material_count: 0,
     };
 
-    localCourses = [newCourse, ...localCourses];
+    localCourses = [fallbackCourse, ...localCourses];
     savePersistentState(STORAGE_KEYS.COURSES, localCourses);
-    return newCourse;
+    return fallbackCourse;
   },
 
   updateCourse: async (courseId: string, updates: Partial<Course>) => {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('courses').update(updates).eq('id', courseId);
-      } catch {}
+        const { board, class: classItem, lecture_count, material_count, ...cleanUpdates } = updates as any;
+        const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', courseId);
+        if (error) console.error('updateCourse Supabase error:', error);
+      } catch (err) {
+        console.error('updateCourse exception:', err);
+      }
     }
 
     localCourses = localCourses.map((c) =>
@@ -390,8 +395,11 @@ export const AdminApi = {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('courses').delete().eq('id', courseId);
-      } catch {}
+        const { error } = await supabase.from('courses').delete().eq('id', courseId);
+        if (error) console.error('deleteCourse Supabase error:', error);
+      } catch (err) {
+        console.error('deleteCourse exception:', err);
+      }
     }
     localCourses = localCourses.filter((c) => c.id !== courseId);
     savePersistentState(STORAGE_KEYS.COURSES, localCourses);
@@ -400,25 +408,24 @@ export const AdminApi = {
 
   // 4. Batches Management
   getBatches: async () => {
-    localBatches = getPersistentState(STORAGE_KEYS.BATCHES, localBatches);
-
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase
           .from('batches')
           .select('*, course:courses(*)')
           .order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           localBatches = data.map((b: any) => ({
             ...b,
-            courseTitle: b.course?.title || 'BSEB/JAC Board Batch',
-            studentCount: b.student_count || 35,
+            courseTitle: b.course?.title || 'BSEB/JAC Board Course',
+            studentCount: b.student_count || 0,
           }));
           savePersistentState(STORAGE_KEYS.BATCHES, localBatches);
           return localBatches;
         }
       } catch {}
     }
+    localBatches = getPersistentState(STORAGE_KEYS.BATCHES, []);
     return localBatches;
   },
 
@@ -509,8 +516,6 @@ export const AdminApi = {
 
   // 5. Manual UPI Payments
   getPayments: async (statusFilter?: string) => {
-    localPayments = getPersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
-
     if (isSupabaseConfigured) {
       try {
         let req = supabase.from('payments').select('*, student:profiles(*), course:courses(*)');
@@ -518,7 +523,7 @@ export const AdminApi = {
           req = req.eq('status', statusFilter);
         }
         const { data, error } = await req.order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           localPayments = data as Payment[];
           savePersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
           return localPayments;
@@ -526,6 +531,7 @@ export const AdminApi = {
       } catch {}
     }
 
+    localPayments = getPersistentState(STORAGE_KEYS.PAYMENTS, []);
     if (statusFilter && statusFilter !== 'all') {
       return localPayments.filter((p) => p.status === statusFilter);
     }
@@ -780,18 +786,17 @@ export const AdminApi = {
 
   // 7. Live Classes
   getLiveClasses: async () => {
-    localLiveClasses = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
-
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false });
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           localLiveClasses = data as LiveClass[];
           savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
           return localLiveClasses;
         }
       } catch {}
     }
+    localLiveClasses = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, []);
     return localLiveClasses;
   },
 
@@ -811,7 +816,7 @@ export const AdminApi = {
 
     const newLive: LiveClass = {
       id: `live-${Date.now()}`,
-      course_id: cls.course_id || initialCourses[0].id,
+      course_id: cls.course_id || localCourses[0]?.id || 'cr000000-0000-0000-0000-000000000001',
       title: cls.title || 'Live Session',
       title_hi: cls.title_hi,
       description: cls.description,
