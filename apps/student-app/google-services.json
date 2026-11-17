@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "544446938434",
+    "project_id": "ideal-coaching-centre-32bf8",
+    "storage_bucket": "ideal-coaching-centre-32bf8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544446938434:android:e89f11d4f50e37465c1cdb",
+        "android_client_info": {
+          "package_name": "com.idealcoaching.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBv-MCzxZygTdKO2gFN3ZSQNepXQ7czf5E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
