@@ -49,24 +49,23 @@ In the Supabase Storage Dashboard, create the following buckets:
 
 ---
 
-## 3. Web Deployment (Cloudflare Pages Free Tier)
+## 3. Web Deployment (Vercel Root Deployment)
 
-Cloudflare Pages provides unlimited free bandwidth and 500 free builds per month, permitting commercial coaching institutions under standard free terms.
+The unified web platform (Public Website + Director Admin Portal) is deployed directly from the repository **Root Directory (`./`)** to Vercel at domain `https://icconline.vercel.app`.
 
-### Build Configuration for Admin Web
-- **Root Directory**: `apps/admin-web`
-- **Build Command**: `npm run build`
-- **Output Directory**: `.next`
+### Vercel Project Configuration
+- **Framework Preset**: Next.js (automatically detected)
+- **Root Directory**: `./` (Leave default/blank - repository root)
+- **Build Command**: `next build` (default)
+- **Output Directory**: `.next` (default)
+- **Production Domain**: `icconline.vercel.app`
 - **Environment Variables**:
   ```env
-  NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+  NEXT_PUBLIC_SUPABASE_URL=https://gshjxcoyfrskxnpdqooy.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+  NEXT_PUBLIC_UPI_ID=azhargodda@ybl
+  GROQ_API_KEY=gsk_...
   ```
-
-### Build Configuration for Public Website
-- **Root Directory**: `apps/public-website`
-- **Build Command**: `npm run build`
-- **Output Directory**: `.next`
 
 ---
 
