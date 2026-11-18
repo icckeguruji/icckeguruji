@@ -86,7 +86,7 @@ export default function StudentCoursesScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeClassFilter, setActiveClassFilter] = useState('ALL');
 
@@ -113,7 +113,7 @@ export default function StudentCoursesScreen() {
   const loadLocalCourses = useCallback(async () => {
     try {
       const data = await academicService.getCourses();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setCourses(data);
       }
     } catch {

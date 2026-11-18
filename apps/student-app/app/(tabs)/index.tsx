@@ -63,7 +63,7 @@ export default function StudentHomeScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
   const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
@@ -76,7 +76,7 @@ export default function StudentHomeScreen() {
         academicService.getCourses(),
         academicService.getLiveClasses(),
       ]);
-      if (Array.isArray(fetchedCourses) && fetchedCourses.length > 0) {
+      if (Array.isArray(fetchedCourses)) {
         setCourses(fetchedCourses);
       }
       setLiveClasses(fetchedLive);

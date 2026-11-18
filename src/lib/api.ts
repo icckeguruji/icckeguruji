@@ -42,6 +42,19 @@ export function getSafeClassId(classId?: string, className?: string): string {
   return 'c0000000-0000-0000-0000-000000000010';
 }
 
+export function isValidUUID(str?: string): boolean {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+}
+
+export function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export interface BatchWithMeta {
   id: string;
   course_id: string;
@@ -265,7 +278,7 @@ function savePersistentState<T>(key: string, data: T): void {
 let localStudents: UserProfile[] = getPersistentState(STORAGE_KEYS.STUDENTS, []);
 let localPayments: Payment[] = getPersistentState(STORAGE_KEYS.PAYMENTS, []);
 const cachedCourses = getPersistentState<Course[]>(STORAGE_KEYS.COURSES, []);
-let localCourses: Course[] = cachedCourses && cachedCourses.length > 0 ? cachedCourses : [...allInitialCourses];
+let localCourses: Course[] = Array.isArray(cachedCourses) ? cachedCourses : [];
 let localMaterials: StudyMaterial[] = getPersistentState(STORAGE_KEYS.MATERIALS, []);
 let localLiveClasses: LiveClass[] = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, []);
 let localLectures: RecordedLectureItem[] = getPersistentState(STORAGE_KEYS.RECORDED_LECTURES, []);
@@ -499,7 +512,7 @@ export const AdminApi = {
     return true;
   },
 
-  // 3. Course Management (CRUD)
+  // 3. Course Management (CRUD - Supabase Single Source of Truth)
   getCourses: async () => {
     if (isSupabaseConfigured) {
       try {
@@ -508,45 +521,10 @@ export const AdminApi = {
           .select('*')
           .order('created_at', { ascending: false });
         if (!error && Array.isArray(data)) {
-          const mergedMap = new Map<string, Course>();
-
-          for (const item of data as Course[]) {
-            mergedMap.set(item.id, {
-              ...item,
-              thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
-            });
-          }
-
-          // Preserve any local courses (created in Web/App) that haven't been pushed to Supabase yet
-          for (const local of localCourses) {
-            if (!mergedMap.has(local.id)) {
-              mergedMap.set(local.id, local);
-              // Push local course to Supabase so it becomes permanent in cloud
-              const safeClassId = getSafeClassId(local.class_id, (local as any).class_name);
-              supabase.from('courses').upsert({
-                id: local.id,
-                title: local.title,
-                title_hi: local.title_hi || local.title,
-                tagline: local.tagline || '',
-                description: local.description || '',
-                description_hi: local.description_hi || '',
-                thumbnail_url: getResolvedThumbnailUrl(local.thumbnail_url),
-                board_id: local.board_id || 'b0000000-0000-0000-0000-000000000001',
-                class_id: safeClassId,
-                price: local.price,
-                discount_price: local.discount_price,
-                validity_days: local.validity_days,
-                class_name: (local as any).class_name || 'Class 10',
-                is_published: true,
-                created_at: local.created_at,
-                updated_at: local.updated_at,
-              }).then(({ error: pushErr }) => {
-                if (pushErr) console.warn('Supabase api push local error:', pushErr);
-              });
-            }
-          }
-
-          const resolved = Array.from(mergedMap.values());
+          const resolved: Course[] = data.map((item) => ({
+            ...(item as Course),
+            thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
+          }));
           localCourses = resolved;
           savePersistentState(STORAGE_KEYS.COURSES, resolved);
           return resolved;
@@ -557,11 +535,8 @@ export const AdminApi = {
         console.error('getCourses Supabase exception:', e);
       }
     }
+    // Offline / fallback cache only when Supabase is unreachable
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, []);
-    if (!localCourses || localCourses.length === 0) {
-      localCourses = [...allInitialCourses];
-      savePersistentState(STORAGE_KEYS.COURSES, localCourses);
-    }
     return localCourses.map((c) => ({
       ...c,
       thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
@@ -574,10 +549,12 @@ export const AdminApi = {
     const defaultBoardId = 'b0000000-0000-0000-0000-000000000001';
     const safeClassId = getSafeClassId(course.class_id, (course as any)?.class_name);
     const defaultSessionId = 'a0000000-0000-0000-0000-000000000001';
+    const courseId = course.id && isValidUUID(course.id) ? course.id : generateUUID();
 
     const insertPayload: any = {
+      id: courseId,
       title: course.title || 'New Course',
-      title_hi: course.title_hi || course.title || 'नया कोर्स',
+      title_hi: course.title_hi || course.title || 'New Course',
       tagline: course.tagline || '',
       description: course.description || '',
       description_hi: course.description_hi || course.description || '',
@@ -617,7 +594,6 @@ export const AdminApi = {
     }
 
     const fallbackCourse: Course = {
-      id: `cr-${Date.now()}`,
       ...insertPayload,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -625,21 +601,33 @@ export const AdminApi = {
       material_count: 0,
     };
 
-    localCourses = [fallbackCourse, ...localCourses];
+    localCourses = [fallbackCourse, ...localCourses.filter((c) => c.id !== fallbackCourse.id)];
     savePersistentState(STORAGE_KEYS.COURSES, localCourses);
     return fallbackCourse;
   },
 
   updateCourse: async (courseId: string, updates: Partial<Course>) => {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
+    const { board, class: classItem, lecture_count, material_count, ...cleanUpdates } = updates as any;
+    if (cleanUpdates.thumbnail_url) {
+      cleanUpdates.thumbnail_url = getResolvedThumbnailUrl(cleanUpdates.thumbnail_url);
+    }
+    if (cleanUpdates.class_id || cleanUpdates.class_name) {
+      cleanUpdates.class_id = getSafeClassId(cleanUpdates.class_id, cleanUpdates.class_name);
+    }
+    cleanUpdates.updated_at = new Date().toISOString();
+
     if (isSupabaseConfigured) {
       try {
-        const { board, class: classItem, lecture_count, material_count, ...cleanUpdates } = updates as any;
-        if (cleanUpdates.thumbnail_url) {
-          cleanUpdates.thumbnail_url = getResolvedThumbnailUrl(cleanUpdates.thumbnail_url);
+        if (isValidUUID(courseId)) {
+          const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', courseId);
+          if (error) console.error('updateCourse Supabase error:', error);
+        } else {
+          const existing = localCourses.find((c) => c.id === courseId);
+          if (existing?.title) {
+            await supabase.from('courses').update(cleanUpdates).eq('title', existing.title);
+          }
         }
-        const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', courseId);
-        if (error) console.error('updateCourse Supabase error:', error);
       } catch (err) {
         console.error('updateCourse exception:', err);
       }
@@ -661,10 +649,17 @@ export const AdminApi = {
 
   deleteCourse: async (courseId: string) => {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
+    const target = localCourses.find((c) => c.id === courseId);
+
     if (isSupabaseConfigured) {
       try {
-        const { error } = await supabase.from('courses').delete().eq('id', courseId);
-        if (error) console.error('deleteCourse Supabase error:', error);
+        if (isValidUUID(courseId)) {
+          const { error } = await supabase.from('courses').delete().eq('id', courseId);
+          if (error) console.error('deleteCourse Supabase error:', error);
+        }
+        if (target?.title) {
+          await supabase.from('courses').delete().eq('title', target.title);
+        }
       } catch (err) {
         console.error('deleteCourse exception:', err);
       }

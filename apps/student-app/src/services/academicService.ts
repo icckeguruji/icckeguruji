@@ -288,7 +288,7 @@ class AcademicRepository {
 
       // If storage was never initialized on this device, seed once and mark initialized
       if (!isInitialized) {
-        this.courses = [...allInitialCourses];
+        this.courses = [];
         this.subjects = [];
         this.chapters = [];
         this.lectures = [];
@@ -321,9 +321,6 @@ class AcademicRepository {
 
       // Filter out any tombstoned / deleted items
       this.courses = this.courses.filter((c) => !this.isDeleted(c.id));
-      if (this.courses.length === 0) {
-        this.courses = allInitialCourses.filter((c) => !this.isDeleted(c.id));
-      }
       this.subjects = this.subjects.filter((s) => !this.isDeleted(s.id));
       this.chapters = this.chapters.filter((ch) => !this.isDeleted(ch.id));
       this.lectures = this.lectures.filter((l) => !this.isDeleted(l.id));
@@ -360,67 +357,19 @@ class AcademicRepository {
     if (!isSupabaseConfigured || this.isSyncingCloud) return;
     this.isSyncingCloud = true;
     try {
-      // 1. Sync Courses (Bidirectional: Push unsaved local courses + pull remote)
+      // 1. Sync Courses (Supabase is Single Authoritative Source of Truth)
       const { data: remoteCourses, error: courseErr } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!courseErr && Array.isArray(remoteCourses)) {
-        const mergedMap = new Map<string, Course>();
-
-        // 1. Add all remote courses from Supabase
-        for (const remote of remoteCourses) {
-          if (!this.deletedIds.has(remote.id)) {
-            mergedMap.set(remote.id, {
-              ...remote,
-              thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
-            });
-          }
-        }
-
-        // 2. Preserve any local courses (created in App) that haven't been deleted
-        for (const localCourse of this.courses) {
-          if (!this.deletedIds.has(localCourse.id)) {
-            if (!mergedMap.has(localCourse.id)) {
-              mergedMap.set(localCourse.id, localCourse);
-              // Push local course to Supabase so it becomes permanent in the cloud
-              const safeClassId = getSafeClassId(localCourse.class_id, (localCourse as any).class_name);
-              supabase.from('courses').upsert({
-                id: localCourse.id,
-                title: localCourse.title,
-                title_hi: localCourse.title_hi || localCourse.title,
-                tagline: localCourse.tagline,
-                description: localCourse.description,
-                description_hi: localCourse.description_hi,
-                thumbnail_url: getResolvedThumbnailUrl(localCourse.thumbnail_url),
-                board_id: localCourse.board_id || 'b0000000-0000-0000-0000-000000000001',
-                class_id: safeClassId,
-                price: localCourse.price,
-                discount_price: localCourse.discount_price,
-                validity_days: localCourse.validity_days,
-                class_name: (localCourse as any).class_name || 'Class 10',
-                is_published: true,
-                created_at: localCourse.created_at,
-                updated_at: localCourse.updated_at,
-              }).then(({ error: pushErr }) => {
-                if (pushErr) console.warn('Supabase course sync push error:', pushErr);
-              });
-            }
-          }
-        }
-
-        // 3. Fallback: if somehow empty, populate from allInitialCourses
-        if (mergedMap.size === 0) {
-          for (const initCourse of allInitialCourses) {
-            if (!this.deletedIds.has(initCourse.id)) {
-              mergedMap.set(initCourse.id, initCourse);
-            }
-          }
-        }
-
-        this.courses = Array.from(mergedMap.values());
+        this.courses = remoteCourses.map((remote) => ({
+          ...remote,
+          thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
+        }));
         await this.persist('icc_courses', this.courses);
+        this.notify();
       }
 
       // 2. Sync Live Classes
@@ -720,11 +669,7 @@ class AcademicRepository {
   // --- COURSES ---
   async getCourses(): Promise<Course[]> {
     await this.ensureLoaded();
-    const active = this.courses.filter((c) => !this.deletedIds.has(c.id));
-    if (active.length === 0) {
-      return allInitialCourses.filter((c) => !this.deletedIds.has(c.id));
-    }
-    return active;
+    return this.courses.filter((c) => !this.isDeleted(c.id));
   }
 
   async getCourseById(id: string): Promise<Course | undefined> {
@@ -737,143 +682,118 @@ class AcademicRepository {
   async addCourse(data: Partial<Course>): Promise<Course> {
     await this.ensureLoaded();
     const courseId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
+    const defaultBoardId = 'b0000000-0000-0000-0000-000000000001';
+    const safeClassId = getSafeClassId(data.class_id, (data as any)?.class_name);
+    const defaultSessionId = 'a0000000-0000-0000-0000-000000000001';
 
-    // Remove any previous tombstone for this course ID
-    this.deletedIds.delete(courseId);
-    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
-
-    const newCourse: Course = {
+    const insertPayload: any = {
       id: courseId,
       title: data.title || 'New Target Course',
-      title_hi: data.title_hi || data.title || 'नया कोर्स',
+      title_hi: data.title_hi || data.title || 'New Target Course',
       tagline: data.tagline || 'Complete Board Exam Syllabus Mastery with BADE SIR',
       description: data.description || '',
       description_hi: data.description_hi || data.description || '',
       thumbnail_url: getResolvedThumbnailUrl(data.thumbnail_url),
-      board_id: data.board_id || 'b0000000-0000-0000-0000-000000000001',
-      class_id: data.class_id || 'c0000000-0000-0000-0000-000000000010',
+      board_id: data.board_id || defaultBoardId,
+      class_id: safeClassId,
+      session_id: data.session_id || defaultSessionId,
       is_free: Boolean(data.is_free),
       price: data.price !== undefined ? data.price : 999,
       discount_price: data.discount_price !== undefined ? data.discount_price : 499,
       validity_days: data.validity_days || 365,
-      start_date: data.start_date || new Date().toISOString().split('T')[0],
-      features: data.features || [
-        'Daily Live Classes',
-        'Handwritten PDF Notes',
-        'Weekly 30-Second AI Speed Quiz',
-        'Offline Study Mode',
-      ],
+      class_name: (data as any).class_name || 'Class 10',
       is_published: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data: created, error } = await supabase
+          .from('courses')
+          .insert(insertPayload)
+          .select()
+          .single();
+        if (!error && created) {
+          const resolved: Course = {
+            ...(created as Course),
+            thumbnail_url: getResolvedThumbnailUrl(created.thumbnail_url),
+          };
+          this.courses = [resolved, ...this.courses.filter((c) => c.id !== resolved.id)];
+          await this.persist('icc_courses', this.courses);
+          this.notify();
+          return resolved;
+        } else if (error) {
+          console.error('Supabase course insert error:', error);
+        }
+      } catch (e) {
+        console.warn('Supabase course insert exception:', e);
+      }
+    }
+
+    const fallbackCourse: Course = {
+      ...insertPayload,
       lecture_count: 0,
       material_count: 0,
     };
-    if ((data as any).class_name) (newCourse as any).class_name = (data as any).class_name;
-
-    // Deduplicate in memory and place at top
-    this.courses = this.courses.filter((c) => c.id !== courseId);
-    this.courses.unshift(newCourse);
-    await this.persist('icc_courses_modified', 'true');
+    this.courses = [fallbackCourse, ...this.courses.filter((c) => c.id !== fallbackCourse.id)];
     await this.persist('icc_courses', this.courses);
     this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.from('courses').upsert({
-          id: newCourse.id,
-          title: newCourse.title,
-          title_hi: newCourse.title_hi,
-          tagline: newCourse.tagline,
-          description: newCourse.description,
-          description_hi: newCourse.description_hi,
-          thumbnail_url: newCourse.thumbnail_url,
-          board_id: newCourse.board_id || 'b0000000-0000-0000-0000-000000000001',
-          class_id: getSafeClassId(newCourse.class_id, (newCourse as any).class_name),
-          price: newCourse.price,
-          discount_price: newCourse.discount_price,
-          validity_days: newCourse.validity_days,
-          class_name: (newCourse as any).class_name || 'Class 10',
-          is_published: true,
-          created_at: newCourse.created_at,
-          updated_at: newCourse.updated_at,
-        });
-        if (error) console.error('Supabase course upsert error:', error);
-      }
-    } catch (e) {
-      console.warn('Supabase course upsert warning:', e);
-    }
-
-    return newCourse;
+    return fallbackCourse;
   }
 
   // BULLETPROOF UPDATE: NEVER THROWS 'Course not found'
   async updateCourse(id: string, updates: Partial<Course>): Promise<Course> {
     await this.ensureLoaded();
-    let idx = this.courses.findIndex((c) => c.id === id);
-
-    // Fallback search by title
-    if (idx === -1 && updates.title) {
-      idx = this.courses.findIndex(
-        (c) => c.title.trim().toLowerCase() === updates.title!.trim().toLowerCase()
-      );
-    }
-
-    if (idx === -1) {
-      // Create it cleanly
-      const created = await this.addCourse({ ...updates, id } as any);
-      return created;
-    }
-
-    this.courses[idx] = {
-      ...this.courses[idx],
-      ...updates,
+    const cleanUpdates: any = {
+      title: updates.title,
+      title_hi: updates.title_hi,
+      tagline: updates.tagline,
+      description: updates.description,
+      description_hi: updates.description_hi,
+      thumbnail_url: updates.thumbnail_url ? getResolvedThumbnailUrl(updates.thumbnail_url) : undefined,
+      is_free: updates.is_free,
+      price: updates.price,
+      discount_price: updates.discount_price,
+      validity_days: updates.validity_days,
+      class_name: (updates as any).class_name,
       updated_at: new Date().toISOString(),
     };
-    await this.persist('icc_courses_modified', 'true');
+    Object.keys(cleanUpdates).forEach((k) => cleanUpdates[k] === undefined && delete cleanUpdates[k]);
+    if (cleanUpdates.class_name) {
+      cleanUpdates.class_id = getSafeClassId(updates.class_id, cleanUpdates.class_name);
+    }
+
+    this.courses = this.courses.map((c) => (c.id === id ? { ...c, ...cleanUpdates } : c));
     await this.persist('icc_courses', this.courses);
     this.notify();
 
-    try {
-      if (isSupabaseConfigured) {
-        const { error } = await supabase
-          .from('courses')
-          .update({
-            title: updates.title,
-            title_hi: updates.title_hi,
-            tagline: updates.tagline,
-            description: updates.description,
-            description_hi: updates.description_hi,
-            thumbnail_url: updates.thumbnail_url,
-            price: updates.price,
-            discount_price: updates.discount_price,
-            validity_days: updates.validity_days,
-            class_name: (updates as any).class_name,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', this.courses[idx].id);
-        if (error) console.error('Supabase course update error:', error);
+    if (isSupabaseConfigured) {
+      try {
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', id);
+          if (error) console.error('Supabase course update error:', error);
+        } else if (updates.title) {
+          await supabase.from('courses').update(cleanUpdates).eq('title', updates.title);
+        }
+      } catch (e) {
+        console.warn('Supabase update warning:', e);
       }
-    } catch (e) {
-      console.warn('Supabase update warning:', e);
     }
 
-    return this.courses[idx];
+    return this.courses.find((c) => c.id === id) || (cleanUpdates as Course);
   }
 
   async deleteCourse(id: string): Promise<void> {
     await this.ensureLoaded();
     const course = this.courses.find((c) => c.id === id);
-    this.deletedIds.add(id);
-    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
     this.courses = this.courses.filter((c) => c.id !== id);
-    await this.persist('icc_courses_modified', 'true');
     await this.persist('icc_courses', this.courses);
     this.notify();
 
-    try {
-      if (isSupabaseConfigured) {
+    if (isSupabaseConfigured) {
+      try {
         if (isValidUUID(id)) {
           const { error } = await supabase.from('courses').delete().eq('id', id);
           if (error) console.error('Supabase course delete error:', error);
@@ -881,9 +801,9 @@ class AcademicRepository {
         if (course?.title) {
           await supabase.from('courses').delete().eq('title', course.title);
         }
+      } catch (e) {
+        console.warn('Supabase delete warning:', e);
       }
-    } catch (e) {
-      console.warn('Supabase delete warning:', e);
     }
   }
 

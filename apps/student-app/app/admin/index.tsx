@@ -137,6 +137,7 @@ export default function AndroidAdminDashboardScreen() {
 
   useEffect(() => {
     loadAllData();
+    academicService.syncFromCloud().then(() => loadAllData());
     const unsub = academicService.subscribe(() => {
       loadAllData();
     });
