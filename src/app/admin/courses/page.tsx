@@ -527,8 +527,19 @@ export default function CoursesPage() {
         </div>
 
         {/* Course Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {courses.map((course) => {
+        {courses.length === 0 ? (
+          <div className="py-16 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+            <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-700">
+              {t('अभी कोई कोर्स नहीं है', 'No courses in database')}
+            </p>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              {t('ऊपर "+ नया कोर्स जोड़ें" बटन दबाकर या मोबाइल ऐप से नया कोर्स जोड़ें।', 'Create your first course with "+ Add New Course" or from the mobile app.')}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {courses.map((course) => {
             const resolvedThumb = getResolvedThumbnailUrl(course.thumbnail_url);
             return (
               <div
@@ -634,7 +645,8 @@ export default function CoursesPage() {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
 
         {/* Create Course Modal */}
         {isModalOpen && (

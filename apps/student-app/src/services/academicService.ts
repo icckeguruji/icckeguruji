@@ -602,7 +602,7 @@ class AcademicRepository {
   }
 
   // --- COURSES ---
-  async getCourses(forceLive = false): Promise<Course[]> {
+  async getCourses(forceLive = true): Promise<Course[]> {
     await this.ensureLoaded();
     if (forceLive && isSupabaseConfigured) {
       await this.syncFromCloud();

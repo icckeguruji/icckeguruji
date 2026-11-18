@@ -526,7 +526,9 @@ export const AdminApi = {
             thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
           }));
           localCourses = resolved;
-          savePersistentState(STORAGE_KEYS.COURSES, resolved);
+          try {
+            savePersistentState(STORAGE_KEYS.COURSES, resolved);
+          } catch {}
           return resolved;
         } else if (error) {
           console.error('getCourses Supabase query error:', error);
