@@ -102,6 +102,10 @@ export default function PaymentsPage() {
                 'कोर्स एक्टिवेट करने से पूर्व अपने संस्थान के बैंक खाते / UPI ऐप में 12 अंकों का UTR नंबर अवश्य मिलाएं। अनुमोदन (Approval) के उपरांत डेटाबेस ट्रिगर द्वारा विद्यार्थी का कोर्स तुरंत सक्रिय हो जाता है और अपरिवर्तनीय ऑडिट लॉग दर्ज होता है।',
                 'Always verify the 12-digit UTR against your bank statement before approving. Approval triggers instant enrollment activation and writes to the immutable audit log.'
               )}
+            </p>
+          </div>
+        </div>
+
         {/* Official Institute Collection Dynamic QR Card */}
         <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-5 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-6 border border-blue-800">
           <div className="space-y-2">
