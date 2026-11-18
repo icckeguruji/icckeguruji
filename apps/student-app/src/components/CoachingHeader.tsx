@@ -302,6 +302,59 @@ export function CoachingHeader({
                     style={styles.menuItem}
                     onPress={() => {
                       setIsDrawerOpen(false);
+                      router.push('/(tabs)/courses');
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#EEF2FF' }]}>
+                      <BookOpen size={18} color="#4F46E5" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuItemText}>Course Management</Text>
+                      <Text style={styles.menuItemSubText}>Add/edit courses, subjects & curriculum</Text>
+                    </View>
+                    <ChevronRight size={16} color="#CBD5E1" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      useDirectorStore.getState().openModal('live_classes');
+                      router.push('/(tabs)/profile');
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF2F2' }]}>
+                      <Video size={18} color="#DC2626" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuItemText}>Live Classes</Text>
+                      <Text style={styles.menuItemSubText}>Schedule YouTube Live broadcasts & batches</Text>
+                    </View>
+                    <ChevronRight size={16} color="#CBD5E1" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      useDirectorStore.getState().openModal('study_materials');
+                      router.push('/(tabs)/profile');
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FAF5FF' }]}>
+                      <FileText size={18} color="#9333EA" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuItemText}>Handwritten PDF Notes</Text>
+                      <Text style={styles.menuItemSubText}>Upload & link notes to course chapters</Text>
+                    </View>
+                    <ChevronRight size={16} color="#CBD5E1" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
                       useDirectorStore.getState().openModal('payment');
                       router.push('/(tabs)/profile');
                     }}
@@ -348,6 +401,42 @@ export function CoachingHeader({
                     <View style={{ flex: 1 }}>
                       <Text style={styles.menuItemText}>Broadcast Announcement</Text>
                       <Text style={styles.menuItemSubText}>Send instant push notice to all students</Text>
+                    </View>
+                    <ChevronRight size={16} color="#CBD5E1" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      useDirectorStore.getState().openModal('whatsapp_bot');
+                      router.push('/(tabs)/profile');
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#ECFDF5' }]}>
+                      <MessageCircle size={18} color="#059669" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuItemText}>WhatsApp AI Bot Status</Text>
+                      <Text style={styles.menuItemSubText}>View automated enquiry assistant status</Text>
+                    </View>
+                    <ChevronRight size={16} color="#CBD5E1" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      useDirectorStore.getState().openModal('quota_reports');
+                      router.push('/(tabs)/profile');
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#F8FAFC' }]}>
+                      <ShieldCheck size={18} color="#334155" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuItemText}>Zero-Cost Resource Meter</Text>
+                      <Text style={styles.menuItemSubText}>Free tier quota & database metrics</Text>
                     </View>
                     <ChevronRight size={16} color="#CBD5E1" />
                   </TouchableOpacity>

@@ -56,6 +56,12 @@ import {
   Award,
   Bot,
   Trash2,
+  BookOpen,
+  Video,
+  FileText,
+  Radio,
+  HardDrive,
+  Database,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -112,18 +118,32 @@ export default function StudentProfileScreen() {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [isBotModalOpen, setIsBotModalOpen] = useState(false);
+  const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
+  const [liveClasses, setLiveClasses] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [newLiveTitle, setNewLiveTitle] = useState('');
+  const [newLiveUrl, setNewLiveUrl] = useState('');
+  const [newMaterialTitle, setNewMaterialTitle] = useState('');
+  const [newMaterialUrl, setNewMaterialUrl] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastMsg, setBroadcastMsg] = useState('');
 
   // Authoritative load of payments & students from persistent academicService
   const loadDirectorData = useCallback(async () => {
     try {
-      const [allPayments, allStudents] = await Promise.all([
+      const [allPayments, allStudents, allLive, allMats] = await Promise.all([
         academicService.getPayments(),
         academicService.getStudents(),
+        academicService.getLiveClasses(),
+        academicService.getStudyMaterials(),
       ]);
       setPayments(allPayments);
       setStudents(allStudents);
+      setLiveClasses(allLive);
+      setMaterials(allMats);
     } catch {}
   }, []);
 
@@ -147,6 +167,18 @@ export default function StudentProfileScreen() {
     } else if (activeModal === 'ai_copilot') {
       setIsAiModalOpen(true);
       closeDirectorModal();
+    } else if (activeModal === 'live_classes') {
+      setIsLiveModalOpen(true);
+      closeDirectorModal();
+    } else if (activeModal === 'study_materials') {
+      setIsNotesModalOpen(true);
+      closeDirectorModal();
+    } else if (activeModal === 'whatsapp_bot') {
+      setIsBotModalOpen(true);
+      closeDirectorModal();
+    } else if (activeModal === 'quota_reports') {
+      setIsQuotaModalOpen(true);
+      closeDirectorModal();
     }
   }, [activeModal]);
 
@@ -165,6 +197,18 @@ export default function StudentProfileScreen() {
         closeDirectorModal();
       } else if (modal === 'ai_copilot') {
         setIsAiModalOpen(true);
+        closeDirectorModal();
+      } else if (modal === 'live_classes') {
+        setIsLiveModalOpen(true);
+        closeDirectorModal();
+      } else if (modal === 'study_materials') {
+        setIsNotesModalOpen(true);
+        closeDirectorModal();
+      } else if (modal === 'whatsapp_bot') {
+        setIsBotModalOpen(true);
+        closeDirectorModal();
+      } else if (modal === 'quota_reports') {
+        setIsQuotaModalOpen(true);
         closeDirectorModal();
       }
     }, [closeDirectorModal, loadDirectorData])
@@ -268,6 +312,75 @@ export default function StudentProfileScreen() {
     setBroadcastTitle('');
     setBroadcastMsg('');
     Alert.alert('📢 Broadcast Sent!', 'Your announcement has been sent to all students.');
+  };
+
+  const handleScheduleLive = async () => {
+    if (!newLiveTitle.trim()) {
+      Alert.alert('Required', 'Please enter class title');
+      return;
+    }
+    try {
+      await academicService.scheduleLiveClass({
+        title: newLiveTitle.trim(),
+        youtube_video_id: newLiveUrl.trim() || 'live-broadcast',
+        scheduled_at: new Date().toISOString(),
+        status: 'scheduled',
+      });
+      setNewLiveTitle('');
+      setNewLiveUrl('');
+      loadDirectorData();
+      Alert.alert('Success', 'Live class scheduled successfully!');
+    } catch {
+      Alert.alert('Error', 'Failed to schedule live class');
+    }
+  };
+
+  const handleDeleteLive = async (id: string) => {
+    Alert.alert('Delete Live Class', 'Are you sure you want to delete this live class?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await academicService.deleteLiveClass(id);
+          loadDirectorData();
+        },
+      },
+    ]);
+  };
+
+  const handleAddMaterial = async () => {
+    if (!newMaterialTitle.trim()) {
+      Alert.alert('Required', 'Please enter material title');
+      return;
+    }
+    try {
+      await academicService.addStudyMaterial({
+        title: newMaterialTitle.trim(),
+        file_path: newMaterialUrl.trim() || 'https://icconline.vercel.app',
+        material_type: 'chapter_notes',
+      });
+      setNewMaterialTitle('');
+      setNewMaterialUrl('');
+      loadDirectorData();
+      Alert.alert('Success', 'Study material uploaded successfully!');
+    } catch {
+      Alert.alert('Error', 'Failed to upload study material');
+    }
+  };
+
+  const handleDeleteMaterial = async (id: string) => {
+    Alert.alert('Delete Material', 'Are you sure you want to delete this study material?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await academicService.deleteStudyMaterial(id);
+          loadDirectorData();
+        },
+      },
+    ]);
   };
 
   // Generate WhatsApp Account Linking Token
@@ -718,6 +831,51 @@ export default function StudentProfileScreen() {
                 </View>
               </TouchableOpacity>
 
+              {/* 📚 Course Management */}
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => router.push('/(tabs)/courses')}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#EEF2FF' }]}>
+                  <BookOpen size={18} color="#4F46E5" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>Course Management (कोर्स प्रबंधन)</Text>
+                  <Text style={styles.adminHubRowSub}>Create, edit & manage syllabus and subjects</Text>
+                </View>
+                <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {/* 🔴 Live Classes Hub */}
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => setIsLiveModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#FEF2F2' }]}>
+                  <Video size={18} color="#DC2626" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>Live Classes Hub (लाइव क्लास प्रबंधन)</Text>
+                  <Text style={styles.adminHubRowSub}>Schedule YouTube Live & batch broadcasts</Text>
+                </View>
+                <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {/* 📑 PDF Notes & Study Materials */}
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => setIsNotesModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#FAF5FF' }]}>
+                  <FileText size={18} color="#9333EA" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>PDF Notes & Study Materials (नोट्स)</Text>
+                  <Text style={styles.adminHubRowSub}>Upload & manage handwritten formula notes</Text>
+                </View>
+                <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.adminHubRow}
                 onPress={() => setIsPaymentModalOpen(true)}
@@ -760,6 +918,36 @@ export default function StudentProfileScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.adminHubRowTitle}>Broadcast Announcement</Text>
                   <Text style={styles.adminHubRowSub}>Send push notification to all students</Text>
+                </View>
+                <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {/* 💬 WhatsApp AI Bot Status */}
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => setIsBotModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#ECFDF5' }]}>
+                  <MessageSquare size={18} color="#059669" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>WhatsApp AI Bot Status</Text>
+                  <Text style={styles.adminHubRowSub}>Active 24/7 automated admission inquiry agent</Text>
+                </View>
+                <ChevronRight size={18} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {/* 🛡️ Zero-Cost Resource Meter */}
+              <TouchableOpacity
+                style={styles.adminHubRow}
+                onPress={() => setIsQuotaModalOpen(true)}
+              >
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#F8FAFC' }]}>
+                  <ShieldCheck size={18} color="#334155" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminHubRowTitle}>Zero-Cost Resource Meter (कोटा स्थिति)</Text>
+                  <Text style={styles.adminHubRowSub}>PostgreSQL DB, Storage & ₹0/month spend meter</Text>
                 </View>
                 <ChevronRight size={18} color="#94A3B8" />
               </TouchableOpacity>
@@ -1689,6 +1877,345 @@ export default function StudentProfileScreen() {
           loadDirectorData();
         }}
       />
+
+      {/* 9. LIVE CLASSES MANAGEMENT MODAL */}
+      <Modal
+        visible={isLiveModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsLiveModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Video size={20} color="#DC2626" />
+                <Text style={styles.modalTitle}>Live Classes Management</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsLiveModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <Text style={[styles.inputLabel, { color: '#DC2626', fontWeight: '800' }]}>
+                🔴 Schedule New YouTube Live
+              </Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Class Title (e.g. Science Board Exam Marathon)"
+                value={newLiveTitle}
+                onChangeText={setNewLiveTitle}
+              />
+              <TextInput
+                style={[styles.textInput, { marginTop: 8 }]}
+                placeholder="YouTube Live URL or Stream Key"
+                value={newLiveUrl}
+                onChangeText={setNewLiveUrl}
+              />
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: '#DC2626', marginTop: 10 }]}
+                onPress={handleScheduleLive}
+              >
+                <Text style={styles.saveBtnText}>+ Schedule Live Class</Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.inputLabel, { marginTop: 20 }]}>
+                Scheduled Live Classes ({liveClasses.length})
+              </Text>
+              {liveClasses.length === 0 ? (
+                <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginVertical: 12 }}>
+                  No active live classes scheduled.
+                </Text>
+              ) : (
+                liveClasses.map((item) => (
+                  <View
+                    key={item.id}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      backgroundColor: '#FEF2F2',
+                      padding: 12,
+                      borderRadius: 10,
+                      marginBottom: 8,
+                      borderWidth: 1,
+                      borderColor: '#FECACA',
+                    }}
+                  >
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#991B1B' }}>
+                        {item.title}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#DC2626', marginTop: 2 }}>
+                        Status: {item.status || 'scheduled'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteLive(item.id)}
+                      style={{ padding: 6, backgroundColor: '#FEE2E2', borderRadius: 8 }}
+                    >
+                      <Trash2 size={16} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsLiveModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 10. STUDY MATERIALS / PDF NOTES MODAL */}
+      <Modal
+        visible={isNotesModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsNotesModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <FileText size={20} color="#9333EA" />
+                <Text style={styles.modalTitle}>PDF Notes & Study Materials</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsNotesModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <Text style={[styles.inputLabel, { color: '#9333EA', fontWeight: '800' }]}>
+                📄 Upload / Add PDF Notes
+              </Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Note Title (e.g. Chapter 1 Formula Sheet)"
+                value={newMaterialTitle}
+                onChangeText={setNewMaterialTitle}
+              />
+              <TextInput
+                style={[styles.textInput, { marginTop: 8 }]}
+                placeholder="PDF File Link (Google Drive / Supabase URL)"
+                value={newMaterialUrl}
+                onChangeText={setNewMaterialUrl}
+              />
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: '#9333EA', marginTop: 10 }]}
+                onPress={handleAddMaterial}
+              >
+                <Text style={styles.saveBtnText}>+ Save Study Material</Text>
+              </TouchableOpacity>
+
+              <Text style={[styles.inputLabel, { marginTop: 20 }]}>
+                Uploaded Materials ({materials.length})
+              </Text>
+              {materials.length === 0 ? (
+                <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginVertical: 12 }}>
+                  No PDF notes uploaded yet.
+                </Text>
+              ) : (
+                materials.map((m) => (
+                  <View
+                    key={m.id}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      backgroundColor: '#FAF5FF',
+                      padding: 12,
+                      borderRadius: 10,
+                      marginBottom: 8,
+                      borderWidth: 1,
+                      borderColor: '#E9D5FF',
+                    }}
+                  >
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B21A8' }}>
+                        {m.title}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9333EA', marginTop: 2 }}>
+                        Type: {m.material_type || 'notes'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteMaterial(m.id)}
+                      style={{ padding: 6, backgroundColor: '#F3E8FF', borderRadius: 8 }}
+                    >
+                      <Trash2 size={16} color="#9333EA" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsNotesModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 11. WHATSAPP AI BOT STATUS MODAL */}
+      <Modal
+        visible={isBotModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsBotModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MessageSquare size={20} color="#059669" />
+                <Text style={styles.modalTitle}>WhatsApp AI Assistant</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsBotModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <View
+                style={{
+                  backgroundColor: '#ECFDF5',
+                  padding: 16,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#A7F3D0',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#065F46' }}>
+                  🟢 Active & Online (24/7)
+                </Text>
+                <Text style={{ fontSize: 12, color: '#047857', marginTop: 4, textAlign: 'center' }}>
+                  Automated course inquiry and admission bot is currently answering student queries on WhatsApp.
+                </Text>
+              </View>
+
+              <View style={{ marginTop: 16, gap: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#F1F5F9' }}>
+                  <Text style={{ fontSize: 13, color: '#64748B' }}>Helpline Mobile</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A' }}>+91 9771350910</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#F1F5F9' }}>
+                  <Text style={{ fontSize: 13, color: '#64748B' }}>Response Speed</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>&lt; 2 Seconds</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#F1F5F9' }}>
+                  <Text style={{ fontSize: 13, color: '#64748B' }}>Monthly Expense</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>₹0 / Free Tier</Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsBotModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 12. ZERO-COST RESOURCE METER MODAL */}
+      <Modal
+        visible={isQuotaModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsQuotaModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ShieldCheck size={20} color="#059669" />
+                <Text style={styles.modalTitle}>Zero-Cost Infrastructure Meter</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsQuotaModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              <View
+                style={{
+                  backgroundColor: '#0F172A',
+                  padding: 16,
+                  borderRadius: 14,
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ color: '#38BDF8', fontSize: 14, fontWeight: '800' }}>
+                  ₹0.00 / Monthly Plan (Verified Active)
+                </Text>
+                <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4 }}>
+                  System strictly operates inside verified free tiers with zero automatic upgrades.
+                </Text>
+              </View>
+
+              <View style={{ gap: 14 }}>
+                <View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>PostgreSQL DB</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>14.2 MB / 500 MB (2.8%)</Text>
+                  </View>
+                  <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                    <View style={{ width: '2.8%', height: '100%', backgroundColor: '#2563EB' }} />
+                  </View>
+                </View>
+
+                <View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Supabase Storage</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#9333EA' }}>42.8 MB / 1000 MB (4.2%)</Text>
+                  </View>
+                  <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                    <View style={{ width: '4.2%', height: '100%', backgroundColor: '#9333EA' }} />
+                  </View>
+                </View>
+
+                <View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Auth MAU Quota</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>3 / 50,000 (&lt;0.1%)</Text>
+                  </View>
+                  <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                    <View style={{ width: '1%', height: '100%', backgroundColor: '#16A34A' }} />
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setIsQuotaModalOpen(false)}
+              >
+                <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

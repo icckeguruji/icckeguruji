@@ -124,27 +124,33 @@ function getPersistentState<T>(key: string, defaultData: T): T {
   return defaultData;
 }
 
+function sanitizeItemForStorage(item: any): any {
+  if (!item || typeof item !== 'object') return item;
+  const copy = { ...item };
+  if (
+    typeof copy.thumbnail_url === 'string' &&
+    copy.thumbnail_url.startsWith('data:image/') &&
+    copy.thumbnail_url.length > 5000
+  ) {
+    copy.thumbnail_url = '/thumbnails/batch-b3-class10.jpg';
+  }
+  return copy;
+}
+
 // Helper to save data to localStorage (browser-safe, permanent, quota-guarded)
 function savePersistentState<T>(key: string, data: T): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    const toStore = Array.isArray(data)
+      ? data.map(sanitizeItemForStorage)
+      : sanitizeItemForStorage(data);
+    localStorage.setItem(key, JSON.stringify(toStore));
   } catch (err) {
     console.warn(`localStorage quota limit encountered for key: ${key}`, err);
     try {
       if (Array.isArray(data)) {
-        const sanitized = data.map((item: any) => {
-          if (
-            item?.thumbnail_url &&
-            typeof item.thumbnail_url === 'string' &&
-            item.thumbnail_url.startsWith('data:image/') &&
-            item.thumbnail_url.length > 50000
-          ) {
-            return { ...item, thumbnail_url: '/thumbnails/batch-b3-class10.jpg' };
-          }
-          return item;
-        });
-        localStorage.setItem(key, JSON.stringify(sanitized));
+        const fallback = data.slice(0, 15).map(sanitizeItemForStorage);
+        localStorage.setItem(key, JSON.stringify(fallback));
       }
     } catch (retryErr) {
       console.warn('Fallback save also failed:', retryErr);
@@ -209,13 +215,47 @@ export const AdminApi = {
           supabase.from('examinations').select('id', { count: 'exact' }),
         ]);
 
-        if (typeof studentsRes.count === 'number') studentCount = studentsRes.count;
-        if (typeof activeStudentsRes.count === 'number') activeStudentCount = activeStudentsRes.count;
-        if (typeof coursesRes.count === 'number') courseCount = coursesRes.count;
-        if (typeof materialsRes.count === 'number') pdfCount = materialsRes.count;
-        if (typeof liveRes.count === 'number') liveCount = liveRes.count;
-        if (typeof lecturesRes.count === 'number') lectureCount = lecturesRes.count;
-        if (typeof examsRes.count === 'number') examCount = examsRes.count;
+        if (typeof studentsRes.count === 'number') {
+          studentCount = studentsRes.count;
+        } else if (Array.isArray((studentsRes as any).data)) {
+          studentCount = (studentsRes as any).data.length;
+        }
+
+        if (typeof activeStudentsRes.count === 'number') {
+          activeStudentCount = activeStudentsRes.count;
+        } else if (Array.isArray((activeStudentsRes as any).data)) {
+          activeStudentCount = (activeStudentsRes as any).data.length;
+        }
+
+        if (typeof coursesRes.count === 'number') {
+          courseCount = coursesRes.count;
+        } else if (Array.isArray((coursesRes as any).data)) {
+          courseCount = (coursesRes as any).data.length;
+        }
+
+        if (typeof materialsRes.count === 'number') {
+          pdfCount = materialsRes.count;
+        } else if (Array.isArray((materialsRes as any).data)) {
+          pdfCount = (materialsRes as any).data.length;
+        }
+
+        if (typeof liveRes.count === 'number') {
+          liveCount = liveRes.count;
+        } else if (Array.isArray((liveRes as any).data)) {
+          liveCount = (liveRes as any).data.length;
+        }
+
+        if (typeof lecturesRes.count === 'number') {
+          lectureCount = lecturesRes.count;
+        } else if (Array.isArray((lecturesRes as any).data)) {
+          lectureCount = (lecturesRes as any).data.length;
+        }
+
+        if (typeof examsRes.count === 'number') {
+          examCount = examsRes.count;
+        } else if (Array.isArray((examsRes as any).data)) {
+          examCount = (examsRes as any).data.length;
+        }
 
         const dbPayments = paymentsRes.data || [];
         if (dbPayments.length > 0) {
@@ -364,15 +404,18 @@ export const AdminApi = {
           .select('*')
           .order('created_at', { ascending: false });
         if (!error && Array.isArray(data)) {
-          localCourses = (data as Course[]).map((c) => ({
+          const resolved = (data as Course[]).map((c) => ({
             ...c,
             thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
           }));
-          savePersistentState(STORAGE_KEYS.COURSES, localCourses);
-          return localCourses;
+          localCourses = resolved;
+          savePersistentState(STORAGE_KEYS.COURSES, resolved);
+          return resolved;
+        } else if (error) {
+          console.error('getCourses Supabase query error:', error);
         }
       } catch (e) {
-        console.error('getCourses Supabase error:', e);
+        console.error('getCourses Supabase exception:', e);
       }
     }
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, []);
