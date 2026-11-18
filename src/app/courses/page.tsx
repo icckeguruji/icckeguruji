@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminApi } from '@/lib/api';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import { Clock, Video, FileText, ArrowRight, ShieldCheck, GraduationCap, BookOpen, Phone, MessageCircle } from 'lucide-react';
@@ -17,11 +18,28 @@ export default function PublicCoursesPage() {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const { lang, t } = useLanguage();
 
-  useEffect(() => {
+  const loadCourses = () => {
     AdminApi.getCourses().then((data) => {
       setCourses(data || []);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    loadCourses();
+
+    if (isSupabaseConfigured) {
+      const channel = supabase
+        .channel('public-courses-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+          loadCourses();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, []);
 
   const handleEnrollClick = (course: Course) => {
