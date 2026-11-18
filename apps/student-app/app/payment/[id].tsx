@@ -78,11 +78,14 @@ export default function ManualUpiPaymentScreen() {
   const [upiRefNumber, setUpiRefNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submittedStatus, setSubmittedStatus] = useState<string | null>(null);
+  const [qrError, setQrError] = useState(false);
 
   const upiId = 'azhargodda@ybl';
   const payeeName = 'IDEAL COACHING CENTRE';
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${payableAmount}&cu=INR&tn=ICC+Enrollment+${encodeURIComponent(courseTitle.slice(0, 30))}`;
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(upiLink)}`;
+  const primaryQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(upiLink)}`;
+  const fallbackQrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(upiLink)}&size=260`;
+  const qrImageUrl = qrError ? fallbackQrUrl : primaryQrUrl;
 
   const handleCopyUpi = () => {
     Alert.alert('UPI VPA Copied', `${upiId} copied to clipboard! Paste it into PhonePe, GPay, or Paytm.`);
@@ -513,6 +516,7 @@ export default function ManualUpiPaymentScreen() {
                       source={{ uri: qrImageUrl }}
                       style={styles.qrImage}
                       resizeMode="contain"
+                      onError={() => setQrError(true)}
                     />
                   </View>
                   <Text style={styles.qrScanText}>Scan with PhonePe, GPay, Paytm or BHIM</Text>

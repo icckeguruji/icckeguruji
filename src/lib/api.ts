@@ -742,7 +742,35 @@ export const AdminApi = {
     return true;
   },
 
-  getSubjectChapters: async (subjectId: string) => {
+  // 3.5 Sub-Subjects / Units Management (Dynamic Hierarchy)
+  getSubSubjects: async (subjectId: string) => {
+    const key = `icc_sub_subjects_${subjectId}`;
+    return getPersistentState<any[]>(key, []);
+  },
+
+  createSubSubject: async (subjectId: string, sub: { name: string; name_hi?: string }) => {
+    const key = `icc_sub_subjects_${subjectId}`;
+    const current = getPersistentState<any[]>(key, []);
+    const newSubSub = {
+      id: `subsub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      subject_id: subjectId,
+      name: sub.name,
+      name_hi: sub.name_hi || sub.name,
+      display_order: current.length + 1,
+    };
+    savePersistentState(key, [...current, newSubSub]);
+    return newSubSub;
+  },
+
+  deleteSubSubject: async (subjectId: string, subSubId: string) => {
+    const key = `icc_sub_subjects_${subjectId}`;
+    const current = getPersistentState<any[]>(key, []);
+    savePersistentState(key, current.filter((s) => s.id !== subSubId));
+    return true;
+  },
+
+  getSubjectChapters: async (subjectId: string, subSubjectId?: string) => {
+    let list: any[] = [];
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase
@@ -751,17 +779,28 @@ export const AdminApi = {
           .eq('subject_id', subjectId)
           .order('chapter_number', { ascending: true });
         if (!error && Array.isArray(data)) {
-          return data;
+          list = data;
         }
       } catch (e) {
         console.error('getSubjectChapters error:', e);
       }
     }
-    const key = `icc_subj_chaps_${subjectId}`;
-    return getPersistentState<any[]>(key, []);
+    if (list.length === 0) {
+      const key = `icc_subj_chaps_${subjectId}`;
+      list = getPersistentState<any[]>(key, []);
+    }
+    if (subSubjectId) {
+      list = list.filter((ch) => ch.sub_subject_id === subSubjectId || ch.description?.includes(`sub_subject:${subSubjectId}`));
+    }
+    return list;
   },
 
-  createSubjectChapter: async (subjectId: string, courseId: string, chapter: { title: string; title_hi?: string; chapter_number?: number }) => {
+  createSubjectChapter: async (
+    subjectId: string,
+    courseId: string,
+    chapter: { title: string; title_hi?: string; chapter_number?: number; sub_subject_id?: string; description?: string }
+  ) => {
+    const desc = chapter.description || (chapter.sub_subject_id ? `sub_subject:${chapter.sub_subject_id}` : '');
     const payload = {
       subject_id: subjectId,
       course_id: courseId,
@@ -769,6 +808,7 @@ export const AdminApi = {
       title_hi: chapter.title_hi || chapter.title,
       chapter_number: chapter.chapter_number || 1,
       display_order: chapter.chapter_number || 1,
+      description: desc,
     };
     if (isSupabaseConfigured) {
       try {
@@ -778,16 +818,17 @@ export const AdminApi = {
           .select()
           .single();
         if (!error && data) {
+          const res = { ...data, sub_subject_id: chapter.sub_subject_id };
           const key = `icc_subj_chaps_${subjectId}`;
           const current = getPersistentState<any[]>(key, []);
-          savePersistentState(key, [...current, data]);
-          return data;
+          savePersistentState(key, [...current, res]);
+          return res;
         }
       } catch (e) {
         console.error('createSubjectChapter error:', e);
       }
     }
-    const fallback = { id: `ch-${Date.now()}`, ...payload };
+    const fallback = { id: `ch-${Date.now()}`, ...payload, sub_subject_id: chapter.sub_subject_id };
     const key = `icc_subj_chaps_${subjectId}`;
     const current = getPersistentState<any[]>(key, []);
     savePersistentState(key, [...current, fallback]);
@@ -806,6 +847,22 @@ export const AdminApi = {
     const current = getPersistentState<any[]>(key, []);
     savePersistentState(key, current.filter((c) => c.id !== chapterId));
     return true;
+  },
+
+  // Chapter Content Lookups
+  getChapterLiveClasses: async (chapterId: string) => {
+    const all = await AdminApi.getLiveClasses();
+    return all.filter((l: any) => l.chapter_id === chapterId);
+  },
+
+  getChapterRecordedLectures: async (chapterId: string) => {
+    const all = await AdminApi.getRecordedLectures();
+    return all.filter((l: any) => l.chapter_id === chapterId);
+  },
+
+  getChapterStudyMaterials: async (chapterId: string) => {
+    const all = await AdminApi.getStudyMaterials();
+    return all.filter((m: any) => m.chapter_id === chapterId);
   },
 
   // 4. Live Classes (CRUD)
@@ -895,7 +952,62 @@ export const AdminApi = {
       l.id === classId ? { ...l, ...updates } : l
     );
     savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+
+    // Automatic Live-to-Recording Lifecycle: SCHEDULED -> LIVE -> ENDED_PROCESSING -> RECORDED_READY
+    if (updates.status === 'completed') {
+      try {
+        const liveItem = localLiveClasses.find((l) => l.id === classId);
+        if (liveItem && liveItem.youtube_video_id) {
+          await AdminApi.promoteLiveToRecordedLecture({
+            live_class_id: classId,
+            course_id: liveItem.course_id,
+            subject_id: (liveItem as any).subject_id,
+            chapter_id: (liveItem as any).chapter_id,
+            title: liveItem.title,
+            title_hi: liveItem.title_hi,
+            description: liveItem.description,
+            youtube_video_id: liveItem.youtube_video_id,
+            duration_minutes: liveItem.duration_minutes || 60,
+          });
+        }
+      } catch (err) {
+        console.error('Auto promotion to recorded lecture failed:', err);
+      }
+    }
+
     return localLiveClasses.find((l) => l.id === classId) || null;
+  },
+
+  promoteLiveToRecordedLecture: async (live: {
+    live_class_id?: string;
+    course_id: string;
+    subject_id?: string;
+    chapter_id?: string;
+    title: string;
+    title_hi?: string;
+    description?: string;
+    youtube_video_id: string;
+    duration_minutes?: number;
+  }) => {
+    localLectures = getPersistentState(STORAGE_KEYS.RECORDED_LECTURES, localLectures);
+    // Deduplication check
+    const existing = localLectures.find(
+      (l) => l.youtube_video_id === live.youtube_video_id || (l.title === live.title && l.chapter_id === live.chapter_id)
+    );
+    if (existing) return existing;
+
+    return await AdminApi.createRecordedLecture({
+      course_id: live.course_id,
+      subject_id: live.subject_id || 'd0000000-0000-0000-0000-000000000002',
+      chapter_id: live.chapter_id || 'e0000000-0000-0000-0000-000000000001',
+      title: live.title,
+      title_hi: live.title_hi || live.title,
+      description: live.description || '',
+      youtube_video_id: live.youtube_video_id,
+      duration_minutes: live.duration_minutes || 60,
+      lecture_order: localLectures.length + 1,
+      is_free_preview: false,
+    });
   },
 
   deleteLiveClass: async (classId: string) => {

@@ -139,7 +139,7 @@ export default function LoginScreen() {
           router.replace('/(tabs)');
           return;
         } else {
-          setErrorMsg('गलत पासवर्ड! कृपया सही डायरेक्टर पासवर्ड दर्ज करें।');
+          setErrorMsg('Invalid password! Please enter the valid Director password.');
           setLoading(false);
           return;
         }
@@ -186,7 +186,7 @@ export default function LoginScreen() {
       if (loggedIn) {
         router.replace('/(tabs)');
       } else {
-        setErrorMsg('अमान्य लॉगिन आईडी या पासवर्ड। कृपया सही क्रेडेंशियल्स दर्ज करें।');
+        setErrorMsg('Invalid login ID or password. Please verify your credentials.');
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Login failed. Please check your credentials.');

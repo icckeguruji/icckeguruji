@@ -102,7 +102,36 @@ export default function PaymentsPage() {
                 'कोर्स एक्टिवेट करने से पूर्व अपने संस्थान के बैंक खाते / UPI ऐप में 12 अंकों का UTR नंबर अवश्य मिलाएं। अनुमोदन (Approval) के उपरांत डेटाबेस ट्रिगर द्वारा विद्यार्थी का कोर्स तुरंत सक्रिय हो जाता है और अपरिवर्तनीय ऑडिट लॉग दर्ज होता है।',
                 'Always verify the 12-digit UTR against your bank statement before approving. Approval triggers instant enrollment activation and writes to the immutable audit log.'
               )}
+        {/* Official Institute Collection Dynamic QR Card */}
+        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-5 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-6 border border-blue-800">
+          <div className="space-y-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-950 uppercase tracking-wider">
+              Institute Collection UPI & QR
+            </span>
+            <h3 className="text-lg font-bold">
+              IDEAL COACHING CENTRE Official UPI QR
+            </h3>
+            <p className="text-xs text-blue-200 max-w-lg leading-relaxed">
+              Students scan this dynamic QR code using PhonePe, Google Pay, Paytm, or BHIM to pay course fees directly into Director BADE SIR account.
             </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="bg-slate-950/60 border border-blue-400/30 px-3 py-1.5 rounded-lg text-xs font-mono">
+                UPI ID: <strong className="text-amber-300">azhargodda@ybl</strong>
+              </div>
+              <div className="bg-slate-950/60 border border-blue-400/30 px-3 py-1.5 rounded-lg text-xs font-mono">
+                Director Mobile: <strong className="text-amber-300">+91 9771350910</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center p-3 bg-white rounded-xl shadow-lg border-2 border-amber-400">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=6&data=${encodeURIComponent('upi://pay?pa=azhargodda@ybl&pn=IDEAL%20COACHING%20CENTRE&cu=INR')}`}
+              alt="IDEAL COACHING CENTRE UPI QR Code"
+              className="w-32 h-32 rounded-lg"
+            />
+            <span className="text-[10px] font-bold text-slate-800 mt-1">Scan to Pay UPI</span>
           </div>
         </div>
 

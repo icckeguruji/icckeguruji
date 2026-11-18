@@ -453,91 +453,132 @@ class AcademicRepository {
         await this.persist('icc_live_classes', this.liveClasses);
       }
 
-      // 3. Sync Study Materials
+      // 3. Sync Study Materials (Non-destructive union merge)
       const { data: remoteMats, error: matErr } = await supabase
         .from('study_materials')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!matErr && Array.isArray(remoteMats)) {
+        const matMap = new Map<string, StudyMaterial>();
         for (const localMat of this.materials) {
-          if (!this.deletedIds.has(localMat.id) && !remoteMats.some((r) => r.id === localMat.id)) {
-            try {
-              await supabase.from('study_materials').upsert({
-                id: localMat.id,
-                board_id: localMat.board_id,
-                class_id: localMat.class_id,
-                subject_id: localMat.subject_id,
-                chapter_id: localMat.chapter_id,
-                title: localMat.title,
-                title_hi: localMat.title_hi || localMat.title,
-                description: localMat.description,
-                file_path: localMat.file_path,
-                file_size_bytes: localMat.file_size_bytes,
-                material_type: localMat.material_type,
-                is_free: localMat.is_free,
-                class_name: (localMat as any).class_name,
-              });
-              remoteMats.unshift(localMat as any);
-            } catch {}
+          if (!this.deletedIds.has(localMat.id)) {
+            matMap.set(localMat.id, localMat);
           }
         }
-        this.materials = remoteMats;
+        for (const remoteMat of remoteMats) {
+          if (!this.deletedIds.has(remoteMat.id)) {
+            matMap.set(remoteMat.id, remoteMat as any);
+          }
+        }
+        this.materials = Array.from(matMap.values());
         await this.persist('icc_study_materials', this.materials);
       }
 
-      // 4. Sync Recorded Lectures
+      // 4. Sync Recorded Lectures (Non-destructive union merge)
       const { data: remoteLecs, error: lecErr } = await supabase
         .from('recorded_lectures')
         .select('*')
         .order('lecture_order', { ascending: true });
 
       if (!lecErr && Array.isArray(remoteLecs)) {
-        this.lectures = remoteLecs;
+        const lecMap = new Map<string, RecordedLecture>();
+        for (const localLec of this.lectures) {
+          if (!this.deletedIds.has(localLec.id)) {
+            lecMap.set(localLec.id, localLec);
+          }
+        }
+        for (const remoteLec of remoteLecs) {
+          if (!this.deletedIds.has(remoteLec.id)) {
+            lecMap.set(remoteLec.id, remoteLec as any);
+          }
+        }
+        this.lectures = Array.from(lecMap.values());
         await this.persist('icc_recorded_lectures', this.lectures);
       }
 
-      // 5. Sync Subjects
+      // 5. Sync Subjects (Non-destructive union merge)
       const { data: remoteSubs, error: subErr } = await supabase
         .from('subjects')
         .select('*')
         .order('display_order', { ascending: true });
 
       if (!subErr && Array.isArray(remoteSubs)) {
-        this.subjects = remoteSubs;
+        const subMap = new Map<string, AcademicSubject>();
+        for (const localSub of this.subjects) {
+          if (!this.deletedIds.has(localSub.id)) {
+            subMap.set(localSub.id, localSub);
+          }
+        }
+        for (const remoteSub of remoteSubs) {
+          if (!this.deletedIds.has(remoteSub.id)) {
+            const existing = subMap.get(remoteSub.id);
+            subMap.set(remoteSub.id, {
+              ...remoteSub,
+              sub_subjects: existing?.sub_subjects || (remoteSub as any).sub_subjects || [],
+              has_sub_subjects: existing?.has_sub_subjects || Boolean((remoteSub as any).sub_subjects?.length),
+            } as any);
+          }
+        }
+        this.subjects = Array.from(subMap.values());
         await this.persist('icc_academic_subjects', this.subjects);
       }
 
-      // 6. Sync Chapters
+      // 6. Sync Chapters (Non-destructive union merge)
       const { data: remoteChaps, error: chapErr } = await supabase
         .from('chapters')
         .select('*')
         .order('chapter_number', { ascending: true });
 
       if (!chapErr && Array.isArray(remoteChaps)) {
-        this.chapters = remoteChaps;
+        const chapMap = new Map<string, AcademicChapter>();
+        for (const localChap of this.chapters) {
+          if (!this.deletedIds.has(localChap.id)) {
+            chapMap.set(localChap.id, localChap);
+          }
+        }
+        for (const remoteChap of remoteChaps) {
+          if (!this.deletedIds.has(remoteChap.id)) {
+            chapMap.set(remoteChap.id, remoteChap as any);
+          }
+        }
+        this.chapters = Array.from(chapMap.values());
         await this.persist('icc_academic_chapters', this.chapters);
       }
 
-      // 7. Sync Payments
+      // 7. Sync Payments (Non-destructive union merge)
       const { data: remotePayments, error: payErr } = await supabase
         .from('payments')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!payErr && Array.isArray(remotePayments)) {
-        this.payments = remotePayments;
+        const payMap = new Map<string, any>();
+        for (const localPay of this.payments) {
+          payMap.set(localPay.id, localPay);
+        }
+        for (const remotePay of remotePayments) {
+          payMap.set(remotePay.id, remotePay);
+        }
+        this.payments = Array.from(payMap.values());
         await this.persist('icc_payments', this.payments);
       }
 
-      // 8. Sync Students
+      // 8. Sync Students (Non-destructive union merge)
       const { data: remoteProfiles, error: profErr } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!profErr && Array.isArray(remoteProfiles)) {
-        this.students = remoteProfiles as any;
+        const profMap = new Map<string, any>();
+        for (const localProf of this.students) {
+          profMap.set(localProf.id, localProf);
+        }
+        for (const remoteProf of remoteProfiles) {
+          profMap.set(remoteProf.id, remoteProf);
+        }
+        this.students = Array.from(profMap.values());
         await this.persist('icc_students', this.students);
       }
 
@@ -1203,6 +1244,32 @@ class AcademicRepository {
         try {
           await supabase.from('live_classes').update({ status }).eq('id', id);
         } catch {}
+      }
+
+      // Automatic Live-to-Recording Lifecycle: SCHEDULED -> LIVE -> ENDED_PROCESSING -> RECORDED_READY
+      if (status === 'completed' && item.youtube_video_id) {
+        try {
+          const existing = this.lectures.find(
+            (lec) =>
+              lec.youtube_video_id === item.youtube_video_id ||
+              (lec.title === item.title && lec.chapter_id === (item as any).chapter_id)
+          );
+          if (!existing) {
+            await this.addRecordedLecture({
+              course_id: item.course_id,
+              subject_id: (item as any).subject_id || this.subjects[0]?.id,
+              chapter_id: (item as any).chapter_id || this.chapters[0]?.id,
+              title: item.title,
+              title_hi: item.title_hi || item.title,
+              description: item.description,
+              youtube_video_id: item.youtube_video_id,
+              duration_seconds: (item.duration_minutes || 60) * 60,
+              is_free_preview: false,
+            });
+          }
+        } catch (err) {
+          console.error('AcademicService auto promotion error:', err);
+        }
       }
     }
   }

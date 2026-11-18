@@ -73,11 +73,11 @@ export default function DirectorLoginPage() {
     const trimmedPw = password.trim();
 
     if (!trimmedId) {
-      setErrorMsg('कृपया अपना मोबाइल नंबर (9771350910) या ईमेल दर्ज करें।');
+      setErrorMsg('Please enter your mobile number (9771350910) or email address.');
       return;
     }
     if (!trimmedPw) {
-      setErrorMsg('कृपया अपना पासवर्ड दर्ज करें।');
+      setErrorMsg('Please enter your password.');
       return;
     }
 
@@ -114,7 +114,7 @@ export default function DirectorLoginPage() {
         if (isDirector || trimmedPw.length >= 4) {
           setAuthCookies();
         } else {
-          setErrorMsg('अमान्य विवरण। कृपया सही डायरेक्टर क्रेडेंशियल्स दर्ज करें या 1-Click का उपयोग करें।');
+          setErrorMsg('Invalid credentials. Please enter valid Director credentials.');
           setLoading(false);
           return;
         }
@@ -250,7 +250,7 @@ export default function DirectorLoginPage() {
               disabled={loading}
               className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold rounded-xl transition flex items-center justify-center space-x-2"
             >
-              <span>{loading ? 'प्रमाणीकरण हो रहा है...' : 'डायरेक्टर लॉगिन (Sign In)'}</span>
+              <span>{loading ? 'Authenticating...' : 'Director Sign In'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -264,7 +264,7 @@ export default function DirectorLoginPage() {
                 Reset Password
               </h3>
               <p className="text-slate-400 text-xs leading-relaxed">
-                अपना पंजीकृत ईमेल दर्ज करें। पासवर्ड रीसेट लिंक आपके इनबॉक्स में भेजा जाएगा।
+                Enter your registered email address. A password reset link will be dispatched to your inbox.
               </p>
             </div>
 
@@ -290,7 +290,7 @@ export default function DirectorLoginPage() {
               disabled={loading}
               className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold rounded-xl transition flex items-center justify-center space-x-2"
             >
-              <span>{loading ? 'भेजा जा रहा है...' : 'रीसेट लिंक भेजें'}</span>
+              <span>{loading ? 'Dispatching...' : 'Send Reset Link'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -310,10 +310,10 @@ export default function DirectorLoginPage() {
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
             <div>
               <h3 className="font-bold text-white text-sm">
-                रीसेट लिंक भेज दिया गया!
+                Reset Link Dispatched
               </h3>
               <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-                पासवर्ड रीसेट लिंक <strong className="text-blue-300">{forgotEmail}</strong> पर भेजा गया है।
+                Password reset instructions sent to <strong className="text-blue-300">{forgotEmail}</strong>.
               </p>
             </div>
             <button
@@ -332,7 +332,7 @@ export default function DirectorLoginPage() {
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-400 transition font-medium"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>मुख्य वेबसाइट पर जाएं (Back to Public Website)</span>
+            <span>Back to Public Website</span>
           </Link>
         </div>
       </div>

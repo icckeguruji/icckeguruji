@@ -156,17 +156,14 @@ export default function CourseDetailsScreen() {
 
   const handleSelectChapter = async (chap: AcademicChapter) => {
     setSelectedChapter(chap);
-    setActiveLevel('chapter_content');
-
-    // Load content for this chapter
-    const lecs = await academicService.getRecordedLectures(chap.id);
-    setRecordedLectures(lecs);
-
-    const lives = await academicService.getLiveClasses(chap.id);
-    setLiveClasses(lives);
-
-    const mats = await academicService.getStudyMaterials(chap.id);
-    setStudyMaterials(mats);
+    router.push({
+      pathname: '/chapter/[id]',
+      params: {
+        id: chap.id,
+        courseId: currentCourse?.id || id || '',
+        subjectId: selectedSubject?.id || '',
+      },
+    } as any);
   };
 
   // --- ADMIN ACTIONS ---

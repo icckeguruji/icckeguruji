@@ -58,14 +58,26 @@ export default function CoursesPage() {
   const [curriculumCourse, setCurriculumCourse] = useState<Course | null>(null);
   const [courseSubjects, setCourseSubjects] = useState<CourseSubject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<CourseSubject | null>(null);
+  const [subSubjects, setSubSubjects] = useState<any[]>([]);
+  const [selectedSubSubject, setSelectedSubSubject] = useState<any | null>(null);
   const [subjectChapters, setSubjectChapters] = useState<SubjectChapter[]>([]);
   const [loadingCurriculum, setLoadingCurriculum] = useState(false);
 
-  // Form states for adding subject / chapter
+  // Chapter Content Inspector State
+  const [activeChapterContent, setActiveChapterContent] = useState<SubjectChapter | null>(null);
+  const [chapterLiveClasses, setChapterLiveClasses] = useState<any[]>([]);
+  const [chapterRecordedLectures, setChapterRecordedLectures] = useState<any[]>([]);
+  const [chapterStudyMaterials, setChapterStudyMaterials] = useState<any[]>([]);
+
+  // Form states for adding subject / sub-subject / chapter / content
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectNameHi, setNewSubjectNameHi] = useState('');
+  const [newSubSubjectName, setNewSubSubjectName] = useState('');
+  const [newSubSubjectNameHi, setNewSubSubjectNameHi] = useState('');
   const [newChapterTitle, setNewChapterTitle] = useState('');
   const [newChapterTitleHi, setNewChapterTitleHi] = useState('');
+  const [contentFormTitle, setContentFormTitle] = useState('');
+  const [contentFormUrl, setContentFormUrl] = useState('');
 
   // Course Form States
   const [thumbnailUrl, setThumbnailUrl] = useState('/thumbnails/batch-b3-class10.jpg');
@@ -286,7 +298,10 @@ export default function CoursesPage() {
   const openCurriculumModal = async (course: Course) => {
     setCurriculumCourse(course);
     setSelectedSubject(null);
+    setSelectedSubSubject(null);
+    setSubSubjects([]);
     setSubjectChapters([]);
+    setActiveChapterContent(null);
     setLoadingCurriculum(true);
     const subs = await AdminApi.getCourseSubjects(course.id);
     setCourseSubjects(subs);
@@ -315,13 +330,53 @@ export default function CoursesPage() {
     setCourseSubjects((prev) => prev.filter((s) => s.id !== sub.id));
     if (selectedSubject?.id === sub.id) {
       setSelectedSubject(null);
+      setSelectedSubSubject(null);
+      setSubSubjects([]);
       setSubjectChapters([]);
+      setActiveChapterContent(null);
     }
   };
 
   const handleSelectSubject = async (sub: CourseSubject) => {
     setSelectedSubject(sub);
-    const chaps = await AdminApi.getSubjectChapters(sub.id);
+    setSelectedSubSubject(null);
+    setActiveChapterContent(null);
+    const [subSubs, chaps] = await Promise.all([
+      AdminApi.getSubSubjects(sub.id),
+      AdminApi.getSubjectChapters(sub.id),
+    ]);
+    setSubSubjects(subSubs);
+    setSubjectChapters(chaps);
+  };
+
+  const handleAddSubSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSubject || !newSubSubjectName.trim()) return;
+    const created = await AdminApi.createSubSubject(selectedSubject.id, {
+      name: newSubSubjectName.trim(),
+      name_hi: newSubSubjectNameHi.trim() || newSubSubjectName.trim(),
+    });
+    setSubSubjects((prev) => [...prev, created]);
+    setNewSubSubjectName('');
+    setNewSubSubjectNameHi('');
+  };
+
+  const handleDeleteSubSubject = async (subSub: any) => {
+    if (!selectedSubject) return;
+    const confirm = window.confirm(`Delete sub-subject/unit "${subSub.name}"?`);
+    if (!confirm) return;
+    await AdminApi.deleteSubSubject(selectedSubject.id, subSub.id);
+    setSubSubjects((prev) => prev.filter((s) => s.id !== subSub.id));
+    if (selectedSubSubject?.id === subSub.id) {
+      setSelectedSubSubject(null);
+    }
+  };
+
+  const handleSelectSubSubject = async (subSub: any | null) => {
+    if (!selectedSubject) return;
+    setSelectedSubSubject(subSub);
+    setActiveChapterContent(null);
+    const chaps = await AdminApi.getSubjectChapters(selectedSubject.id, subSub?.id);
     setSubjectChapters(chaps);
   };
 
@@ -336,6 +391,7 @@ export default function CoursesPage() {
         title: newChapterTitle.trim(),
         title_hi: newChapterTitleHi.trim() || newChapterTitle.trim(),
         chapter_number: subjectChapters.length + 1,
+        sub_subject_id: selectedSubSubject?.id,
       }
     );
     setSubjectChapters((prev) => [...prev, created]);
@@ -350,6 +406,65 @@ export default function CoursesPage() {
 
     await AdminApi.deleteSubjectChapter(selectedSubject.id, chap.id);
     setSubjectChapters((prev) => prev.filter((c) => c.id !== chap.id));
+    if (activeChapterContent?.id === chap.id) {
+      setActiveChapterContent(null);
+    }
+  };
+
+  const handleOpenChapterContent = async (chap: SubjectChapter) => {
+    setActiveChapterContent(chap);
+    const [lives, vids, mats] = await Promise.all([
+      AdminApi.getChapterLiveClasses(chap.id),
+      AdminApi.getChapterRecordedLectures(chap.id),
+      AdminApi.getChapterStudyMaterials(chap.id),
+    ]);
+    setChapterLiveClasses(lives);
+    setChapterRecordedLectures(vids);
+    setChapterStudyMaterials(mats);
+  };
+
+  const handleAddChapterLiveClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!curriculumCourse || !activeChapterContent || !contentFormTitle.trim()) return;
+    const cleanVid = contentFormUrl.includes('v=')
+      ? contentFormUrl.split('v=')[1]?.split('&')[0]
+      : contentFormUrl.includes('youtu.be/')
+      ? contentFormUrl.split('youtu.be/')[1]?.split('?')[0]
+      : contentFormUrl || 'jfKfPfyJRdk';
+
+    const created = await AdminApi.createLiveClass({
+      course_id: curriculumCourse.id,
+      title: contentFormTitle.trim(),
+      youtube_video_id: cleanVid,
+      status: 'live',
+      duration_minutes: 60,
+    } as any);
+    (created as any).chapter_id = activeChapterContent.id;
+    setChapterLiveClasses((prev) => [created, ...prev]);
+    setContentFormTitle('');
+    setContentFormUrl('');
+  };
+
+  const handleAddChapterVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!curriculumCourse || !selectedSubject || !activeChapterContent || !contentFormTitle.trim()) return;
+    const cleanVid = contentFormUrl.includes('v=')
+      ? contentFormUrl.split('v=')[1]?.split('&')[0]
+      : contentFormUrl.includes('youtu.be/')
+      ? contentFormUrl.split('youtu.be/')[1]?.split('?')[0]
+      : contentFormUrl || 'jfKfPfyJRdk';
+
+    const created = await AdminApi.createRecordedLecture({
+      course_id: curriculumCourse.id,
+      subject_id: selectedSubject.id,
+      chapter_id: activeChapterContent.id,
+      title: contentFormTitle.trim(),
+      youtube_video_id: cleanVid,
+      duration_minutes: 45,
+    });
+    setChapterRecordedLectures((prev) => [created, ...prev]);
+    setContentFormTitle('');
+    setContentFormUrl('');
   };
 
   return (
@@ -858,75 +973,78 @@ export default function CoursesPage() {
           </div>
         )}
 
-        {/* Manual Subjects & Chapters Management Modal */}
+        {/* Dynamic Educational Content Hierarchy & Curriculum Management Modal */}
         {curriculumCourse && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
-            <div className="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto flex flex-col space-y-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-white rounded-2xl max-w-6xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto flex flex-col space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
                   <div className="flex items-center space-x-2">
                     <Layers className="w-5 h-5 text-indigo-600" />
                     <h3 className="font-bold text-base text-slate-900">
-                      {t('पाठ्यक्रम एवं विषय प्रबंधन (Manual Curriculum)', 'Manual Subjects & Chapters')}
+                      Dynamic Educational Content Hierarchy & Curriculum
                     </h3>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-md">
-                    {curriculumCourse.title}
+                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-lg">
+                    Course: <strong className="text-slate-800">{curriculumCourse.title}</strong> • Hierarchy: Course → Subject → Sub-Subject → Chapter → (Live, Videos, Notes)
                   </p>
                 </div>
                 <button
-                  onClick={() => setCurriculumCourse(null)}
+                  onClick={() => {
+                    setCurriculumCourse(null);
+                    setActiveChapterContent(null);
+                  }}
                   className="p-1 rounded-lg text-slate-400 hover:text-slate-600 font-bold"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Grid: Subjects on Left, Chapters on Right */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                {/* Column 1: Subjects List & Add Form */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col space-y-3">
+              {/* 3-Column Hierarchy Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                {/* Column 1: Subjects */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-slate-800 flex items-center space-x-1">
+                    <span className="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
                       <BookOpen className="w-4 h-4 text-indigo-600" />
-                      <span>{t('कोर्स के विषय (Subjects)', 'Course Subjects')} ({courseSubjects.length})</span>
+                      <span>1. Subjects ({courseSubjects.length})</span>
                     </span>
                   </div>
 
                   {/* Add Subject Form */}
-                  <form onSubmit={handleAddSubject} className="space-y-2 bg-white p-3 rounded-lg border border-slate-200">
+                  <form onSubmit={handleAddSubject} className="space-y-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
                     <input
                       type="text"
                       required
-                      placeholder="विषय का नाम (e.g. Mathematics, Science)"
+                      placeholder="Subject Name (e.g. Science)"
                       value={newSubjectName}
                       onChange={(e) => setNewSubjectName(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                     />
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1.5">
                       <input
                         type="text"
-                        placeholder="हिंदी नाम (e.g. गणित, विज्ञान)"
+                        placeholder="Hindi Name (Optional)"
                         value={newSubjectNameHi}
                         onChange={(e) => setNewSubjectNameHi(e.target.value)}
-                        className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                        className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                       />
                       <button
                         type="submit"
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
+                        className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>जोड़ें</span>
+                        <span>Add</span>
                       </button>
                     </div>
                   </form>
 
                   {/* Subjects Items */}
-                  <div className="flex-1 overflow-y-auto space-y-2 max-h-60 sm:max-h-72">
+                  <div className="flex-1 overflow-y-auto space-y-1.5 max-h-56">
                     {courseSubjects.length === 0 ? (
                       <div className="text-center py-6 text-slate-400 text-xs">
                         <BookMarked className="w-8 h-8 mx-auto mb-1 text-slate-300" />
-                        <p>{t('कोई विषय नहीं जुड़ा है। ऊपर फ़ॉर्म से जोड़ें।', 'No subjects added yet. Add one above.')}</p>
+                        <p>No subjects added yet. Add one above.</p>
                       </div>
                     ) : (
                       courseSubjects.map((sub) => {
@@ -935,13 +1053,13 @@ export default function CoursesPage() {
                           <div
                             key={sub.id}
                             onClick={() => handleSelectSubject(sub)}
-                            className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition ${
+                            className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition ${
                               isSelected
                                 ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
                                 : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
                             }`}
                           >
-                            <div className="min-w-0 pr-2">
+                            <div className="min-w-0 pr-1">
                               <p className="font-bold truncate">{sub.name}</p>
                               {sub.name_hi && sub.name_hi !== sub.name && (
                                 <p className={`text-[10px] ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>
@@ -971,85 +1089,190 @@ export default function CoursesPage() {
                   </div>
                 </div>
 
-                {/* Column 2: Chapters under Selected Subject */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col space-y-3">
+                {/* Column 2: Sub-Subjects / Subject Units */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-slate-800 flex items-center space-x-1">
-                      <FolderPlus className="w-4 h-4 text-emerald-600" />
-                      <span>
-                        {selectedSubject
-                          ? `${selectedSubject.name} — ${t('पाठ/अध्याय (Chapters)', 'Chapters')} (${subjectChapters.length})`
-                          : t('पाठ/अध्याय (Chapters)', 'Chapters')}
-                      </span>
+                    <span className="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
+                      <Layers className="w-4 h-4 text-purple-600" />
+                      <span>2. Sub-Subjects / Units ({subSubjects.length})</span>
                     </span>
                   </div>
 
                   {!selectedSubject ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400 text-xs">
-                      <AlertCircle className="w-8 h-8 mb-2 text-slate-300" />
-                      <p>{t('बाएं से कोई विषय चुनें ताकि उसके पाठ जोड़ सकें।', 'Select a subject from the left to view and add chapters.')}</p>
+                      <p>Select a subject from left to manage units (e.g. Physics, Chemistry, Biology).</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Add Sub-Subject Form */}
+                      <form onSubmit={handleAddSubSubject} className="space-y-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Sub-Subject (e.g. Physics)"
+                          value={newSubSubjectName}
+                          onChange={(e) => setNewSubSubjectName(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                        />
+                        <div className="flex space-x-1.5">
+                          <input
+                            type="text"
+                            placeholder="Hindi Name (Optional)"
+                            value={newSubSubjectNameHi}
+                            onChange={(e) => setNewSubSubjectNameHi(e.target.value)}
+                            className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add</span>
+                          </button>
+                        </div>
+                      </form>
+
+                      {/* Sub-Subject Items */}
+                      <div className="flex-1 overflow-y-auto space-y-1.5 max-h-56">
+                        <div
+                          onClick={() => handleSelectSubSubject(null)}
+                          className={`p-2 rounded-lg border text-xs cursor-pointer transition ${
+                            selectedSubSubject === null
+                              ? 'bg-purple-600 text-white border-purple-700 font-bold'
+                              : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          All Chapters (Direct Subject Scope)
+                        </div>
+                        {subSubjects.map((subSub) => {
+                          const isSel = selectedSubSubject?.id === subSub.id;
+                          return (
+                            <div
+                              key={subSub.id}
+                              onClick={() => handleSelectSubSubject(subSub)}
+                              className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition ${
+                                isSel
+                                  ? 'bg-purple-600 text-white border-purple-700 shadow-sm'
+                                  : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-1">
+                                <p className="font-bold truncate">{subSub.name}</p>
+                                {subSub.name_hi && subSub.name_hi !== subSub.name && (
+                                  <p className={`text-[10px] ${isSel ? 'text-purple-200' : 'text-slate-400'}`}>
+                                    {subSub.name_hi}
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSubSubject(subSub);
+                                }}
+                                className={`p-1 rounded hover:bg-rose-500 hover:text-white transition ${
+                                  isSel ? 'text-purple-200' : 'text-slate-400'
+                                }`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Column 3: Chapters under Selected Scope */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-slate-800 flex items-center space-x-1.5">
+                      <FolderPlus className="w-4 h-4 text-emerald-600" />
+                      <span>3. Chapters ({subjectChapters.length})</span>
+                    </span>
+                  </div>
+
+                  {!selectedSubject ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400 text-xs">
+                      <p>Select a subject and unit to view or add chapters.</p>
                     </div>
                   ) : (
                     <>
                       {/* Add Chapter Form */}
-                      <form onSubmit={handleAddChapter} className="space-y-2 bg-white p-3 rounded-lg border border-slate-200">
+                      <form onSubmit={handleAddChapter} className="space-y-1.5 bg-white p-2.5 rounded-lg border border-slate-200">
                         <input
                           type="text"
                           required
-                          placeholder="पाठ का शीर्षक (e.g. Ch 1: Real Numbers)"
+                          placeholder="Chapter Title (e.g. Ch 1: Real Numbers)"
                           value={newChapterTitle}
                           onChange={(e) => setNewChapterTitle(e.target.value)}
-                          className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                         />
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1.5">
                           <input
                             type="text"
-                            placeholder="हिंदी शीर्षक (e.g. पाठ 1: वास्तविक संख्याएँ)"
+                            placeholder="Hindi Title (Optional)"
                             value={newChapterTitleHi}
                             onChange={(e) => setNewChapterTitleHi(e.target.value)}
-                            className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                            className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                           />
                           <button
                             type="submit"
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
+                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition"
                           >
                             <Plus className="w-3.5 h-3.5" />
-                            <span>जोड़ें</span>
+                            <span>Add</span>
                           </button>
                         </div>
                       </form>
 
                       {/* Chapters Items */}
-                      <div className="flex-1 overflow-y-auto space-y-2 max-h-60 sm:max-h-72">
+                      <div className="flex-1 overflow-y-auto space-y-1.5 max-h-56">
                         {subjectChapters.length === 0 ? (
                           <div className="text-center py-6 text-slate-400 text-xs">
-                            <p>{t('इस विषय में अभी कोई पाठ नहीं है। नया पाठ जोड़ें।', 'No chapters added to this subject yet.')}</p>
+                            <p>No chapters added to this unit yet.</p>
                           </div>
                         ) : (
-                          subjectChapters.map((chap, idx) => (
-                            <div
-                              key={chap.id}
-                              className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 text-xs hover:border-emerald-300 transition"
-                            >
-                              <div className="min-w-0 pr-2">
-                                <p className="font-bold text-slate-800 truncate">
-                                  {idx + 1}. {chap.title}
-                                </p>
-                                {chap.title_hi && chap.title_hi !== chap.title && (
-                                  <p className="text-[10px] text-slate-400 truncate">
-                                    {chap.title_hi}
-                                  </p>
-                                )}
-                              </div>
-                              <button
-                                onClick={() => handleDeleteChapter(chap)}
-                                title="Delete Chapter"
-                                className="p-1 rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                          subjectChapters.map((chap, idx) => {
+                            const isInspecting = activeChapterContent?.id === chap.id;
+                            return (
+                              <div
+                                key={chap.id}
+                                onClick={() => handleOpenChapterContent(chap)}
+                                className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition ${
+                                  isInspecting
+                                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                                    : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                                }`}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))
+                                <div className="min-w-0 pr-1">
+                                  <p className="font-bold truncate">
+                                    {idx + 1}. {chap.title}
+                                  </p>
+                                  {chap.title_hi && chap.title_hi !== chap.title && (
+                                    <p className={`text-[10px] ${isInspecting ? 'text-emerald-200' : 'text-slate-400'} truncate`}>
+                                      {chap.title_hi}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteChapter(chap);
+                                    }}
+                                    title="Delete Chapter"
+                                    className={`p-1 rounded hover:bg-rose-500 hover:text-white transition ${
+                                      isInspecting ? 'text-emerald-200' : 'text-slate-400'
+                                    }`}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <ChevronRight className={`w-4 h-4 ${isInspecting ? 'text-white' : 'text-slate-400'}`} />
+                                </div>
+                              </div>
+                            );
+                          })
                         )}
                       </div>
                     </>
@@ -1057,12 +1280,128 @@ export default function CoursesPage() {
                 </div>
               </div>
 
+              {/* Chapter Content Inspector (Live Classes, Recorded Videos, PDF Notes) */}
+              {activeChapterContent && (
+                <div className="border border-emerald-300 bg-emerald-50/50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
+                    <span className="font-bold text-xs text-emerald-900 flex items-center space-x-1.5">
+                      <FolderPlus className="w-4 h-4 text-emerald-700" />
+                      <span>Chapter Content: {activeChapterContent.title}</span>
+                    </span>
+                    <button
+                      onClick={() => setActiveChapterContent(null)}
+                      className="text-xs text-emerald-700 hover:text-emerald-900 font-semibold"
+                    >
+                      Close Inspector ✕
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    {/* Live Classes */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-3">
+                      <span className="font-bold text-slate-800 flex items-center space-x-1 mb-2">
+                        <Video className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Live Classes ({chapterLiveClasses.length})</span>
+                      </span>
+                      <form onSubmit={handleAddChapterLiveClass} className="space-y-1 mb-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Live Title"
+                          value={contentFormTitle}
+                          onChange={(e) => setContentFormTitle(e.target.value)}
+                          className="w-full px-2 py-1 text-xs border rounded"
+                        />
+                        <div className="flex space-x-1">
+                          <input
+                            type="text"
+                            placeholder="YouTube ID/Link"
+                            value={contentFormUrl}
+                            onChange={(e) => setContentFormUrl(e.target.value)}
+                            className="flex-1 px-2 py-1 text-xs border rounded"
+                          />
+                          <button type="submit" className="px-2 py-1 bg-rose-600 text-white rounded text-xs font-semibold">
+                            + Live
+                          </button>
+                        </div>
+                      </form>
+                      <div className="space-y-1 max-h-28 overflow-y-auto">
+                        {chapterLiveClasses.map((l: any) => (
+                          <div key={l.id} className="p-1.5 bg-slate-50 rounded border text-[11px] truncate">
+                            {l.title} ({l.status})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recorded Videos */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-3">
+                      <span className="font-bold text-slate-800 flex items-center space-x-1 mb-2">
+                        <Video className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Recorded Videos ({chapterRecordedLectures.length})</span>
+                      </span>
+                      <form onSubmit={handleAddChapterVideo} className="space-y-1 mb-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Lecture Title"
+                          value={contentFormTitle}
+                          onChange={(e) => setContentFormTitle(e.target.value)}
+                          className="w-full px-2 py-1 text-xs border rounded"
+                        />
+                        <div className="flex space-x-1">
+                          <input
+                            type="text"
+                            placeholder="YouTube Video ID"
+                            value={contentFormUrl}
+                            onChange={(e) => setContentFormUrl(e.target.value)}
+                            className="flex-1 px-2 py-1 text-xs border rounded"
+                          />
+                          <button type="submit" className="px-2 py-1 bg-blue-600 text-white rounded text-xs font-semibold">
+                            + Video
+                          </button>
+                        </div>
+                      </form>
+                      <div className="space-y-1 max-h-28 overflow-y-auto">
+                        {chapterRecordedLectures.map((v: any) => (
+                          <div key={v.id} className="p-1.5 bg-slate-50 rounded border text-[11px] truncate">
+                            {v.title}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Study Materials */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-3">
+                      <span className="font-bold text-slate-800 flex items-center space-x-1 mb-2">
+                        <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Study Materials ({chapterStudyMaterials.length})</span>
+                      </span>
+                      <div className="space-y-1 max-h-36 overflow-y-auto">
+                        {chapterStudyMaterials.length === 0 ? (
+                          <p className="text-[11px] text-slate-400">No PDF notes attached yet.</p>
+                        ) : (
+                          chapterStudyMaterials.map((m: any) => (
+                            <div key={m.id} className="p-1.5 bg-slate-50 rounded border text-[11px] truncate">
+                              📄 {m.title}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="pt-2 flex justify-end">
                 <button
-                  onClick={() => setCurriculumCourse(null)}
-                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition"
+                  onClick={() => {
+                    setCurriculumCourse(null);
+                    setActiveChapterContent(null);
+                  }}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
                 >
-                  {t('पूर्ण हुआ (Done)', 'Done')}
+                  Done
                 </button>
               </div>
             </div>

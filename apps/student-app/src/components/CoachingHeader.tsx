@@ -279,6 +279,25 @@ export function CoachingHeader({
                   </View>
 
                   <TouchableOpacity
+                    style={[styles.menuItem, { backgroundColor: '#EFF6FF', borderRadius: 12, marginVertical: 4 }]}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      router.push('/admin' as any);
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#2563EB' }]}>
+                      <ShieldCheck size={18} color="#FFFFFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: '#1E3A8A', fontWeight: '900' }]}>
+                        ⚡ Master Admin Dashboard
+                      </Text>
+                      <Text style={styles.menuItemSubText}>Full parity with web admin — all modules & CRUD</Text>
+                    </View>
+                    <ChevronRight size={16} color="#2563EB" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => {
                       setIsDrawerOpen(false);
