@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
-import { AdminApi, getResolvedThumbnailUrl } from '@/lib/api';
+import { AdminApi, getResolvedThumbnailUrl, allInitialCourses } from '@/lib/api';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
@@ -49,7 +49,7 @@ interface SubjectChapter {
 
 export default function CoursesPage() {
   const { lang, t } = useLanguage();
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);

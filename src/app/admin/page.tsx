@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
-import { AdminApi, getResolvedThumbnailUrl } from '@/lib/api';
+import { AdminApi, getResolvedThumbnailUrl, allInitialCourses } from '@/lib/api';
 import { formatINR } from '@icc/shared-utils';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
@@ -58,13 +58,13 @@ interface SubjectChapter {
 
 export default function AdminDashboardPage() {
   const { lang, t } = useLanguage();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
   const [stats, setStats] = useState({
     totalStudents: 0,
     activeStudents: 0,
-    totalCourses: 0,
+    totalCourses: allInitialCourses.length,
     pendingPayments: 0,
     approvedPayments: 0,
     totalRevenue: 0,

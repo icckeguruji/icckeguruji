@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AdminApi } from '@/lib/api';
+import { AdminApi, allInitialCourses } from '@/lib/api';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
@@ -11,8 +11,8 @@ import { useLanguage } from '@/components/LanguageContext';
 import { PublicEnrollmentModal } from '@/components/PublicEnrollmentModal';
 
 export default function PublicCoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
+  const [loading, setLoading] = useState(false);
   const [classFilter, setClassFilter] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);

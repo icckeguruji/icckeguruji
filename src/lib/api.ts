@@ -99,6 +99,93 @@ const defaultAdminProfile: AdminProfileData = {
   preferred_language: 'en',
 };
 
+export const allInitialCourses: Course[] = [
+  {
+    id: 'ae78ea58-19aa-4ed4-86c8-336bd42c45ef',
+    title: 'Class 10 State Board Topper Course 2027',
+    title_hi: 'कक्षा 10वीं स्टेट बोर्ड टॉपर कोर्स 2027 (मैट्रिक)',
+    tagline: 'Complete BSEB & JAC Matric Syllabus Mastery with BADE SIR',
+    description: 'Comprehensive coaching program covering Math, Science, Social Science, Hindi, English and Sanskrit with daily HD live classes and handwritten PDF master notes.',
+    description_hi: 'गणित, विज्ञान, सामाजिक विज्ञान एवं भाषा विषयों की संपूर्ण लाइव तैयारी एवं हस्तलिखित नोट्स।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000010',
+    price: 999,
+    discount_price: 499,
+    validity_days: 365,
+    class_name: 'Class 10',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+  {
+    id: 'c1200000-1111-4000-8000-000000000012',
+    title: 'Class 12 Intermediate Science Target Course 2027',
+    title_hi: 'कक्षा 12वीं इंटरमीडिएट साइंस टारगेट कोर्स 2027',
+    tagline: 'Physics, Chemistry, Maths & Biology Excellence with BADE SIR',
+    description: 'Specialized 12th board preparation program covering high-scoring numerical methods, conceptual derivations, and chapter-wise question banks.',
+    description_hi: 'भौतिकी, रसायन, गणित एवं जीव विज्ञान की उच्च स्तरीय बोर्ड परीक्षा तैयारी।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b4-class9.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000012',
+    price: 1499,
+    discount_price: 699,
+    validity_days: 365,
+    class_name: 'Class 12',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+  {
+    id: 'c0900000-1111-4000-8000-000000000009',
+    title: 'Class 9 Foundation & Target Course 2027',
+    title_hi: 'कक्षा 9वीं फाउंडेशन एवं बोर्ड पूर्व तैयारी कोर्स 2027',
+    tagline: 'Strong Science & Mathematics Foundation for High School',
+    description: 'Build rock-solid conceptual clarity for Class 9 Mathematics and Science to score 95%+ in school and upcoming matric exams.',
+    description_hi: 'कक्षा 9वीं गणित एवं विज्ञान की मजबूत नींव ताकि 10वीं बोर्ड में 95%+ अंक सुनिश्चित हों।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b1-class8.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    price: 899,
+    discount_price: 399,
+    validity_days: 365,
+    class_name: 'Class 9',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+  {
+    id: 'c1100000-1111-4000-8000-000000000011',
+    title: 'Class 11 Science Concept & Target Course 2027',
+    title_hi: 'कक्षा 11वीं साइंस कॉन्सेप्ट एवं टारगेट कोर्स 2027',
+    tagline: 'Bridging High School with Senior Secondary Science & Math',
+    description: 'Thorough coverage of Class 11 Science syllabus with in-depth problem-solving sessions and formula cheat sheets.',
+    description_hi: 'कक्षा 11वीं भौतिकी, रसायन एवं गणित के कठिन अध्यायों का सरल समाधान।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b2-class9.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000011',
+    price: 1299,
+    discount_price: 599,
+    validity_days: 365,
+    class_name: 'Class 11',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+];
+
 // Storage keys (v4 synchronized)
 const STORAGE_KEYS = {
   STUDENTS: 'icc_v4_students',
@@ -161,7 +248,8 @@ function savePersistentState<T>(key: string, data: T): void {
 // In-memory working cache initialized from persistent store
 let localStudents: UserProfile[] = getPersistentState(STORAGE_KEYS.STUDENTS, []);
 let localPayments: Payment[] = getPersistentState(STORAGE_KEYS.PAYMENTS, []);
-let localCourses: Course[] = getPersistentState(STORAGE_KEYS.COURSES, []);
+const cachedCourses = getPersistentState<Course[]>(STORAGE_KEYS.COURSES, []);
+let localCourses: Course[] = cachedCourses && cachedCourses.length > 0 ? cachedCourses : [...allInitialCourses];
 let localMaterials: StudyMaterial[] = getPersistentState(STORAGE_KEYS.MATERIALS, []);
 let localLiveClasses: LiveClass[] = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, []);
 let localLectures: RecordedLectureItem[] = getPersistentState(STORAGE_KEYS.RECORDED_LECTURES, []);
@@ -271,7 +359,7 @@ export const AdminApi = {
     return {
       totalStudents: studentCount,
       activeStudents: activeStudentCount,
-      totalCourses: courseCount,
+      totalCourses: courseCount > 0 ? courseCount : allInitialCourses.length,
       totalBatches: 0, // Batches completely eliminated; only Courses exist
       pendingPayments,
       approvedPayments,
@@ -404,10 +492,13 @@ export const AdminApi = {
           .select('*')
           .order('created_at', { ascending: false });
         if (!error && Array.isArray(data)) {
-          const resolved = (data as Course[]).map((c) => ({
+          let resolved = (data as Course[]).map((c) => ({
             ...c,
             thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
           }));
+          if (resolved.length === 0) {
+            resolved = [...allInitialCourses];
+          }
           localCourses = resolved;
           savePersistentState(STORAGE_KEYS.COURSES, resolved);
           return resolved;
@@ -419,6 +510,10 @@ export const AdminApi = {
       }
     }
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, []);
+    if (!localCourses || localCourses.length === 0) {
+      localCourses = [...allInitialCourses];
+      savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+    }
     return localCourses.map((c) => ({
       ...c,
       thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),

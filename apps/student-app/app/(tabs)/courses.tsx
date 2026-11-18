@@ -18,7 +18,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { formatINR } from '@icc/shared-utils';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
-import { academicService, getResolvedThumbnailUrl } from '../../src/services/academicService';
+import { academicService, getResolvedThumbnailUrl, allInitialCourses } from '../../src/services/academicService';
 import { aiService } from '../../src/services/aiService';
 import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { Course } from '@icc/shared-types';
@@ -86,7 +86,7 @@ export default function StudentCoursesScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeClassFilter, setActiveClassFilter] = useState('ALL');
 
@@ -113,7 +113,9 @@ export default function StudentCoursesScreen() {
   const loadLocalCourses = useCallback(async () => {
     try {
       const data = await academicService.getCourses();
-      setCourses(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setCourses(data);
+      }
     } catch {
       // Keep current
     }
@@ -134,10 +136,16 @@ export default function StudentCoursesScreen() {
   useEffect(() => {
     loadLocalCourses();
     academicService.syncFromCloud().catch(() => {});
-    const unsubscribe = DataService.subscribeToChanges(() => {
+    const unsubAcademic = academicService.subscribe(() => {
       loadLocalCourses();
     });
-    return () => unsubscribe();
+    const unsubData = DataService.subscribeToChanges(() => {
+      loadLocalCourses();
+    });
+    return () => {
+      unsubAcademic();
+      unsubData();
+    };
   }, [loadLocalCourses]);
 
   const filteredCourses = courses.filter((c) => {

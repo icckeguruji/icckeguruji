@@ -14,7 +14,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
-import { academicService, getResolvedThumbnailUrl } from '../../src/services/academicService';
+import { academicService, getResolvedThumbnailUrl, allInitialCourses } from '../../src/services/academicService';
 import { Course, LiveClass } from '@icc/shared-types';
 import {
   Play,
@@ -63,7 +63,7 @@ export default function StudentHomeScreen() {
     user?.mobile_number === '9771350910' ||
     user?.username === 'badesir';
 
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
   const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
@@ -76,7 +76,9 @@ export default function StudentHomeScreen() {
         academicService.getCourses(),
         academicService.getLiveClasses(),
       ]);
-      setCourses(fetchedCourses);
+      if (Array.isArray(fetchedCourses) && fetchedCourses.length > 0) {
+        setCourses(fetchedCourses);
+      }
       setLiveClasses(fetchedLive);
 
       // Fetch Live counts from Supabase or cached repository
@@ -120,10 +122,16 @@ export default function StudentHomeScreen() {
   useEffect(() => {
     loadCachedData();
     academicService.syncFromCloud().catch(() => {});
-    const unsubscribe = DataService.subscribeToChanges(() => {
+    const unsubAcademic = academicService.subscribe(() => {
       loadCachedData();
     });
-    return () => unsubscribe();
+    const unsubData = DataService.subscribeToChanges(() => {
+      loadCachedData();
+    });
+    return () => {
+      unsubAcademic();
+      unsubData();
+    };
   }, [loadCachedData]);
 
   const activeLive = liveClasses.find((l) => l.status === 'live') || liveClasses[0];

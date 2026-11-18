@@ -93,7 +93,92 @@ export interface RecordedLecture {
 // added manually by Director BADE SIR or created via AI Copilot.
 // -------------------------------------------------------------
 
-export const allInitialCourses: Course[] = [];
+export const allInitialCourses: Course[] = [
+  {
+    id: 'ae78ea58-19aa-4ed4-86c8-336bd42c45ef',
+    title: 'Class 10 State Board Topper Course 2027',
+    title_hi: 'कक्षा 10वीं स्टेट बोर्ड टॉपर कोर्स 2027 (मैट्रिक)',
+    tagline: 'Complete BSEB & JAC Matric Syllabus Mastery with BADE SIR',
+    description: 'Comprehensive coaching program covering Math, Science, Social Science, Hindi, English and Sanskrit with daily HD live classes and handwritten PDF master notes.',
+    description_hi: 'गणित, विज्ञान, सामाजिक विज्ञान एवं भाषा विषयों की संपूर्ण लाइव तैयारी एवं हस्तलिखित नोट्स।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000010',
+    price: 999,
+    discount_price: 499,
+    validity_days: 365,
+    class_name: 'Class 10',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+  {
+    id: 'c1200000-1111-4000-8000-000000000012',
+    title: 'Class 12 Intermediate Science Target Course 2027',
+    title_hi: 'कक्षा 12वीं इंटरमीडिएट साइंस टारगेट कोर्स 2027',
+    tagline: 'Physics, Chemistry, Maths & Biology Excellence with BADE SIR',
+    description: 'Specialized 12th board preparation program covering high-scoring numerical methods, conceptual derivations, and chapter-wise question banks.',
+    description_hi: 'भौतिकी, रसायन, गणित एवं जीव विज्ञान की उच्च स्तरीय बोर्ड परीक्षा तैयारी।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b4-class9.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000012',
+    price: 1499,
+    discount_price: 699,
+    validity_days: 365,
+    class_name: 'Class 12',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+  {
+    id: 'c0900000-1111-4000-8000-000000000009',
+    title: 'Class 9 Foundation & Target Course 2027',
+    title_hi: 'कक्षा 9वीं फाउंडेशन एवं बोर्ड पूर्व तैयारी कोर्स 2027',
+    tagline: 'Strong Science & Mathematics Foundation for High School',
+    description: 'Build rock-solid conceptual clarity for Class 9 Mathematics and Science to score 95%+ in school and upcoming matric exams.',
+    description_hi: 'कक्षा 9वीं गणित एवं विज्ञान की मजबूत नींव ताकि 10वीं बोर्ड में 95%+ अंक सुनिश्चित हों।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b1-class8.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000009',
+    price: 899,
+    discount_price: 399,
+    validity_days: 365,
+    class_name: 'Class 9',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+  {
+    id: 'c1100000-1111-4000-8000-000000000011',
+    title: 'Class 11 Science Concept & Target Course 2027',
+    title_hi: 'कक्षा 11वीं साइंस कॉन्सेप्ट एवं टारगेट कोर्स 2027',
+    tagline: 'Bridging High School with Senior Secondary Science & Math',
+    description: 'Thorough coverage of Class 11 Science syllabus with in-depth problem-solving sessions and formula cheat sheets.',
+    description_hi: 'कक्षा 11वीं भौतिकी, रसायन एवं गणित के कठिन अध्यायों का सरल समाधान।',
+    thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b2-class9.jpg',
+    board_id: 'b0000000-0000-0000-0000-000000000001',
+    class_id: 'c0000000-0000-0000-0000-000000000011',
+    price: 1299,
+    discount_price: 599,
+    validity_days: 365,
+    class_name: 'Class 11',
+    is_published: true,
+    is_free: false,
+    lecture_count: 0,
+    material_count: 0,
+    created_at: '2026-11-18T00:00:00Z',
+    updated_at: '2026-11-18T00:00:00Z',
+  },
+];
 export const initialAcademicSubjects: AcademicSubject[] = [];
 export const initialAcademicChapters: AcademicChapter[] = [];
 export const initialRecordedLectures: RecordedLecture[] = [];
@@ -187,7 +272,7 @@ class AcademicRepository {
 
       // If storage was never initialized on this device, seed once and mark initialized
       if (!isInitialized) {
-        this.courses = [];
+        this.courses = [...allInitialCourses];
         this.subjects = [];
         this.chapters = [];
         this.lectures = [];
@@ -220,6 +305,9 @@ class AcademicRepository {
 
       // Filter out any tombstoned / deleted items
       this.courses = this.courses.filter((c) => !this.isDeleted(c.id));
+      if (this.courses.length === 0) {
+        this.courses = allInitialCourses.filter((c) => !this.isDeleted(c.id));
+      }
       this.subjects = this.subjects.filter((s) => !this.isDeleted(s.id));
       this.chapters = this.chapters.filter((ch) => !this.isDeleted(ch.id));
       this.lectures = this.lectures.filter((l) => !this.isDeleted(l.id));
@@ -552,7 +640,11 @@ class AcademicRepository {
   // --- COURSES ---
   async getCourses(): Promise<Course[]> {
     await this.ensureLoaded();
-    return this.courses.filter((c) => !this.deletedIds.has(c.id));
+    const active = this.courses.filter((c) => !this.deletedIds.has(c.id));
+    if (active.length === 0) {
+      return allInitialCourses.filter((c) => !this.deletedIds.has(c.id));
+    }
+    return active;
   }
 
   async getCourseById(id: string): Promise<Course | undefined> {
