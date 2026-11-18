@@ -174,6 +174,7 @@ export const AdminApi = {
     localExams = getPersistentState(STORAGE_KEYS.EXAMINATIONS, localExams);
 
     let studentCount = localStudents.length;
+    let activeStudentCount = localStudents.filter((s) => s.is_active).length;
     let courseCount = localCourses.length;
     let pdfCount = localMaterials.length;
     let liveCount = localLiveClasses.length;
@@ -188,8 +189,18 @@ export const AdminApi = {
 
     if (isSupabaseConfigured) {
       try {
-        const [studentsRes, coursesRes, paymentsRes, materialsRes, liveRes, lecturesRes, examsRes] = await Promise.all([
+        const [
+          studentsRes,
+          activeStudentsRes,
+          coursesRes,
+          paymentsRes,
+          materialsRes,
+          liveRes,
+          lecturesRes,
+          examsRes,
+        ] = await Promise.all([
           supabase.from('profiles').select('id', { count: 'exact' }),
+          supabase.from('profiles').select('id', { count: 'exact' }).eq('is_active', true),
           supabase.from('courses').select('id', { count: 'exact' }),
           supabase.from('payments').select('id, amount, status'),
           supabase.from('study_materials').select('id', { count: 'exact' }),
@@ -199,6 +210,7 @@ export const AdminApi = {
         ]);
 
         if (typeof studentsRes.count === 'number') studentCount = studentsRes.count;
+        if (typeof activeStudentsRes.count === 'number') activeStudentCount = activeStudentsRes.count;
         if (typeof coursesRes.count === 'number') courseCount = coursesRes.count;
         if (typeof materialsRes.count === 'number') pdfCount = materialsRes.count;
         if (typeof liveRes.count === 'number') liveCount = liveRes.count;
@@ -218,7 +230,7 @@ export const AdminApi = {
 
     return {
       totalStudents: studentCount,
-      activeStudents: Math.max(studentCount - 2, 0),
+      activeStudents: activeStudentCount,
       totalCourses: courseCount,
       totalBatches: 0, // Batches completely eliminated; only Courses exist
       pendingPayments,

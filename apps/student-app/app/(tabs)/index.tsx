@@ -13,6 +13,8 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
+import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
+import { academicService, getResolvedThumbnailUrl } from '../../src/services/academicService';
 import { Course, LiveClass } from '@icc/shared-types';
 import {
   Play,
@@ -63,18 +65,44 @@ export default function StudentHomeScreen() {
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+  const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsSyncing(true);
     try {
+      await academicService.syncFromCloud().catch(() => {});
+
       const [fetchedCourses, fetchedLive] = await Promise.all([
         DataService.fetchCourses(),
         DataService.fetchLiveClasses(),
       ]);
       setCourses(fetchedCourses);
       setLiveClasses(fetchedLive);
+
+      // Fetch 100% REAL LIVE COUNTS from Supabase
+      if (isSupabaseConfigured) {
+        try {
+          const [pendingRes, studentsRes] = await Promise.all([
+            supabase.from('payments').select('id', { count: 'exact' }).eq('status', 'pending'),
+            supabase.from('profiles').select('id', { count: 'exact' }).eq('is_active', true),
+          ]);
+          setPendingApprovalsCount(pendingRes.count ?? 0);
+          setActiveStudentsCount(studentsRes.count ?? 0);
+        } catch {
+          const pays = await academicService.getPayments();
+          const studs = await academicService.getStudents();
+          setPendingApprovalsCount(pays.filter((p: any) => p.status === 'pending').length);
+          setActiveStudentsCount(studs.filter((s: any) => s.is_active).length);
+        }
+      } else {
+        const pays = await academicService.getPayments();
+        const studs = await academicService.getStudents();
+        setPendingApprovalsCount(pays.filter((p: any) => p.status === 'pending').length);
+        setActiveStudentsCount(studs.filter((s: any) => s.is_active).length);
+      }
     } catch {
       // Graceful fallback
     } finally {
@@ -147,14 +175,14 @@ export default function StudentHomeScreen() {
               <ChevronRight size={18} color="#2563EB" />
             </TouchableOpacity>
 
-            {/* Quick Metrics */}
+            {/* Quick Metrics (100% Live Database Counts) */}
             <View style={styles.metricsRow}>
               <TouchableOpacity
                 style={styles.metricCard}
                 onPress={() => router.push('/(tabs)/profile')}
               >
                 <CreditCard size={16} color="#2563EB" />
-                <Text style={styles.metricNumber}>2 Pending</Text>
+                <Text style={styles.metricNumber}>{pendingApprovalsCount} Pending</Text>
                 <Text style={styles.metricLabel}>Fee Approvals</Text>
               </TouchableOpacity>
 
@@ -163,7 +191,7 @@ export default function StudentHomeScreen() {
                 onPress={() => router.push('/(tabs)/profile')}
               >
                 <Users size={16} color="#059669" />
-                <Text style={styles.metricNumber}>48 Active</Text>
+                <Text style={styles.metricNumber}>{activeStudentsCount} Active</Text>
                 <Text style={styles.metricLabel}>Total Students</Text>
               </TouchableOpacity>
 
@@ -172,7 +200,7 @@ export default function StudentHomeScreen() {
                 onPress={() => router.push('/(tabs)/courses')}
               >
                 <BookOpen size={16} color="#D97706" />
-                <Text style={styles.metricNumber}>{courses.length || 0}</Text>
+                <Text style={styles.metricNumber}>{courses.length}</Text>
                 <Text style={styles.metricLabel}>Target Courses</Text>
               </TouchableOpacity>
             </View>
@@ -378,7 +406,7 @@ export default function StudentHomeScreen() {
               >
                 <View style={styles.courseImageBox}>
                   <Image
-                    source={thumbMap[c.id] || { uri: c.thumbnail_url }}
+                    source={thumbMap[c.id] || { uri: getResolvedThumbnailUrl(c.thumbnail_url) }}
                     style={styles.courseThumbnail}
                     resizeMode="contain"
                   />

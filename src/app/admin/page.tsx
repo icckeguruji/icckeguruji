@@ -6,6 +6,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi } from '@/lib/api';
 import { formatINR } from '@icc/shared-utils';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
   Users,
   BookOpen,
@@ -19,11 +20,13 @@ import {
   HardDrive,
   Database,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   const { lang, t } = useLanguage();
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalStudents: 0,
     activeStudents: 0,
@@ -35,10 +38,38 @@ export default function AdminDashboardPage() {
     liveClassesToday: 0,
   });
 
+  const loadStats = async () => {
+    setIsRefreshing(true);
+    try {
+      const data = await AdminApi.getDashboardAnalytics();
+      setStats(data);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    AdminApi.getDashboardAnalytics()
-      .then((data) => setStats(data))
-      .finally(() => setLoading(false));
+    loadStats();
+
+    if (isSupabaseConfigured) {
+      const channel = supabase
+        .channel('admin-dashboard-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+          loadStats();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+          loadStats();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          loadStats();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, []);
 
   return (
@@ -50,7 +81,23 @@ export default function AdminDashboardPage() {
         subtitleEn="Ideal Coaching Centre - Director BADE SIR Management System"
       />
 
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs font-semibold text-slate-600">
+              {t('लाइव क्लाउड सिंक सक्रिय (Supabase Live)', 'Live Cloud Sync (Supabase Live)')}
+            </span>
+          </div>
+          <button
+            onClick={loadStats}
+            disabled={isRefreshing}
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 transition active:scale-95 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+            <span>{t('रिफ्रेश', 'Refresh')}</span>
+          </button>
+        </div>
         {/* Urgent Action Alert: Pending Payments */}
         {stats.pendingPayments > 0 && (
           <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl flex items-center justify-between shadow-sm">

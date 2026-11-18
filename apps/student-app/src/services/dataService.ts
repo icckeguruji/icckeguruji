@@ -67,6 +67,12 @@ export const DataService = {
           .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
             debouncedCloudSync(onUpdate);
           })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+            debouncedCloudSync(onUpdate);
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+            debouncedCloudSync(onUpdate);
+          })
           .subscribe();
       } catch {
         sharedChannel = null;

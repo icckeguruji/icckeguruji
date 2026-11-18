@@ -363,6 +363,26 @@ class AcademicRepository {
         await this.persist('icc_academic_chapters', this.chapters);
       }
 
+      // 7. Sync Payments
+      const { data: remotePayments } = await supabase
+        .from('payments')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (remotePayments) {
+        this.payments = remotePayments;
+        await this.persist('icc_payments', this.payments);
+      }
+
+      // 8. Sync Students
+      const { data: remoteProfiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (remoteProfiles) {
+        this.students = remoteProfiles as any;
+        await this.persist('icc_students', this.students);
+      }
+
       this.notify();
     } catch (e) {
       console.warn('Sync from cloud error:', e);

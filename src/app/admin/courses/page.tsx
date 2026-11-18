@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi, getResolvedThumbnailUrl } from '@/lib/api';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import {
@@ -23,6 +24,7 @@ import {
   BookMarked,
   X,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 interface CourseSubject {
@@ -94,12 +96,35 @@ export default function CoursesPage() {
     description_hi: '',
   });
 
-  const loadCourses = () => {
-    AdminApi.getCourses().then((data) => setCourses(data));
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadCourses = async () => {
+    setIsRefreshing(true);
+    try {
+      const data = await AdminApi.getCourses();
+      setCourses(data);
+    } catch (e) {
+      console.warn('loadCourses error:', e);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {
     loadCourses();
+
+    if (isSupabaseConfigured) {
+      const channel = supabase
+        .channel('admin-courses-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+          loadCourses();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, []);
 
   // HTML5 Canvas Client-Side Compression to prevent Quota Exceeded and oversized payloads
@@ -345,13 +370,24 @@ export default function CoursesPage() {
               {t('कक्षा 1 से 12वीं एवं प्रतियोगी फाउंडेशन पाठ्यक्रम', 'Classes 1st to 12th & Foundation Courses')}
             </p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center space-x-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95 w-full sm:w-auto justify-center"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t('नया कोर्स जोड़ें', 'Add New Course')}</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={loadCourses}
+              disabled={isRefreshing}
+              className="flex items-center space-x-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 disabled:opacity-50"
+              title="Refresh courses from database"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+              <span>{t('रिफ्रेश', 'Refresh')}</span>
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center space-x-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95 flex-1 sm:flex-initial justify-center"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t('नया कोर्स जोड़ें', 'Add New Course')}</span>
+            </button>
+          </div>
         </div>
 
         {/* Course Cards Grid */}
