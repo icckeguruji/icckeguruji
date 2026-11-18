@@ -116,7 +116,7 @@ export default function AndroidAdminDashboardScreen() {
         await Promise.all([
           academicService.getCourses(),
           academicService.getLiveClasses(),
-          academicService.lectures,
+          academicService.lectures || [],
           academicService.getStudyMaterials(),
           academicService.getStudents(),
           academicService.getPayments(),
@@ -185,6 +185,7 @@ export default function AndroidAdminDashboardScreen() {
       }
       setIsCourseModalOpen(false);
       setEditingCourse(null);
+      setActiveTab('courses'); // Instant parity: jump to courses tab so admin sees it immediately
       loadAllData();
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to save course.');
@@ -491,6 +492,68 @@ export default function AndroidAdminDashboardScreen() {
                 <Plus size={18} color="#DB2777" />
               </TouchableOpacity>
             </View>
+
+            {/* Quick Live Courses Preview on Overview */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 10 }}>
+              <Text style={styles.sectionHeading}>ACTIVE COURSES IN CATALOG ({courses.length})</Text>
+              <TouchableOpacity onPress={() => setActiveTab('courses')}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>Manage All ({courses.length}) →</Text>
+              </TouchableOpacity>
+            </View>
+
+            {courses.length === 0 ? (
+              <View style={[styles.itemCard, { paddingVertical: 18, alignItems: 'center' }]}>
+                <Text style={{ fontSize: 13, color: '#64748B', fontWeight: '600' }}>No courses in catalog yet.</Text>
+                <TouchableOpacity
+                  style={[styles.primaryAddBtn, { marginTop: 10 }]}
+                  onPress={() => {
+                    setEditingCourse(null);
+                    setCourseForm({
+                      title: '',
+                      title_hi: '',
+                      class_name: 'Class 10',
+                      price: '999',
+                      discount_price: '499',
+                      description: '',
+                    });
+                    setIsCourseModalOpen(true);
+                  }}
+                >
+                  <Plus size={14} color="#FFFFFF" />
+                  <Text style={styles.primaryAddBtnText}>Add Course</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              courses.slice(0, 3).map((course) => (
+                <View key={course.id} style={styles.itemCard}>
+                  <View style={styles.itemCardHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.itemTitle}>{course.title}</Text>
+                      <Text style={styles.itemSub}>
+                        {academicService.getClassNameFromCourse(course)} • {course.is_free ? 'FREE' : formatINR(course.discount_price || course.price)}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.editBtn}
+                      onPress={() => {
+                        setEditingCourse(course);
+                        setCourseForm({
+                          title: course.title,
+                          title_hi: course.title_hi || course.title,
+                          class_name: academicService.getClassNameFromCourse(course),
+                          price: String(course.price || 0),
+                          discount_price: String(course.discount_price || course.price || 0),
+                          description: course.description || '',
+                        });
+                        setIsCourseModalOpen(true);
+                      }}
+                    >
+                      <Edit3 size={15} color="#2563EB" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         )}
 

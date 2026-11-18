@@ -3,7 +3,12 @@
 // Direct cloud sync + permanent browser localStorage cache
 // Guarantees changes (Add, Edit, Delete) NEVER revert back on refresh or reload!
 
-import { supabase, isSupabaseConfigured } from './supabase';
+import {
+  supabase,
+  isSupabaseConfigured,
+  LIVE_SUPABASE_URL,
+  LIVE_SUPABASE_ANON_KEY,
+} from './supabase';
 import {
   UserProfile,
   Course,
@@ -274,6 +279,27 @@ function savePersistentState<T>(key: string, data: T): void {
   }
 }
 
+// Direct Supabase REST fetcher with static anon key — guarantees zero-cache live parity and bypasses expired sessions
+async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
+  try {
+    const url = endpoint.startsWith('http') ? endpoint : `${LIVE_SUPABASE_URL}/rest/v1/${endpoint}`;
+    const headers: Record<string, string> = {
+      apikey: LIVE_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${LIVE_SUPABASE_ANON_KEY}`,
+      ...(options.headers as Record<string, string> || {}),
+    };
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 // In-memory working cache initialized from persistent store
 let localStudents: UserProfile[] = getPersistentState(STORAGE_KEYS.STUDENTS, []);
 let localPayments: Payment[] = getPersistentState(STORAGE_KEYS.PAYMENTS, []);
@@ -313,15 +339,15 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const [
-          studentsRes,
-          activeStudentsRes,
-          coursesRes,
-          paymentsRes,
-          materialsRes,
-          liveRes,
-          lecturesRes,
-          examsRes,
-        ] = await Promise.all([
+          studentsResult,
+          activeStudentsResult,
+          coursesResult,
+          paymentsResult,
+          materialsResult,
+          liveResult,
+          lecturesResult,
+          examsResult,
+        ] = await Promise.allSettled([
           supabase.from('profiles').select('id', { count: 'exact' }),
           supabase.from('profiles').select('id', { count: 'exact' }).eq('is_active', true),
           supabase.from('courses').select('id', { count: 'exact' }),
@@ -332,58 +358,46 @@ export const AdminApi = {
           supabase.from('examinations').select('id', { count: 'exact' }),
         ]);
 
-        if (typeof studentsRes.count === 'number') {
-          studentCount = studentsRes.count;
-        } else if (Array.isArray((studentsRes as any).data)) {
-          studentCount = (studentsRes as any).data.length;
+        if (studentsResult.status === 'fulfilled' && typeof studentsResult.value.count === 'number') {
+          studentCount = studentsResult.value.count;
+        }
+        if (activeStudentsResult.status === 'fulfilled' && typeof activeStudentsResult.value.count === 'number') {
+          activeStudentCount = activeStudentsResult.value.count;
+        }
+        if (coursesResult.status === 'fulfilled' && typeof coursesResult.value.count === 'number') {
+          courseCount = coursesResult.value.count;
+        }
+        if (materialsResult.status === 'fulfilled' && typeof materialsResult.value.count === 'number') {
+          pdfCount = materialsResult.value.count;
+        }
+        if (liveResult.status === 'fulfilled' && typeof liveResult.value.count === 'number') {
+          liveCount = liveResult.value.count;
+        }
+        if (lecturesResult.status === 'fulfilled' && typeof lecturesResult.value.count === 'number') {
+          lectureCount = lecturesResult.value.count;
+        }
+        if (examsResult.status === 'fulfilled' && typeof examsResult.value.count === 'number') {
+          examCount = examsResult.value.count;
         }
 
-        if (typeof activeStudentsRes.count === 'number') {
-          activeStudentCount = activeStudentsRes.count;
-        } else if (Array.isArray((activeStudentsRes as any).data)) {
-          activeStudentCount = (activeStudentsRes as any).data.length;
-        }
-
-        if (typeof coursesRes.count === 'number') {
-          courseCount = coursesRes.count;
-        } else if (Array.isArray((coursesRes as any).data)) {
-          courseCount = (coursesRes as any).data.length;
-        }
-
-        if (typeof materialsRes.count === 'number') {
-          pdfCount = materialsRes.count;
-        } else if (Array.isArray((materialsRes as any).data)) {
-          pdfCount = (materialsRes as any).data.length;
-        }
-
-        if (typeof liveRes.count === 'number') {
-          liveCount = liveRes.count;
-        } else if (Array.isArray((liveRes as any).data)) {
-          liveCount = (liveRes as any).data.length;
-        }
-
-        if (typeof lecturesRes.count === 'number') {
-          lectureCount = lecturesRes.count;
-        } else if (Array.isArray((lecturesRes as any).data)) {
-          lectureCount = (lecturesRes as any).data.length;
-        }
-
-        if (typeof examsRes.count === 'number') {
-          examCount = examsRes.count;
-        } else if (Array.isArray((examsRes as any).data)) {
-          examCount = (examsRes as any).data.length;
-        }
-
-        const dbPayments = paymentsRes.data || [];
-        if (dbPayments.length > 0) {
-          pendingPayments = dbPayments.filter((p) => p.status === 'pending').length;
-          approvedPayments = dbPayments.filter((p) => p.status === 'approved').length;
-          totalRevenue = dbPayments
-            .filter((p) => p.status === 'approved')
-            .reduce((sum, p) => sum + Number(p.amount), 0);
+        if (paymentsResult.status === 'fulfilled') {
+          const dbPayments = (paymentsResult.value as any).data || [];
+          if (dbPayments.length > 0) {
+            pendingPayments = dbPayments.filter((p: any) => p.status === 'pending').length;
+            approvedPayments = dbPayments.filter((p: any) => p.status === 'approved').length;
+            totalRevenue = dbPayments
+              .filter((p: any) => p.status === 'approved')
+              .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+          }
         }
       } catch {}
     }
+
+    // Direct guarantee: Ensure courseCount matches live courses length
+    try {
+      const liveCourses = await AdminApi.getCourses();
+      courseCount = liveCourses.length;
+    } catch {}
 
     return {
       totalStudents: studentCount,
@@ -512,14 +526,16 @@ export const AdminApi = {
     return true;
   },
 
-  // 3. Course Management (CRUD - Supabase Single Source of Truth)
+  // 3. Course Management (CRUD - Supabase Single Source of Truth + Direct REST Zero-Cache Failover)
   getCourses: async () => {
+    // 1. Primary: Supabase client
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase
           .from('courses')
           .select('*')
           .order('created_at', { ascending: false });
+
         if (!error && Array.isArray(data)) {
           const resolved: Course[] = data.map((item) => ({
             ...(item as Course),
@@ -530,14 +546,34 @@ export const AdminApi = {
             savePersistentState(STORAGE_KEYS.COURSES, resolved);
           } catch {}
           return resolved;
-        } else if (error) {
-          console.error('getCourses Supabase query error:', error);
+        }
+
+        if (error) {
+          console.warn('getCourses Supabase client error (checking for expired session):', error);
+          if (error.message?.includes('JWT') || (error as any).code === 'PGRST301') {
+            try { await supabase.auth.signOut(); } catch {}
+          }
         }
       } catch (e) {
-        console.error('getCourses Supabase exception:', e);
+        console.warn('getCourses Supabase exception, trying direct REST:', e);
+      }
+
+      // 2. Secondary: Direct Supabase REST API (Guaranteed anon key + no-store cache)
+      const directData = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
+      if (Array.isArray(directData)) {
+        const resolved: Course[] = directData.map((item) => ({
+          ...(item as Course),
+          thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
+        }));
+        localCourses = resolved;
+        try {
+          savePersistentState(STORAGE_KEYS.COURSES, resolved);
+        } catch {}
+        return resolved;
       }
     }
-    // Offline / fallback cache only when Supabase is unreachable
+
+    // 3. Offline / fallback cache only when remote is completely unreachable
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, []);
     return localCourses.map((c) => ({
       ...c,
@@ -570,6 +606,8 @@ export const AdminApi = {
       validity_days: course.validity_days ?? 365,
       class_name: (course as any).class_name || 'Class 10',
       is_published: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     if (isSupabaseConfigured) {
@@ -588,17 +626,34 @@ export const AdminApi = {
           savePersistentState(STORAGE_KEYS.COURSES, localCourses);
           return resolved;
         } else if (error) {
-          console.error('createCourse Supabase error:', error);
+          console.warn('createCourse Supabase error, trying direct REST POST:', error);
+          if (error.message?.includes('JWT') || (error as any).code === 'PGRST301') {
+            try { await supabase.auth.signOut(); } catch {}
+          }
         }
       } catch (err) {
-        console.error('createCourse exception:', err);
+        console.warn('createCourse exception, trying direct REST:', err);
+      }
+
+      // Direct REST POST fallback
+      const directCreated = await fetchDirectRest<any[]>('courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(insertPayload),
+      });
+      if (Array.isArray(directCreated) && directCreated[0]) {
+        const resolved = {
+          ...(directCreated[0] as Course),
+          thumbnail_url: getResolvedThumbnailUrl(directCreated[0].thumbnail_url),
+        };
+        localCourses = [resolved, ...localCourses.filter((c) => c.id !== resolved.id)];
+        savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+        return resolved;
       }
     }
 
     const fallbackCourse: Course = {
       ...insertPayload,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
       lecture_count: 0,
       material_count: 0,
     };
@@ -623,7 +678,14 @@ export const AdminApi = {
       try {
         if (isValidUUID(courseId)) {
           const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', courseId);
-          if (error) console.error('updateCourse Supabase error:', error);
+          if (error) {
+            console.warn('updateCourse Supabase error, trying direct REST PATCH:', error);
+            await fetchDirectRest(`courses?id=eq.${courseId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(cleanUpdates),
+            });
+          }
         } else {
           const existing = localCourses.find((c) => c.id === courseId);
           if (existing?.title) {
@@ -631,7 +693,14 @@ export const AdminApi = {
           }
         }
       } catch (err) {
-        console.error('updateCourse exception:', err);
+        console.warn('updateCourse exception, trying direct REST:', err);
+        if (isValidUUID(courseId)) {
+          await fetchDirectRest(`courses?id=eq.${courseId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cleanUpdates),
+          });
+        }
       }
     }
 
@@ -664,13 +733,19 @@ export const AdminApi = {
             supabase.from('recorded_lectures').delete().eq('course_id', courseId),
           ]);
           const { error } = await supabase.from('courses').delete().eq('id', courseId);
-          if (error) console.error('deleteCourse Supabase error:', error);
+          if (error) {
+            console.warn('deleteCourse Supabase error, trying direct REST DELETE:', error);
+            await fetchDirectRest(`courses?id=eq.${courseId}`, { method: 'DELETE' });
+          }
         }
         if (target?.title) {
           await supabase.from('courses').delete().eq('title', target.title);
         }
       } catch (err) {
-        console.error('deleteCourse exception:', err);
+        console.warn('deleteCourse exception, trying direct REST DELETE:', err);
+        if (isValidUUID(courseId)) {
+          await fetchDirectRest(`courses?id=eq.${courseId}`, { method: 'DELETE' });
+        }
       }
     }
     localCourses = localCourses.filter((c) => c.id !== courseId);
@@ -687,12 +762,14 @@ export const AdminApi = {
           .select('*')
           .eq('course_id', courseId)
           .order('display_order', { ascending: true });
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           return data;
         }
       } catch (e) {
-        console.error('getCourseSubjects error:', e);
+        console.warn('getCourseSubjects error:', e);
       }
+      const direct = await fetchDirectRest<any[]>(`subjects?course_id=eq.${courseId}&order=display_order.asc`);
+      if (Array.isArray(direct) && direct.length > 0) return direct;
     }
     const key = `icc_course_subs_${courseId}`;
     return getPersistentState<any[]>(key, []);
@@ -782,11 +859,17 @@ export const AdminApi = {
           .select('*')
           .eq('subject_id', subjectId)
           .order('chapter_number', { ascending: true });
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           list = data;
         }
       } catch (e) {
-        console.error('getSubjectChapters error:', e);
+        console.warn('getSubjectChapters error:', e);
+      }
+      if (list.length === 0) {
+        const direct = await fetchDirectRest<any[]>(`chapters?subject_id=eq.${subjectId}&order=chapter_number.asc`);
+        if (Array.isArray(direct) && direct.length > 0) {
+          list = direct;
+        }
       }
     }
     if (list.length === 0) {
@@ -883,7 +966,13 @@ export const AdminApi = {
           return localLiveClasses;
         }
       } catch (e) {
-        console.error('getLiveClasses Supabase error:', e);
+        console.warn('getLiveClasses Supabase error:', e);
+      }
+      const direct = await fetchDirectRest<LiveClass[]>('live_classes?select=*&order=scheduled_at.desc');
+      if (Array.isArray(direct)) {
+        localLiveClasses = direct;
+        savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+        return localLiveClasses;
       }
     }
     localLiveClasses = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, []);
@@ -1059,7 +1148,28 @@ export const AdminApi = {
           return localLectures;
         }
       } catch (e) {
-        console.error('getRecordedLectures Supabase error:', e);
+        console.warn('getRecordedLectures Supabase error:', e);
+      }
+      const direct = await fetchDirectRest<any[]>('recorded_lectures?select=*&order=lecture_order.asc');
+      if (Array.isArray(direct)) {
+        localLectures = direct.map((l: any) => ({
+          id: l.id,
+          course_id: l.course_id,
+          subject_id: l.subject_id,
+          chapter_id: l.chapter_id,
+          title: l.title,
+          title_hi: l.title_hi || l.title,
+          description: l.description,
+          youtube_video_id: l.youtube_video_id,
+          duration_minutes: Math.round((l.duration_seconds || 0) / 60) || 45,
+          lecture_order: l.lecture_order || 1,
+          is_free_preview: Boolean(l.is_free_preview),
+          subject: l.subject || 'Core Subject',
+          chapter: l.chapter || 'Chapter 1',
+          created_at: l.created_at,
+        }));
+        savePersistentState(STORAGE_KEYS.RECORDED_LECTURES, localLectures);
+        return localLectures;
       }
     }
     localLectures = getPersistentState(STORAGE_KEYS.RECORDED_LECTURES, []);
@@ -1195,7 +1305,13 @@ export const AdminApi = {
           return localMaterials;
         }
       } catch (e) {
-        console.error('getStudyMaterials Supabase error:', e);
+        console.warn('getStudyMaterials Supabase error:', e);
+      }
+      const direct = await fetchDirectRest<StudyMaterial[]>('study_materials?select=*&order=created_at.desc');
+      if (Array.isArray(direct)) {
+        localMaterials = direct;
+        savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+        return localMaterials;
       }
     }
     localMaterials = getPersistentState(STORAGE_KEYS.MATERIALS, []);

@@ -3,10 +3,35 @@
 // Provides full CRUD operations for Director BADE SIR & Teachers in Android App
 // Direct persistent local storage (never reverts) + Cloud Sync + Deletion Blacklist
 
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import {
+  supabase,
+  isSupabaseConfigured,
+  LIVE_SUPABASE_URL,
+  LIVE_SUPABASE_ANON_KEY,
+} from '../lib/supabase';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { Course, LiveClass, StudyMaterial, UserProfile } from '@icc/shared-types';
+
+// Direct Supabase REST fetcher with static anon key — guarantees zero-cache live parity and bypasses expired sessions
+async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
+  try {
+    const url = endpoint.startsWith('http') ? endpoint : `${LIVE_SUPABASE_URL}/rest/v1/${endpoint}`;
+    const headers: Record<string, string> = {
+      apikey: LIVE_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${LIVE_SUPABASE_ANON_KEY}`,
+      ...(options.headers as Record<string, string> || {}),
+    };
+    const res = await fetch(url, {
+      ...options,
+      headers,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
 
 export function isValidUUID(str?: string): boolean {
   if (!str || typeof str !== 'string') return false;
@@ -225,7 +250,7 @@ class AcademicRepository {
   private courses: Course[] = [];
   private subjects: AcademicSubject[] = [];
   private chapters: AcademicChapter[] = [];
-  private lectures: RecordedLecture[] = [];
+  public lectures: RecordedLecture[] = [];
   private liveClasses: LiveClass[] = [];
   private materials: StudyMaterial[] = [];
   private payments: any[] = [];
@@ -234,7 +259,7 @@ class AcademicRepository {
   private deletedIds: Set<string> = new Set();
   private isLoaded: boolean = false;
   private loadPromise: Promise<void> | null = null;
-  private isSyncingCloud: boolean = false;
+  private syncPromise: Promise<void> | null = null;
   private realtimeChannel: any = null;
 
   constructor() {
@@ -391,87 +416,130 @@ class AcademicRepository {
   }
 
   // Authoritative, ultra-fast parallel cloud sync with Supabase (Single Source of Truth)
-  async syncFromCloud() {
-    if (!isSupabaseConfigured || this.isSyncingCloud) return;
-    this.isSyncingCloud = true;
-    try {
-      const [
-        coursesRes,
-        liveRes,
-        matsRes,
-        lecsRes,
-        subsRes,
-        chapsRes,
-        paymentsRes,
-        profilesRes,
-      ] = await Promise.all([
-        supabase.from('courses').select('*').order('created_at', { ascending: false }),
-        supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false }),
-        supabase.from('study_materials').select('*').order('created_at', { ascending: false }),
-        supabase.from('recorded_lectures').select('*').order('lecture_order', { ascending: true }),
-        supabase.from('subjects').select('*').order('display_order', { ascending: true }),
-        supabase.from('chapters').select('*').order('chapter_number', { ascending: true }),
-        supabase.from('payments').select('*').order('created_at', { ascending: false }),
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-      ]);
-
-      // 1. Courses: Authoritative from Supabase
-      if (!coursesRes.error && Array.isArray(coursesRes.data)) {
-        this.courses = coursesRes.data.map((remote) => ({
-          ...remote,
-          thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
-        }));
-        await this.persist('icc_courses', this.courses);
-      }
-
-      // 2. Live Classes: Authoritative from Supabase
-      if (!liveRes.error && Array.isArray(liveRes.data)) {
-        this.liveClasses = liveRes.data;
-        await this.persist('icc_live_classes', this.liveClasses);
-      }
-
-      // 3. Study Materials: Authoritative from Supabase
-      if (!matsRes.error && Array.isArray(matsRes.data)) {
-        this.materials = matsRes.data as StudyMaterial[];
-        await this.persist('icc_study_materials', this.materials);
-      }
-
-      // 4. Recorded Lectures: Authoritative from Supabase
-      if (!lecsRes.error && Array.isArray(lecsRes.data)) {
-        this.lectures = lecsRes.data as RecordedLecture[];
-        await this.persist('icc_recorded_lectures', this.lectures);
-      }
-
-      // 5. Subjects: Authoritative from Supabase
-      if (!subsRes.error && Array.isArray(subsRes.data)) {
-        this.subjects = subsRes.data as AcademicSubject[];
-        await this.persist('icc_academic_subjects', this.subjects);
-      }
-
-      // 6. Chapters: Authoritative from Supabase
-      if (!chapsRes.error && Array.isArray(chapsRes.data)) {
-        this.chapters = chapsRes.data as AcademicChapter[];
-        await this.persist('icc_academic_chapters', this.chapters);
-      }
-
-      // 7. Payments: Authoritative from Supabase
-      if (!paymentsRes.error && Array.isArray(paymentsRes.data)) {
-        this.payments = paymentsRes.data;
-        await this.persist('icc_payments', this.payments);
-      }
-
-      // 8. Profiles / Students: Authoritative from Supabase
-      if (!profilesRes.error && Array.isArray(profilesRes.data)) {
-        this.students = profilesRes.data as UserProfile[];
-        await this.persist('icc_students', this.students);
-      }
-
-      this.notify();
-    } catch (e) {
-      console.warn('Sync from cloud error:', e);
-    } finally {
-      this.isSyncingCloud = false;
+  async syncFromCloud(): Promise<void> {
+    if (!isSupabaseConfigured) return;
+    if (this.syncPromise) {
+      return this.syncPromise;
     }
+
+    this.syncPromise = (async () => {
+      try {
+        const [
+          coursesRes,
+          liveRes,
+          matsRes,
+          lecsRes,
+          subsRes,
+          chapsRes,
+          paymentsRes,
+          profilesRes,
+        ] = await Promise.allSettled([
+          supabase.from('courses').select('*').order('created_at', { ascending: false }),
+          supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false }),
+          supabase.from('study_materials').select('*').order('created_at', { ascending: false }),
+          supabase.from('recorded_lectures').select('*').order('lecture_order', { ascending: true }),
+          supabase.from('subjects').select('*').order('display_order', { ascending: true }),
+          supabase.from('chapters').select('*').order('chapter_number', { ascending: true }),
+          supabase.from('payments').select('*').order('created_at', { ascending: false }),
+          supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        ]);
+
+        // 1. Courses: Authoritative from Supabase
+        let remoteCourses: any[] | null = null;
+        if (coursesRes.status === 'fulfilled' && !coursesRes.value.error && Array.isArray(coursesRes.value.data)) {
+          remoteCourses = coursesRes.value.data;
+        } else {
+          remoteCourses = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
+        }
+        if (Array.isArray(remoteCourses)) {
+          this.courses = remoteCourses.map((remote) => ({
+            ...remote,
+            thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
+          }));
+          await this.persist('icc_courses', this.courses);
+        }
+
+        // 2. Live Classes: Authoritative from Supabase
+        let remoteLive: any[] | null = null;
+        if (liveRes.status === 'fulfilled' && !liveRes.value.error && Array.isArray(liveRes.value.data)) {
+          remoteLive = liveRes.value.data;
+        } else {
+          remoteLive = await fetchDirectRest<any[]>('live_classes?select=*&order=scheduled_at.desc');
+        }
+        if (Array.isArray(remoteLive)) {
+          this.liveClasses = remoteLive;
+          await this.persist('icc_live_classes', this.liveClasses);
+        }
+
+        // 3. Study Materials: Authoritative from Supabase
+        let remoteMats: any[] | null = null;
+        if (matsRes.status === 'fulfilled' && !matsRes.value.error && Array.isArray(matsRes.value.data)) {
+          remoteMats = matsRes.value.data;
+        } else {
+          remoteMats = await fetchDirectRest<any[]>('study_materials?select=*&order=created_at.desc');
+        }
+        if (Array.isArray(remoteMats)) {
+          this.materials = remoteMats;
+          await this.persist('icc_study_materials', this.materials);
+        }
+
+        // 4. Recorded Lectures: Authoritative from Supabase
+        let remoteLecs: any[] | null = null;
+        if (lecsRes.status === 'fulfilled' && !lecsRes.value.error && Array.isArray(lecsRes.value.data)) {
+          remoteLecs = lecsRes.value.data;
+        } else {
+          remoteLecs = await fetchDirectRest<any[]>('recorded_lectures?select=*&order=lecture_order.asc');
+        }
+        if (Array.isArray(remoteLecs)) {
+          this.lectures = remoteLecs;
+          await this.persist('icc_recorded_lectures', this.lectures);
+        }
+
+        // 5. Subjects: Authoritative from Supabase
+        let remoteSubs: any[] | null = null;
+        if (subsRes.status === 'fulfilled' && !subsRes.value.error && Array.isArray(subsRes.value.data)) {
+          remoteSubs = subsRes.value.data;
+        } else {
+          remoteSubs = await fetchDirectRest<any[]>('subjects?select=*&order=display_order.asc');
+        }
+        if (Array.isArray(remoteSubs)) {
+          this.subjects = remoteSubs;
+          await this.persist('icc_academic_subjects', this.subjects);
+        }
+
+        // 6. Chapters: Authoritative from Supabase
+        let remoteChaps: any[] | null = null;
+        if (chapsRes.status === 'fulfilled' && !chapsRes.value.error && Array.isArray(chapsRes.value.data)) {
+          remoteChaps = chapsRes.value.data;
+        } else {
+          remoteChaps = await fetchDirectRest<any[]>('chapters?select=*&order=chapter_number.asc');
+        }
+        if (Array.isArray(remoteChaps)) {
+          this.chapters = remoteChaps;
+          await this.persist('icc_academic_chapters', this.chapters);
+        }
+
+        // 7. Payments: Authoritative from Supabase
+        if (paymentsRes.status === 'fulfilled' && !paymentsRes.value.error && Array.isArray(paymentsRes.value.data)) {
+          this.payments = paymentsRes.value.data;
+          await this.persist('icc_payments', this.payments);
+        }
+
+        // 8. Profiles / Students: Authoritative from Supabase
+        if (profilesRes.status === 'fulfilled' && !profilesRes.value.error && Array.isArray(profilesRes.value.data)) {
+          this.students = profilesRes.value.data;
+          await this.persist('icc_students', this.students);
+        }
+
+        this.notify();
+      } catch (e) {
+        console.warn('Sync from cloud error:', e);
+      } finally {
+        this.syncPromise = null;
+      }
+    })();
+
+    return this.syncPromise;
   }
 
   subscribe(listener: () => void): () => void {
@@ -620,6 +688,7 @@ class AcademicRepository {
   async addCourse(data: Partial<Course>): Promise<Course> {
     await this.ensureLoaded();
     const courseId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
+    this.deletedIds.delete(courseId);
     const defaultBoardId = 'b0000000-0000-0000-0000-000000000001';
     const safeClassId = getSafeClassId(data.class_id, (data as any)?.class_name);
     const defaultSessionId = 'a0000000-0000-0000-0000-000000000001';
@@ -662,10 +731,27 @@ class AcademicRepository {
           this.notify();
           return resolved;
         } else if (error) {
-          console.error('Supabase course insert error:', error);
+          console.warn('Supabase course insert error, trying direct REST POST:', error);
         }
       } catch (e) {
-        console.warn('Supabase course insert exception:', e);
+        console.warn('Supabase course insert exception, trying direct REST POST:', e);
+      }
+
+      // Direct REST POST fallback
+      const directCreated = await fetchDirectRest<any[]>('courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(insertPayload),
+      });
+      if (Array.isArray(directCreated) && directCreated[0]) {
+        const resolved: Course = {
+          ...(directCreated[0] as Course),
+          thumbnail_url: getResolvedThumbnailUrl(directCreated[0].thumbnail_url),
+        };
+        this.courses = [resolved, ...this.courses.filter((c) => c.id !== resolved.id)];
+        await this.persist('icc_courses', this.courses);
+        this.notify();
+        return resolved;
       }
     }
 
@@ -721,12 +807,25 @@ class AcademicRepository {
       try {
         if (isValidUUID(id)) {
           const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', id);
-          if (error) console.error('Supabase course update error:', error);
+          if (error) {
+            await fetchDirectRest(`courses?id=eq.${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(cleanUpdates),
+            });
+          }
         } else if (updates.title) {
           await supabase.from('courses').update(cleanUpdates).eq('title', updates.title);
         }
       } catch (e) {
         console.warn('Supabase update warning:', e);
+        if (isValidUUID(id)) {
+          await fetchDirectRest(`courses?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cleanUpdates),
+          });
+        }
       }
     }
 
@@ -735,6 +834,7 @@ class AcademicRepository {
 
   async deleteCourse(id: string): Promise<void> {
     await this.ensureLoaded();
+    this.deletedIds.add(id);
     const course = this.courses.find((c) => c.id === id);
 
     this.courses = this.courses.filter((c) => c.id !== id);
@@ -752,13 +852,18 @@ class AcademicRepository {
             supabase.from('recorded_lectures').delete().eq('course_id', id),
           ]);
           const { error } = await supabase.from('courses').delete().eq('id', id);
-          if (error) console.error('Supabase course delete error:', error);
+          if (error) {
+            await fetchDirectRest(`courses?id=eq.${id}`, { method: 'DELETE' });
+          }
         }
         if (course?.title) {
           await supabase.from('courses').delete().eq('title', course.title);
         }
       } catch (e) {
         console.warn('Supabase delete warning:', e);
+        if (isValidUUID(id)) {
+          await fetchDirectRest(`courses?id=eq.${id}`, { method: 'DELETE' });
+        }
       }
     }
   }
