@@ -120,10 +120,10 @@ export function AdminHeader({ titleEn, subtitleEn }: AdminHeaderProps) {
 
   return (
     <>
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">{titleEn}</h2>
-          {subtitleEn && <p className="text-xs text-slate-500 mt-0.5">{subtitleEn}</p>}
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 md:top-0 z-20">
+        <div className="min-w-0 pr-2">
+          <h2 className="text-base sm:text-xl font-bold text-slate-800 truncate">{titleEn}</h2>
+          {subtitleEn && <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">{subtitleEn}</p>}
         </div>
 
         <div className="flex items-center space-x-4">

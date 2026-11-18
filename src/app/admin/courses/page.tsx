@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
-import { AdminApi } from '@/lib/api';
+import { AdminApi, getResolvedThumbnailUrl } from '@/lib/api';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import {
@@ -15,12 +15,35 @@ import {
   Layers,
   FileText,
   Video,
-  Eye,
-  Tag,
   Edit3,
   Trash2,
   Upload,
+  ChevronRight,
+  FolderPlus,
+  BookMarked,
+  X,
+  AlertCircle,
 } from 'lucide-react';
+
+interface CourseSubject {
+  id: string;
+  course_id: string;
+  name: string;
+  name_hi?: string;
+  code?: string;
+  icon_name?: string;
+  display_order?: number;
+}
+
+interface SubjectChapter {
+  id: string;
+  subject_id: string;
+  course_id?: string;
+  title: string;
+  title_hi?: string;
+  chapter_number?: number;
+  description?: string;
+}
 
 export default function CoursesPage() {
   const { lang, t } = useLanguage();
@@ -29,6 +52,20 @@ export default function CoursesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
+  // Curriculum Management Modal State
+  const [curriculumCourse, setCurriculumCourse] = useState<Course | null>(null);
+  const [courseSubjects, setCourseSubjects] = useState<CourseSubject[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<CourseSubject | null>(null);
+  const [subjectChapters, setSubjectChapters] = useState<SubjectChapter[]>([]);
+  const [loadingCurriculum, setLoadingCurriculum] = useState(false);
+
+  // Form states for adding subject / chapter
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [newSubjectNameHi, setNewSubjectNameHi] = useState('');
+  const [newChapterTitle, setNewChapterTitle] = useState('');
+  const [newChapterTitleHi, setNewChapterTitleHi] = useState('');
+
+  // Course Form States
   const [thumbnailUrl, setThumbnailUrl] = useState('/thumbnails/batch-b3-class10.jpg');
   const [formData, setFormData] = useState({
     title: '',
@@ -65,20 +102,56 @@ export default function CoursesPage() {
     loadCourses();
   }, []);
 
-  const handleThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  // HTML5 Canvas Client-Side Compression to prevent Quota Exceeded and oversized payloads
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          if (isEdit) {
-            setEditThumbnailUrl(event.target.result as string);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 500;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
           } else {
-            setThumbnailUrl(event.target.result as string);
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
           }
-        }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        };
+        img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressedBase64 = await compressImage(file);
+        if (isEdit) {
+          setEditThumbnailUrl(compressedBase64);
+        } else {
+          setThumbnailUrl(compressedBase64);
+        }
+      } catch (err) {
+        console.error('Failed to compress thumbnail image:', err);
+      }
     }
   };
 
@@ -117,7 +190,7 @@ export default function CoursesPage() {
     });
     setCourses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
     setIsModalOpen(false);
-    setThumbnailUrl('/logo.png');
+    setThumbnailUrl('/thumbnails/batch-b3-class10.jpg');
     setFormData({
       title: '',
       title_hi: '',
@@ -183,6 +256,76 @@ export default function CoursesPage() {
     setCourses((prev) => prev.filter((c) => c.id !== course.id));
   };
 
+  // --- Curriculum Management Logic ---
+  const openCurriculumModal = async (course: Course) => {
+    setCurriculumCourse(course);
+    setSelectedSubject(null);
+    setSubjectChapters([]);
+    setLoadingCurriculum(true);
+    const subs = await AdminApi.getCourseSubjects(course.id);
+    setCourseSubjects(subs);
+    setLoadingCurriculum(false);
+  };
+
+  const handleAddSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!curriculumCourse || !newSubjectName.trim()) return;
+
+    const created = await AdminApi.createCourseSubject(curriculumCourse.id, {
+      name: newSubjectName.trim(),
+      name_hi: newSubjectNameHi.trim() || newSubjectName.trim(),
+    });
+    setCourseSubjects((prev) => [...prev, created]);
+    setNewSubjectName('');
+    setNewSubjectNameHi('');
+  };
+
+  const handleDeleteSubject = async (sub: CourseSubject) => {
+    if (!curriculumCourse) return;
+    const confirm = window.confirm(`Delete subject "${sub.name}" from this course?`);
+    if (!confirm) return;
+
+    await AdminApi.deleteCourseSubject(curriculumCourse.id, sub.id);
+    setCourseSubjects((prev) => prev.filter((s) => s.id !== sub.id));
+    if (selectedSubject?.id === sub.id) {
+      setSelectedSubject(null);
+      setSubjectChapters([]);
+    }
+  };
+
+  const handleSelectSubject = async (sub: CourseSubject) => {
+    setSelectedSubject(sub);
+    const chaps = await AdminApi.getSubjectChapters(sub.id);
+    setSubjectChapters(chaps);
+  };
+
+  const handleAddChapter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!curriculumCourse || !selectedSubject || !newChapterTitle.trim()) return;
+
+    const created = await AdminApi.createSubjectChapter(
+      selectedSubject.id,
+      curriculumCourse.id,
+      {
+        title: newChapterTitle.trim(),
+        title_hi: newChapterTitleHi.trim() || newChapterTitle.trim(),
+        chapter_number: subjectChapters.length + 1,
+      }
+    );
+    setSubjectChapters((prev) => [...prev, created]);
+    setNewChapterTitle('');
+    setNewChapterTitleHi('');
+  };
+
+  const handleDeleteChapter = async (chap: SubjectChapter) => {
+    if (!selectedSubject) return;
+    const confirm = window.confirm(`Delete chapter "${chap.title}"?`);
+    if (!confirm) return;
+
+    await AdminApi.deleteSubjectChapter(selectedSubject.id, chap.id);
+    setSubjectChapters((prev) => prev.filter((c) => c.id !== chap.id));
+  };
+
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
@@ -192,8 +335,8 @@ export default function CoursesPage() {
         subtitleEn="Create, edit and manage courses with real-time database sync"
       />
 
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex justify-between items-center">
+      <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h3 className="font-bold text-slate-800 text-sm">
               {t(`कुल पाठ्यक्रम: ${courses.length}`, `Total Courses: ${courses.length}`)}
@@ -204,7 +347,7 @@ export default function CoursesPage() {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+            className="flex items-center space-x-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95 w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
             <span>{t('नया कोर्स जोड़ें', 'Add New Course')}</span>
@@ -212,112 +355,128 @@ export default function CoursesPage() {
         </div>
 
         {/* Course Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col"
-            >
-              <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                <img
-                  src={course.thumbnail_url || '/thumbnails/batch-b3-class10.jpg'}
-                  alt={course.title}
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute top-3 left-3 flex space-x-2">
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white backdrop-blur-sm">
-                    {t('सत्र 2026-27', 'Session 2026-27')}
-                  </span>
-                  {course.is_free ? (
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-600 text-white">
-                      {t('निःशुल्क', 'FREE')}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {courses.map((course) => {
+            const resolvedThumb = getResolvedThumbnailUrl(course.thumbnail_url);
+            return (
+              <div
+                key={course.id}
+                className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col"
+              >
+                <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
+                  <img
+                    src={resolvedThumb}
+                    alt={course.title}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+                    }}
+                  />
+                  <div className="absolute top-3 left-3 flex space-x-2">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white backdrop-blur-xs">
+                      {t('सत्र 2026-27', 'Session 2026-27')}
                     </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500 text-slate-950">
-                      {formatINR(course.discount_price || course.price)}
-                    </span>
-                  )}
+                    {course.is_free ? (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-600 text-white">
+                        {t('निःशुल्क', 'FREE')}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500 text-slate-950">
+                        {formatINR(course.discount_price || course.price)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Edit & Delete Quick Controls on Thumbnail */}
+                  <div className="absolute top-3 right-3 flex space-x-1.5">
+                    <button
+                      onClick={() => openEditModal(course)}
+                      title="Edit Course"
+                      className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-blue-600 text-white backdrop-blur-xs transition shadow"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCourse(course)}
+                      title="Delete Course"
+                      className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-rose-600 text-white backdrop-blur-xs transition shadow"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Edit & Delete Quick Controls on Thumbnail */}
-                <div className="absolute top-3 right-3 flex space-x-1.5">
-                  <button
-                    onClick={() => openEditModal(course)}
-                    title="Edit Course"
-                    className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-blue-600 text-white backdrop-blur-sm transition shadow"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCourse(course)}
-                    title="Delete Course"
-                    className="p-1.5 rounded-lg bg-slate-900/80 hover:bg-rose-600 text-white backdrop-blur-sm transition shadow"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm leading-snug">
+                      {lang === 'hi' ? course.title_hi || course.title : course.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                      {lang === 'hi' ? course.description_hi || course.description : course.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span className="flex items-center">
+                      <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                      {course.validity_days} {t('दिन', 'days')}
+                    </span>
+                    <span className="flex items-center">
+                      <FileText className="w-3.5 h-3.5 mr-1 text-purple-500" />
+                      {course.material_count || 12} {t('पीडीएफ', 'PDFs')}
+                    </span>
+                    <span className="flex items-center">
+                      <Video className="w-3.5 h-3.5 mr-1 text-red-500" />
+                      {course.lecture_count || 45} {t('वीडियो', 'Videos')}
+                    </span>
+                  </div>
+
+                  {/* Card Action Bar */}
+                  <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      onClick={() => openCurriculumModal(course)}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>{t('विषय व अध्याय (Curriculum)', 'Curriculum')}</span>
+                    </button>
+
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        onClick={() => openEditModal(course)}
+                        className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold flex items-center space-x-1 transition"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{t('संशोधित', 'Edit')}</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCourse(course)}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold flex items-center space-x-1 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{t('हटाएं', 'Delete')}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm leading-snug">
-                    {lang === 'hi' ? course.title_hi || course.title : course.title}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
-                    {lang === 'hi' ? course.description_hi || course.description : course.description}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <span className="flex items-center">
-                    <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                    {course.validity_days} {t('दिन वैधता', 'days')}
-                  </span>
-                  <span className="flex items-center">
-                    <FileText className="w-3.5 h-3.5 mr-1 text-purple-500" />
-                    {course.material_count || 12} {t('पीडीएफ', 'PDFs')}
-                  </span>
-                  <span className="flex items-center">
-                    <Video className="w-3.5 h-3.5 mr-1 text-red-500" />
-                    {course.lecture_count || 45} {t('वीडियो', 'Videos')}
-                  </span>
-                </div>
-
-                {/* Card Action Bar */}
-                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
-                  <button
-                    onClick={() => openEditModal(course)}
-                    className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold flex items-center space-x-1 transition"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>{t('संशोधित करें', 'Edit')}</span>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCourse(course)}
-                    className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold flex items-center space-x-1 transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>{t('हटाएं', 'Delete')}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Create Course Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="font-bold text-base text-slate-900">
                   {t('नया कोर्स बनाएं (Create Course)', 'Create New Course')}
                 </h3>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 font-bold"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -332,7 +491,7 @@ export default function CoursesPage() {
                       required
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="e.g. BSEB Class 10 Toppers Batch 2026-27"
+                      placeholder="e.g. Class 10th All Subjects Mastery"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
@@ -345,7 +504,7 @@ export default function CoursesPage() {
                       required
                       value={formData.title_hi}
                       onChange={(e) => setFormData({ ...formData, title_hi: e.target.value })}
-                      placeholder="उदा. बिहार बोर्ड कक्षा 10 टॉपर बैच"
+                      placeholder="उदा. कक्षा 10वीं संपूर्ण विषय तैयारी"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
@@ -395,25 +554,25 @@ export default function CoursesPage() {
                   />
                 </div>
 
-                {/* Course Thumbnail Upload (16:9 Uncropped Preview) */}
+                {/* Course Thumbnail Upload (Compressed & High-Quality) */}
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('कोर्स थंबनेल अपलोड करें (Course Thumbnail 16:9)', 'Upload Course Thumbnail (16:9)')}
+                    {t('कोर्स थंबनेल अपलोड करें (Course Thumbnail)', 'Upload Course Thumbnail')}
                   </label>
                   <div className="border border-slate-300 rounded-xl p-3 bg-slate-50 space-y-2">
                     <div className="w-full h-32 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center relative border border-slate-800">
                       <img
-                        src={thumbnailUrl}
+                        src={getResolvedThumbnailUrl(thumbnailUrl)}
                         alt="Thumbnail Preview"
                         className="w-full h-full object-contain"
                       />
                       <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/90 text-amber-400">
-                        16:9 Complete Display
+                        16:9 Display
                       </span>
                     </div>
-                    <label className="flex items-center justify-center space-x-2 w-full py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition">
+                    <label className="flex items-center justify-center space-x-2 w-full py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer transition">
                       <Upload className="w-3.5 h-3.5 text-blue-600" />
-                      <span>{t('डिवाइस से फ़ोटो चुनें (PNG/JPG)', 'Upload from Device (PNG/JPG)')}</span>
+                      <span>{t('गैलरी से फ़ोटो चुनें (PNG/JPG)', 'Choose Image from Device')}</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -498,17 +657,17 @@ export default function CoursesPage() {
 
         {/* Edit Course Modal */}
         {isEditModalOpen && editingCourse && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="font-bold text-base text-slate-900">
                   {t('कोर्स संपादित करें (Edit Course)', 'Edit Course Details')}
                 </h3>
                 <button
                   onClick={() => setIsEditModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 font-bold"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -567,20 +726,17 @@ export default function CoursesPage() {
                 {/* Edit Thumbnail Upload from Device */}
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('नया थंबनेल अपलोड करें (Upload New Thumbnail)', 'Upload New Thumbnail (16:9)')}
+                    {t('नया थंबनेल अपलोड करें (Upload New Thumbnail)', 'Upload New Thumbnail')}
                   </label>
                   <div className="border border-slate-300 rounded-xl p-3 bg-slate-50 space-y-2">
                     <div className="w-full h-32 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center relative border border-slate-800">
                       <img
-                        src={editThumbnailUrl}
+                        src={getResolvedThumbnailUrl(editThumbnailUrl)}
                         alt="Thumbnail Preview"
                         className="w-full h-full object-contain"
                       />
-                      <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/90 text-amber-400">
-                        16:9 Uncropped Preview
-                      </span>
                     </div>
-                    <label className="flex items-center justify-center space-x-2 w-full py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition">
+                    <label className="flex items-center justify-center space-x-2 w-full py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer transition">
                       <Upload className="w-3.5 h-3.5 text-blue-600" />
                       <span>{t('डिवाइस से नई फ़ोटो चुनें (PNG/JPG)', 'Upload New Image from Device')}</span>
                       <input
@@ -661,6 +817,217 @@ export default function CoursesPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Manual Subjects & Chapters Management Modal */}
+        {curriculumCourse && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto flex flex-col space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <Layers className="w-5 h-5 text-indigo-600" />
+                    <h3 className="font-bold text-base text-slate-900">
+                      {t('पाठ्यक्रम एवं विषय प्रबंधन (Manual Curriculum)', 'Manual Subjects & Chapters')}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-md">
+                    {curriculumCourse.title}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setCurriculumCourse(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 font-bold"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Grid: Subjects on Left, Chapters on Right */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                {/* Column 1: Subjects List & Add Form */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-slate-800 flex items-center space-x-1">
+                      <BookOpen className="w-4 h-4 text-indigo-600" />
+                      <span>{t('कोर्स के विषय (Subjects)', 'Course Subjects')} ({courseSubjects.length})</span>
+                    </span>
+                  </div>
+
+                  {/* Add Subject Form */}
+                  <form onSubmit={handleAddSubject} className="space-y-2 bg-white p-3 rounded-lg border border-slate-200">
+                    <input
+                      type="text"
+                      required
+                      placeholder="विषय का नाम (e.g. Mathematics, Science)"
+                      value={newSubjectName}
+                      onChange={(e) => setNewSubjectName(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                    />
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder="हिंदी नाम (e.g. गणित, विज्ञान)"
+                        value={newSubjectNameHi}
+                        onChange={(e) => setNewSubjectNameHi(e.target.value)}
+                        className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>जोड़ें</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Subjects Items */}
+                  <div className="flex-1 overflow-y-auto space-y-2 max-h-60 sm:max-h-72">
+                    {courseSubjects.length === 0 ? (
+                      <div className="text-center py-6 text-slate-400 text-xs">
+                        <BookMarked className="w-8 h-8 mx-auto mb-1 text-slate-300" />
+                        <p>{t('कोई विषय नहीं जुड़ा है। ऊपर फ़ॉर्म से जोड़ें।', 'No subjects added yet. Add one above.')}</p>
+                      </div>
+                    ) : (
+                      courseSubjects.map((sub) => {
+                        const isSelected = selectedSubject?.id === sub.id;
+                        return (
+                          <div
+                            key={sub.id}
+                            onClick={() => handleSelectSubject(sub)}
+                            className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                                : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+                            }`}
+                          >
+                            <div className="min-w-0 pr-2">
+                              <p className="font-bold truncate">{sub.name}</p>
+                              {sub.name_hi && sub.name_hi !== sub.name && (
+                                <p className={`text-[10px] ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                  {sub.name_hi}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSubject(sub);
+                                }}
+                                title="Delete Subject"
+                                className={`p-1 rounded hover:bg-rose-500 hover:text-white transition ${
+                                  isSelected ? 'text-indigo-200' : 'text-slate-400'
+                                }`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                              <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Column 2: Chapters under Selected Subject */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-slate-800 flex items-center space-x-1">
+                      <FolderPlus className="w-4 h-4 text-emerald-600" />
+                      <span>
+                        {selectedSubject
+                          ? `${selectedSubject.name} — ${t('पाठ/अध्याय (Chapters)', 'Chapters')} (${subjectChapters.length})`
+                          : t('पाठ/अध्याय (Chapters)', 'Chapters')}
+                      </span>
+                    </span>
+                  </div>
+
+                  {!selectedSubject ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-400 text-xs">
+                      <AlertCircle className="w-8 h-8 mb-2 text-slate-300" />
+                      <p>{t('बाएं से कोई विषय चुनें ताकि उसके पाठ जोड़ सकें।', 'Select a subject from the left to view and add chapters.')}</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Add Chapter Form */}
+                      <form onSubmit={handleAddChapter} className="space-y-2 bg-white p-3 rounded-lg border border-slate-200">
+                        <input
+                          type="text"
+                          required
+                          placeholder="पाठ का शीर्षक (e.g. Ch 1: Real Numbers)"
+                          value={newChapterTitle}
+                          onChange={(e) => setNewChapterTitle(e.target.value)}
+                          className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                        />
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            placeholder="हिंदी शीर्षक (e.g. पाठ 1: वास्तविक संख्याएँ)"
+                            value={newChapterTitleHi}
+                            onChange={(e) => setNewChapterTitleHi(e.target.value)}
+                            className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>जोड़ें</span>
+                          </button>
+                        </div>
+                      </form>
+
+                      {/* Chapters Items */}
+                      <div className="flex-1 overflow-y-auto space-y-2 max-h-60 sm:max-h-72">
+                        {subjectChapters.length === 0 ? (
+                          <div className="text-center py-6 text-slate-400 text-xs">
+                            <p>{t('इस विषय में अभी कोई पाठ नहीं है। नया पाठ जोड़ें।', 'No chapters added to this subject yet.')}</p>
+                          </div>
+                        ) : (
+                          subjectChapters.map((chap, idx) => (
+                            <div
+                              key={chap.id}
+                              className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 text-xs hover:border-emerald-300 transition"
+                            >
+                              <div className="min-w-0 pr-2">
+                                <p className="font-bold text-slate-800 truncate">
+                                  {idx + 1}. {chap.title}
+                                </p>
+                                {chap.title_hi && chap.title_hi !== chap.title && (
+                                  <p className="text-[10px] text-slate-400 truncate">
+                                    {chap.title_hi}
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleDeleteChapter(chap)}
+                                title="Delete Chapter"
+                                className="p-1 rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => setCurriculumCourse(null)}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition"
+                >
+                  {t('पूर्ण हुआ (Done)', 'Done')}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -80,7 +80,10 @@ export default function PublicHomePage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <a
-                href="/api/download-apk"
+                href="https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk"
+                download="ideal-coaching-release.apk"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition w-full sm:w-auto justify-center"
               >
                 <Smartphone className="w-5 h-5" />
@@ -375,7 +378,10 @@ export default function PublicHomePage() {
             </p>
             <div className="pt-2 flex flex-wrap gap-3 justify-center md:justify-start">
               <a
-                href="/api/download-apk"
+                href="https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk"
+                download="ideal-coaching-release.apk"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-white text-blue-900 hover:bg-blue-50 font-bold text-sm shadow-md transition"
               >
                 <Smartphone className="w-4 h-4 text-blue-700" />

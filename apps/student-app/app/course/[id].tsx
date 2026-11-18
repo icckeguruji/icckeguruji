@@ -18,6 +18,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations, formatINR } from '@icc/shared-utils';
 import {
   academicService,
+  getResolvedThumbnailUrl,
   AcademicSubject,
   SubSubject,
   AcademicChapter,
@@ -123,8 +124,7 @@ export default function CourseDetailsScreen() {
       const found = await academicService.getCourseById(id);
       setCurrentCourse(found || null);
       if (found) {
-        const className = academicService.getClassNameFromCourse(found);
-        const subs = await academicService.getSubjects(id, className);
+        const subs = await academicService.getSubjects(id);
         setSubjects(subs);
       }
     } catch (e) {
@@ -473,7 +473,7 @@ export default function CourseDetailsScreen() {
         {activeLevel === 'subjects' && (
           <View style={styles.bannerContainer}>
             <Image
-              source={thumbMap[course.id] || { uri: course.thumbnail_url }}
+              source={thumbMap[course.id] || { uri: getResolvedThumbnailUrl(course.thumbnail_url) }}
               style={styles.bannerImage}
               resizeMode="contain"
             />

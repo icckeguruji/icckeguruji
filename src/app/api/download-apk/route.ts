@@ -11,9 +11,11 @@ export async function GET(request: Request) {
   const targetUrl = mirror === 'cdn' ? cdnMirrorUrl : githubReleaseUrl;
 
   return NextResponse.redirect(targetUrl, {
-    status: 307,
+    status: 302,
     headers: {
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'Content-Disposition': 'attachment; filename="ideal-coaching-release.apk"',
+      'Content-Type': 'application/vnd.android.package-archive',
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
     },
   });
 }

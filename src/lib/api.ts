@@ -14,6 +14,18 @@ import {
   ClassItem,
 } from '@icc/shared-types';
 
+export function getResolvedThumbnailUrl(url?: string): string {
+  if (!url || typeof url !== 'string') return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+  const clean = url.trim();
+  if (clean.startsWith('file://')) {
+    return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+  }
+  if (clean.startsWith('/')) {
+    return `https://icconline.vercel.app${clean}`;
+  }
+  return clean;
+}
+
 export interface BatchWithMeta {
   id: string;
   course_id: string;
@@ -112,12 +124,32 @@ function getPersistentState<T>(key: string, defaultData: T): T {
   return defaultData;
 }
 
-// Helper to save data to localStorage (browser-safe, permanent)
+// Helper to save data to localStorage (browser-safe, permanent, quota-guarded)
 function savePersistentState<T>(key: string, data: T): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(key, JSON.stringify(data));
-  } catch {}
+  } catch (err) {
+    console.warn(`localStorage quota limit encountered for key: ${key}`, err);
+    try {
+      if (Array.isArray(data)) {
+        const sanitized = data.map((item: any) => {
+          if (
+            item?.thumbnail_url &&
+            typeof item.thumbnail_url === 'string' &&
+            item.thumbnail_url.startsWith('data:image/') &&
+            item.thumbnail_url.length > 50000
+          ) {
+            return { ...item, thumbnail_url: '/thumbnails/batch-b3-class10.jpg' };
+          }
+          return item;
+        });
+        localStorage.setItem(key, JSON.stringify(sanitized));
+      }
+    } catch (retryErr) {
+      console.warn('Fallback save also failed:', retryErr);
+    }
+  }
 }
 
 // In-memory working cache initialized from persistent store
@@ -320,7 +352,10 @@ export const AdminApi = {
           .select('*')
           .order('created_at', { ascending: false });
         if (!error && Array.isArray(data)) {
-          localCourses = data as Course[];
+          localCourses = (data as Course[]).map((c) => ({
+            ...c,
+            thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
+          }));
           savePersistentState(STORAGE_KEYS.COURSES, localCourses);
           return localCourses;
         }
@@ -329,7 +364,10 @@ export const AdminApi = {
       }
     }
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, []);
-    return localCourses;
+    return localCourses.map((c) => ({
+      ...c,
+      thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
+    }));
   },
 
   createCourse: async (course: Partial<Course>) => {
@@ -344,7 +382,7 @@ export const AdminApi = {
       title_hi: course.title_hi || course.title || 'नया कोर्स',
       description: course.description || '',
       description_hi: course.description_hi || course.description || '',
-      thumbnail_url: course.thumbnail_url || '/logo.png',
+      thumbnail_url: getResolvedThumbnailUrl(course.thumbnail_url),
       board_id: course.board_id || defaultBoardId,
       class_id: course.class_id || defaultClassId,
       session_id: course.session_id || defaultSessionId,
@@ -363,9 +401,13 @@ export const AdminApi = {
           .select()
           .single();
         if (!error && data) {
-          localCourses = [data as Course, ...localCourses.filter((c) => c.id !== data.id)];
+          const resolved = {
+            ...(data as Course),
+            thumbnail_url: getResolvedThumbnailUrl(data.thumbnail_url),
+          };
+          localCourses = [resolved, ...localCourses.filter((c) => c.id !== data.id)];
           savePersistentState(STORAGE_KEYS.COURSES, localCourses);
-          return data as Course;
+          return resolved;
         } else if (error) {
           console.error('createCourse Supabase error:', error);
         }
@@ -393,6 +435,9 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { board, class: classItem, lecture_count, material_count, ...cleanUpdates } = updates as any;
+        if (cleanUpdates.thumbnail_url) {
+          cleanUpdates.thumbnail_url = getResolvedThumbnailUrl(cleanUpdates.thumbnail_url);
+        }
         const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', courseId);
         if (error) console.error('updateCourse Supabase error:', error);
       } catch (err) {
@@ -401,7 +446,14 @@ export const AdminApi = {
     }
 
     localCourses = localCourses.map((c) =>
-      c.id === courseId ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
+      c.id === courseId
+        ? {
+            ...c,
+            ...updates,
+            thumbnail_url: updates.thumbnail_url ? getResolvedThumbnailUrl(updates.thumbnail_url) : c.thumbnail_url,
+            updated_at: new Date().toISOString(),
+          }
+        : c
     );
     savePersistentState(STORAGE_KEYS.COURSES, localCourses);
     return localCourses.find((c) => c.id === courseId) || null;
@@ -419,6 +471,140 @@ export const AdminApi = {
     }
     localCourses = localCourses.filter((c) => c.id !== courseId);
     savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+    return true;
+  },
+
+  // 4. Course Subjects & Chapters (Manual Curriculum Management)
+  getCourseSubjects: async (courseId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .select('*')
+          .eq('course_id', courseId)
+          .order('display_order', { ascending: true });
+        if (!error && Array.isArray(data)) {
+          return data;
+        }
+      } catch (e) {
+        console.error('getCourseSubjects error:', e);
+      }
+    }
+    const key = `icc_course_subs_${courseId}`;
+    return getPersistentState<any[]>(key, []);
+  },
+
+  createCourseSubject: async (courseId: string, subject: { name: string; name_hi?: string }) => {
+    const payload = {
+      course_id: courseId,
+      name: subject.name,
+      name_hi: subject.name_hi || subject.name,
+      code: `SUB-${Date.now().toString().slice(-4)}`,
+      icon_name: 'book-open',
+      is_active: true,
+      display_order: 1,
+    };
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .insert(payload)
+          .select()
+          .single();
+        if (!error && data) {
+          const key = `icc_course_subs_${courseId}`;
+          const current = getPersistentState<any[]>(key, []);
+          savePersistentState(key, [...current, data]);
+          return data;
+        }
+      } catch (e) {
+        console.error('createCourseSubject error:', e);
+      }
+    }
+    const fallback = { id: `sub-${Date.now()}`, ...payload };
+    const key = `icc_course_subs_${courseId}`;
+    const current = getPersistentState<any[]>(key, []);
+    savePersistentState(key, [...current, fallback]);
+    return fallback;
+  },
+
+  deleteCourseSubject: async (courseId: string, subjectId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('subjects').delete().eq('id', subjectId);
+      } catch (e) {
+        console.error('deleteCourseSubject error:', e);
+      }
+    }
+    const key = `icc_course_subs_${courseId}`;
+    const current = getPersistentState<any[]>(key, []);
+    savePersistentState(key, current.filter((s) => s.id !== subjectId));
+    return true;
+  },
+
+  getSubjectChapters: async (subjectId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('chapters')
+          .select('*')
+          .eq('subject_id', subjectId)
+          .order('chapter_number', { ascending: true });
+        if (!error && Array.isArray(data)) {
+          return data;
+        }
+      } catch (e) {
+        console.error('getSubjectChapters error:', e);
+      }
+    }
+    const key = `icc_subj_chaps_${subjectId}`;
+    return getPersistentState<any[]>(key, []);
+  },
+
+  createSubjectChapter: async (subjectId: string, courseId: string, chapter: { title: string; title_hi?: string; chapter_number?: number }) => {
+    const payload = {
+      subject_id: subjectId,
+      course_id: courseId,
+      title: chapter.title,
+      title_hi: chapter.title_hi || chapter.title,
+      chapter_number: chapter.chapter_number || 1,
+      display_order: chapter.chapter_number || 1,
+    };
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('chapters')
+          .insert(payload)
+          .select()
+          .single();
+        if (!error && data) {
+          const key = `icc_subj_chaps_${subjectId}`;
+          const current = getPersistentState<any[]>(key, []);
+          savePersistentState(key, [...current, data]);
+          return data;
+        }
+      } catch (e) {
+        console.error('createSubjectChapter error:', e);
+      }
+    }
+    const fallback = { id: `ch-${Date.now()}`, ...payload };
+    const key = `icc_subj_chaps_${subjectId}`;
+    const current = getPersistentState<any[]>(key, []);
+    savePersistentState(key, [...current, fallback]);
+    return fallback;
+  },
+
+  deleteSubjectChapter: async (subjectId: string, chapterId: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('chapters').delete().eq('id', chapterId);
+      } catch (e) {
+        console.error('deleteSubjectChapter error:', e);
+      }
+    }
+    const key = `icc_subj_chaps_${subjectId}`;
+    const current = getPersistentState<any[]>(key, []);
+    savePersistentState(key, current.filter((c) => c.id !== chapterId));
     return true;
   },
 

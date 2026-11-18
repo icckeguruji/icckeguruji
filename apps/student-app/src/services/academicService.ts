@@ -8,6 +8,31 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { Course, LiveClass, StudyMaterial, UserProfile } from '@icc/shared-types';
 
+export function isValidUUID(str?: string): boolean {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+}
+
+export function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+export function getResolvedThumbnailUrl(url?: string): string {
+  if (!url || typeof url !== 'string') return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+  const clean = url.trim();
+  if (clean.startsWith('file://')) {
+    return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+  }
+  if (clean.startsWith('/')) {
+    return `https://icconline.vercel.app${clean}`;
+  }
+  return clean;
+}
+
 export interface SubSubject {
   id: string;
   subject_id: string;
@@ -326,6 +351,18 @@ class AcademicRepository {
         await this.persist('icc_academic_subjects', this.subjects);
       }
 
+      // 6. Sync Chapters
+      const { data: remoteChaps } = await supabase.from('chapters').select('*');
+      if (remoteChaps && remoteChaps.length > 0) {
+        const validChaps = remoteChaps.filter((c) => !this.isDeleted(c.id));
+        const chapMap = new Map(this.chapters.map((c) => [c.id, c]));
+        for (const remChap of validChaps) {
+          chapMap.set(remChap.id, { ...chapMap.get(remChap.id), ...remChap });
+        }
+        this.chapters = Array.from(chapMap.values()).filter((c) => !this.isDeleted(c.id));
+        await this.persist('icc_academic_chapters', this.chapters);
+      }
+
       this.notify();
     } catch (e) {
       console.warn('Sync from cloud error:', e);
@@ -474,7 +511,7 @@ class AcademicRepository {
 
   async addCourse(data: Partial<Course>): Promise<Course> {
     await this.ensureLoaded();
-    const courseId = data.id || `c0000000-0000-0000-0000-${Date.now().toString(16).padStart(12, '0')}`;
+    const courseId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
 
     // Remove any previous tombstone for this course ID
     this.deletedIds.delete(courseId);
@@ -487,9 +524,7 @@ class AcademicRepository {
       tagline: data.tagline || 'Complete Board Exam Syllabus Mastery with BADE SIR',
       description: data.description || '',
       description_hi: data.description_hi || data.description || '',
-      thumbnail_url:
-        data.thumbnail_url ||
-        'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
+      thumbnail_url: getResolvedThumbnailUrl(data.thumbnail_url),
       board_id: data.board_id || 'b0000000-0000-0000-0000-000000000001',
       class_id: data.class_id || 'c0000000-0000-0000-0000-000000000010',
       is_free: Boolean(data.is_free),
@@ -616,10 +651,16 @@ class AcademicRepository {
     }
   }
 
-  // --- SUBJECTS (Class Scoped from Class 1 to 12) ---
+  // --- SUBJECTS (Course Scoped or Class Scoped) ---
   async getSubjects(courseId?: string, className?: string): Promise<AcademicSubject[]> {
     await this.ensureLoaded();
     let list = this.subjects.filter((s) => !this.isDeleted(s.id));
+
+    // When courseId is provided, return ONLY subjects explicitly belonging to this course
+    // Zero auto-injection: Admin manually creates subjects for each course.
+    if (courseId) {
+      return list.filter((s) => s.course_id === courseId);
+    }
 
     if (className) {
       const targetClass = className.trim().toLowerCase();
@@ -641,22 +682,12 @@ class AcademicRepository {
       return list;
     }
 
-    if (courseId) {
-      const course = this.courses.find((c) => c.id === courseId);
-      if (course) {
-        const derivedClass = this.getClassNameFromCourse(course);
-        return this.getSubjects(undefined, derivedClass);
-      }
-      const courseSpecific = list.filter((s) => s.course_id === courseId);
-      if (courseSpecific.length > 0) return courseSpecific;
-    }
-
     return list;
   }
 
   async addSubject(sub: Partial<AcademicSubject>): Promise<AcademicSubject> {
     await this.ensureLoaded();
-    const subId = sub.id || `sub-${Date.now()}`;
+    const subId = sub.id && isValidUUID(sub.id) ? sub.id : generateUUID();
     this.deletedIds.delete(subId);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
@@ -676,6 +707,27 @@ class AcademicRepository {
     this.subjects.push(newSub);
     await this.persist('icc_academic_subjects', this.subjects);
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        const payload: any = {
+          id: newSub.id,
+          name: newSub.name,
+          name_hi: newSub.name_hi,
+          code: newSub.code,
+          icon_name: newSub.icon_name,
+          display_order: newSub.display_order,
+          is_active: true,
+        };
+        if (newSub.course_id && isValidUUID(newSub.course_id)) {
+          payload.course_id = newSub.course_id;
+        }
+        await supabase.from('subjects').upsert(payload);
+      }
+    } catch (e) {
+      console.warn('Supabase addSubject warning:', e);
+    }
+
     return newSub;
   }
 
@@ -686,6 +738,14 @@ class AcademicRepository {
     this.subjects = this.subjects.filter((s) => s.id !== id);
     await this.persist('icc_academic_subjects', this.subjects);
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('subjects').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase deleteSubject warning:', e);
+    }
   }
 
   // --- SUB-SUBJECTS ---
@@ -695,7 +755,7 @@ class AcademicRepository {
     if (!targetSubject) throw new Error('Subject not found');
 
     const newSubSub: SubSubject = {
-      id: `subsub-${Date.now()}`,
+      id: generateUUID(),
       subject_id: subjectId,
       name: sub.name,
       name_hi: sub.name_hi,
@@ -723,7 +783,7 @@ class AcademicRepository {
 
   async addChapter(data: Partial<AcademicChapter>): Promise<AcademicChapter> {
     await this.ensureLoaded();
-    const chapterId = data.id || `ch-${Date.now()}`;
+    const chapterId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
     this.deletedIds.delete(chapterId);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
@@ -744,6 +804,28 @@ class AcademicRepository {
     this.chapters.push(newChapter);
     await this.persist('icc_academic_chapters', this.chapters);
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        const payload: any = {
+          id: newChapter.id,
+          title: newChapter.title,
+          title_hi: newChapter.title_hi,
+          chapter_number: newChapter.chapter_number,
+          description: newChapter.description,
+        };
+        if (newChapter.subject_id && isValidUUID(newChapter.subject_id)) {
+          payload.subject_id = newChapter.subject_id;
+        }
+        if (newChapter.course_id && isValidUUID(newChapter.course_id)) {
+          payload.course_id = newChapter.course_id;
+        }
+        await supabase.from('chapters').upsert(payload);
+      }
+    } catch (e) {
+      console.warn('Supabase addChapter warning:', e);
+    }
+
     return newChapter;
   }
 
@@ -754,6 +836,14 @@ class AcademicRepository {
     this.chapters = this.chapters.filter((c) => c.id !== id);
     await this.persist('icc_academic_chapters', this.chapters);
     this.notify();
+
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('chapters').delete().eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase deleteChapter warning:', e);
+    }
   }
 
   // --- CHAPTER CONTENT: RECORDED VIDEOS ---

@@ -18,12 +18,13 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { formatINR } from '@icc/shared-utils';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
-import { academicService } from '../../src/services/academicService';
+import { academicService, getResolvedThumbnailUrl } from '../../src/services/academicService';
 import { aiService } from '../../src/services/aiService';
 import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { Course } from '@icc/shared-types';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import {
   Plus,
   Edit3,
@@ -292,11 +293,18 @@ export default function StudentCoursesScreen() {
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: false,
-          quality: 1,
+          allowsEditing: true,
+          aspect: [16, 9],
+          quality: 0.5,
+          base64: true,
         });
-        if (!result.canceled && result.assets && result.assets[0]?.uri) {
-          pickedUri = result.assets[0].uri;
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          if (asset.base64) {
+            pickedUri = `data:image/jpeg;base64,${asset.base64}`;
+          } else if (asset.uri) {
+            pickedUri = asset.uri;
+          }
         }
       } catch (pickerErr) {
         console.warn('ImagePicker library failed, falling back to DocumentPicker:', pickerErr);
@@ -306,6 +314,19 @@ export default function StudentCoursesScreen() {
         });
         if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
           pickedUri = docRes.assets[0].uri;
+        }
+      }
+
+      if (pickedUri && pickedUri.startsWith('file://')) {
+        try {
+          const b64 = await FileSystem.readAsStringAsync(pickedUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          if (b64) {
+            pickedUri = `data:image/jpeg;base64,${b64}`;
+          }
+        } catch (fsErr) {
+          console.warn('Could not encode picked image to base64:', fsErr);
         }
       }
 
@@ -328,14 +349,34 @@ export default function StudentCoursesScreen() {
       let pickedUri: string | null = null;
       try {
         const result = await ImagePicker.launchCameraAsync({
-          allowsEditing: false,
-          quality: 1,
+          allowsEditing: true,
+          aspect: [16, 9],
+          quality: 0.5,
+          base64: true,
         });
-        if (!result.canceled && result.assets && result.assets[0]?.uri) {
-          pickedUri = result.assets[0].uri;
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          if (asset.base64) {
+            pickedUri = `data:image/jpeg;base64,${asset.base64}`;
+          } else if (asset.uri) {
+            pickedUri = asset.uri;
+          }
         }
       } catch (cameraErr) {
         console.warn('Camera capture failed:', cameraErr);
+      }
+
+      if (pickedUri && pickedUri.startsWith('file://')) {
+        try {
+          const b64 = await FileSystem.readAsStringAsync(pickedUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          if (b64) {
+            pickedUri = `data:image/jpeg;base64,${b64}`;
+          }
+        } catch (fsErr) {
+          console.warn('Could not encode captured photo to base64:', fsErr);
+        }
       }
 
       if (pickedUri) {
@@ -424,7 +465,7 @@ export default function StudentCoursesScreen() {
               >
                 <View style={styles.imageBox}>
                   <Image
-                    source={thumbMap[course.id] || { uri: course.thumbnail_url }}
+                    source={thumbMap[course.id] || { uri: getResolvedThumbnailUrl(course.thumbnail_url) }}
                     style={styles.thumbnail}
                     resizeMode="contain"
                   />
@@ -646,7 +687,7 @@ export default function StudentCoursesScreen() {
               {courseForm.thumbnail_url ? (
                 <View style={styles.thumbnailPreviewContainer}>
                   <Image
-                    source={{ uri: courseForm.thumbnail_url }}
+                    source={{ uri: getResolvedThumbnailUrl(courseForm.thumbnail_url) }}
                     style={styles.previewImage}
                     resizeMode="contain"
                   />
