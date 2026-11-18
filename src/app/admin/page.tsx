@@ -249,8 +249,9 @@ export default function AdminDashboardPage() {
       price: formData.is_free ? 0 : Number(formData.price),
       discount_price: formData.is_free ? 0 : Number(formData.discount_price),
       validity_days: Number(formData.validity_days),
+      class_name: formData.class_name,
       is_published: true,
-    });
+    } as any);
     setCourses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
     setIsModalOpen(false);
     setThumbnailUrl('/thumbnails/batch-b3-class10.jpg');

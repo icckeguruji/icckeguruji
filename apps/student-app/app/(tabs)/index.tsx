@@ -273,31 +273,6 @@ export default function StudentHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* AI 30-Second Speed Quiz Quick Card */}
-        <TouchableOpacity
-          style={styles.homeQuizCard}
-          onPress={() => router.push('/(tabs)/tests')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.homeQuizLeft}>
-            <View style={styles.homeQuizIconBox}>
-              <Sparkles size={18} color="#D97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.homeQuizTitle}>AI 30-Second Live Speed Quiz</Text>
-                <View style={styles.quizPtsBadge}>
-                  <Text style={styles.quizPtsBadgeText}>+10 / -5 Pts</Text>
-                </View>
-              </View>
-              <Text style={styles.homeQuizSub}>
-                Score: {user?.quiz_points || 0} PTS • Zero repetition test engine
-              </Text>
-            </View>
-          </View>
-          <ChevronRight size={18} color="#94A3B8" />
-        </TouchableOpacity>
-
         {/* Continue Watching / Resume Bar */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -305,7 +280,7 @@ export default function StudentHomeScreen() {
           </Text>
           <TouchableOpacity
             style={styles.resumeCard}
-            onPress={() => router.push('/lecture/lec-1')}
+            onPress={() => router.push('/(tabs)/courses')}
             activeOpacity={0.8}
           >
             <View style={styles.resumeThumb}>
@@ -313,13 +288,13 @@ export default function StudentHomeScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.resumeTitle} numberOfLines={1}>
-                Ch 1: Chemical Reactions & Equations
+                Syllabus & Video Lectures
               </Text>
               <Text style={styles.resumeSub}>
-                Lecture 02 · 18m left
+                BSEB & JAC Board Curriculum
               </Text>
               <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: '65%' }]} />
+                <View style={[styles.progressBarFill, { width: '80%' }]} />
               </View>
             </View>
             <ChevronRight size={18} color="#94A3B8" />
@@ -330,6 +305,18 @@ export default function StudentHomeScreen() {
         <View style={styles.gridRow}>
           <TouchableOpacity
             style={styles.gridItem}
+            onPress={() => router.push('/(tabs)/courses')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
+              <BookOpen size={20} color="#16A34A" />
+            </View>
+            <Text style={styles.gridText}>Courses</Text>
+            <Text style={styles.gridSub}>All Batches</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.gridItem}
             onPress={() => router.push('/(tabs)/notes')}
             activeOpacity={0.7}
           >
@@ -338,18 +325,6 @@ export default function StudentHomeScreen() {
             </View>
             <Text style={styles.gridText}>Notes</Text>
             <Text style={styles.gridSub}>Secure View</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.gridItem}
-            onPress={() => router.push('/(tabs)/tests')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
-              <CheckSquare size={20} color="#16A34A" />
-            </View>
-            <Text style={styles.gridText}>Tests</Text>
-            <Text style={styles.gridSub}>MCQ & Rank</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

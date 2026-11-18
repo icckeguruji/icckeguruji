@@ -649,12 +649,12 @@ export default function CourseDetailsScreen() {
 
                         <View style={styles.countPill}>
                           <Video size={10} color="#2563EB" />
-                          <Text style={styles.countPillText}>{chap.lecture_count || 4} Videos</Text>
+                          <Text style={styles.countPillText}>{chap.lecture_count || 0} Videos</Text>
                         </View>
 
                         <View style={styles.countPill}>
                           <FileText size={10} color="#059669" />
-                          <Text style={styles.countPillText}>{chap.material_count || 2} PDFs</Text>
+                          <Text style={styles.countPillText}>{chap.material_count || 0} PDFs</Text>
                         </View>
                       </View>
                     </View>

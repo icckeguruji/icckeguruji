@@ -168,11 +168,11 @@ export default function PublicCoursesPage() {
                     </span>
                     <span className="flex items-center">
                       <Video className="w-3.5 h-3.5 mr-1 text-red-500" />
-                      {course.lecture_count || 45}+ {t('वीडियो', 'Videos')}
+                      {course.lecture_count || 0} {t('वीडियो', 'Videos')}
                     </span>
                     <span className="flex items-center">
                       <FileText className="w-3.5 h-3.5 mr-1 text-blue-500" />
-                      {course.material_count || 24}+ {t('पीडीएफ', 'PDFs')}
+                      {course.material_count || 0} {t('पीडीएफ', 'PDFs')}
                     </span>
                   </div>
 

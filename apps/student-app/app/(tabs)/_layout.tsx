@@ -83,12 +83,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="tests"
         options={{
-          title: 'Tests',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconWrapper, focused && styles.iconActive]}>
-              <CheckSquare size={20} color={color} strokeWidth={focused ? 2.5 : 2} />
-            </View>
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen

@@ -256,13 +256,39 @@ class AcademicRepository {
     if (!isSupabaseConfigured || this.isSyncingCloud) return;
     this.isSyncingCloud = true;
     try {
-      // 1. Sync Courses
+      // 1. Sync Courses (Bidirectional: Push unsaved local courses + pull remote)
       const { data: remoteCourses, error: courseErr } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!courseErr && Array.isArray(remoteCourses)) {
+        for (const localCourse of this.courses) {
+          if (!this.deletedIds.has(localCourse.id) && !remoteCourses.some((r) => r.id === localCourse.id)) {
+            try {
+              await supabase.from('courses').upsert({
+                id: localCourse.id,
+                title: localCourse.title,
+                title_hi: localCourse.title_hi || localCourse.title,
+                tagline: localCourse.tagline,
+                description: localCourse.description,
+                description_hi: localCourse.description_hi,
+                thumbnail_url: localCourse.thumbnail_url,
+                board_id: localCourse.board_id || 'b0000000-0000-0000-0000-000000000001',
+                class_id: localCourse.class_id || 'c0000000-0000-0000-0000-000000000010',
+                price: localCourse.price,
+                discount_price: localCourse.discount_price,
+                validity_days: localCourse.validity_days,
+                class_name: (localCourse as any).class_name || 'Class 10',
+                is_published: true,
+                created_at: localCourse.created_at,
+                updated_at: localCourse.updated_at,
+              });
+              remoteCourses.unshift(localCourse as any);
+            } catch {}
+          }
+        }
+
         this.courses = remoteCourses.map((c) => ({
           ...c,
           thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
@@ -277,6 +303,25 @@ class AcademicRepository {
         .order('scheduled_at', { ascending: false });
 
       if (!liveErr && Array.isArray(remoteLive)) {
+        for (const localLive of this.liveClasses) {
+          if (!this.deletedIds.has(localLive.id) && !remoteLive.some((r) => r.id === localLive.id)) {
+            try {
+              await supabase.from('live_classes').upsert({
+                id: localLive.id,
+                course_id: localLive.course_id,
+                title: localLive.title,
+                title_hi: localLive.title_hi || localLive.title,
+                description: localLive.description,
+                instructor_name: localLive.instructor_name,
+                scheduled_at: localLive.scheduled_at,
+                duration_minutes: localLive.duration_minutes,
+                status: localLive.status,
+                class_name: (localLive as any).class_name,
+              });
+              remoteLive.unshift(localLive as any);
+            } catch {}
+          }
+        }
         this.liveClasses = remoteLive;
         await this.persist('icc_live_classes', this.liveClasses);
       }
@@ -288,6 +333,28 @@ class AcademicRepository {
         .order('created_at', { ascending: false });
 
       if (!matErr && Array.isArray(remoteMats)) {
+        for (const localMat of this.materials) {
+          if (!this.deletedIds.has(localMat.id) && !remoteMats.some((r) => r.id === localMat.id)) {
+            try {
+              await supabase.from('study_materials').upsert({
+                id: localMat.id,
+                board_id: localMat.board_id,
+                class_id: localMat.class_id,
+                subject_id: localMat.subject_id,
+                chapter_id: localMat.chapter_id,
+                title: localMat.title,
+                title_hi: localMat.title_hi || localMat.title,
+                description: localMat.description,
+                file_path: localMat.file_path,
+                file_size_bytes: localMat.file_size_bytes,
+                material_type: localMat.material_type,
+                is_free: localMat.is_free,
+                class_name: (localMat as any).class_name,
+              });
+              remoteMats.unshift(localMat as any);
+            } catch {}
+          }
+        }
         this.materials = remoteMats;
         await this.persist('icc_study_materials', this.materials);
       }

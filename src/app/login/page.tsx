@@ -65,15 +65,6 @@ export default function DirectorLoginPage() {
     }
   };
 
-  const handleQuickLogin = () => {
-    setLoading(true);
-    setAuthCookies();
-    setTimeout(() => {
-      setLoading(false);
-      router.push('/admin');
-    }, 300);
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -197,35 +188,9 @@ export default function DirectorLoginPage() {
           </div>
         )}
 
-        {/* 1-CLICK INSTANT ACCESS BUTTON */}
-        <div className="bg-slate-900/60 border border-slate-800/80 p-3 rounded-2xl space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300 px-1">
-            <span className="flex items-center gap-1.5 text-blue-400">
-              <Sparkles className="w-3.5 h-3.5" />
-              1-Click Instant Login
-            </span>
-            <span className="text-[10px] text-emerald-400 font-mono">BADE SIR DIRECT</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleQuickLogin}
-            disabled={loading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/40"
-          >
-            👑 <span>Director / Admin Portal Access (डायरेक्टर प्रवेश)</span>
-          </button>
-        </div>
-
         {/* LOGIN FORM */}
         {step === 'login' && (
           <form onSubmit={handleLogin} className="space-y-4 text-xs">
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-slate-800"></div>
-              <span className="flex-shrink mx-3 text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
-                Or Sign In with Password
-              </span>
-              <div className="flex-grow border-t border-slate-800"></div>
-            </div>
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5">

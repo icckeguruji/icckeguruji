@@ -241,7 +241,8 @@ export default function StudentCoursesScreen() {
           validity_days: parseInt(courseForm.validity_days) || 365,
           description: desc,
           thumbnail_url: courseForm.thumbnail_url,
-        });
+          class_name: courseForm.class_name,
+        } as any);
         Alert.alert('Success', 'Course details updated successfully!');
       } else {
         await academicService.addCourse({
@@ -254,9 +255,10 @@ export default function StudentCoursesScreen() {
           validity_days: parseInt(courseForm.validity_days) || 365,
           description: desc,
           thumbnail_url: courseForm.thumbnail_url,
+          class_name: courseForm.class_name,
           is_free: false,
           is_published: true,
-        });
+        } as any);
         Alert.alert('Course Published! 🎓', 'New course is now live and ready for student enrollment!');
       }
 
@@ -504,7 +506,7 @@ export default function StudentCoursesScreen() {
                       📅 Starts: {course.start_date || 'Enrolling Now'}
                     </Text>
                     <Text style={styles.stat}>⏱️ {course.validity_days} Days</Text>
-                    <Text style={styles.stat}>📹 {course.lecture_count || 40} Videos</Text>
+                    <Text style={styles.stat}>📹 {course.lecture_count || 0} Videos</Text>
                   </View>
 
                   {/* Normal Student Action Row */}

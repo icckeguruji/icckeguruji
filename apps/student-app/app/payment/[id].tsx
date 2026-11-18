@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Linking,
   Switch,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -81,6 +82,7 @@ export default function ManualUpiPaymentScreen() {
   const upiId = 'azhargodda@ybl';
   const payeeName = 'IDEAL COACHING CENTRE';
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${payableAmount}&cu=INR&tn=ICC+Enrollment+${encodeURIComponent(courseTitle.slice(0, 30))}`;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(upiLink)}`;
 
   const handleCopyUpi = () => {
     Alert.alert('UPI VPA Copied', `${upiId} copied to clipboard! Paste it into PhonePe, GPay, or Paytm.`);
@@ -500,10 +502,25 @@ export default function ManualUpiPaymentScreen() {
                 <View style={styles.stepBadge}>
                   <Text style={styles.stepBadgeText}>2</Text>
                 </View>
-                <Text style={styles.sectionTitle}>Official UPI Payment Rail</Text>
+                <Text style={styles.sectionTitle}>Scan Dynamic QR or Pay via UPI</Text>
               </View>
 
               <View style={styles.upiInfoCard}>
+                {/* Dynamic QR Code Card */}
+                <View style={styles.qrContainer}>
+                  <View style={styles.qrBorderWrapper}>
+                    <Image
+                      source={{ uri: qrImageUrl }}
+                      style={styles.qrImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text style={styles.qrScanText}>Scan with PhonePe, GPay, Paytm or BHIM</Text>
+                  <View style={styles.qrAmountBadge}>
+                    <Text style={styles.qrAmountBadgeText}>Payable: {formatINR(payableAmount)}</Text>
+                  </View>
+                </View>
+
                 <Text style={styles.upiHeaderLabel}>Official Institute UPI VPA</Text>
                 <View style={styles.upiVpaRow}>
                   <Text style={styles.upiVpaText}>{upiId}</Text>
@@ -516,13 +533,13 @@ export default function ManualUpiPaymentScreen() {
 
                 <TouchableOpacity style={styles.launchUpiBtn} onPress={handleOpenUpiApp}>
                   <ExternalLink size={16} color="#FFFFFF" />
-                  <Text style={styles.launchUpiBtnText}>Pay via UPI App (PhonePe / GPay / Paytm)</Text>
+                  <Text style={styles.launchUpiBtnText}>Pay via Installed UPI App</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.noteBox}>
                 <Text style={styles.noteText}>
-                  💡 Open your PhonePe, Google Pay, or Paytm app. Send {formatINR(payableAmount)} to {upiId}. Then copy the 12-digit UTR number from the transaction receipt and enter it below.
+                  💡 Scan the dynamic QR code above or send {formatINR(payableAmount)} to {upiId}. Then enter the 12-digit UTR reference number from your payment app receipt below.
                 </Text>
               </View>
             </View>
@@ -922,5 +939,48 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  qrContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  qrBorderWrapper: {
+    padding: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#93C5FD',
+    borderStyle: 'dashed',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  qrImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+  },
+  qrScanText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1E40AF',
+    marginTop: 8,
+  },
+  qrAmountBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    marginTop: 6,
+  },
+  qrAmountBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#15803D',
   },
 });

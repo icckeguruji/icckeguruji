@@ -445,6 +445,7 @@ export const AdminApi = {
       price: course.is_free ? 0 : (course.price ?? 999),
       discount_price: course.is_free ? 0 : (course.discount_price ?? 499),
       validity_days: course.validity_days ?? 365,
+      class_name: (course as any).class_name || 'Class 10',
       is_published: true,
     };
 

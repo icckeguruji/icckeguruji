@@ -66,7 +66,6 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
     { href: '/admin/recorded-lectures', icon: PlaySquare, label: 'Recorded Videos' },
     { href: '/admin/study-materials', icon: FileText, label: 'Notes & PDFs' },
     { href: '/admin/payments', icon: CreditCard, label: 'Payments & UTR' },
-    { href: '/admin/examinations', icon: FileCheck2, label: 'Examinations' },
     { href: '/admin/notifications', icon: Bell, label: 'Push Notifications' },
     { href: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp AI Bot' },
     { href: '/admin/teachers', icon: UserCheck, label: 'Teacher Records (रिकॉर्ड)' },
