@@ -123,8 +123,7 @@ export default function StudentLiveScreen() {
     scheduledDisplay: 'Today at 6:00 PM',
   });
 
-  const loadData = useCallback(async () => {
-    setIsSyncing(true);
+  const loadLocalData = useCallback(async () => {
     try {
       const [lives, subs] = await Promise.all([
         academicService.getLiveClasses(),
@@ -132,34 +131,47 @@ export default function StudentLiveScreen() {
       ]);
 
       setLiveClasses(lives);
-      if (lives.length > 0) {
-        if (!selectedStream || !lives.some((l) => l.id === selectedStream.id)) {
-          const liveNow = lives.find((c) => c.status === 'live') || lives[0];
-          setSelectedStream(liveNow);
+      setSelectedStream((prev) => {
+        if (lives.length === 0) return null;
+        if (!prev || !lives.some((l) => l.id === prev.id)) {
+          return lives.find((c) => c.status === 'live') || lives[0];
         }
-      } else {
-        setSelectedStream(null);
-      }
+        return prev;
+      });
 
       setSubjectsList(subs);
-      if (subs.length > 0 && !selectedSubject) {
-        setSelectedSubject(subs[0]);
-        loadChaptersForSubject(subs[0], null);
-      }
+      setSelectedSubject((prev) => {
+        if (!prev && subs.length > 0) {
+          loadChaptersForSubject(subs[0], null);
+          return subs[0];
+        }
+        return prev;
+      });
+    } catch {
+      // Keep current
+    }
+  }, [selectedClass]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await academicService.syncFromCloud();
+      await loadLocalData();
     } catch {
       // Keep current
     } finally {
       setIsSyncing(false);
     }
-  }, [selectedClass, selectedStream, selectedSubject]);
+  }, [loadLocalData]);
 
   useEffect(() => {
-    loadData();
+    loadLocalData();
+    academicService.syncFromCloud().catch(() => {});
     const unsubscribe = DataService.subscribeToChanges(() => {
-      loadData();
+      loadLocalData();
     });
     return () => unsubscribe();
-  }, [loadData]);
+  }, [loadLocalData]);
 
   // Load chapters when subject or sub-subject changes
   const loadChaptersForSubject = async (sub: AcademicSubject, subSub: SubSubject | null) => {
@@ -287,7 +299,7 @@ export default function StudentLiveScreen() {
         scheduled_at: new Date().toISOString(),
         scheduledDisplay: 'Today at 6:00 PM',
       });
-      loadData();
+      loadLocalData();
       Alert.alert(
         liveForm.start_immediately ? '🔴 Now Streaming Live!' : '📅 Live Class Scheduled!',
         'Session is directly linked to the syllabus chapter and students can join in-app.'
@@ -300,7 +312,7 @@ export default function StudentLiveScreen() {
   const handleUpdateStatus = async (id: string, status: 'live' | 'completed') => {
     try {
       await academicService.updateLiveClassStatus(id, status);
-      loadData();
+      loadLocalData();
       Alert.alert(
         'Stream Status Updated',
         status === 'live' ? 'Live stream has started!' : 'Stream marked as completed.'
@@ -356,7 +368,7 @@ export default function StudentLiveScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
-      <CoachingHeader onRefresh={loadData} isSyncing={isSyncing} />
+      <CoachingHeader onRefresh={handleRefresh} isSyncing={isSyncing} />
 
       {/* Embedded In-App Player Section (Strictly In-App, Anti-Escape, No YouTube app redirection) */}
       {selectedStream && (
@@ -477,7 +489,7 @@ export default function StudentLiveScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isSyncing}
-            onRefresh={loadData}
+            onRefresh={handleRefresh}
             colors={['#2563EB']}
             tintColor="#2563EB"
           />

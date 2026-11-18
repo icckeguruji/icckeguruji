@@ -133,6 +133,7 @@ class AcademicRepository {
   private deletedIds: Set<string> = new Set();
   private isLoaded: boolean = false;
   private loadPromise: Promise<void> | null = null;
+  private isSyncingCloud: boolean = false;
 
   constructor() {
     this.loadPromise = this.init();
@@ -197,19 +198,12 @@ class AcademicRepository {
 
         await this.persist('icc_storage_initialized', 'true');
         await this.persist('icc_courses_modified', 'true');
-    await this.persist('icc_courses', this.courses);
-    this.notify();
-    this.notify();
-    this.notify();
+        await this.persist('icc_courses', this.courses);
         await this.persist('icc_academic_subjects', this.subjects);
-    this.notify();
         await this.persist('icc_academic_chapters', this.chapters);
-    this.notify();
         await this.persist('icc_recorded_lectures', this.lectures);
         await this.persist('icc_live_classes', this.liveClasses);
-    this.notify();
         await this.persist('icc_study_materials', this.materials);
-    this.notify();
         await this.persist('icc_payments', this.payments);
         await this.persist('icc_students', this.students);
       } else {
@@ -257,128 +251,98 @@ class AcademicRepository {
     return this.deletedIds.has(id);
   }
 
-  // Non-destructive cloud sync with Supabase for Courses, Live Classes, Notes & Lectures
+  // Authoritative cloud sync with Supabase for Courses, Live Classes, Notes, Subjects & Chapters
   async syncFromCloud() {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || this.isSyncingCloud) return;
+    this.isSyncingCloud = true;
     try {
       // 1. Sync Courses
-      const { data: remoteCourses } = await supabase
+      const { data: remoteCourses, error: courseErr } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (remoteCourses && remoteCourses.length > 0) {
-        const valid = remoteCourses.filter((c) => {
-          if (this.deletedIds.has(c.id)) return false;
-          if (SAMPLE_RESERVED_IDS.has(c.id)) return false;
-          return true;
-        });
-
-        const courseMap = new Map(this.courses.map((c) => [c.id, c]));
-        for (const rem of valid) {
-          const existing = courseMap.get(rem.id);
-          if (existing) {
-            const localDate = new Date(existing.updated_at || existing.created_at || 0).getTime();
-            const remoteDate = new Date(rem.updated_at || rem.created_at || 0).getTime();
-            if (remoteDate > localDate) {
-              courseMap.set(rem.id, { ...existing, ...rem });
-            }
-          } else {
-            courseMap.set(rem.id, rem);
-          }
-        }
-        this.courses = Array.from(courseMap.values()).filter((c) => !this.deletedIds.has(c.id));
+      if (!courseErr && Array.isArray(remoteCourses)) {
+        this.courses = remoteCourses.map((c) => ({
+          ...c,
+          thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
+        }));
         await this.persist('icc_courses', this.courses);
       }
 
       // 2. Sync Live Classes
-      const { data: remoteLive } = await supabase
+      const { data: remoteLive, error: liveErr } = await supabase
         .from('live_classes')
         .select('*')
         .order('scheduled_at', { ascending: false });
 
-      if (remoteLive && remoteLive.length > 0) {
-        const validLive = remoteLive.filter((l) => !this.deletedIds.has(l.id));
-        const liveMap = new Map(this.liveClasses.map((l) => [l.id, l]));
-        for (const rem of validLive) {
-          liveMap.set(rem.id, { ...liveMap.get(rem.id), ...rem });
-        }
-        this.liveClasses = Array.from(liveMap.values()).filter((l) => !this.deletedIds.has(l.id));
+      if (!liveErr && Array.isArray(remoteLive)) {
+        this.liveClasses = remoteLive;
         await this.persist('icc_live_classes', this.liveClasses);
       }
 
       // 3. Sync Study Materials
-      const { data: remoteMats } = await supabase
+      const { data: remoteMats, error: matErr } = await supabase
         .from('study_materials')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (remoteMats && remoteMats.length > 0) {
-        const validMats = remoteMats.filter((m) => !this.deletedIds.has(m.id));
-        const matMap = new Map(this.materials.map((m) => [m.id, m]));
-        for (const rem of validMats) {
-          matMap.set(rem.id, { ...matMap.get(rem.id), ...rem });
-        }
-        this.materials = Array.from(matMap.values()).filter((m) => !this.deletedIds.has(m.id));
+      if (!matErr && Array.isArray(remoteMats)) {
+        this.materials = remoteMats;
         await this.persist('icc_study_materials', this.materials);
       }
 
       // 4. Sync Recorded Lectures
-      const { data: remoteLecs } = await supabase
+      const { data: remoteLecs, error: lecErr } = await supabase
         .from('recorded_lectures')
         .select('*')
         .order('lecture_order', { ascending: true });
 
-      if (remoteLecs && remoteLecs.length > 0) {
-        const validLecs = remoteLecs.filter((l) => !this.deletedIds.has(l.id));
-        const lecMap = new Map(this.lectures.map((l) => [l.id, l]));
-        for (const rem of validLecs) {
-          lecMap.set(rem.id, { ...lecMap.get(rem.id), ...rem });
-        }
-        this.lectures = Array.from(lecMap.values()).filter((l) => !this.deletedIds.has(l.id));
+      if (!lecErr && Array.isArray(remoteLecs)) {
+        this.lectures = remoteLecs;
         await this.persist('icc_recorded_lectures', this.lectures);
       }
 
       // 5. Sync Subjects
-      const { data: remoteSubs } = await supabase.from('subjects').select('*');
-      if (remoteSubs && remoteSubs.length > 0) {
-        const validSubs = remoteSubs.filter((s) => !this.isDeleted(s.id));
-        const subMap = new Map(this.subjects.map((s) => [s.id, s]));
-        for (const remSub of validSubs) {
-          subMap.set(remSub.id, { ...subMap.get(remSub.id), ...remSub });
-        }
-        this.subjects = Array.from(subMap.values()).filter((s) => !this.isDeleted(s.id));
+      const { data: remoteSubs, error: subErr } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (!subErr && Array.isArray(remoteSubs)) {
+        this.subjects = remoteSubs;
         await this.persist('icc_academic_subjects', this.subjects);
       }
 
       // 6. Sync Chapters
-      const { data: remoteChaps } = await supabase.from('chapters').select('*');
-      if (remoteChaps && remoteChaps.length > 0) {
-        const validChaps = remoteChaps.filter((c) => !this.isDeleted(c.id));
-        const chapMap = new Map(this.chapters.map((c) => [c.id, c]));
-        for (const remChap of validChaps) {
-          chapMap.set(remChap.id, { ...chapMap.get(remChap.id), ...remChap });
-        }
-        this.chapters = Array.from(chapMap.values()).filter((c) => !this.isDeleted(c.id));
+      const { data: remoteChaps, error: chapErr } = await supabase
+        .from('chapters')
+        .select('*')
+        .order('chapter_number', { ascending: true });
+
+      if (!chapErr && Array.isArray(remoteChaps)) {
+        this.chapters = remoteChaps;
         await this.persist('icc_academic_chapters', this.chapters);
       }
 
       // 7. Sync Payments
-      const { data: remotePayments } = await supabase
+      const { data: remotePayments, error: payErr } = await supabase
         .from('payments')
         .select('*')
         .order('created_at', { ascending: false });
-      if (remotePayments) {
+
+      if (!payErr && Array.isArray(remotePayments)) {
         this.payments = remotePayments;
         await this.persist('icc_payments', this.payments);
       }
 
       // 8. Sync Students
-      const { data: remoteProfiles } = await supabase
+      const { data: remoteProfiles, error: profErr } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
-      if (remoteProfiles) {
+
+      if (!profErr && Array.isArray(remoteProfiles)) {
         this.students = remoteProfiles as any;
         await this.persist('icc_students', this.students);
       }
@@ -386,6 +350,8 @@ class AcademicRepository {
       this.notify();
     } catch (e) {
       console.warn('Sync from cloud error:', e);
+    } finally {
+      this.isSyncingCloud = false;
     }
   }
 
@@ -575,13 +541,16 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('courses').upsert({
+        const { error } = await supabase.from('courses').upsert({
           id: newCourse.id,
           title: newCourse.title,
           title_hi: newCourse.title_hi,
+          tagline: newCourse.tagline,
           description: newCourse.description,
           description_hi: newCourse.description_hi,
           thumbnail_url: newCourse.thumbnail_url,
+          board_id: newCourse.board_id || 'b0000000-0000-0000-0000-000000000001',
+          class_id: newCourse.class_id || 'c0000000-0000-0000-0000-000000000010',
           price: newCourse.price,
           discount_price: newCourse.discount_price,
           validity_days: newCourse.validity_days,
@@ -590,6 +559,7 @@ class AcademicRepository {
           created_at: newCourse.created_at,
           updated_at: newCourse.updated_at,
         });
+        if (error) console.error('Supabase course upsert error:', error);
       }
     } catch (e) {
       console.warn('Supabase course upsert warning:', e);
@@ -627,19 +597,23 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase
+        const { error } = await supabase
           .from('courses')
           .update({
             title: updates.title,
             title_hi: updates.title_hi,
+            tagline: updates.tagline,
             description: updates.description,
+            description_hi: updates.description_hi,
             thumbnail_url: updates.thumbnail_url,
             price: updates.price,
             discount_price: updates.discount_price,
             validity_days: updates.validity_days,
+            class_name: (updates as any).class_name,
             updated_at: new Date().toISOString(),
           })
           .eq('id', this.courses[idx].id);
+        if (error) console.error('Supabase course update error:', error);
       }
     } catch (e) {
       console.warn('Supabase update warning:', e);
@@ -661,7 +635,10 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('courses').delete().eq('id', id);
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('courses').delete().eq('id', id);
+          if (error) console.error('Supabase course delete error:', error);
+        }
         if (course?.title) {
           await supabase.from('courses').delete().eq('title', course.title);
         }
@@ -874,15 +851,20 @@ class AcademicRepository {
 
   async addRecordedLecture(data: Partial<RecordedLecture>): Promise<RecordedLecture> {
     await this.ensureLoaded();
-    const lecId = data.id || `lec-${Date.now()}`;
+    const lecId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
     this.deletedIds.delete(lecId);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
+    const validCourseId =
+      (data.course_id && isValidUUID(data.course_id) ? data.course_id : null) ||
+      this.courses[0]?.id ||
+      'ae78ea58-19aa-4ed4-86c8-336bd42c45ef';
+
     const newLec: RecordedLecture = {
       id: lecId,
-      course_id: data.course_id || 'c0000000-0000-0000-0000-000000000010',
-      subject_id: data.subject_id || '',
-      chapter_id: data.chapter_id || '',
+      course_id: validCourseId,
+      subject_id: data.subject_id || 'd0000000-0000-0000-0000-000000000002',
+      chapter_id: data.chapter_id || 'e0000000-0000-0000-0000-000000000001',
       title: data.title || 'Video Lecture',
       title_hi: data.title_hi || data.title,
       description: data.description || '',
@@ -891,6 +873,7 @@ class AcademicRepository {
       is_free_preview: Boolean(data.is_free_preview),
       lecture_order: this.lectures.length + 1,
     };
+    this.lectures = this.lectures.filter((l) => l.id !== lecId);
     this.lectures.push(newLec);
     await this.persist('icc_recorded_lectures', this.lectures);
 
@@ -903,10 +886,11 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('recorded_lectures').insert({
+        const { error } = await supabase.from('recorded_lectures').upsert({
+          id: newLec.id,
           course_id: newLec.course_id,
-          subject_id: newLec.subject_id || 'd0000000-0000-0000-0000-000000000002',
-          chapter_id: newLec.chapter_id || 'e0000000-0000-0000-0000-000000000001',
+          subject_id: newLec.subject_id,
+          chapter_id: newLec.chapter_id,
           title: newLec.title,
           title_hi: newLec.title_hi,
           description: newLec.description,
@@ -915,6 +899,7 @@ class AcademicRepository {
           is_free_preview: newLec.is_free_preview,
           lecture_order: newLec.lecture_order,
         });
+        if (error) console.error('Supabase addRecordedLecture error:', error);
       }
     } catch {}
 
@@ -932,7 +917,10 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('recorded_lectures').delete().eq('id', id);
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('recorded_lectures').delete().eq('id', id);
+          if (error) console.error('Supabase deleteRecordedLecture error:', error);
+        }
         if (item?.title) {
           await supabase.from('recorded_lectures').delete().eq('title', item.title);
         }
@@ -952,14 +940,19 @@ class AcademicRepository {
 
   async scheduleLiveClass(data: Partial<LiveClass> & { chapter_id?: string; subject_id?: string; class_name?: string }): Promise<LiveClass> {
     await this.ensureLoaded();
-    const liveId = data.id || `live-${Date.now()}`;
+    const liveId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
     this.deletedIds.delete(liveId);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
+    const validCourseId =
+      (data.course_id && isValidUUID(data.course_id) ? data.course_id : null) ||
+      this.courses[0]?.id ||
+      'ae78ea58-19aa-4ed4-86c8-336bd42c45ef';
+
     const newLive: LiveClass = {
       id: liveId,
-      course_id: data.course_id || 'c0000000-0000-0000-0000-000000000010',
-      batch_id: data.batch_id || 'ba000000-0000-0000-0000-000000000001',
+      course_id: validCourseId,
+      batch_id: data.batch_id,
       title: data.title || 'Live Class Session',
       title_hi: data.title_hi || data.title,
       description: data.description || '',
@@ -973,13 +966,15 @@ class AcademicRepository {
     if (data.subject_id) (newLive as any).subject_id = data.subject_id;
     if (data.class_name) (newLive as any).class_name = data.class_name;
 
+    this.liveClasses = this.liveClasses.filter((l) => l.id !== liveId);
     this.liveClasses.unshift(newLive);
     await this.persist('icc_live_classes', this.liveClasses);
     this.notify();
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('live_classes').insert({
+        const { error } = await supabase.from('live_classes').upsert({
+          id: newLive.id,
           course_id: newLive.course_id,
           title: newLive.title,
           title_hi: newLive.title_hi,
@@ -988,9 +983,13 @@ class AcademicRepository {
           scheduled_at: newLive.scheduled_at,
           duration_minutes: newLive.duration_minutes,
           status: newLive.status,
+          class_name: (newLive as any).class_name,
         });
+        if (error) console.error('Supabase scheduleLiveClass error:', error);
       }
-    } catch {}
+    } catch (e) {
+      console.warn('scheduleLiveClass warning:', e);
+    }
 
     return newLive;
   }
@@ -1002,6 +1001,11 @@ class AcademicRepository {
       item.status = status;
       await this.persist('icc_live_classes', this.liveClasses);
       this.notify();
+      if (isSupabaseConfigured && isValidUUID(id)) {
+        try {
+          await supabase.from('live_classes').update({ status }).eq('id', id);
+        } catch {}
+      }
     }
   }
 
@@ -1018,12 +1022,17 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('live_classes').delete().eq('id', id);
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('live_classes').delete().eq('id', id);
+          if (error) console.error('Supabase deleteLiveClass error:', error);
+        }
         if (item?.title) {
           await supabase.from('live_classes').delete().eq('title', item.title);
         }
       }
-    } catch {}
+    } catch (e) {
+      console.warn('deleteLiveClass warning:', e);
+    }
   }
 
   // --- CHAPTER CONTENT: STUDY MATERIALS PDF ---
@@ -1038,16 +1047,24 @@ class AcademicRepository {
 
   async addStudyMaterial(data: Partial<StudyMaterial> & { class_name?: string }): Promise<StudyMaterial> {
     await this.ensureLoaded();
-    const matId = data.id || `mat-${Date.now()}`;
+    const matId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
     this.deletedIds.delete(matId);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
+    const defaultBoardId = 'b0000000-0000-0000-0000-000000000001';
+    const defaultClassId = 'c0000000-0000-0000-0000-000000000010';
+    const defaultSubjectId = 'd0000000-0000-0000-0000-000000000002';
+    const defaultChapterId = 'e0000000-0000-0000-0000-000000000001';
+
+    const subjectId = (data.subject_id && isValidUUID(data.subject_id)) ? data.subject_id : defaultSubjectId;
+    const chapterId = (data.chapter_id && isValidUUID(data.chapter_id)) ? data.chapter_id : defaultChapterId;
+
     const newMat: StudyMaterial = {
       id: matId,
-      board_id: data.board_id || 'b0000000-0000-0000-0000-000000000001',
-      class_id: data.class_id || 'c0000000-0000-0000-0000-000000000010',
-      subject_id: data.subject_id || '',
-      chapter_id: data.chapter_id || '',
+      board_id: data.board_id || defaultBoardId,
+      class_id: data.class_id || defaultClassId,
+      subject_id: subjectId,
+      chapter_id: chapterId,
       title: data.title || 'Study Material PDF',
       title_hi: data.title_hi || data.title,
       description: data.description || '',
@@ -1061,10 +1078,11 @@ class AcademicRepository {
     };
     if (data.class_name) (newMat as any).class_name = data.class_name;
 
+    this.materials = this.materials.filter((m) => m.id !== matId);
     this.materials.unshift(newMat);
     await this.persist('icc_study_materials', this.materials);
 
-    const ch = this.chapters.find((c) => c.id === data.chapter_id);
+    const ch = this.chapters.find((c) => c.id === chapterId);
     if (ch) {
       ch.material_count = (ch.material_count || 0) + 1;
       await this.persist('icc_academic_chapters', this.chapters);
@@ -1074,9 +1092,12 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('study_materials').insert({
+        const { error } = await supabase.from('study_materials').upsert({
+          id: newMat.id,
           board_id: newMat.board_id,
           class_id: newMat.class_id,
+          subject_id: newMat.subject_id,
+          chapter_id: newMat.chapter_id,
           title: newMat.title,
           title_hi: newMat.title_hi,
           description: newMat.description,
@@ -1084,9 +1105,13 @@ class AcademicRepository {
           file_size_bytes: newMat.file_size_bytes,
           material_type: newMat.material_type,
           is_free: newMat.is_free,
+          class_name: (newMat as any).class_name,
         });
+        if (error) console.error('Supabase addStudyMaterial error:', error);
       }
-    } catch {}
+    } catch (e) {
+      console.warn('addStudyMaterial warning:', e);
+    }
 
     return newMat;
   }
@@ -1104,12 +1129,17 @@ class AcademicRepository {
 
     try {
       if (isSupabaseConfigured) {
-        await supabase.from('study_materials').delete().eq('id', id);
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('study_materials').delete().eq('id', id);
+          if (error) console.error('Supabase deleteStudyMaterial error:', error);
+        }
         if (item?.title) {
           await supabase.from('study_materials').delete().eq('title', item.title);
         }
       }
-    } catch {}
+    } catch (e) {
+      console.warn('deleteStudyMaterial warning:', e);
+    }
   }
 
   // --- DIRECTOR CONTROLS: PAYMENTS ---

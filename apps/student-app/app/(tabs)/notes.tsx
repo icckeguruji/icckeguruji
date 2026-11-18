@@ -164,8 +164,7 @@ export default function StudentNotesScreen() {
     loadChaptersForSubject(selectedSubject, subSub);
   };
 
-  const loadMaterials = useCallback(async () => {
-    setIsSyncing(true);
+  const loadLocalMaterials = useCallback(async () => {
     try {
       const [data, subs] = await Promise.all([
         academicService.getStudyMaterials(),
@@ -175,31 +174,46 @@ export default function StudentNotesScreen() {
       setMaterials(data);
 
       setSubjectsList(subs);
-      if (subs.length > 0 && !selectedSubject) {
-        setSelectedSubject(subs[0]);
-        if (subs[0].has_sub_subjects && subs[0].sub_subjects && subs[0].sub_subjects.length > 0) {
-          setSelectedSubSubject(subs[0].sub_subjects[0]);
-          loadChaptersForSubject(subs[0], subs[0].sub_subjects[0]);
-        } else {
-          loadChaptersForSubject(subs[0], null);
+      setSelectedSubject((prev) => {
+        if (!prev && subs.length > 0) {
+          const firstSub = subs[0];
+          if (firstSub.has_sub_subjects && firstSub.sub_subjects && firstSub.sub_subjects.length > 0) {
+            setSelectedSubSubject(firstSub.sub_subjects[0]);
+            loadChaptersForSubject(firstSub, firstSub.sub_subjects[0]);
+          } else {
+            loadChaptersForSubject(firstSub, null);
+          }
+          return firstSub;
         }
-      }
+        return prev;
+      });
 
       await loadOfflineVault();
+    } catch {
+      // Keep current
+    }
+  }, [selectedClass]);
+
+  const handleRefreshMaterials = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await academicService.syncFromCloud();
+      await loadLocalMaterials();
     } catch {
       // Keep current
     } finally {
       setIsSyncing(false);
     }
-  }, [selectedClass, selectedSubject]);
+  }, [loadLocalMaterials]);
 
   useEffect(() => {
-    loadMaterials();
+    loadLocalMaterials();
+    academicService.syncFromCloud().catch(() => {});
     const unsubscribe = DataService.subscribeToChanges(() => {
-      loadMaterials();
+      loadLocalMaterials();
     });
     return () => unsubscribe();
-  }, [loadMaterials]);
+  }, [loadLocalMaterials]);
 
   // AI Auto-Fill Helper for Study Material Notes
   const handleAiAutoFill = async () => {
@@ -327,7 +341,7 @@ export default function StudentNotesScreen() {
         material_type: 'chapter_notes',
         is_free: true,
       });
-      loadMaterials();
+      loadLocalMaterials();
       Alert.alert('Success', 'PDF Study Material uploaded and linked to curriculum!');
     } catch (err: any) {
       Alert.alert('Upload Error', err.message || 'Failed to save study material');
@@ -343,7 +357,7 @@ export default function StudentNotesScreen() {
         style: 'destructive',
         onPress: async () => {
           await academicService.deleteStudyMaterial(id);
-          loadMaterials();
+          loadLocalMaterials();
           Alert.alert('Deleted', 'Note removed from library.');
         },
       },
@@ -423,7 +437,7 @@ export default function StudentNotesScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
-      <CoachingHeader onRefresh={loadMaterials} isSyncing={isSyncing} />
+      <CoachingHeader onRefresh={handleRefreshMaterials} isSyncing={isSyncing} />
 
       {/* Admin Action Bar */}
       {isAdmin && (
@@ -479,7 +493,7 @@ export default function StudentNotesScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isSyncing}
-            onRefresh={loadMaterials}
+            onRefresh={handleRefreshMaterials}
             colors={['#2563EB']}
             tintColor="#2563EB"
           />

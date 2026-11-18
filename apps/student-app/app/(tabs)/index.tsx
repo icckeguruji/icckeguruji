@@ -70,19 +70,16 @@ export default function StudentHomeScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setIsSyncing(true);
+  const loadCachedData = useCallback(async () => {
     try {
-      await academicService.syncFromCloud().catch(() => {});
-
       const [fetchedCourses, fetchedLive] = await Promise.all([
-        DataService.fetchCourses(),
-        DataService.fetchLiveClasses(),
+        academicService.getCourses(),
+        academicService.getLiveClasses(),
       ]);
       setCourses(fetchedCourses);
       setLiveClasses(fetchedLive);
 
-      // Fetch 100% REAL LIVE COUNTS from Supabase
+      // Fetch Live counts from Supabase or cached repository
       if (isSupabaseConfigured) {
         try {
           const [pendingRes, studentsRes] = await Promise.all([
@@ -105,18 +102,29 @@ export default function StudentHomeScreen() {
       }
     } catch {
       // Graceful fallback
-    } finally {
-      setIsSyncing(false);
     }
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await academicService.syncFromCloud();
+      await loadCachedData();
+    } catch {
+      // Graceful fallback
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [loadCachedData]);
+
   useEffect(() => {
-    loadData();
+    loadCachedData();
+    academicService.syncFromCloud().catch(() => {});
     const unsubscribe = DataService.subscribeToChanges(() => {
-      loadData();
+      loadCachedData();
     });
     return () => unsubscribe();
-  }, [loadData]);
+  }, [loadCachedData]);
 
   const activeLive = liveClasses.find((l) => l.status === 'live') || liveClasses[0];
   const enrolledCourses = courses.length > 0 ? courses.slice(0, 3) : [];
@@ -126,7 +134,7 @@ export default function StudentHomeScreen() {
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
       <CoachingHeader
         showStudentGreeting={true}
-        onRefresh={loadData}
+        onRefresh={handleRefresh}
         isSyncing={isSyncing}
       />
 
@@ -135,7 +143,7 @@ export default function StudentHomeScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isSyncing}
-            onRefresh={loadData}
+            onRefresh={handleRefresh}
             colors={['#2563EB']}
             tintColor="#2563EB"
           />

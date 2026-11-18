@@ -110,25 +110,35 @@ export default function StudentCoursesScreen() {
       'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
   });
 
-  const loadCourses = useCallback(async () => {
-    setIsSyncing(true);
+  const loadLocalCourses = useCallback(async () => {
     try {
       const data = await academicService.getCourses();
       setCourses(data);
     } catch {
       // Keep current
-    } finally {
-      setIsSyncing(false);
     }
   }, []);
 
+  const handleRefreshCourses = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await academicService.syncFromCloud();
+      await loadLocalCourses();
+    } catch {
+      // Keep current
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [loadLocalCourses]);
+
   useEffect(() => {
-    loadCourses();
+    loadLocalCourses();
+    academicService.syncFromCloud().catch(() => {});
     const unsubscribe = DataService.subscribeToChanges(() => {
-      loadCourses();
+      loadLocalCourses();
     });
     return () => unsubscribe();
-  }, [loadCourses]);
+  }, [loadLocalCourses]);
 
   const filteredCourses = courses.filter((c) => {
     if (activeClassFilter === 'ALL') return true;
@@ -251,7 +261,7 @@ export default function StudentCoursesScreen() {
       }
 
       setIsCourseModalOpen(false);
-      loadCourses();
+      loadLocalCourses();
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save course');
     }
@@ -270,7 +280,7 @@ export default function StudentCoursesScreen() {
           onPress: async () => {
             try {
               await academicService.deleteCourse(courseId);
-              loadCourses();
+              loadLocalCourses();
               Alert.alert('Deleted', 'Course removed from catalog.');
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to delete course');
@@ -390,7 +400,7 @@ export default function StudentCoursesScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
-      <CoachingHeader onRefresh={loadCourses} isSyncing={isSyncing} />
+      <CoachingHeader onRefresh={handleRefreshCourses} isSyncing={isSyncing} />
 
       {/* Top Class Filter Bar & Admin Action */}
       <View style={styles.topBar}>
@@ -432,7 +442,7 @@ export default function StudentCoursesScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isSyncing}
-            onRefresh={loadCourses}
+            onRefresh={handleRefreshCourses}
             colors={['#2563EB']}
             tintColor="#2563EB"
           />

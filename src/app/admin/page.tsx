@@ -154,6 +154,9 @@ export default function AdminDashboardPage() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
           loadDashboardData();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
+          loadDashboardData();
+        })
         .subscribe();
 
       return () => {

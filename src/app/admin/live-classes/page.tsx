@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi } from '@/lib/api';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { LiveClass } from '@icc/shared-types';
 import { extractYouTubeVideoId, formatIST } from '@icc/shared-utils';
 import {
@@ -50,6 +51,19 @@ export default function LiveClassesPage() {
 
   useEffect(() => {
     loadClasses();
+
+    if (isSupabaseConfigured) {
+      const channel = supabase
+        .channel('admin-live-classes-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
+          loadClasses();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {

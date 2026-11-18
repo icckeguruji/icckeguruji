@@ -16,19 +16,21 @@ export interface SyncStatus {
 let sharedChannel: any = null;
 let subscriberCount = 0;
 let lastSyncTime = 0;
+let isRemoteSyncInProgress = false;
 
-const debouncedCloudSync = async (onUpdate: () => void) => {
+const triggerRemoteSync = async () => {
   const now = Date.now();
-  // Throttle cloud sync to at most once every 10 seconds to protect egress quota
-  if (now - lastSyncTime < 10000) {
-    onUpdate();
+  // Throttle cloud sync to at most once every 3 seconds to protect egress quota
+  if (now - lastSyncTime < 3000 || isRemoteSyncInProgress) {
     return;
   }
   lastSyncTime = now;
+  isRemoteSyncInProgress = true;
   try {
     await academicService.syncFromCloud();
-    onUpdate();
-  } catch {}
+  } catch {} finally {
+    isRemoteSyncInProgress = false;
+  }
 };
 
 export const DataService = {
@@ -47,7 +49,12 @@ export const DataService = {
     return academicService.getStudyMaterials();
   },
 
-  // 4. Subscribe to Realtime Updates (Local Reactive + Bandwidth-Guarded Cloud Sync)
+  // 4. Force sync from cloud
+  syncAllFromCloud: async () => {
+    return academicService.syncFromCloud();
+  },
+
+  // 5. Subscribe to Realtime Updates (Local Reactive + Bandwidth-Guarded Cloud Sync)
   subscribeToChanges: (onUpdate: () => void) => {
     const unsubscribeLocal = academicService.subscribe(onUpdate);
 
@@ -59,19 +66,19 @@ export const DataService = {
         sharedChannel = supabase
           .channel('icc-shared-sync')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
-            debouncedCloudSync(onUpdate);
+            triggerRemoteSync();
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
-            debouncedCloudSync(onUpdate);
+            triggerRemoteSync();
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
-            debouncedCloudSync(onUpdate);
+            triggerRemoteSync();
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
-            debouncedCloudSync(onUpdate);
+            triggerRemoteSync();
           })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-            debouncedCloudSync(onUpdate);
+            triggerRemoteSync();
           })
           .subscribe();
       } catch {

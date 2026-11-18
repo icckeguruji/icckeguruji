@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi } from '@/lib/api';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { StudyMaterial, SubjectItem, ClassItem } from '@icc/shared-types';
 import { formatBytes } from '@icc/shared-utils';
 import {
@@ -51,8 +52,25 @@ export default function StudyMaterialsPage() {
     is_free: false,
   });
 
-  useEffect(() => {
+  const loadMaterials = () => {
     AdminApi.getStudyMaterials().then((data) => setMaterials(data));
+  };
+
+  useEffect(() => {
+    loadMaterials();
+
+    if (isSupabaseConfigured) {
+      const channel = supabase
+        .channel('admin-study-materials-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
+          loadMaterials();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
