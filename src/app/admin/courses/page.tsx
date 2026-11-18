@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
-import { AdminApi, getResolvedThumbnailUrl, allInitialCourses } from '@/lib/api';
+import { AdminApi, getResolvedThumbnailUrl } from '@/lib/api';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
@@ -49,7 +49,7 @@ interface SubjectChapter {
 
 export default function CoursesPage() {
   const { lang, t } = useLanguage();
-  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -125,18 +125,38 @@ export default function CoursesPage() {
   useEffect(() => {
     loadCourses();
 
+    let channel: any = null;
     if (isSupabaseConfigured) {
-      const channel = supabase
+      channel = supabase
         .channel('admin-courses-sync')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
           loadCourses();
         })
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
+
+    // Active heartbeat polling every 3s when tab is visible for instant parity
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadCourses();
+      }
+    }, 3000);
+
+    const handleFocus = () => loadCourses();
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadCourses();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   // HTML5 Canvas Client-Side Compression to prevent Quota Exceeded and oversized payloads

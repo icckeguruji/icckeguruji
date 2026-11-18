@@ -235,6 +235,7 @@ class AcademicRepository {
   private isLoaded: boolean = false;
   private loadPromise: Promise<void> | null = null;
   private isSyncingCloud: boolean = false;
+  private realtimeChannel: any = null;
 
   constructor() {
     this.loadPromise = this.init();
@@ -248,7 +249,44 @@ class AcademicRepository {
 
   private async init() {
     await this.loadFromStorage();
-    this.syncFromCloud().catch(() => {});
+    this.setupRealtimeSync();
+    // Fast parallel cloud sync with 2.5s network timeout for instant start
+    await Promise.race([
+      this.syncFromCloud(),
+      new Promise((res) => setTimeout(res, 2500)),
+    ]);
+  }
+
+  private setupRealtimeSync() {
+    if (!isSupabaseConfigured || this.realtimeChannel) return;
+    try {
+      this.realtimeChannel = supabase
+        .channel('icc-academic-realtime-master')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+          this.syncFromCloud().catch(() => {});
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
+          this.syncFromCloud().catch(() => {});
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
+          this.syncFromCloud().catch(() => {});
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'recorded_lectures' }, () => {
+          this.syncFromCloud().catch(() => {});
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, () => {
+          this.syncFromCloud().catch(() => {});
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chapters' }, () => {
+          this.syncFromCloud().catch(() => {});
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+          this.syncFromCloud().catch(() => {});
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime sync setup error:', e);
+    }
   }
 
   private async loadFromStorage() {
@@ -352,182 +390,79 @@ class AcademicRepository {
     return this.deletedIds.has(id);
   }
 
-  // Authoritative cloud sync with Supabase for Courses, Live Classes, Notes, Subjects & Chapters
+  // Authoritative, ultra-fast parallel cloud sync with Supabase (Single Source of Truth)
   async syncFromCloud() {
     if (!isSupabaseConfigured || this.isSyncingCloud) return;
     this.isSyncingCloud = true;
     try {
-      // 1. Sync Courses (Supabase is Single Authoritative Source of Truth)
-      const { data: remoteCourses, error: courseErr } = await supabase
-        .from('courses')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [
+        coursesRes,
+        liveRes,
+        matsRes,
+        lecsRes,
+        subsRes,
+        chapsRes,
+        paymentsRes,
+        profilesRes,
+      ] = await Promise.all([
+        supabase.from('courses').select('*').order('created_at', { ascending: false }),
+        supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false }),
+        supabase.from('study_materials').select('*').order('created_at', { ascending: false }),
+        supabase.from('recorded_lectures').select('*').order('lecture_order', { ascending: true }),
+        supabase.from('subjects').select('*').order('display_order', { ascending: true }),
+        supabase.from('chapters').select('*').order('chapter_number', { ascending: true }),
+        supabase.from('payments').select('*').order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      ]);
 
-      if (!courseErr && Array.isArray(remoteCourses)) {
-        this.courses = remoteCourses.map((remote) => ({
+      // 1. Courses: Authoritative from Supabase
+      if (!coursesRes.error && Array.isArray(coursesRes.data)) {
+        this.courses = coursesRes.data.map((remote) => ({
           ...remote,
           thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
         }));
         await this.persist('icc_courses', this.courses);
-        this.notify();
       }
 
-      // 2. Sync Live Classes
-      const { data: remoteLive, error: liveErr } = await supabase
-        .from('live_classes')
-        .select('*')
-        .order('scheduled_at', { ascending: false });
-
-      if (!liveErr && Array.isArray(remoteLive)) {
-        for (const localLive of this.liveClasses) {
-          if (!this.deletedIds.has(localLive.id) && !remoteLive.some((r) => r.id === localLive.id)) {
-            try {
-              await supabase.from('live_classes').upsert({
-                id: localLive.id,
-                course_id: localLive.course_id,
-                title: localLive.title,
-                title_hi: localLive.title_hi || localLive.title,
-                description: localLive.description,
-                instructor_name: localLive.instructor_name,
-                scheduled_at: localLive.scheduled_at,
-                duration_minutes: localLive.duration_minutes,
-                status: localLive.status,
-                class_name: (localLive as any).class_name,
-              });
-              remoteLive.unshift(localLive as any);
-            } catch {}
-          }
-        }
-        this.liveClasses = remoteLive;
+      // 2. Live Classes: Authoritative from Supabase
+      if (!liveRes.error && Array.isArray(liveRes.data)) {
+        this.liveClasses = liveRes.data;
         await this.persist('icc_live_classes', this.liveClasses);
       }
 
-      // 3. Sync Study Materials (Non-destructive union merge)
-      const { data: remoteMats, error: matErr } = await supabase
-        .from('study_materials')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!matErr && Array.isArray(remoteMats)) {
-        const matMap = new Map<string, StudyMaterial>();
-        for (const localMat of this.materials) {
-          if (!this.deletedIds.has(localMat.id)) {
-            matMap.set(localMat.id, localMat);
-          }
-        }
-        for (const remoteMat of remoteMats) {
-          if (!this.deletedIds.has(remoteMat.id)) {
-            matMap.set(remoteMat.id, remoteMat as any);
-          }
-        }
-        this.materials = Array.from(matMap.values());
+      // 3. Study Materials: Authoritative from Supabase
+      if (!matsRes.error && Array.isArray(matsRes.data)) {
+        this.materials = matsRes.data as StudyMaterial[];
         await this.persist('icc_study_materials', this.materials);
       }
 
-      // 4. Sync Recorded Lectures (Non-destructive union merge)
-      const { data: remoteLecs, error: lecErr } = await supabase
-        .from('recorded_lectures')
-        .select('*')
-        .order('lecture_order', { ascending: true });
-
-      if (!lecErr && Array.isArray(remoteLecs)) {
-        const lecMap = new Map<string, RecordedLecture>();
-        for (const localLec of this.lectures) {
-          if (!this.deletedIds.has(localLec.id)) {
-            lecMap.set(localLec.id, localLec);
-          }
-        }
-        for (const remoteLec of remoteLecs) {
-          if (!this.deletedIds.has(remoteLec.id)) {
-            lecMap.set(remoteLec.id, remoteLec as any);
-          }
-        }
-        this.lectures = Array.from(lecMap.values());
+      // 4. Recorded Lectures: Authoritative from Supabase
+      if (!lecsRes.error && Array.isArray(lecsRes.data)) {
+        this.lectures = lecsRes.data as RecordedLecture[];
         await this.persist('icc_recorded_lectures', this.lectures);
       }
 
-      // 5. Sync Subjects (Non-destructive union merge)
-      const { data: remoteSubs, error: subErr } = await supabase
-        .from('subjects')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (!subErr && Array.isArray(remoteSubs)) {
-        const subMap = new Map<string, AcademicSubject>();
-        for (const localSub of this.subjects) {
-          if (!this.deletedIds.has(localSub.id)) {
-            subMap.set(localSub.id, localSub);
-          }
-        }
-        for (const remoteSub of remoteSubs) {
-          if (!this.deletedIds.has(remoteSub.id)) {
-            const existing = subMap.get(remoteSub.id);
-            subMap.set(remoteSub.id, {
-              ...remoteSub,
-              sub_subjects: existing?.sub_subjects || (remoteSub as any).sub_subjects || [],
-              has_sub_subjects: existing?.has_sub_subjects || Boolean((remoteSub as any).sub_subjects?.length),
-            } as any);
-          }
-        }
-        this.subjects = Array.from(subMap.values());
+      // 5. Subjects: Authoritative from Supabase
+      if (!subsRes.error && Array.isArray(subsRes.data)) {
+        this.subjects = subsRes.data as AcademicSubject[];
         await this.persist('icc_academic_subjects', this.subjects);
       }
 
-      // 6. Sync Chapters (Non-destructive union merge)
-      const { data: remoteChaps, error: chapErr } = await supabase
-        .from('chapters')
-        .select('*')
-        .order('chapter_number', { ascending: true });
-
-      if (!chapErr && Array.isArray(remoteChaps)) {
-        const chapMap = new Map<string, AcademicChapter>();
-        for (const localChap of this.chapters) {
-          if (!this.deletedIds.has(localChap.id)) {
-            chapMap.set(localChap.id, localChap);
-          }
-        }
-        for (const remoteChap of remoteChaps) {
-          if (!this.deletedIds.has(remoteChap.id)) {
-            chapMap.set(remoteChap.id, remoteChap as any);
-          }
-        }
-        this.chapters = Array.from(chapMap.values());
+      // 6. Chapters: Authoritative from Supabase
+      if (!chapsRes.error && Array.isArray(chapsRes.data)) {
+        this.chapters = chapsRes.data as AcademicChapter[];
         await this.persist('icc_academic_chapters', this.chapters);
       }
 
-      // 7. Sync Payments (Non-destructive union merge)
-      const { data: remotePayments, error: payErr } = await supabase
-        .from('payments')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!payErr && Array.isArray(remotePayments)) {
-        const payMap = new Map<string, any>();
-        for (const localPay of this.payments) {
-          payMap.set(localPay.id, localPay);
-        }
-        for (const remotePay of remotePayments) {
-          payMap.set(remotePay.id, remotePay);
-        }
-        this.payments = Array.from(payMap.values());
+      // 7. Payments: Authoritative from Supabase
+      if (!paymentsRes.error && Array.isArray(paymentsRes.data)) {
+        this.payments = paymentsRes.data;
         await this.persist('icc_payments', this.payments);
       }
 
-      // 8. Sync Students (Non-destructive union merge)
-      const { data: remoteProfiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!profErr && Array.isArray(remoteProfiles)) {
-        const profMap = new Map<string, any>();
-        for (const localProf of this.students) {
-          profMap.set(localProf.id, localProf);
-        }
-        for (const remoteProf of remoteProfiles) {
-          profMap.set(remoteProf.id, remoteProf);
-        }
-        this.students = Array.from(profMap.values());
+      // 8. Profiles / Students: Authoritative from Supabase
+      if (!profilesRes.error && Array.isArray(profilesRes.data)) {
+        this.students = profilesRes.data as UserProfile[];
         await this.persist('icc_students', this.students);
       }
 
@@ -667,8 +602,11 @@ class AcademicRepository {
   }
 
   // --- COURSES ---
-  async getCourses(): Promise<Course[]> {
+  async getCourses(forceLive = false): Promise<Course[]> {
     await this.ensureLoaded();
+    if (forceLive && isSupabaseConfigured) {
+      await this.syncFromCloud();
+    }
     return this.courses.filter((c) => !this.isDeleted(c.id));
   }
 
@@ -742,6 +680,17 @@ class AcademicRepository {
     return fallbackCourse;
   }
 
+  async createCourse(data: Partial<Course>): Promise<Course> {
+    return this.addCourse(data);
+  }
+
+  async saveCourse(data: Partial<Course>): Promise<Course> {
+    if (data.id) {
+      return this.updateCourse(data.id, data);
+    }
+    return this.addCourse(data);
+  }
+
   // BULLETPROOF UPDATE: NEVER THROWS 'Course not found'
   async updateCourse(id: string, updates: Partial<Course>): Promise<Course> {
     await this.ensureLoaded();
@@ -795,6 +744,13 @@ class AcademicRepository {
     if (isSupabaseConfigured) {
       try {
         if (isValidUUID(id)) {
+          // Pre-delete any children referencing course_id to guarantee no foreign key lock
+          await Promise.allSettled([
+            supabase.from('subjects').delete().eq('course_id', id),
+            supabase.from('live_classes').delete().eq('course_id', id),
+            supabase.from('study_materials').delete().eq('course_id', id),
+            supabase.from('recorded_lectures').delete().eq('course_id', id),
+          ]);
           const { error } = await supabase.from('courses').delete().eq('id', id);
           if (error) console.error('Supabase course delete error:', error);
         }

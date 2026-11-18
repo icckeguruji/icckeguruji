@@ -388,7 +388,7 @@ export const AdminApi = {
     return {
       totalStudents: studentCount,
       activeStudents: activeStudentCount,
-      totalCourses: courseCount > 0 ? courseCount : allInitialCourses.length,
+      totalCourses: courseCount,
       totalBatches: 0, // Batches completely eliminated; only Courses exist
       pendingPayments,
       approvedPayments,
@@ -654,6 +654,13 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         if (isValidUUID(courseId)) {
+          // Pre-delete related records to prevent foreign key errors
+          await Promise.allSettled([
+            supabase.from('subjects').delete().eq('course_id', courseId),
+            supabase.from('live_classes').delete().eq('course_id', courseId),
+            supabase.from('study_materials').delete().eq('course_id', courseId),
+            supabase.from('recorded_lectures').delete().eq('course_id', courseId),
+          ]);
           const { error } = await supabase.from('courses').delete().eq('id', courseId);
           if (error) console.error('deleteCourse Supabase error:', error);
         }

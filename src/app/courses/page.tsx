@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AdminApi, allInitialCourses } from '@/lib/api';
+import { AdminApi } from '@/lib/api';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
@@ -11,7 +11,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { PublicEnrollmentModal } from '@/components/PublicEnrollmentModal';
 
 export default function PublicCoursesPage() {
-  const [courses, setCourses] = useState<Course[]>(allInitialCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [classFilter, setClassFilter] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -28,18 +28,37 @@ export default function PublicCoursesPage() {
   useEffect(() => {
     loadCourses();
 
+    let channel: any = null;
     if (isSupabaseConfigured) {
-      const channel = supabase
+      channel = supabase
         .channel('public-courses-sync')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
           loadCourses();
         })
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
+
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadCourses();
+      }
+    }, 3000);
+
+    const handleFocus = () => loadCourses();
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadCourses();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const handleEnrollClick = (course: Course) => {
