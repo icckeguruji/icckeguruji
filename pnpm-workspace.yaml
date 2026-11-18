@@ -1,4 +1,0 @@
-packages:
-  - apps/student-app
-  - apps/whatsapp-service
-  - packages/*

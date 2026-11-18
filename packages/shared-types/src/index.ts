@@ -114,6 +114,7 @@ export interface Course {
   thumbnail_url?: string;
   board_id: string;
   class_id: string;
+  class_name?: string;
   session_id?: string;
   is_free: boolean;
   price: number;
