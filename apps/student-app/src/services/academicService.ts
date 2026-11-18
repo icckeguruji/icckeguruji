@@ -33,6 +33,22 @@ export function getResolvedThumbnailUrl(url?: string): string {
   return clean;
 }
 
+export function getSafeClassId(classId?: string, className?: string): string {
+  const validIds = new Set([
+    'c0000000-0000-0000-0000-000000000009',
+    'c0000000-0000-0000-0000-000000000010',
+    'c0000000-0000-0000-0000-000000000011',
+    'c0000000-0000-0000-0000-000000000012',
+  ]);
+  if (classId && validIds.has(classId)) return classId;
+
+  const name = (className || '').toLowerCase();
+  if (name.includes('12')) return 'c0000000-0000-0000-0000-000000000012';
+  if (name.includes('11')) return 'c0000000-0000-0000-0000-000000000011';
+  if (name.includes('9')) return 'c0000000-0000-0000-0000-000000000009';
+  return 'c0000000-0000-0000-0000-000000000010';
+}
+
 export interface SubSubject {
   id: string;
   subject_id: string;
@@ -351,19 +367,35 @@ class AcademicRepository {
         .order('created_at', { ascending: false });
 
       if (!courseErr && Array.isArray(remoteCourses)) {
+        const mergedMap = new Map<string, Course>();
+
+        // 1. Add all remote courses from Supabase
+        for (const remote of remoteCourses) {
+          if (!this.deletedIds.has(remote.id)) {
+            mergedMap.set(remote.id, {
+              ...remote,
+              thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
+            });
+          }
+        }
+
+        // 2. Preserve any local courses (created in App) that haven't been deleted
         for (const localCourse of this.courses) {
-          if (!this.deletedIds.has(localCourse.id) && !remoteCourses.some((r) => r.id === localCourse.id)) {
-            try {
-              await supabase.from('courses').upsert({
+          if (!this.deletedIds.has(localCourse.id)) {
+            if (!mergedMap.has(localCourse.id)) {
+              mergedMap.set(localCourse.id, localCourse);
+              // Push local course to Supabase so it becomes permanent in the cloud
+              const safeClassId = getSafeClassId(localCourse.class_id, (localCourse as any).class_name);
+              supabase.from('courses').upsert({
                 id: localCourse.id,
                 title: localCourse.title,
                 title_hi: localCourse.title_hi || localCourse.title,
                 tagline: localCourse.tagline,
                 description: localCourse.description,
                 description_hi: localCourse.description_hi,
-                thumbnail_url: localCourse.thumbnail_url,
+                thumbnail_url: getResolvedThumbnailUrl(localCourse.thumbnail_url),
                 board_id: localCourse.board_id || 'b0000000-0000-0000-0000-000000000001',
-                class_id: localCourse.class_id || 'c0000000-0000-0000-0000-000000000010',
+                class_id: safeClassId,
                 price: localCourse.price,
                 discount_price: localCourse.discount_price,
                 validity_days: localCourse.validity_days,
@@ -371,16 +403,23 @@ class AcademicRepository {
                 is_published: true,
                 created_at: localCourse.created_at,
                 updated_at: localCourse.updated_at,
+              }).then(({ error: pushErr }) => {
+                if (pushErr) console.warn('Supabase course sync push error:', pushErr);
               });
-              remoteCourses.unshift(localCourse as any);
-            } catch {}
+            }
           }
         }
 
-        this.courses = remoteCourses.map((c) => ({
-          ...c,
-          thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
-        }));
+        // 3. Fallback: if somehow empty, populate from allInitialCourses
+        if (mergedMap.size === 0) {
+          for (const initCourse of allInitialCourses) {
+            if (!this.deletedIds.has(initCourse.id)) {
+              mergedMap.set(initCourse.id, initCourse);
+            }
+          }
+        }
+
+        this.courses = Array.from(mergedMap.values());
         await this.persist('icc_courses', this.courses);
       }
 
@@ -709,7 +748,7 @@ class AcademicRepository {
           description_hi: newCourse.description_hi,
           thumbnail_url: newCourse.thumbnail_url,
           board_id: newCourse.board_id || 'b0000000-0000-0000-0000-000000000001',
-          class_id: newCourse.class_id || 'c0000000-0000-0000-0000-000000000010',
+          class_id: getSafeClassId(newCourse.class_id, (newCourse as any).class_name),
           price: newCourse.price,
           discount_price: newCourse.discount_price,
           validity_days: newCourse.validity_days,

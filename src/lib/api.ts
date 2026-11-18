@@ -26,6 +26,22 @@ export function getResolvedThumbnailUrl(url?: string): string {
   return clean;
 }
 
+export function getSafeClassId(classId?: string, className?: string): string {
+  const validIds = new Set([
+    'c0000000-0000-0000-0000-000000000009',
+    'c0000000-0000-0000-0000-000000000010',
+    'c0000000-0000-0000-0000-000000000011',
+    'c0000000-0000-0000-0000-000000000012',
+  ]);
+  if (classId && validIds.has(classId)) return classId;
+
+  const name = (className || '').toLowerCase();
+  if (name.includes('12')) return 'c0000000-0000-0000-0000-000000000012';
+  if (name.includes('11')) return 'c0000000-0000-0000-0000-000000000011';
+  if (name.includes('9')) return 'c0000000-0000-0000-0000-000000000009';
+  return 'c0000000-0000-0000-0000-000000000010';
+}
+
 export interface BatchWithMeta {
   id: string;
   course_id: string;
@@ -492,13 +508,45 @@ export const AdminApi = {
           .select('*')
           .order('created_at', { ascending: false });
         if (!error && Array.isArray(data)) {
-          let resolved = (data as Course[]).map((c) => ({
-            ...c,
-            thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
-          }));
-          if (resolved.length === 0) {
-            resolved = [...allInitialCourses];
+          const mergedMap = new Map<string, Course>();
+
+          for (const item of data as Course[]) {
+            mergedMap.set(item.id, {
+              ...item,
+              thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
+            });
           }
+
+          // Preserve any local courses (created in Web/App) that haven't been pushed to Supabase yet
+          for (const local of localCourses) {
+            if (!mergedMap.has(local.id)) {
+              mergedMap.set(local.id, local);
+              // Push local course to Supabase so it becomes permanent in cloud
+              const safeClassId = getSafeClassId(local.class_id, (local as any).class_name);
+              supabase.from('courses').upsert({
+                id: local.id,
+                title: local.title,
+                title_hi: local.title_hi || local.title,
+                tagline: local.tagline || '',
+                description: local.description || '',
+                description_hi: local.description_hi || '',
+                thumbnail_url: getResolvedThumbnailUrl(local.thumbnail_url),
+                board_id: local.board_id || 'b0000000-0000-0000-0000-000000000001',
+                class_id: safeClassId,
+                price: local.price,
+                discount_price: local.discount_price,
+                validity_days: local.validity_days,
+                class_name: (local as any).class_name || 'Class 10',
+                is_published: true,
+                created_at: local.created_at,
+                updated_at: local.updated_at,
+              }).then(({ error: pushErr }) => {
+                if (pushErr) console.warn('Supabase api push local error:', pushErr);
+              });
+            }
+          }
+
+          const resolved = Array.from(mergedMap.values());
           localCourses = resolved;
           savePersistentState(STORAGE_KEYS.COURSES, resolved);
           return resolved;
@@ -524,17 +572,18 @@ export const AdminApi = {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
 
     const defaultBoardId = 'b0000000-0000-0000-0000-000000000001';
-    const defaultClassId = 'c0000000-0000-0000-0000-000000000010';
+    const safeClassId = getSafeClassId(course.class_id, (course as any)?.class_name);
     const defaultSessionId = 'a0000000-0000-0000-0000-000000000001';
 
     const insertPayload: any = {
       title: course.title || 'New Course',
       title_hi: course.title_hi || course.title || 'नया कोर्स',
+      tagline: course.tagline || '',
       description: course.description || '',
       description_hi: course.description_hi || course.description || '',
       thumbnail_url: getResolvedThumbnailUrl(course.thumbnail_url),
       board_id: course.board_id || defaultBoardId,
-      class_id: course.class_id || defaultClassId,
+      class_id: safeClassId,
       session_id: course.session_id || defaultSessionId,
       is_free: course.is_free ?? false,
       price: course.is_free ? 0 : (course.price ?? 999),
