@@ -536,7 +536,7 @@ export const AdminApi = {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           const resolved: Course[] = data.map((item) => ({
             ...(item as Course),
             thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
@@ -665,14 +665,24 @@ export const AdminApi = {
 
   updateCourse: async (courseId: string, updates: Partial<Course>) => {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
-    const { board, class: classItem, lecture_count, material_count, ...cleanUpdates } = updates as any;
+    const rawUpdates = updates as any;
+    const allowedKeys = [
+      'title', 'title_hi', 'tagline', 'description', 'description_hi',
+      'thumbnail_url', 'board_id', 'class_id', 'session_id', 'is_free',
+      'price', 'discount_price', 'validity_days', 'class_name', 'is_published', 'updated_at'
+    ];
+    const cleanUpdates: any = { updated_at: new Date().toISOString() };
+    for (const key of allowedKeys) {
+      if (rawUpdates[key] !== undefined) {
+        cleanUpdates[key] = rawUpdates[key];
+      }
+    }
     if (cleanUpdates.thumbnail_url) {
       cleanUpdates.thumbnail_url = getResolvedThumbnailUrl(cleanUpdates.thumbnail_url);
     }
     if (cleanUpdates.class_id || cleanUpdates.class_name) {
       cleanUpdates.class_id = getSafeClassId(cleanUpdates.class_id, cleanUpdates.class_name);
     }
-    cleanUpdates.updated_at = new Date().toISOString();
 
     if (isSupabaseConfigured) {
       try {

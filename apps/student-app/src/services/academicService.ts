@@ -249,7 +249,7 @@ const SAMPLE_RESERVED_IDS = new Set([
 class AcademicRepository {
   private courses: Course[] = [];
   private subjects: AcademicSubject[] = [];
-  private chapters: AcademicChapter[] = [];
+  public chapters: AcademicChapter[] = [];
   public lectures: RecordedLecture[] = [];
   private liveClasses: LiveClass[] = [];
   private materials: StudyMaterial[] = [];
@@ -261,6 +261,8 @@ class AcademicRepository {
   private loadPromise: Promise<void> | null = null;
   private syncPromise: Promise<void> | null = null;
   private realtimeChannel: any = null;
+  private lastRealtimeSync: number = 0;
+  private notifyTimeout: any = null;
 
   constructor() {
     this.loadPromise = this.init();
@@ -275,11 +277,18 @@ class AcademicRepository {
   private async init() {
     await this.loadFromStorage();
     this.setupRealtimeSync();
-    // Fast parallel cloud sync with 2.5s network timeout for instant start
+    // Fast parallel initial cloud sync with 2.5s network timeout
     await Promise.race([
       this.syncFromCloud(),
       new Promise((res) => setTimeout(res, 2500)),
     ]);
+  }
+
+  private triggerThrottledSync() {
+    const now = Date.now();
+    if (now - this.lastRealtimeSync < 2000) return;
+    this.lastRealtimeSync = now;
+    this.syncFromCloud().catch(() => {});
   }
 
   private setupRealtimeSync() {
@@ -288,25 +297,25 @@ class AcademicRepository {
       this.realtimeChannel = supabase
         .channel('icc-academic-realtime-master')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
-          this.syncFromCloud().catch(() => {});
+          this.triggerThrottledSync();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
-          this.syncFromCloud().catch(() => {});
+          this.triggerThrottledSync();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
-          this.syncFromCloud().catch(() => {});
+          this.triggerThrottledSync();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'recorded_lectures' }, () => {
-          this.syncFromCloud().catch(() => {});
+          this.triggerThrottledSync();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, () => {
-          this.syncFromCloud().catch(() => {});
+          this.triggerThrottledSync();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'chapters' }, () => {
-          this.syncFromCloud().catch(() => {});
+          this.triggerThrottledSync();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
-          this.syncFromCloud().catch(() => {});
+          this.triggerThrottledSync();
         })
         .subscribe();
     } catch (e) {
@@ -444,6 +453,8 @@ class AcademicRepository {
           supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         ]);
 
+        let hasChanged = false;
+
         // 1. Courses: Authoritative from Supabase
         let remoteCourses: any[] | null = null;
         if (coursesRes.status === 'fulfilled' && !coursesRes.value.error && Array.isArray(coursesRes.value.data)) {
@@ -452,11 +463,15 @@ class AcademicRepository {
           remoteCourses = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
         }
         if (Array.isArray(remoteCourses)) {
-          this.courses = remoteCourses.map((remote) => ({
+          const mappedCourses = remoteCourses.map((remote) => ({
             ...remote,
             thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
           }));
-          await this.persist('icc_courses', this.courses);
+          if (JSON.stringify(mappedCourses) !== JSON.stringify(this.courses)) {
+            this.courses = mappedCourses;
+            await this.persist('icc_courses', this.courses);
+            hasChanged = true;
+          }
         }
 
         // 2. Live Classes: Authoritative from Supabase
@@ -467,8 +482,11 @@ class AcademicRepository {
           remoteLive = await fetchDirectRest<any[]>('live_classes?select=*&order=scheduled_at.desc');
         }
         if (Array.isArray(remoteLive)) {
-          this.liveClasses = remoteLive;
-          await this.persist('icc_live_classes', this.liveClasses);
+          if (JSON.stringify(remoteLive) !== JSON.stringify(this.liveClasses)) {
+            this.liveClasses = remoteLive;
+            await this.persist('icc_live_classes', this.liveClasses);
+            hasChanged = true;
+          }
         }
 
         // 3. Study Materials: Authoritative from Supabase
@@ -479,8 +497,11 @@ class AcademicRepository {
           remoteMats = await fetchDirectRest<any[]>('study_materials?select=*&order=created_at.desc');
         }
         if (Array.isArray(remoteMats)) {
-          this.materials = remoteMats;
-          await this.persist('icc_study_materials', this.materials);
+          if (JSON.stringify(remoteMats) !== JSON.stringify(this.materials)) {
+            this.materials = remoteMats;
+            await this.persist('icc_study_materials', this.materials);
+            hasChanged = true;
+          }
         }
 
         // 4. Recorded Lectures: Authoritative from Supabase
@@ -491,8 +512,11 @@ class AcademicRepository {
           remoteLecs = await fetchDirectRest<any[]>('recorded_lectures?select=*&order=lecture_order.asc');
         }
         if (Array.isArray(remoteLecs)) {
-          this.lectures = remoteLecs;
-          await this.persist('icc_recorded_lectures', this.lectures);
+          if (JSON.stringify(remoteLecs) !== JSON.stringify(this.lectures)) {
+            this.lectures = remoteLecs;
+            await this.persist('icc_recorded_lectures', this.lectures);
+            hasChanged = true;
+          }
         }
 
         // 5. Subjects: Authoritative from Supabase
@@ -503,8 +527,11 @@ class AcademicRepository {
           remoteSubs = await fetchDirectRest<any[]>('subjects?select=*&order=display_order.asc');
         }
         if (Array.isArray(remoteSubs)) {
-          this.subjects = remoteSubs;
-          await this.persist('icc_academic_subjects', this.subjects);
+          if (JSON.stringify(remoteSubs) !== JSON.stringify(this.subjects)) {
+            this.subjects = remoteSubs;
+            await this.persist('icc_academic_subjects', this.subjects);
+            hasChanged = true;
+          }
         }
 
         // 6. Chapters: Authoritative from Supabase
@@ -515,23 +542,34 @@ class AcademicRepository {
           remoteChaps = await fetchDirectRest<any[]>('chapters?select=*&order=chapter_number.asc');
         }
         if (Array.isArray(remoteChaps)) {
-          this.chapters = remoteChaps;
-          await this.persist('icc_academic_chapters', this.chapters);
+          if (JSON.stringify(remoteChaps) !== JSON.stringify(this.chapters)) {
+            this.chapters = remoteChaps;
+            await this.persist('icc_academic_chapters', this.chapters);
+            hasChanged = true;
+          }
         }
 
         // 7. Payments: Authoritative from Supabase
         if (paymentsRes.status === 'fulfilled' && !paymentsRes.value.error && Array.isArray(paymentsRes.value.data)) {
-          this.payments = paymentsRes.value.data;
-          await this.persist('icc_payments', this.payments);
+          if (JSON.stringify(paymentsRes.value.data) !== JSON.stringify(this.payments)) {
+            this.payments = paymentsRes.value.data;
+            await this.persist('icc_payments', this.payments);
+            hasChanged = true;
+          }
         }
 
         // 8. Profiles / Students: Authoritative from Supabase
         if (profilesRes.status === 'fulfilled' && !profilesRes.value.error && Array.isArray(profilesRes.value.data)) {
-          this.students = profilesRes.value.data;
-          await this.persist('icc_students', this.students);
+          if (JSON.stringify(profilesRes.value.data) !== JSON.stringify(this.students)) {
+            this.students = profilesRes.value.data;
+            await this.persist('icc_students', this.students);
+            hasChanged = true;
+          }
         }
 
-        this.notify();
+        if (hasChanged) {
+          this.notify();
+        }
       } catch (e) {
         console.warn('Sync from cloud error:', e);
       } finally {
@@ -550,11 +588,14 @@ class AcademicRepository {
   }
 
   notify() {
-    this.listeners.forEach((l) => {
-      try {
-        l();
-      } catch {}
-    });
+    if (this.notifyTimeout) clearTimeout(this.notifyTimeout);
+    this.notifyTimeout = setTimeout(() => {
+      this.listeners.forEach((l) => {
+        try {
+          l();
+        } catch {}
+      });
+    }, 100);
   }
 
   /**
@@ -670,7 +711,7 @@ class AcademicRepository {
   }
 
   // --- COURSES ---
-  async getCourses(forceLive = true): Promise<Course[]> {
+  async getCourses(forceLive = false): Promise<Course[]> {
     await this.ensureLoaded();
     if (forceLive && isSupabaseConfigured) {
       await this.syncFromCloud();

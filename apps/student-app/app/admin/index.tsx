@@ -141,12 +141,8 @@ export default function AndroidAdminDashboardScreen() {
     const unsub = academicService.subscribe(() => {
       loadAllData();
     });
-    const poll = setInterval(() => {
-      loadAllData();
-    }, 3000);
     return () => {
       unsub();
-      clearInterval(poll);
     };
   }, [loadAllData]);
 

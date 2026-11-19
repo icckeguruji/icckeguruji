@@ -122,15 +122,11 @@ export default function StudentHomeScreen() {
   useEffect(() => {
     loadCachedData();
     academicService.syncFromCloud().catch(() => {});
-    const unsubAcademic = academicService.subscribe(() => {
-      loadCachedData();
-    });
-    const unsubData = DataService.subscribeToChanges(() => {
+    const unsub = academicService.subscribe(() => {
       loadCachedData();
     });
     return () => {
-      unsubAcademic();
-      unsubData();
+      unsub();
     };
   }, [loadCachedData]);
 
@@ -438,7 +434,7 @@ export default function StudentHomeScreen() {
         visible={isAiModalOpen}
         onClose={() => {
           setIsAiModalOpen(false);
-          loadData();
+          loadCachedData();
         }}
       />
     </SafeAreaView>

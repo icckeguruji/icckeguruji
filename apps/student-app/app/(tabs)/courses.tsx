@@ -136,15 +136,11 @@ export default function StudentCoursesScreen() {
   useEffect(() => {
     loadLocalCourses();
     academicService.syncFromCloud().catch(() => {});
-    const unsubAcademic = academicService.subscribe(() => {
-      loadLocalCourses();
-    });
-    const unsubData = DataService.subscribeToChanges(() => {
+    const unsub = academicService.subscribe(() => {
       loadLocalCourses();
     });
     return () => {
-      unsubAcademic();
-      unsubData();
+      unsub();
     };
   }, [loadLocalCourses]);
 

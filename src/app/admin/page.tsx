@@ -122,12 +122,16 @@ export default function AdminDashboardPage() {
   const loadDashboardData = async () => {
     setIsRefreshing(true);
     try {
-      const [analyticsData, coursesData] = await Promise.all([
+      const [analyticsRes, coursesRes] = await Promise.allSettled([
         AdminApi.getDashboardAnalytics(),
         AdminApi.getCourses(),
       ]);
-      setStats(analyticsData);
-      setCourses(coursesData);
+      if (analyticsRes.status === 'fulfilled') {
+        setStats(analyticsRes.value);
+      }
+      if (coursesRes.status === 'fulfilled') {
+        setCourses(coursesRes.value);
+      }
     } catch (e) {
       console.warn('Dashboard data fetch error:', e);
     } finally {
