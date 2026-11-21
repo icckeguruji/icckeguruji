@@ -112,12 +112,9 @@ export function PublicFooter() {
             </a>
           </p>
           <div className="pt-2">
-            <Link
-              href="https://icconline.vercel.app"
-              className="text-amber-400 hover:underline font-mono text-[11px]"
-            >
-              icconline.vercel.app
-            </Link>
+            <span className="text-amber-400 font-medium text-[11px]">
+              IDEAL COACHING Official Web Portal
+            </span>
           </div>
         </div>
       </div>

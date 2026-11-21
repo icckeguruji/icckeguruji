@@ -1130,7 +1130,7 @@ export default function CoursesPage() {
                     <div className="flex space-x-1.5">
                       <input
                         type="text"
-                        placeholder="Hindi Name (Optional)"
+                        placeholder="Alternative Label (Optional)"
                         value={newSubjectNameHi}
                         onChange={(e) => setNewSubjectNameHi(e.target.value)}
                         className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
@@ -1223,7 +1223,7 @@ export default function CoursesPage() {
                         <div className="flex space-x-1.5">
                           <input
                             type="text"
-                            placeholder="Hindi Name (Optional)"
+                            placeholder="Alternative Label (Optional)"
                             value={newSubSubjectNameHi}
                             onChange={(e) => setNewSubSubjectNameHi(e.target.value)}
                             className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:outline-none"

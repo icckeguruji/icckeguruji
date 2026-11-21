@@ -54,15 +54,15 @@ export default function SettingsPage() {
               <ShieldCheck className="w-6 h-6 text-emerald-400" />
               <div>
                 <h3 className="font-bold text-sm text-slate-100">
-                  {t('शून्य-लागत संसाधन कोटा मॉनिटर (Free-Tier Capacity)', 'Zero-Cost Free-Tier Capacity Monitor')}
+                  {t('सिस्टम स्टोरेज एवं क्षमता (System Storage)', 'System Storage & Capacity')}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  {t('मंथली ऑपरेटिंग खर्च: ₹0.00 | कोई सशुल्क अपग्रेड नहीं', 'Monthly Operating Cost: ₹0.00 | No paid upgrades')}
+                  {t('सभी सर्वर एवं डेटाबेस सामान्य रूप से सक्रिय हैं', 'All database storage and media services operational')}
                 </p>
               </div>
             </div>
             <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30">
-              100% Free Plan Compliant
+              Active & Operational
             </span>
           </div>
 
@@ -70,14 +70,14 @@ export default function SettingsPage() {
             {/* Database Limit */}
             <div className="space-y-2">
               <div className="flex justify-between text-slate-300">
-                <span className="flex items-center"><Database className="w-3.5 h-3.5 mr-1 text-blue-400" /> PostgreSQL DB</span>
+                <span className="flex items-center"><Database className="w-3.5 h-3.5 mr-1 text-blue-400" /> Database Storage</span>
                 <span className="font-bold">14.2 MB / 500 MB (2.8%)</span>
               </div>
               <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                 <div className="bg-blue-500 h-2 rounded-full" style={{ width: '2.8%' }}></div>
               </div>
               <p className="text-[10px] text-slate-400">
-                {t('सुरक्षित सीमा में है। 485 MB शेष।', 'Within safe threshold. 485 MB free.')}
+                {t('डेटाबेस सुरक्षित सीमा में है।', 'Database operating safely within limits.')}
               </p>
             </div>
 
@@ -152,7 +152,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-700 mb-1">{t('टैगलाइन (हिंदी)', 'Tagline (Hindi)')}</label>
+                <label className="block font-semibold text-slate-700 mb-1">{t('संस्थान टैगलाइन', 'Institute Tagline')}</label>
                 <input
                   type="text"
                   value={config.institution_profile.tagline}
@@ -207,7 +207,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block font-semibold text-slate-700 mb-1">{t('छात्रों के लिए निर्देश (हिंदी)', 'Instructions for Students (Hindi)')}</label>
+                <label className="block font-semibold text-slate-700 mb-1">{t('छात्रों के लिए निर्देश', 'Payment Instructions for Students')}</label>
                 <textarea
                   rows={3}
                   value={config.payment_config.instructions_hi}

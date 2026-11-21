@@ -327,9 +327,6 @@ export default function ChapterContentScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.chapterCardTitle}>{chapter?.title}</Text>
-            {chapter?.title_hi && chapter.title_hi !== chapter.title ? (
-              <Text style={styles.chapterCardSubtitle}>{chapter.title_hi}</Text>
-            ) : null}
             {chapter?.description ? (
               <Text style={styles.chapterCardDesc}>{chapter.description}</Text>
             ) : null}
@@ -488,11 +485,6 @@ export default function ChapterContentScreen() {
                       <Text style={styles.lectureTitle} numberOfLines={2}>
                         {lec.title}
                       </Text>
-                      {lec.title_hi && lec.title_hi !== lec.title ? (
-                        <Text style={styles.lectureSubtitle} numberOfLines={1}>
-                          {lec.title_hi}
-                        </Text>
-                      ) : null}
                       <View style={styles.lectureMetaRow}>
                         <Clock size={12} color="#64748B" />
                         <Text style={styles.lectureMetaText}>

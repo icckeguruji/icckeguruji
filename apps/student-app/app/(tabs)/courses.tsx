@@ -22,6 +22,7 @@ import { academicService, getResolvedThumbnailUrl, allInitialCourses } from '../
 import { aiService } from '../../src/services/aiService';
 import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { Course } from '@icc/shared-types';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -78,6 +79,8 @@ const CLASSES_LIST = [
 export default function StudentCoursesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
 
   const isAdmin =
     user?.role === 'admin' ||
@@ -404,7 +407,7 @@ export default function StudentCoursesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
       <CoachingHeader onRefresh={handleRefreshCourses} isSyncing={isSyncing} />
 
@@ -454,18 +457,18 @@ export default function StudentCoursesScreen() {
           />
         }
       >
-        <Text style={styles.pageTitle}>Target Board Examination Courses</Text>
+        <Text style={[styles.pageTitle, { color: theme.text }]}>Target Board Examination Courses</Text>
 
         <View style={styles.courseList}>
           {filteredCourses.length === 0 ? (
-            <View style={styles.emptyContainer}>
+            <View style={[styles.emptyContainer, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
               <BookOpen size={44} color="#94A3B8" />
-              <Text style={styles.emptyTitle}>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>
                 {activeClassFilter === 'ALL'
                   ? 'No Courses Available'
                   : `No Courses in ${activeClassFilter}`}
               </Text>
-              <Text style={styles.emptySub}>
+              <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
                 {isAdmin
                   ? 'Tap "+ Add Course" above to create and publish a new course.'
                   : 'New courses will be announced and updated soon.'}
@@ -475,7 +478,7 @@ export default function StudentCoursesScreen() {
             filteredCourses.map((course) => (
               <TouchableOpacity
                 key={course.id}
-                style={styles.card}
+                style={[styles.card, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
                 activeOpacity={0.9}
                 onPress={() => router.push(`/course/${course.id}`)}
               >
@@ -493,14 +496,14 @@ export default function StudentCoursesScreen() {
                 </View>
 
                 <View style={styles.cardBody}>
-                  <Text style={styles.cardTitle}>{course.title}</Text>
+                  <Text style={[styles.cardTitle, { color: theme.text }]}>{course.title}</Text>
                   {course.tagline ? (
                     <Text style={styles.cardTagline} numberOfLines={1}>
                       ✨ {course.tagline}
                     </Text>
                   ) : null}
 
-                  <Text style={styles.cardDesc} numberOfLines={2}>
+                  <Text style={[styles.cardDesc, { color: theme.textSecondary }]} numberOfLines={2}>
                     {course.description}
                   </Text>
 
@@ -520,7 +523,7 @@ export default function StudentCoursesScreen() {
                       onPress={() => router.push(`/course/${course.id}`)}
                     >
                       <BookOpen size={14} color="#2563EB" />
-                      <Text style={styles.viewCourseBtnText} numberOfLines={1}>Syllabus & Chapters</Text>
+                      <Text style={styles.viewCourseBtnText} numberOfLines={1}>View Course</Text>
                     </TouchableOpacity>
 
                     {course.is_free ? (

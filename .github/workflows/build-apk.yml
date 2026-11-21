@@ -59,6 +59,8 @@ jobs:
           -keep class com.facebook.react.** { *; }
           -keep class expo.modules.** { *; }
           -keep class com.horcrux.svg.** { *; }
+          -keep class com.reactnativecommunity.webview.** { *; }
+          -keepclassmembers class com.reactnativecommunity.webview.** { *; }
           -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
           -assumenosideeffects class android.util.Log {
               public static boolean isLoggable(java.lang.String, int);

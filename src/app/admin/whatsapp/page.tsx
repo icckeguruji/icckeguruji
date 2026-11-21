@@ -538,7 +538,7 @@ export default function WhatsAppAdminPage() {
               <p className="text-slate-600 text-[11px] leading-relaxed">
                 "When is my next live class?", "Mera payment status?", "Sunday test marks dikhao", "Class 10 notes"
               </p>
-              <span className="text-[10px] text-emerald-700 block font-semibold">Response: Verified personal records from Supabase.</span>
+              <span className="text-[10px] text-emerald-700 block font-semibold">Response: Verified personal records from student database.</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">

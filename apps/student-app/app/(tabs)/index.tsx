@@ -33,6 +33,7 @@ import {
   Bot,
 } from 'lucide-react-native';
 import { DirectorAiModal } from '../../src/components/DirectorAiModal';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 const thumbMap: Record<string, any> = {
   'c0000000-0000-0000-0000-000000000010': require('../../assets/thumbnails/batch-b3-class10.jpg'),
@@ -55,6 +56,8 @@ const thumbMap: Record<string, any> = {
 export default function StudentHomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
 
   const isAdmin =
     user?.role === 'admin' ||
@@ -116,7 +119,7 @@ export default function StudentHomeScreen() {
   const enrolledCourses = courses.length > 0 ? courses.slice(0, 3) : [];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
       <CoachingHeader
         showStudentGreeting={true}
@@ -131,7 +134,7 @@ export default function StudentHomeScreen() {
             refreshing={isSyncing}
             onRefresh={handleRefresh}
             colors={['#2563EB']}
-            tintColor="#2563EB"
+            tintColor={isDark ? '#FFFFFF' : '#2563EB'}
           />
         }
       >
@@ -168,11 +171,11 @@ export default function StudentHomeScreen() {
 
         {/* Continue Watching / Resume Bar */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
             Continue Watching
           </Text>
           <TouchableOpacity
-            style={styles.resumeCard}
+            style={[styles.resumeCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
             onPress={() => router.push('/(tabs)/courses')}
             activeOpacity={0.8}
           >
@@ -180,75 +183,75 @@ export default function StudentHomeScreen() {
               <Play size={20} color="#2563EB" fill="#2563EB" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.resumeTitle} numberOfLines={1}>
+              <Text style={[styles.resumeTitle, { color: theme.text }]} numberOfLines={1}>
                 Syllabus & Video Lectures
               </Text>
-              <Text style={styles.resumeSub}>
+              <Text style={[styles.resumeSub, { color: theme.textSecondary }]}>
                 BSEB & JAC Board Curriculum
               </Text>
-              <View style={styles.progressBarBg}>
+              <View style={[styles.progressBarBg, { backgroundColor: isDark ? '#27272A' : '#E2E8F0' }]}>
                 <View style={[styles.progressBarFill, { width: '80%' }]} />
               </View>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
+            <ChevronRight size={18} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* Quick Service Grid with Lucide Icons */}
         <View style={styles.gridRow}>
           <TouchableOpacity
-            style={styles.gridItem}
+            style={[styles.gridItem, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
             onPress={() => router.push('/(tabs)/courses')}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
+            <View style={[styles.iconBox, { backgroundColor: isDark ? '#14291E' : '#F0FDF4' }]}>
               <BookOpen size={20} color="#16A34A" />
             </View>
-            <Text style={styles.gridText}>Courses</Text>
-            <Text style={styles.gridSub}>All Batches</Text>
+            <Text style={[styles.gridText, { color: theme.text }]}>Courses</Text>
+            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>All Batches</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.gridItem}
+            style={[styles.gridItem, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
             onPress={() => router.push('/(tabs)/notes')}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconBox, { backgroundColor: '#EFF6FF' }]}>
+            <View style={[styles.iconBox, { backgroundColor: isDark ? '#172554' : '#EFF6FF' }]}>
               <FileText size={20} color="#2563EB" />
             </View>
-            <Text style={styles.gridText}>Notes</Text>
-            <Text style={styles.gridSub}>Secure View</Text>
+            <Text style={[styles.gridText, { color: theme.text }]}>Notes</Text>
+            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>Secure View</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.gridItem}
+            style={[styles.gridItem, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
             onPress={() => router.push('/doubts')}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconBox, { backgroundColor: '#FEF3C7' }]}>
+            <View style={[styles.iconBox, { backgroundColor: isDark ? '#2E1E05' : '#FEF3C7' }]}>
               <MessageSquareQuote size={20} color="#D97706" />
             </View>
-            <Text style={styles.gridText}>Doubts</Text>
-            <Text style={styles.gridSub}>Ask Faculty</Text>
+            <Text style={[styles.gridText, { color: theme.text }]}>Doubts</Text>
+            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>Ask Faculty</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.gridItem}
+            style={[styles.gridItem, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
             onPress={() => router.push('/assignments')}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconBox, { backgroundColor: '#F5F3FF' }]}>
+            <View style={[styles.iconBox, { backgroundColor: isDark ? '#26134D' : '#F5F3FF' }]}>
               <ClipboardList size={20} color="#7C3AED" />
             </View>
-            <Text style={styles.gridText}>Homework</Text>
-            <Text style={styles.gridSub}>Daily Tasks</Text>
+            <Text style={[styles.gridText, { color: theme.text }]}>Homework</Text>
+            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>Daily Tasks</Text>
           </TouchableOpacity>
         </View>
 
         {/* Enrolled Courses Section */}
         <View style={styles.section}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={styles.sectionTitle}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Your Enrolled Courses
             </Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/courses')}>
@@ -276,7 +279,7 @@ export default function StudentHomeScreen() {
             enrolledCourses.map((c) => (
               <TouchableOpacity
                 key={c.id}
-                style={styles.courseCard}
+                style={[styles.courseCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
                 onPress={() => router.push(`/course/${c.id}`)}
                 activeOpacity={0.8}
               >
@@ -294,10 +297,10 @@ export default function StudentHomeScreen() {
                 </View>
 
                 <View style={styles.courseCardContent}>
-                  <Text style={styles.courseTitle}>
+                  <Text style={[styles.courseTitle, { color: theme.text }]}>
                     {c.title}
                   </Text>
-                  <Text style={styles.courseDesc} numberOfLines={2}>
+                  <Text style={[styles.courseDesc, { color: theme.textSecondary }]} numberOfLines={2}>
                     {c.description}
                   </Text>
                   <View style={styles.courseMetaRow}>

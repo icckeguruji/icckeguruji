@@ -15,8 +15,8 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarStyle: {
-          backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
-          borderTopColor: isDarkMode ? '#1E293B' : '#E2E8F0',
+          backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
+          borderTopColor: isDarkMode ? '#27272A' : '#E2E8F0',
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 84 : 64,
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,

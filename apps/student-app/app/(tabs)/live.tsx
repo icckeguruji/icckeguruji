@@ -45,6 +45,7 @@ import { aiService } from '../../src/services/aiService';
 import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { LiveClass } from '@icc/shared-types';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 interface LiveChatMessage {
   id: string;
@@ -70,6 +71,7 @@ const CLASSES_LIST = [
 
 export default function StudentLiveScreen() {
   const { user } = useAuthStore();
+  const theme = useAppTheme();
   const isAdmin =
     user?.role === 'admin' ||
     user?.role === 'super_admin' ||
@@ -366,7 +368,7 @@ export default function StudentLiveScreen() {
   const studentWatermark = `${user?.full_name || 'ICC Student'} • +91 ${user?.mobile_number || '9771350910'} • ICC PROTECTED STREAM`;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
       <CoachingHeader onRefresh={handleRefresh} isSyncing={isSyncing} />
 
@@ -422,7 +424,7 @@ export default function StudentLiveScreen() {
                 <Text style={styles.drmTagText}>In-App Protected</Text>
               </View>
             </View>
-            <Text style={styles.streamTitle} numberOfLines={1}>
+            <Text style={styles.streamTitle} numberOfLines={2}>
               {selectedStream.title}
             </Text>
           </View>
@@ -975,6 +977,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
+    lineHeight: 20,
   },
   adminBar: {
     flexDirection: 'row',

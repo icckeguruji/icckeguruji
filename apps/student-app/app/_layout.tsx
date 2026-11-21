@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -35,16 +36,20 @@ const customDarkTheme = {
     ...MD3DarkTheme.colors,
     primary: '#3B82F6',
     secondary: '#FBBF24',
-    background: '#090D16',
-    surface: '#1E293B',
+    background: '#000000', // Pure Black AMOLED
+    surface: '#121212',
   },
 };
 
 export default function RootLayout() {
   const isDarkMode = useAuthStore((state) => state.isDarkMode);
+  const themeMode = useAuthStore((state) => state.themeMode);
+  const syncDarkMode = useAuthStore((state) => state.syncDarkMode);
+  const systemScheme = useColorScheme();
 
-  // Screen capture restriction temporarily disabled per user request for debugging & screenshots
-  // ScreenCapture.usePreventScreenCapture();
+  useEffect(() => {
+    syncDarkMode(systemScheme === 'dark');
+  }, [systemScheme, themeMode]);
 
   useEffect(() => {
     initLocalDatabase();
@@ -55,13 +60,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <PaperProvider theme={isDarkMode ? customDarkTheme : customLightTheme}>
-          <StatusBar style={isDarkMode ? 'light' : 'dark'} translucent={false} backgroundColor={isDarkMode ? '#090D16' : '#FFFFFF'} />
+          <StatusBar
+            style={isDarkMode ? 'light' : 'dark'}
+            translucent={false}
+            backgroundColor={isDarkMode ? '#000000' : '#FFFFFF'}
+          />
           <Stack
             screenOptions={{
               headerShown: false,
               animation: 'slide_from_right',
               contentStyle: {
-                backgroundColor: isDarkMode ? '#090D16' : '#F8FAFC',
+                backgroundColor: isDarkMode ? '#000000' : '#F8FAFC',
               },
             }}
           >

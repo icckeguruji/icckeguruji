@@ -24,6 +24,7 @@ import { academicService } from '../../src/services/academicService';
 import { UserProfile, Payment } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import { DirectorAiModal } from '../../src/components/DirectorAiModal';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import {
   User,
   ShieldCheck,
@@ -62,6 +63,9 @@ import {
   Radio,
   HardDrive,
   Database,
+  Sun,
+  Smartphone,
+  Settings,
 } from 'lucide-react-native';
 
 const PRESET_AVATARS = [
@@ -75,12 +79,15 @@ const PRESET_AVATARS = [
 
 export default function StudentProfileScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const {
     user,
     selectedBoard,
     setBoard,
     selectedClass,
     setClass,
+    themeMode,
+    setThemeMode,
     isDarkMode,
     toggleDarkMode,
     updateProfile,
@@ -636,7 +643,7 @@ export default function StudentProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo & Name */}
       <CoachingHeader />
 
@@ -937,17 +944,17 @@ export default function StudentProfileScreen() {
                 <ChevronRight size={18} color="#94A3B8" />
               </TouchableOpacity>
 
-              {/* 🛡️ Zero-Cost Resource Meter */}
+              {/* ⚙️ System Settings & Storage */}
               <TouchableOpacity
                 style={styles.adminHubRow}
                 onPress={() => setIsQuotaModalOpen(true)}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#F8FAFC' }]}>
-                  <ShieldCheck size={18} color="#334155" />
+                  <Settings size={18} color="#334155" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Zero-Cost Resource Meter</Text>
-                  <Text style={styles.adminHubRowSub}>PostgreSQL DB, Storage & ₹0/month spend meter</Text>
+                  <Text style={styles.adminHubRowTitle}>Settings & System Storage</Text>
+                  <Text style={styles.adminHubRowSub}>Storage usage, active limits and cloud status</Text>
                 </View>
                 <ChevronRight size={18} color="#94A3B8" />
               </TouchableOpacity>
@@ -1087,19 +1094,76 @@ export default function StudentProfileScreen() {
             <ChevronRight size={18} color="#94A3B8" />
           </TouchableOpacity>
 
-          {/* Theme Toggle */}
-          <TouchableOpacity style={styles.menuItem} onPress={toggleDarkMode}>
-            <View style={styles.menuLeft}>
-              <View style={[styles.iconBox, { backgroundColor: '#F1F5F9' }]}>
-                <Moon size={18} color="#475569" />
-              </View>
-              <View>
-                <Text style={styles.menuItemText}>Theme Appearance</Text>
-                <Text style={styles.menuItemSub}>{isDarkMode ? 'Dark theme enabled' : 'Light theme'}</Text>
+          {/* Theme Appearance: Auto / Light / Pure Black Dark */}
+          <View style={[styles.menuItem, { flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconBox, { backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9' }]}>
+                  {themeMode === 'dark' ? (
+                    <Moon size={18} color="#60A5FA" />
+                  ) : themeMode === 'light' ? (
+                    <Sun size={18} color="#D97706" />
+                  ) : (
+                    <Smartphone size={18} color="#475569" />
+                  )}
+                </View>
+                <View>
+                  <Text style={[styles.menuItemText, isDarkMode && { color: '#FFFFFF' }]}>Theme Appearance</Text>
+                  <Text style={styles.menuItemSub}>
+                    {themeMode === 'auto'
+                      ? 'Auto (Matches Phone Theme)'
+                      : themeMode === 'dark'
+                      ? 'Pure Black AMOLED'
+                      : 'Light Theme'}
+                  </Text>
+                </View>
               </View>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
-          </TouchableOpacity>
+
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+              <TouchableOpacity
+                style={[
+                  styles.themePill,
+                  themeMode === 'auto' && styles.themePillActive,
+                ]}
+                onPress={() => setThemeMode('auto')}
+                activeOpacity={0.7}
+              >
+                <Smartphone size={13} color={themeMode === 'auto' ? '#FFFFFF' : '#64748B'} />
+                <Text style={[styles.themePillText, themeMode === 'auto' && styles.themePillTextActive]}>
+                  Auto
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.themePill,
+                  themeMode === 'light' && styles.themePillActive,
+                ]}
+                onPress={() => setThemeMode('light')}
+                activeOpacity={0.7}
+              >
+                <Sun size={13} color={themeMode === 'light' ? '#FFFFFF' : '#64748B'} />
+                <Text style={[styles.themePillText, themeMode === 'light' && styles.themePillTextActive]}>
+                  Light
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.themePill,
+                  themeMode === 'dark' && styles.themePillActive,
+                ]}
+                onPress={() => setThemeMode('dark')}
+                activeOpacity={0.7}
+              >
+                <Moon size={13} color={themeMode === 'dark' ? '#FFFFFF' : '#64748B'} />
+                <Text style={[styles.themePillText, themeMode === 'dark' && styles.themePillTextActive]}>
+                  Dark (Black)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* Institute Info */}
           <TouchableOpacity
@@ -2136,7 +2200,7 @@ export default function StudentProfileScreen() {
         </View>
       </Modal>
 
-      {/* 12. ZERO-COST RESOURCE METER MODAL */}
+      {/* 12. SYSTEM STORAGE & CONFIGURATION MODAL */}
       <Modal
         visible={isQuotaModalOpen}
         animationType="slide"
@@ -2147,8 +2211,8 @@ export default function StudentProfileScreen() {
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <ShieldCheck size={20} color="#059669" />
-                <Text style={styles.modalTitle}>Zero-Cost Infrastructure Meter</Text>
+                <Settings size={20} color="#2563EB" />
+                <Text style={styles.modalTitle}>Settings & System Storage</Text>
               </View>
               <TouchableOpacity onPress={() => setIsQuotaModalOpen(false)}>
                 <X size={20} color="#64748B" />
@@ -2165,17 +2229,17 @@ export default function StudentProfileScreen() {
                 }}
               >
                 <Text style={{ color: '#38BDF8', fontSize: 14, fontWeight: '800' }}>
-                  ₹0.00 / Monthly Plan (Verified Active)
+                  System Health: 100% Operational
                 </Text>
                 <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4 }}>
-                  System strictly operates inside verified free tiers with zero automatic upgrades.
+                  All servers, video delivery streams, and study material storage running smoothly.
                 </Text>
               </View>
 
               <View style={{ gap: 14 }}>
                 <View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>PostgreSQL DB</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Database Storage</Text>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>14.2 MB / 500 MB (2.8%)</Text>
                   </View>
                   <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
@@ -2185,7 +2249,7 @@ export default function StudentProfileScreen() {
 
                 <View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Cloud Storage</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Media & Study Notes Storage</Text>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#9333EA' }}>42.8 MB / 1000 MB (4.2%)</Text>
                   </View>
                   <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
@@ -2195,11 +2259,11 @@ export default function StudentProfileScreen() {
 
                 <View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Auth MAU Quota</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>3 / 50,000 (&lt;0.1%)</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Active Student Accounts</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>Active & Ready</Text>
                   </View>
                   <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
-                    <View style={{ width: '1%', height: '100%', backgroundColor: '#16A34A' }} />
+                    <View style={{ width: '5%', height: '100%', backgroundColor: '#16A34A' }} />
                   </View>
                 </View>
               </View>
@@ -3133,5 +3197,29 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#D97706',
+  },
+  themePill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
+  },
+  themePillActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  themePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  themePillTextActive: {
+    color: '#FFFFFF',
   },
 });

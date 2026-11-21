@@ -41,6 +41,7 @@ import {
 } from '../../src/services/academicService';
 import { aiService } from '../../src/services/aiService';
 import { OfflineStorageService, OfflineItem } from '../../src/services/offlineStorage';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import { StudyMaterial, MaterialType } from '@icc/shared-types';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import * as DocumentPicker from 'expo-document-picker';
@@ -75,6 +76,7 @@ const SUBJECT_FILTER_CHIPS = [
 export default function StudentNotesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const theme = useAppTheme();
 
   const isAdmin =
     user?.role === 'admin' ||
@@ -435,7 +437,7 @@ export default function StudentNotesScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
       <CoachingHeader onRefresh={handleRefreshMaterials} isSyncing={isSyncing} />
 
@@ -514,7 +516,16 @@ export default function StudentNotesScreen() {
             filteredMaterials.map((mat) => {
               const isSaved = downloadedIds.includes(mat.id);
               return (
-                <View key={mat.id} style={styles.noteCard}>
+                <View
+                  key={mat.id}
+                  style={[
+                    styles.noteCard,
+                    {
+                      backgroundColor: theme.surfaceCard,
+                      borderColor: theme.cardBorder,
+                    },
+                  ]}
+                >
                   <View style={styles.cardHeader}>
                     <View style={styles.noteIconBox}>
                       <BookOpen size={22} color="#2563EB" />
@@ -537,14 +548,20 @@ export default function StudentNotesScreen() {
                           </View>
                         )}
                       </View>
-                      <Text style={styles.noteTitle} numberOfLines={2}>
+                      <Text
+                        style={[styles.noteTitle, { color: theme.text }]}
+                        numberOfLines={2}
+                      >
                         {mat.title}
                       </Text>
                     </View>
                   </View>
 
                   {mat.description ? (
-                    <Text style={styles.noteDesc} numberOfLines={2}>
+                    <Text
+                      style={[styles.noteDesc, { color: theme.textSecondary }]}
+                      numberOfLines={2}
+                    >
                       {mat.description}
                     </Text>
                   ) : null}

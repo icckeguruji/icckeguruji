@@ -634,7 +634,6 @@ export default function CourseDetailsScreen() {
 
                     <View style={{ flex: 1 }}>
                       <Text style={styles.chapterTitleText}>{chap.title}</Text>
-                      <Text style={styles.chapterTitleHiText}>{chap.title_hi}</Text>
 
                       <View style={styles.chapterPillRow}>
                         {chap.live_count ? (
@@ -797,9 +796,6 @@ export default function CourseDetailsScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.lectureTitle}>{lec.title}</Text>
-                          {lec.title_hi ? (
-                            <Text style={styles.lectureTitleHi}>{lec.title_hi}</Text>
-                          ) : null}
                           <Text style={styles.lectureMeta}>
                             ⏱️ {Math.round(lec.duration_seconds / 60)} Mins · High-Definition In-App Player
                           </Text>

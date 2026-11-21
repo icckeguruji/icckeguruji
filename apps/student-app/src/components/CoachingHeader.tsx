@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, ScrollView, Linking, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  Linking,
+  Alert,
+  Platform,
+  Dimensions,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDirectorStore } from '../store/useDirectorStore';
 import { academicService } from '../services/academicService';
@@ -22,10 +34,22 @@ import {
   ChevronRight,
   ExternalLink,
   Bot,
-  Sparkles,
+  LayoutDashboard,
+  GraduationCap,
+  PlaySquare,
+  UserCheck,
+  BarChart3,
+  Settings,
+  Sun,
+  Moon,
+  Smartphone,
+  Trash2,
 } from 'lucide-react-native';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, ThemeMode } from '../store/useAuthStore';
 import { useNotificationStore } from '../services/notificationService';
+import { useAppTheme } from '../hooks/useAppTheme';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface CoachingHeaderProps {
   showStudentGreeting?: boolean;
@@ -39,7 +63,8 @@ export function CoachingHeader({
   isSyncing = false,
 }: CoachingHeaderProps) {
   const router = useRouter();
-  const { user, selectedBoard, selectedClass, logout } = useAuthStore();
+  const theme = useAppTheme();
+  const { user, selectedBoard, selectedClass, themeMode, setThemeMode, logout } = useAuthStore();
   const { unreadCount, initPushNotifications } = useNotificationStore();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -59,31 +84,64 @@ export function CoachingHeader({
     router.push(route as any);
   };
 
+  const handleOpenDirectorModal = (modalType: any, targetRoute?: string) => {
+    setIsDrawerOpen(false);
+    useDirectorStore.getState().openModal(modalType);
+    if (targetRoute) {
+      router.push(targetRoute as any);
+    } else {
+      router.push('/(tabs)/profile');
+    }
+  };
+
   const handleOpenWhatsApp = () => {
     setIsDrawerOpen(false);
     Linking.openURL('https://wa.me/919771350910?text=Hello%20BADE%20SIR%2C%20IDEAL%20COACHING%20CENTRE%20Query');
   };
 
   const handleLogout = async () => {
-    setIsDrawerOpen(false);
-    await logout();
-    router.replace('/(auth)/login');
+    Alert.alert('Confirm Logout', 'Are you sure you want to log out from your account?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: async () => {
+          setIsDrawerOpen(false);
+          await logout();
+          router.replace('/(auth)/login');
+        },
+      },
+    ]);
   };
 
+  const isDark = theme.isDark;
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.headerBg,
+          borderBottomColor: theme.headerBorder,
+        },
+      ]}
+    >
       {/* Top Brand Strip */}
       <View style={styles.topRow}>
         {/* Left: Hamburger Menu Button */}
         <TouchableOpacity
-          style={styles.menuButton}
+          style={[
+            styles.menuButton,
+            { backgroundColor: isDark ? '#141416' : '#F1F5F9' },
+          ]}
           onPress={() => setIsDrawerOpen(true)}
           activeOpacity={0.7}
           accessibilityLabel="Open Navigation Menu"
         >
-          <Menu size={22} color="#0F172A" />
+          <Menu size={22} color={theme.text} />
         </TouchableOpacity>
 
+        {/* Center: Brand Logo & Title */}
         <View style={styles.brandGroup}>
           <View style={styles.logoCircle}>
             <Image
@@ -93,8 +151,13 @@ export function CoachingHeader({
             />
           </View>
           <View style={styles.titleColumn}>
-            <Text style={styles.coachingName}>IDEAL COACHING CENTRE</Text>
-            <Text style={styles.tagline}>
+            <Text
+              style={[styles.coachingName, { color: theme.text }]}
+              numberOfLines={1}
+            >
+              IDEAL COACHING CENTRE
+            </Text>
+            <Text style={styles.tagline} numberOfLines={1}>
               Board Exam 2027 • Dir: BADE SIR
             </Text>
           </View>
@@ -103,22 +166,36 @@ export function CoachingHeader({
         {/* Right Action Icons: Live Sync Status & Notification Bell */}
         <View style={styles.rightActions}>
           <TouchableOpacity
-            style={[styles.syncBadge, isSyncing && styles.syncBadgeLoading]}
+            style={[
+              styles.syncBadge,
+              { backgroundColor: isDark ? '#141416' : '#F1F5F9' },
+              isSyncing && styles.syncBadgeLoading,
+            ]}
             onPress={onRefresh}
             disabled={isSyncing}
             activeOpacity={0.7}
           >
             <Text style={styles.syncDot}>{isSyncing ? '🔄' : '🟢'}</Text>
-            <Text style={styles.syncText}>{isSyncing ? 'Syncing...' : 'Live'}</Text>
+            <Text
+              style={[
+                styles.syncText,
+                { color: isDark ? '#A1A1AA' : '#475569' },
+              ]}
+            >
+              {isSyncing ? 'Syncing' : 'Live'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.bellButton}
+            style={[
+              styles.bellButton,
+              { backgroundColor: isDark ? '#141416' : '#F1F5F9' },
+            ]}
             onPress={() => router.push('/notifications')}
             activeOpacity={0.7}
             accessibilityLabel="Notifications"
           >
-            <Bell size={18} color="#334155" />
+            <Bell size={18} color={theme.text} />
             {unreadCount > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadBadgeText}>
@@ -130,20 +207,39 @@ export function CoachingHeader({
         </View>
       </View>
 
-      {/* Student Greeting & Class/Board Pills (If requested) */}
+      {/* Student Greeting & Class/Points Strip */}
       {showStudentGreeting && (
-        <View style={styles.greetingRow}>
-          <View>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.studentName}>{user?.full_name || 'Student'}</Text>
+        <View
+          style={[
+            styles.greetingRow,
+            { borderTopColor: isDark ? '#1F2937' : '#F1F5F9' },
+          ]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.welcomeText, { color: theme.textSecondary }]}>
+              Welcome back,
+            </Text>
+            <Text
+              style={[styles.studentName, { color: theme.text }]}
+              numberOfLines={1}
+            >
+              {user?.full_name || 'Student'}
+            </Text>
           </View>
 
           <View style={styles.pillGroup}>
             <View style={styles.boardPill}>
               <Text style={styles.boardPillText}>🏆 {user?.quiz_points || 0} PTS</Text>
             </View>
-            <View style={styles.classPill}>
-              <Text style={styles.classPillText}>{selectedClass || 'Class 10'}</Text>
+            <View
+              style={[
+                styles.classPill,
+                { backgroundColor: isDark ? '#18181B' : '#F1F5F9' },
+              ]}
+            >
+              <Text style={[styles.classPillText, { color: theme.textSecondary }]}>
+                {selectedClass || 'Class 10'}
+              </Text>
             </View>
           </View>
         </View>
@@ -157,40 +253,85 @@ export function CoachingHeader({
         onRequestClose={() => setIsDrawerOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.drawerContainer}>
+          {/* Backdrop (Tapping dismisses drawer) */}
+          <TouchableOpacity
+            style={styles.backdropTouch}
+            activeOpacity={1}
+            onPress={() => setIsDrawerOpen(false)}
+          />
+
+          {/* Drawer Sidebar Container with Guaranteed Bounded Dimensions */}
+          <View
+            style={[
+              styles.drawerContainer,
+              {
+                backgroundColor: isDark ? '#050505' : '#FFFFFF',
+                borderRightColor: isDark ? '#27272A' : '#E2E8F0',
+              },
+            ]}
+          >
             {/* Drawer Header */}
-            <View style={styles.drawerHeader}>
+            <View
+              style={[
+                styles.drawerHeader,
+                {
+                  backgroundColor: isDark ? '#000000' : '#F8FAFC',
+                  borderBottomColor: isDark ? '#27272A' : '#E2E8F0',
+                },
+              ]}
+            >
               <View style={styles.drawerHeaderLeft}>
                 <Image
                   source={require('../../assets/logo.png')}
                   style={styles.drawerLogo}
                   resizeMode="contain"
                 />
-                <View>
-                  <Text style={styles.drawerTitle}>IDEAL COACHING</Text>
-                  <Text style={styles.drawerSubtitle}>Director: BADE SIR (9771350910)</Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.drawerTitle, { color: theme.text }]}
+                    numberOfLines={1}
+                  >
+                    IDEAL COACHING
+                  </Text>
+                  <Text style={styles.drawerSubtitle} numberOfLines={1}>
+                    Director: BADE SIR (9771350910)
+                  </Text>
                 </View>
               </View>
               <TouchableOpacity
-                style={styles.closeBtn}
+                style={[
+                  styles.closeBtn,
+                  { backgroundColor: isDark ? '#18181B' : '#F1F5F9' },
+                ]}
                 onPress={() => setIsDrawerOpen(false)}
                 activeOpacity={0.7}
                 accessibilityLabel="Close Navigation Menu"
               >
-                <X size={20} color="#64748B" />
+                <X size={18} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
+            {/* Scrollable Navigation Body */}
             <ScrollView
               style={styles.drawerScrollView}
               contentContainerStyle={styles.drawerScrollContent}
               showsVerticalScrollIndicator={true}
               nestedScrollEnabled={true}
               bounces={true}
+              overScrollMode="always"
               keyboardShouldPersistTaps="handled"
+              removeClippedSubviews={false}
             >
               {/* Profile Card */}
-              <View style={styles.userCard}>
+              <View
+                style={[
+                  styles.userCard,
+                  {
+                    backgroundColor: isDark ? '#121212' : '#F8FAFC',
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                  },
+                ]}
+              >
                 <View style={styles.userCardTop}>
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarLetter}>
@@ -198,11 +339,26 @@ export function CoachingHeader({
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.userName}>{user?.full_name || 'Student'}</Text>
-                    <Text style={styles.userPhone}>{user?.mobile_number || user?.email || 'Student Account'}</Text>
+                    <Text
+                      style={[styles.userName, { color: theme.text }]}
+                      numberOfLines={1}
+                    >
+                      {user?.full_name || 'Student'}
+                    </Text>
+                    <Text
+                      style={[styles.userPhone, { color: theme.textSecondary }]}
+                      numberOfLines={1}
+                    >
+                      {user?.mobile_number || user?.email || 'Student Account'}
+                    </Text>
                   </View>
                 </View>
-                <View style={styles.roleRow}>
+                <View
+                  style={[
+                    styles.roleRow,
+                    { borderTopColor: isDark ? '#27272A' : '#E2E8F0' },
+                  ]}
+                >
                   {isAdmin ? (
                     <View style={styles.adminRoleBadge}>
                       <ShieldCheck size={12} color="#B45309" />
@@ -219,8 +375,96 @@ export function CoachingHeader({
                 </View>
               </View>
 
-              {/* Navigation Section */}
-              <Text style={styles.menuSectionHeading}>QUICK NAVIGATION</Text>
+              {/* Theme Mode Selector (Auto / Light / Dark Pure Black AMOLED) */}
+              <View
+                style={[
+                  styles.themeBox,
+                  {
+                    backgroundColor: isDark ? '#121212' : '#F8FAFC',
+                    borderColor: isDark ? '#27272A' : '#E2E8F0',
+                  },
+                ]}
+              >
+                <Text style={[styles.themeLabel, { color: theme.textSecondary }]}>
+                  APPEARANCE
+                </Text>
+                <View style={styles.themeToggleRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.themePill,
+                      themeMode === 'auto' && styles.themePillActive,
+                      { borderColor: isDark ? '#27272A' : '#CBD5E1' },
+                    ]}
+                    onPress={() => setThemeMode('auto')}
+                    activeOpacity={0.7}
+                  >
+                    <Smartphone
+                      size={13}
+                      color={themeMode === 'auto' ? '#FFFFFF' : theme.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.themePillText,
+                        themeMode === 'auto' && styles.themePillTextActive,
+                        { color: themeMode === 'auto' ? '#FFFFFF' : theme.textSecondary },
+                      ]}
+                    >
+                      Auto
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.themePill,
+                      themeMode === 'light' && styles.themePillActive,
+                      { borderColor: isDark ? '#27272A' : '#CBD5E1' },
+                    ]}
+                    onPress={() => setThemeMode('light')}
+                    activeOpacity={0.7}
+                  >
+                    <Sun
+                      size={13}
+                      color={themeMode === 'light' ? '#FFFFFF' : theme.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.themePillText,
+                        themeMode === 'light' && styles.themePillTextActive,
+                        { color: themeMode === 'light' ? '#FFFFFF' : theme.textSecondary },
+                      ]}
+                    >
+                      Light
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.themePill,
+                      themeMode === 'dark' && styles.themePillActive,
+                      { borderColor: isDark ? '#27272A' : '#CBD5E1' },
+                    ]}
+                    onPress={() => setThemeMode('dark')}
+                    activeOpacity={0.7}
+                  >
+                    <Moon
+                      size={13}
+                      color={themeMode === 'dark' ? '#FFFFFF' : theme.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.themePillText,
+                        themeMode === 'dark' && styles.themePillTextActive,
+                        { color: themeMode === 'dark' ? '#FFFFFF' : theme.textSecondary },
+                      ]}
+                    >
+                      Dark
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Student Navigation Section */}
+              <Text style={styles.menuSectionHeading}>ACADEMIC SECTIONS</Text>
 
               <TouchableOpacity
                 style={styles.menuItem}
@@ -229,8 +473,8 @@ export function CoachingHeader({
                 <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
                   <Home size={18} color="#2563EB" />
                 </View>
-                <Text style={styles.menuItemText}>Home Dashboard</Text>
-                <ChevronRight size={16} color="#CBD5E1" />
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Home Dashboard</Text>
+                <ChevronRight size={16} color={theme.textMuted} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -240,8 +484,8 @@ export function CoachingHeader({
                 <View style={[styles.menuIconBox, { backgroundColor: '#FDF4FF' }]}>
                   <BookOpen size={18} color="#9333EA" />
                 </View>
-                <Text style={styles.menuItemText}>Target Courses</Text>
-                <ChevronRight size={16} color="#CBD5E1" />
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Target Courses</Text>
+                <ChevronRight size={16} color={theme.textMuted} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -251,8 +495,8 @@ export function CoachingHeader({
                 <View style={[styles.menuIconBox, { backgroundColor: '#FEF2F2' }]}>
                   <Video size={18} color="#DC2626" />
                 </View>
-                <Text style={styles.menuItemText}>Live Masterclasses</Text>
-                <ChevronRight size={16} color="#CBD5E1" />
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Live Masterclasses</Text>
+                <ChevronRight size={16} color={theme.textMuted} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -262,212 +506,299 @@ export function CoachingHeader({
                 <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
                   <FileText size={18} color="#059669" />
                 </View>
-                <Text style={styles.menuItemText}>Study Materials & PDF</Text>
-                <ChevronRight size={16} color="#CBD5E1" />
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Study Materials & PDF</Text>
+                <ChevronRight size={16} color={theme.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => handleNavigate('/doubts')}
+              >
+                <View style={[styles.menuIconBox, { backgroundColor: '#FEF3C7' }]}>
+                  <MessageCircle size={18} color="#D97706" />
+                </View>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Doubt Clearance</Text>
+                <ChevronRight size={16} color={theme.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => handleNavigate('/assignments')}
+              >
+                <View style={[styles.menuIconBox, { backgroundColor: '#EEF2FF' }]}>
+                  <FileText size={18} color="#4F46E5" />
+                </View>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Assignments & Homework</Text>
+                <ChevronRight size={16} color={theme.textMuted} />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => handleNavigate('/(tabs)/profile')}
               >
-                <View style={[styles.menuIconBox, { backgroundColor: '#F1F5F9' }]}>
-                  <User size={18} color="#475569" />
+                <View style={[styles.menuIconBox, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                  <User size={18} color={theme.textSecondary} />
                 </View>
-                <Text style={styles.menuItemText}>My Profile & Settings</Text>
-                <ChevronRight size={16} color="#CBD5E1" />
+                <Text style={[styles.menuItemText, { color: theme.text }]}>My Profile & Settings</Text>
+                <ChevronRight size={16} color={theme.textMuted} />
               </TouchableOpacity>
 
-              {/* Admin / Director Quick Actions */}
+              {/* Complete Web Admin Parity inside Drawer for Director / Admin */}
               {isAdmin && (
                 <>
-                  <View style={styles.adminDivider} />
-                  <View style={styles.adminHeaderBox}>
+                  <View
+                    style={[
+                      styles.adminDivider,
+                      { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+                    ]}
+                  />
+
+                  <View
+                    style={[
+                      styles.adminHeaderBox,
+                      {
+                        backgroundColor: isDark ? '#1A1305' : '#FFFBEB',
+                        borderColor: isDark ? '#78350F' : '#FEF3C7',
+                      },
+                    ]}
+                  >
                     <Text style={styles.adminHeaderHeading}>👑 DIRECTOR CONTROLS (BADE SIR)</Text>
-                    <Text style={styles.adminHeaderSub}>Full administrative management inside app</Text>
+                    <Text
+                      style={[
+                        styles.adminHeaderSub,
+                        { color: isDark ? '#FBBF24' : '#92400E' },
+                      ]}
+                    >
+                      Complete management matching Web Admin
+                    </Text>
                   </View>
 
+                  {/* 1. Director AI Copilot */}
                   <TouchableOpacity
-                    style={[styles.menuItem, { backgroundColor: '#EFF6FF', borderRadius: 12, marginVertical: 4 }]}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      router.push('/admin' as any);
-                    }}
+                    style={[
+                      styles.menuItem,
+                      {
+                        backgroundColor: isDark ? '#121212' : '#EFF6FF',
+                        borderRadius: 12,
+                        marginVertical: 4,
+                      },
+                    ]}
+                    onPress={() => handleOpenDirectorModal('ai_copilot')}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#2563EB' }]}>
-                      <ShieldCheck size={18} color="#FFFFFF" />
+                      <Bot size={18} color="#FFFFFF" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: '#1E3A8A', fontWeight: '900' }]}>
-                        ⚡ Master Admin Dashboard
+                      <Text style={[styles.menuItemText, { color: '#3B82F6', fontWeight: '800' }]}>
+                        Director AI Copilot
                       </Text>
-                      <Text style={styles.menuItemSubText}>Full parity with web admin — all modules & CRUD</Text>
+                      <Text style={styles.menuItemSubText}>Voice/text automated actions</Text>
                     </View>
-                    <ChevronRight size={16} color="#2563EB" />
+                    <ChevronRight size={16} color="#3B82F6" />
                   </TouchableOpacity>
 
+                  {/* 2. Overview Dashboard */}
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('ai_copilot');
-                      router.push('/(tabs)/profile');
-                    }}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
-                      <Bot size={18} color="#2563EB" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: '#2563EB', fontWeight: '800' }]}>
-                        🤖 Director AI Copilot
-                      </Text>
-                      <Text style={styles.menuItemSubText}>Voice/Text: Add courses, schedule live, approve fees</Text>
-                    </View>
-                    <ChevronRight size={16} color="#2563EB" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      router.push('/(tabs)/courses');
-                    }}
+                    onPress={() => handleOpenDirectorModal('quota_reports')}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#EEF2FF' }]}>
-                      <BookOpen size={18} color="#4F46E5" />
+                      <LayoutDashboard size={18} color="#4F46E5" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Course Management</Text>
-                      <Text style={styles.menuItemSubText}>Add/edit courses, subjects & curriculum</Text>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Dashboard Overview</Text>
+                      <Text style={styles.menuItemSubText}>Student stats, revenue & enrollments</Text>
                     </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
+                    <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
+                  {/* 3. Students Directory */}
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('live_classes');
-                      router.push('/(tabs)/profile');
-                    }}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF2F2' }]}>
-                      <Video size={18} color="#DC2626" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Live Classes</Text>
-                      <Text style={styles.menuItemSubText}>Schedule YouTube Live broadcasts & batches</Text>
-                    </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('study_materials');
-                      router.push('/(tabs)/profile');
-                    }}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FAF5FF' }]}>
-                      <FileText size={18} color="#9333EA" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Handwritten PDF Notes</Text>
-                      <Text style={styles.menuItemSubText}>Upload & link notes to course chapters</Text>
-                    </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('payment');
-                      router.push('/(tabs)/profile');
-                    }}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF3C7' }]}>
-                      <CreditCard size={18} color="#D97706" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>UPI Fee Approvals</Text>
-                      <Text style={styles.menuItemSubText}>Verify student payments & unlock courses</Text>
-                    </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('student');
-                      router.push('/(tabs)/profile');
-                    }}
+                    onPress={() => handleOpenDirectorModal('student')}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
                       <Users size={18} color="#2563EB" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Student Directory</Text>
-                      <Text style={styles.menuItemSubText}>View all students, progress & WhatsApp reports</Text>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Students Directory</Text>
+                      <Text style={styles.menuItemSubText}>Add, edit, view & manage students</Text>
                     </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
+                    <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
+                  {/* 4. Classes & Subjects */}
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('broadcast');
-                      router.push('/(tabs)/profile');
-                    }}
+                    onPress={() => handleNavigate('/(tabs)/courses')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
+                      <GraduationCap size={18} color="#16A34A" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Classes & Subjects</Text>
+                      <Text style={styles.menuItemSubText}>Curriculum hierarchy & chapters</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* 5. Courses Management */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleNavigate('/(tabs)/courses')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FAF5FF' }]}>
+                      <BookOpen size={18} color="#9333EA" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Courses Management</Text>
+                      <Text style={styles.menuItemSubText}>Create, edit & manage target courses</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* 6. Live Classes */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleOpenDirectorModal('live_classes')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF2F2' }]}>
+                      <Video size={18} color="#DC2626" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Live Classes</Text>
+                      <Text style={styles.menuItemSubText}>Schedule YouTube Live broadcasts</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* 7. Recorded Videos */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleNavigate('/(tabs)/courses')}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#FDF2F8' }]}>
-                      <Megaphone size={18} color="#DB2777" />
+                      <PlaySquare size={18} color="#DB2777" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Broadcast Announcement</Text>
-                      <Text style={styles.menuItemSubText}>Send instant push notice to all students</Text>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Recorded Videos</Text>
+                      <Text style={styles.menuItemSubText}>Chapter video lectures library</Text>
                     </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
+                    <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
+                  {/* 8. Notes & PDFs */}
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => {
-                      setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('whatsapp_bot');
-                      router.push('/(tabs)/profile');
-                    }}
+                    onPress={() => handleOpenDirectorModal('study_materials')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
+                      <FileText size={18} color="#059669" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Notes & PDFs</Text>
+                      <Text style={styles.menuItemSubText}>Upload & manage handwritten notes</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* 9. Payments & UTR Approvals */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleOpenDirectorModal('payment')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF3C7' }]}>
+                      <CreditCard size={18} color="#D97706" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Payments & UTR</Text>
+                      <Text style={styles.menuItemSubText}>Verify UPI transactions & unlock courses</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* 10. Push Notifications */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleOpenDirectorModal('broadcast')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FDF4FF' }]}>
+                      <Megaphone size={18} color="#A855F7" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Push Notifications</Text>
+                      <Text style={styles.menuItemSubText}>Send instant broadcast announcements</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* 11. WhatsApp AI Bot */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleOpenDirectorModal('whatsapp_bot')}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#ECFDF5' }]}>
-                      <MessageCircle size={18} color="#059669" />
+                      <MessageCircle size={18} color="#10B981" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>WhatsApp AI Bot Status</Text>
-                      <Text style={styles.menuItemSubText}>View automated enquiry assistant status</Text>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>WhatsApp AI Bot</Text>
+                      <Text style={styles.menuItemSubText}>Active 24/7 student inquiry assistant</Text>
                     </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
+                    <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
+                  {/* 12. Teachers */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => {
                       setIsDrawerOpen(false);
-                      useDirectorStore.getState().openModal('quota_reports');
-                      router.push('/(tabs)/profile');
+                      Alert.alert(
+                        'Faculty Directory',
+                        'Director: BADE SIR (Mathematics & Physics)\nFaculty: Er. Rohit (Chemistry & Biology)\nFaculty: Priya Madam (English & Grammar)\nSupport: 9771350910'
+                      );
                     }}
                   >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#F8FAFC' }]}>
-                      <ShieldCheck size={18} color="#334155" />
+                    <View style={[styles.menuIconBox, { backgroundColor: '#F1F5F9' }]}>
+                      <UserCheck size={18} color="#475569" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Zero-Cost Resource Meter</Text>
-                      <Text style={styles.menuItemSubText}>Free tier quota & database metrics</Text>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Teachers & Faculty</Text>
+                      <Text style={styles.menuItemSubText}>Faculty profiles & contact details</Text>
                     </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
+                    <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
+                  {/* 13. Reports */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleOpenDirectorModal('quota_reports')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
+                      <BarChart3 size={18} color="#2563EB" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Academic & Fee Reports</Text>
+                      <Text style={styles.menuItemSubText}>Collection summaries & analytics</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* 14. Settings */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleNavigate('/(tabs)/profile')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                      <Settings size={18} color={theme.textSecondary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Settings</Text>
+                      <Text style={styles.menuItemSubText}>Institute profile, security & preferences</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* Instant Cloud Sync Action */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={async () => {
@@ -475,9 +806,9 @@ export function CoachingHeader({
                       try {
                         await academicService.syncFromCloud();
                         if (onRefresh) onRefresh();
-                        Alert.alert('☁️ Live Sync Complete', 'All courses, live classes, study materials and records have been synchronized successfully!');
+                        Alert.alert('☁️ Sync Complete', 'All courses, live classes and study materials are up to date.');
                       } catch {
-                        Alert.alert('Synced', 'Local cache and cloud state synchronized.');
+                        Alert.alert('Synced', 'Local cache synchronized.');
                       }
                     }}
                   >
@@ -485,16 +816,68 @@ export function CoachingHeader({
                       <RefreshCw size={18} color="#059669" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Sync Latest Data</Text>
-                      <Text style={styles.menuItemSubText}>Sync latest courses, subjects & live classes</Text>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Sync Latest Data</Text>
+                      <Text style={styles.menuItemSubText}>Refresh all course and schedule data</Text>
                     </View>
-                    <ChevronRight size={16} color="#CBD5E1" />
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
+                  {/* Blank Slate Reset Action */}
+                  <TouchableOpacity
+                    style={[
+                      styles.menuItem,
+                      {
+                        backgroundColor: isDark ? '#1C0C0C' : '#FEF2F2',
+                        borderColor: isDark ? '#7F1D1D' : '#FECACA',
+                        borderWidth: 1,
+                        borderRadius: 10,
+                        marginVertical: 4,
+                      },
+                    ]}
+                    onPress={() => {
+                      setIsDrawerOpen(false);
+                      Alert.alert(
+                        'Reset: Wipe Demo Data',
+                        'Are you sure you want to clean legacy demo data to start fresh?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Wipe Demo Data',
+                            style: 'destructive',
+                            onPress: async () => {
+                              try {
+                                await academicService.purgeAllData();
+                                if (onRefresh) onRefresh();
+                                Alert.alert('Success', 'Legacy demo data cleared successfully.');
+                              } catch {
+                                Alert.alert('Notice', 'Database already clean.');
+                              }
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FEE2E2' }]}>
+                      <Trash2 size={18} color="#DC2626" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: '#EF4444', fontWeight: '800' }]}>
+                        Wipe Demo Data
+                      </Text>
+                      <Text style={styles.menuItemSubText}>Reset to clean slate</Text>
+                    </View>
                   </TouchableOpacity>
                 </>
               )}
 
-              {/* Support & Community Section */}
-              <View style={styles.adminDivider} />
+              {/* Support & Helpline */}
+              <View
+                style={[
+                  styles.adminDivider,
+                  { backgroundColor: isDark ? '#27272A' : '#E2E8F0' },
+                ]}
+              />
               <Text style={styles.menuSectionHeading}>SUPPORT & HELPLINE</Text>
 
               <TouchableOpacity
@@ -505,15 +888,22 @@ export function CoachingHeader({
                   <MessageCircle size={18} color="#16A34A" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.menuItemText}>Director WhatsApp Helpline</Text>
-                  <Text style={styles.menuItemSubText}>+91 9771350910 • Direct Chat with BADE SIR</Text>
+                  <Text style={[styles.menuItemText, { color: theme.text }]}>
+                    Director WhatsApp Helpline
+                  </Text>
+                  <Text style={styles.menuItemSubText}>
+                    +91 9771350910 • Direct Chat with BADE SIR
+                  </Text>
                 </View>
                 <ExternalLink size={16} color="#16A34A" />
               </TouchableOpacity>
 
               {/* Logout Button */}
               <TouchableOpacity
-                style={styles.logoutBtn}
+                style={[
+                  styles.logoutBtn,
+                  { backgroundColor: isDark ? '#200A0A' : '#FEE2E2' },
+                ]}
                 onPress={handleLogout}
                 activeOpacity={0.8}
               >
@@ -521,19 +911,17 @@ export function CoachingHeader({
                 <Text style={styles.logoutBtnText}>Log Out from Account</Text>
               </TouchableOpacity>
 
-              <View style={styles.drawerFooter}>
-                <Text style={styles.footerBrand}>IDEAL COACHING CENTRE • v2.4.0</Text>
+              <View
+                style={[
+                  styles.drawerFooter,
+                  { borderTopColor: isDark ? '#1F2937' : '#F1F5F9' },
+                ]}
+              >
+                <Text style={styles.footerBrand}>IDEAL COACHING CENTRE • v2.5.0</Text>
                 <Text style={styles.footerLocation}>Sarotiya, Mahagama, Godda (JH) 814165</Text>
               </View>
             </ScrollView>
           </View>
-
-          {/* Dismiss Backdrop */}
-          <TouchableOpacity
-            style={styles.backdropTouch}
-            activeOpacity={1}
-            onPress={() => setIsDrawerOpen(false)}
-          />
         </View>
       </Modal>
     </View>
@@ -542,68 +930,63 @@ export function CoachingHeader({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
   menuButton: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   brandGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     flex: 1,
+    minWidth: 0,
   },
   logoCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 2,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   logo: {
-    width: '100%',
-    height: '100%',
+    width: 32,
+    height: 32,
   },
   titleColumn: {
-    justifyContent: 'center',
     flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
   },
   coachingName: {
     fontSize: 13,
     fontWeight: '900',
-    color: '#0F172A',
+    lineHeight: 16,
     letterSpacing: 0.2,
-    flexShrink: 1,
   },
   tagline: {
-    fontSize: 10,
-    color: '#D97706',
+    fontSize: 9,
     fontWeight: '700',
+    color: '#D97706',
+    lineHeight: 12,
     marginTop: 1,
-    flexShrink: 1,
   },
   rightActions: {
     flexDirection: 'row',
@@ -614,79 +997,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ECFDF5',
     paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   syncBadgeLoading: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+    opacity: 0.7,
   },
   syncDot: {
-    fontSize: 9,
+    fontSize: 10,
   },
   syncText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#047857',
   },
   bellButton: {
-    position: 'relative',
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    position: 'relative',
   },
   unreadBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    top: 4,
+    right: 4,
     backgroundColor: '#EF4444',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    paddingHorizontal: 3,
   },
   unreadBadgeText: {
     color: '#FFFFFF',
     fontSize: 9,
-    fontWeight: '900',
-    lineHeight: 11,
+    fontWeight: '800',
   },
   greetingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'space-between',
     paddingTop: 10,
+    marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
   },
   welcomeText: {
     fontSize: 11,
-    color: '#64748B',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   studentName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    marginTop: 1,
   },
   pillGroup: {
     flexDirection: 'row',
-    gap: 6,
     alignItems: 'center',
+    gap: 6,
   },
   boardPill: {
     backgroundColor: '#EFF6FF',
@@ -702,7 +1072,6 @@ const styles = StyleSheet.create({
     color: '#1E40AF',
   },
   classPill: {
-    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -710,26 +1079,32 @@ const styles = StyleSheet.create({
   classPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#475569',
   },
 
-  // Drawer Styles
+  // Modal & Drawer Styles (Bounded for 100% Android Smooth Scroll)
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
   },
+  backdropTouch: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
   drawerContainer: {
-    width: '84%',
-    maxWidth: 340,
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'ios' ? 52 : 38,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: Math.min(SCREEN_WIDTH * 0.85, 330),
+    height: SCREEN_HEIGHT,
+    maxHeight: SCREEN_HEIGHT,
+    paddingTop: Platform.OS === 'ios' ? 52 : 36,
+    borderRightWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 20,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 25,
     display: 'flex',
     flexDirection: 'column',
   },
@@ -740,13 +1115,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   drawerHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    marginRight: 8,
   },
   drawerLogo: {
     width: 36,
@@ -756,36 +1131,32 @@ const styles = StyleSheet.create({
   drawerTitle: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#0F172A',
   },
   drawerSubtitle: {
     fontSize: 10,
     color: '#D97706',
     fontWeight: '700',
+    marginTop: 1,
   },
   closeBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
   },
   drawerScrollView: {
     flex: 1,
+    height: '100%',
   },
   drawerScrollContent: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 80,
-  },
-  backdropTouch: {
-    flex: 1,
+    paddingBottom: 140, // High bottom padding ensures bottom elements scroll above screen edge
+    flexGrow: 1,
   },
   userCard: {
-    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   userCardTop: {
     flexDirection: 'row',
@@ -809,11 +1180,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
   },
   userPhone: {
     fontSize: 11,
-    color: '#64748B',
+    marginTop: 1,
   },
   roleRow: {
     flexDirection: 'row',
@@ -821,7 +1191,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
   },
   adminRoleBadge: {
     flexDirection: 'row',
@@ -859,6 +1228,43 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#A16207',
   },
+  themeBox: {
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  themeLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  themeToggleRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  themePill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  themePillActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  themePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  themePillTextActive: {
+    color: '#FFFFFF',
+  },
   menuSectionHeading: {
     fontSize: 11,
     fontWeight: '800',
@@ -871,10 +1277,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 9,
     paddingHorizontal: 8,
     borderRadius: 10,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   menuIconBox: {
     width: 32,
@@ -886,35 +1292,30 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1E293B',
     flex: 1,
   },
   menuItemSubText: {
     fontSize: 10,
-    color: '#64748B',
+    color: '#94A3B8',
     marginTop: 1,
   },
   adminDivider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
     marginVertical: 12,
   },
   adminHeaderBox: {
-    backgroundColor: '#FFFBEB',
     padding: 8,
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#FEF3C7',
   },
   adminHeaderHeading: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#B45309',
+    color: '#D97706',
   },
   adminHeaderSub: {
     fontSize: 9,
-    color: '#92400E',
     marginTop: 1,
   },
   logoutBtn: {
@@ -922,7 +1323,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FEE2E2',
     paddingVertical: 11,
     borderRadius: 10,
     marginTop: 16,
@@ -937,7 +1337,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
   },
   footerBrand: {
     fontSize: 10,
@@ -946,7 +1345,7 @@ const styles = StyleSheet.create({
   },
   footerLocation: {
     fontSize: 9,
-    color: '#CBD5E1',
+    color: '#64748B',
     marginTop: 2,
   },
 });
