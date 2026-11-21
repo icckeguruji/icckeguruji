@@ -178,17 +178,17 @@ export const allInitialCourses: Course[] = [
     updated_at: '2026-11-18T00:00:00Z',
   },
   {
-    id: 'c0900000-1111-4000-8000-000000000009',
-    title: 'Class 9 Foundation & Target Course 2027',
-    title_hi: 'कक्षा 9वीं फाउंडेशन एवं बोर्ड पूर्व तैयारी कोर्स 2027',
-    tagline: 'Strong Science & Mathematics Foundation for High School',
-    description: 'Build rock-solid conceptual clarity for Class 9 Mathematics and Science to score 95%+ in school and upcoming matric exams.',
+    id: '5131a00d-5900-40ff-87c9-90223bdd6754',
+    title: 'Class 9 State Board Topper Course 2027',
+    title_hi: 'कक्षा 9वीं स्टेट बोर्ड टॉपर कोर्स 2027 (बोर्ड पूर्व तैयारी)',
+    tagline: 'Complete Board Examination 2027 Syllabus Mastery with BADE SIR',
+    description: 'Comprehensive coaching program covering full syllabus with daily HD live interactive sessions, handwritten PDF master notes, chapter-wise NCERT solutions, and weekly 30-second live test series.',
     description_hi: 'कक्षा 9वीं गणित एवं विज्ञान की मजबूत नींव ताकि 10वीं बोर्ड में 95%+ अंक सुनिश्चित हों।',
     thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b1-class8.jpg',
     board_id: 'b0000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000009',
-    price: 899,
-    discount_price: 399,
+    price: 999,
+    discount_price: 499,
     validity_days: 365,
     class_name: 'Class 9',
     is_published: true,
@@ -286,7 +286,7 @@ class AcademicRepository {
 
   private triggerThrottledSync() {
     const now = Date.now();
-    if (now - this.lastRealtimeSync < 2000) return;
+    if (now - this.lastRealtimeSync < 5000) return;
     this.lastRealtimeSync = now;
     this.syncFromCloud().catch(() => {});
   }
@@ -453,6 +453,20 @@ class AcademicRepository {
           supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         ]);
 
+        const hasListChanged = (newList: any[], currentList: any[]): boolean => {
+          if (newList.length !== currentList.length) return true;
+          for (let i = 0; i < newList.length; i++) {
+            const a = newList[i];
+            const b = currentList[i];
+            if (a.id !== b.id) return true;
+            if (a.updated_at && b.updated_at && a.updated_at !== b.updated_at) return true;
+            if (a.status && b.status && a.status !== b.status) return true;
+            if (a.title && b.title && a.title !== b.title) return true;
+            if (a.name && b.name && a.name !== b.name) return true;
+          }
+          return false;
+        };
+
         let hasChanged = false;
 
         // 1. Courses: Authoritative from Supabase
@@ -463,11 +477,13 @@ class AcademicRepository {
           remoteCourses = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
         }
         if (Array.isArray(remoteCourses)) {
-          const mappedCourses = remoteCourses.map((remote) => ({
-            ...remote,
-            thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
-          }));
-          if (JSON.stringify(mappedCourses) !== JSON.stringify(this.courses)) {
+          const mappedCourses = remoteCourses
+            .filter((remote) => !this.isDeleted(remote.id))
+            .map((remote) => ({
+              ...remote,
+              thumbnail_url: getResolvedThumbnailUrl(remote.thumbnail_url),
+            }));
+          if (hasListChanged(mappedCourses, this.courses)) {
             this.courses = mappedCourses;
             await this.persist('icc_courses', this.courses);
             hasChanged = true;
@@ -482,8 +498,9 @@ class AcademicRepository {
           remoteLive = await fetchDirectRest<any[]>('live_classes?select=*&order=scheduled_at.desc');
         }
         if (Array.isArray(remoteLive)) {
-          if (JSON.stringify(remoteLive) !== JSON.stringify(this.liveClasses)) {
-            this.liveClasses = remoteLive;
+          const activeLive = remoteLive.filter((l) => !this.isDeleted(l.id));
+          if (hasListChanged(activeLive, this.liveClasses)) {
+            this.liveClasses = activeLive;
             await this.persist('icc_live_classes', this.liveClasses);
             hasChanged = true;
           }
@@ -497,8 +514,9 @@ class AcademicRepository {
           remoteMats = await fetchDirectRest<any[]>('study_materials?select=*&order=created_at.desc');
         }
         if (Array.isArray(remoteMats)) {
-          if (JSON.stringify(remoteMats) !== JSON.stringify(this.materials)) {
-            this.materials = remoteMats;
+          const activeMats = remoteMats.filter((m) => !this.isDeleted(m.id));
+          if (hasListChanged(activeMats, this.materials)) {
+            this.materials = activeMats;
             await this.persist('icc_study_materials', this.materials);
             hasChanged = true;
           }
@@ -512,8 +530,9 @@ class AcademicRepository {
           remoteLecs = await fetchDirectRest<any[]>('recorded_lectures?select=*&order=lecture_order.asc');
         }
         if (Array.isArray(remoteLecs)) {
-          if (JSON.stringify(remoteLecs) !== JSON.stringify(this.lectures)) {
-            this.lectures = remoteLecs;
+          const activeLecs = remoteLecs.filter((l) => !this.isDeleted(l.id));
+          if (hasListChanged(activeLecs, this.lectures)) {
+            this.lectures = activeLecs;
             await this.persist('icc_recorded_lectures', this.lectures);
             hasChanged = true;
           }
@@ -527,8 +546,9 @@ class AcademicRepository {
           remoteSubs = await fetchDirectRest<any[]>('subjects?select=*&order=display_order.asc');
         }
         if (Array.isArray(remoteSubs)) {
-          if (JSON.stringify(remoteSubs) !== JSON.stringify(this.subjects)) {
-            this.subjects = remoteSubs;
+          const activeSubs = remoteSubs.filter((s) => !this.isDeleted(s.id));
+          if (hasListChanged(activeSubs, this.subjects)) {
+            this.subjects = activeSubs;
             await this.persist('icc_academic_subjects', this.subjects);
             hasChanged = true;
           }
@@ -542,8 +562,9 @@ class AcademicRepository {
           remoteChaps = await fetchDirectRest<any[]>('chapters?select=*&order=chapter_number.asc');
         }
         if (Array.isArray(remoteChaps)) {
-          if (JSON.stringify(remoteChaps) !== JSON.stringify(this.chapters)) {
-            this.chapters = remoteChaps;
+          const activeChaps = remoteChaps.filter((c) => !this.isDeleted(c.id));
+          if (hasListChanged(activeChaps, this.chapters)) {
+            this.chapters = activeChaps;
             await this.persist('icc_academic_chapters', this.chapters);
             hasChanged = true;
           }
@@ -551,7 +572,7 @@ class AcademicRepository {
 
         // 7. Payments: Authoritative from Supabase
         if (paymentsRes.status === 'fulfilled' && !paymentsRes.value.error && Array.isArray(paymentsRes.value.data)) {
-          if (JSON.stringify(paymentsRes.value.data) !== JSON.stringify(this.payments)) {
+          if (hasListChanged(paymentsRes.value.data, this.payments)) {
             this.payments = paymentsRes.value.data;
             await this.persist('icc_payments', this.payments);
             hasChanged = true;
@@ -560,7 +581,7 @@ class AcademicRepository {
 
         // 8. Profiles / Students: Authoritative from Supabase
         if (profilesRes.status === 'fulfilled' && !profilesRes.value.error && Array.isArray(profilesRes.value.data)) {
-          if (JSON.stringify(profilesRes.value.data) !== JSON.stringify(this.students)) {
+          if (hasListChanged(profilesRes.value.data, this.students)) {
             this.students = profilesRes.value.data;
             await this.persist('icc_students', this.students);
             hasChanged = true;

@@ -177,17 +177,17 @@ export const allInitialCourses: Course[] = [
     updated_at: '2026-11-18T00:00:00Z',
   },
   {
-    id: 'c0900000-1111-4000-8000-000000000009',
-    title: 'Class 9 Foundation & Target Course 2027',
-    title_hi: 'कक्षा 9वीं फाउंडेशन एवं बोर्ड पूर्व तैयारी कोर्स 2027',
-    tagline: 'Strong Science & Mathematics Foundation for High School',
-    description: 'Build rock-solid conceptual clarity for Class 9 Mathematics and Science to score 95%+ in school and upcoming matric exams.',
+    id: '5131a00d-5900-40ff-87c9-90223bdd6754',
+    title: 'Class 9 State Board Topper Course 2027',
+    title_hi: 'कक्षा 9वीं स्टेट बोर्ड टॉपर कोर्स 2027 (बोर्ड पूर्व तैयारी)',
+    tagline: 'Complete Board Examination 2027 Syllabus Mastery with BADE SIR',
+    description: 'Comprehensive coaching program covering full syllabus with daily HD live interactive sessions, handwritten PDF master notes, chapter-wise NCERT solutions, and weekly 30-second live test series.',
     description_hi: 'कक्षा 9वीं गणित एवं विज्ञान की मजबूत नींव ताकि 10वीं बोर्ड में 95%+ अंक सुनिश्चित हों।',
     thumbnail_url: 'https://icconline.vercel.app/thumbnails/batch-b1-class8.jpg',
     board_id: 'b0000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000009',
-    price: 899,
-    discount_price: 399,
+    price: 999,
+    discount_price: 499,
     validity_days: 365,
     class_name: 'Class 9',
     is_published: true,
@@ -560,7 +560,7 @@ export const AdminApi = {
 
       // 2. Secondary: Direct Supabase REST API (Guaranteed anon key + no-store cache)
       const directData = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
-      if (Array.isArray(directData)) {
+      if (Array.isArray(directData) && directData.length > 0) {
         const resolved: Course[] = directData.map((item) => ({
           ...(item as Course),
           thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
@@ -574,7 +574,8 @@ export const AdminApi = {
     }
 
     // 3. Offline / fallback cache only when remote is completely unreachable
-    localCourses = getPersistentState(STORAGE_KEYS.COURSES, []);
+    const cached = getPersistentState<Course[]>(STORAGE_KEYS.COURSES, []);
+    localCourses = Array.isArray(cached) && cached.length > 0 ? cached : allInitialCourses;
     return localCourses.map((c) => ({
       ...c,
       thumbnail_url: getResolvedThumbnailUrl(c.thumbnail_url),
@@ -811,6 +812,18 @@ export const AdminApi = {
       } catch (e) {
         console.error('createCourseSubject error:', e);
       }
+
+      const direct = await fetchDirectRest<any[]>('subjects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(payload),
+      });
+      if (Array.isArray(direct) && direct[0]) {
+        const key = `icc_course_subs_${courseId}`;
+        const current = getPersistentState<any[]>(key, []);
+        savePersistentState(key, [...current, direct[0]]);
+        return direct[0];
+      }
     }
     const fallback = { id: `sub-${Date.now()}`, ...payload };
     const key = `icc_course_subs_${courseId}`;
@@ -822,9 +835,12 @@ export const AdminApi = {
   deleteCourseSubject: async (courseId: string, subjectId: string) => {
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('subjects').delete().eq('id', subjectId);
+        const { error } = await supabase.from('subjects').delete().eq('id', subjectId);
+        if (error) {
+          await fetchDirectRest(`subjects?id=eq.${subjectId}`, { method: 'DELETE' });
+        }
       } catch (e) {
-        console.error('deleteCourseSubject error:', e);
+        await fetchDirectRest(`subjects?id=eq.${subjectId}`, { method: 'DELETE' });
       }
     }
     const key = `icc_course_subs_${courseId}`;
@@ -924,6 +940,19 @@ export const AdminApi = {
       } catch (e) {
         console.error('createSubjectChapter error:', e);
       }
+
+      const direct = await fetchDirectRest<any[]>('chapters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(payload),
+      });
+      if (Array.isArray(direct) && direct[0]) {
+        const res = { ...direct[0], sub_subject_id: chapter.sub_subject_id };
+        const key = `icc_subj_chaps_${subjectId}`;
+        const current = getPersistentState<any[]>(key, []);
+        savePersistentState(key, [...current, res]);
+        return res;
+      }
     }
     const fallback = { id: `ch-${Date.now()}`, ...payload, sub_subject_id: chapter.sub_subject_id };
     const key = `icc_subj_chaps_${subjectId}`;
@@ -935,9 +964,12 @@ export const AdminApi = {
   deleteSubjectChapter: async (subjectId: string, chapterId: string) => {
     if (isSupabaseConfigured) {
       try {
-        await supabase.from('chapters').delete().eq('id', chapterId);
+        const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
+        if (error) {
+          await fetchDirectRest(`chapters?id=eq.${chapterId}`, { method: 'DELETE' });
+        }
       } catch (e) {
-        console.error('deleteSubjectChapter error:', e);
+        await fetchDirectRest(`chapters?id=eq.${chapterId}`, { method: 'DELETE' });
       }
     }
     const key = `icc_subj_chaps_${subjectId}`;
@@ -1021,10 +1053,21 @@ export const AdminApi = {
           savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
           return data as LiveClass;
         } else if (error) {
-          console.error('createLiveClass Supabase error:', error);
+          console.error('createLiveClass Supabase error, trying direct REST POST:', error);
         }
       } catch (err) {
-        console.error('createLiveClass exception:', err);
+        console.error('createLiveClass exception, trying direct REST POST:', err);
+      }
+
+      const direct = await fetchDirectRest<any[]>('live_classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(insertPayload),
+      });
+      if (Array.isArray(direct) && direct[0]) {
+        localLiveClasses = [direct[0] as LiveClass, ...localLiveClasses];
+        savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+        return direct[0] as LiveClass;
       }
     }
 
@@ -1045,9 +1088,19 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { error } = await supabase.from('live_classes').update(updates).eq('id', classId);
-        if (error) console.error('updateLiveClass Supabase error:', error);
+        if (error) {
+          await fetchDirectRest(`live_classes?id=eq.${classId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+          });
+        }
       } catch (err) {
-        console.error('updateLiveClass exception:', err);
+        await fetchDirectRest(`live_classes?id=eq.${classId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
       }
     }
 
@@ -1119,9 +1172,11 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { error } = await supabase.from('live_classes').delete().eq('id', classId);
-        if (error) console.error('deleteLiveClass Supabase error:', error);
+        if (error) {
+          await fetchDirectRest(`live_classes?id=eq.${classId}`, { method: 'DELETE' });
+        }
       } catch (err) {
-        console.error('deleteLiveClass exception:', err);
+        await fetchDirectRest(`live_classes?id=eq.${classId}`, { method: 'DELETE' });
       }
     }
     localLiveClasses = localLiveClasses.filter((l) => l.id !== classId);
@@ -1363,10 +1418,21 @@ export const AdminApi = {
           savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
           return data as StudyMaterial;
         } else if (error) {
-          console.error('uploadStudyMaterial Supabase error:', error);
+          console.error('uploadStudyMaterial Supabase error, trying direct REST POST:', error);
         }
       } catch (err) {
-        console.error('uploadStudyMaterial exception:', err);
+        console.error('uploadStudyMaterial exception, trying direct REST POST:', err);
+      }
+
+      const direct = await fetchDirectRest<any[]>('study_materials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(insertPayload),
+      });
+      if (Array.isArray(direct) && direct[0]) {
+        localMaterials = [direct[0] as StudyMaterial, ...localMaterials];
+        savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+        return direct[0] as StudyMaterial;
       }
     }
 
@@ -1388,9 +1454,19 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { error } = await supabase.from('study_materials').update(updates).eq('id', materialId);
-        if (error) console.error('updateStudyMaterial Supabase error:', error);
+        if (error) {
+          await fetchDirectRest(`study_materials?id=eq.${materialId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+          });
+        }
       } catch (err) {
-        console.error('updateStudyMaterial exception:', err);
+        await fetchDirectRest(`study_materials?id=eq.${materialId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
       }
     }
 
@@ -1407,9 +1483,11 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       try {
         const { error } = await supabase.from('study_materials').delete().eq('id', materialId);
-        if (error) console.error('deleteStudyMaterial Supabase error:', error);
+        if (error) {
+          await fetchDirectRest(`study_materials?id=eq.${materialId}`, { method: 'DELETE' });
+        }
       } catch (err) {
-        console.error('deleteStudyMaterial exception:', err);
+        await fetchDirectRest(`study_materials?id=eq.${materialId}`, { method: 'DELETE' });
       }
     }
     localMaterials = localMaterials.filter((m) => m.id !== materialId);

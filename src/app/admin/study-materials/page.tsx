@@ -363,6 +363,16 @@ export default function StudyMaterialsPage() {
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="c0000000-0000-0000-0000-000000000010">कक्षा 10 (Class 10)</option>
+                    <option value="c0000000-0000-0000-0000-000000000009">कक्षा 9 (Class 9)</option>
+                    <option value="c0000000-0000-0000-0000-000000000008">कक्षा 8 (Class 8)</option>
+                    <option value="c0000000-0000-0000-0000-000000000007">कक्षा 7 (Class 7)</option>
+                    <option value="c0000000-0000-0000-0000-000000000006">कक्षा 6 (Class 6)</option>
+                    <option value="c0000000-0000-0000-0000-000000000005">कक्षा 5 (Class 5)</option>
+                    <option value="c0000000-0000-0000-0000-000000000004">कक्षा 4 (Class 4)</option>
+                    <option value="c0000000-0000-0000-0000-000000000003">कक्षा 3 (Class 3)</option>
+                    <option value="c0000000-0000-0000-0000-000000000002">कक्षा 2 (Class 2)</option>
+                    <option value="c0000000-0000-0000-0000-000000000001">कक्षा 1 (Class 1)</option>
+                    <option value="c0000000-0000-0000-0000-000000000011">कक्षा 11 (Class 11)</option>
                     <option value="c0000000-0000-0000-0000-000000000012">कक्षा 12 (Class 12)</option>
                   </select>
                 </div>

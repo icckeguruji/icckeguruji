@@ -119,8 +119,8 @@ export default function AdminDashboardPage() {
     description_hi: '',
   });
 
-  const loadDashboardData = async () => {
-    setIsRefreshing(true);
+  const loadDashboardData = async (isSilent = false) => {
+    if (!isSilent) setIsRefreshing(true);
     try {
       const [analyticsRes, coursesRes] = await Promise.allSettled([
         AdminApi.getDashboardAnalytics(),
@@ -136,46 +136,46 @@ export default function AdminDashboardPage() {
       console.warn('Dashboard data fetch error:', e);
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
+      if (!isSilent) setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadDashboardData();
+    loadDashboardData(false);
 
     let channel: any = null;
     if (isSupabaseConfigured) {
       channel = supabase
         .channel('admin-dashboard-master-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
-          loadDashboardData();
+          loadDashboardData(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
-          loadDashboardData();
+          loadDashboardData(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          loadDashboardData();
+          loadDashboardData(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'live_classes' }, () => {
-          loadDashboardData();
+          loadDashboardData(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, () => {
-          loadDashboardData();
+          loadDashboardData(true);
         })
         .subscribe();
     }
 
-    // Active heartbeat polling every 3s when tab is visible for instant parity
+    // Active heartbeat polling every 5s when tab is visible for instant parity (SILENT)
     const pollInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        loadDashboardData();
+        loadDashboardData(true);
       }
-    }, 3000);
+    }, 5000);
 
-    const handleFocus = () => loadDashboardData();
+    const handleFocus = () => loadDashboardData(true);
     const handleVisibility = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        loadDashboardData();
+        loadDashboardData(true);
       }
     };
     window.addEventListener('focus', handleFocus);
@@ -242,6 +242,13 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const getDerivedClassName = (course: Course) => {
+    if ((course as any).class_name) return (course as any).class_name;
+    const match = course.title.match(/Class\s*(\d+)/i) || (course.tagline ? course.tagline.match(/Class\s*(\d+)/i) : null);
+    if (match) return `Class ${match[1]}`;
+    return 'Class 10';
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     const boardIdMap: Record<string, string> = {
@@ -249,6 +256,12 @@ export default function AdminDashboardPage() {
       JAC: 'b0000000-0000-0000-0000-000000000002',
     };
     const classIdMap: Record<string, string> = {
+      'Class 1': 'c0000000-0000-0000-0000-000000000001',
+      'Class 2': 'c0000000-0000-0000-0000-000000000002',
+      'Class 3': 'c0000000-0000-0000-0000-000000000003',
+      'Class 4': 'c0000000-0000-0000-0000-000000000004',
+      'Class 5': 'c0000000-0000-0000-0000-000000000005',
+      'Class 6': 'c0000000-0000-0000-0000-000000000006',
       'Class 7': 'c0000000-0000-0000-0000-000000000007',
       'Class 8': 'c0000000-0000-0000-0000-000000000008',
       'Class 9': 'c0000000-0000-0000-0000-000000000009',
@@ -291,7 +304,7 @@ export default function AdminDashboardPage() {
       description: '',
       description_hi: '',
     });
-    loadDashboardData();
+    loadDashboardData(true);
   };
 
   const openEditModal = (course: Course) => {
@@ -301,7 +314,7 @@ export default function AdminDashboardPage() {
       title: course.title,
       title_hi: course.title_hi || course.title,
       board_code: course.title.includes('JAC') || course.board_id?.includes('2') ? 'JAC' : 'BSEB',
-      class_name: 'Class 10',
+      class_name: getDerivedClassName(course),
       is_free: course.is_free,
       price: course.price,
       discount_price: course.discount_price || course.price,
@@ -316,12 +329,37 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (!editingCourse) return;
 
+    const boardIdMap: Record<string, string> = {
+      BSEB: 'b0000000-0000-0000-0000-000000000001',
+      JAC: 'b0000000-0000-0000-0000-000000000002',
+    };
+    const classIdMap: Record<string, string> = {
+      'Class 1': 'c0000000-0000-0000-0000-000000000001',
+      'Class 2': 'c0000000-0000-0000-0000-000000000002',
+      'Class 3': 'c0000000-0000-0000-0000-000000000003',
+      'Class 4': 'c0000000-0000-0000-0000-000000000004',
+      'Class 5': 'c0000000-0000-0000-0000-000000000005',
+      'Class 6': 'c0000000-0000-0000-0000-000000000006',
+      'Class 7': 'c0000000-0000-0000-0000-000000000007',
+      'Class 8': 'c0000000-0000-0000-0000-000000000008',
+      'Class 9': 'c0000000-0000-0000-0000-000000000009',
+      'Class 10': 'c0000000-0000-0000-0000-000000000010',
+      'Class 11': 'c0000000-0000-0000-0000-000000000011',
+      'Class 12': 'c0000000-0000-0000-0000-000000000012',
+    };
+
+    const board_id = boardIdMap[editFormData.board_code] || 'b0000000-0000-0000-0000-000000000001';
+    const class_id = classIdMap[editFormData.class_name] || 'c0000000-0000-0000-0000-000000000010';
+
     const updated = await AdminApi.updateCourse(editingCourse.id, {
       title: editFormData.title,
       title_hi: editFormData.title_hi,
       description: editFormData.description,
       description_hi: editFormData.description_hi,
       thumbnail_url: editThumbnailUrl,
+      board_id,
+      class_id,
+      class_name: editFormData.class_name,
       is_free: editFormData.is_free,
       price: editFormData.is_free ? 0 : Number(editFormData.price),
       discount_price: editFormData.is_free ? 0 : Number(editFormData.discount_price),
@@ -329,11 +367,24 @@ export default function AdminDashboardPage() {
     });
 
     if (updated) {
-      setCourses((prev) => prev.map((c) => (c.id === editingCourse.id ? updated : c)));
+      setCourses((prev) =>
+        prev.map((c) =>
+          c.id === editingCourse.id
+            ? {
+                ...c,
+                ...updated,
+                class_name: editFormData.class_name,
+                board_id,
+                class_id,
+                thumbnail_url: editThumbnailUrl,
+              }
+            : c
+        )
+      );
     }
     setIsEditModalOpen(false);
     setEditingCourse(null);
-    loadDashboardData();
+    loadDashboardData(true);
   };
 
   const handleDeleteCourse = async (course: Course) => {
@@ -440,7 +491,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={loadDashboardData}
+              onClick={() => loadDashboardData(false)}
               disabled={isRefreshing}
               className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 transition active:scale-95 disabled:opacity-50"
             >
@@ -633,7 +684,10 @@ export default function AdminDashboardPage() {
                               'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
                           }}
                         />
-                        <div className="absolute top-3 left-3 flex space-x-2">
+                        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-600 text-white shadow-xs">
+                            {getDerivedClassName(course)}
+                          </span>
                           <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white backdrop-blur-xs">
                             {t('सत्र 2026-27', 'Session 2026-27')}
                           </span>
@@ -896,12 +950,11 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
                     className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="Class 7">Class 7</option>
-                    <option value="Class 8">Class 8</option>
-                    <option value="Class 9">Class 9</option>
-                    <option value="Class 10">Class 10</option>
-                    <option value="Class 11">Class 11</option>
-                    <option value="Class 12">Class 12</option>
+                    {['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map((cls) => (
+                      <option key={cls} value={cls}>
+                        {cls}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1045,6 +1098,39 @@ export default function AdminDashboardPage() {
                   onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
                   className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {t('बोर्ड', 'Board')}
+                  </label>
+                  <select
+                    value={editFormData.board_code}
+                    onChange={(e) => setEditFormData({ ...editFormData, board_code: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="BSEB">BSEB (बिहार बोर्ड)</option>
+                    <option value="JAC">JAC (झारखंड बोर्ड)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {t('कक्षा', 'Class')}
+                  </label>
+                  <select
+                    value={editFormData.class_name}
+                    onChange={(e) => setEditFormData({ ...editFormData, class_name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+                  >
+                    {['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map((cls) => (
+                      <option key={cls} value={cls}>
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Free vs Paid Toggle */}

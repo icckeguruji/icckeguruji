@@ -47,9 +47,25 @@ interface SubjectChapter {
   description?: string;
 }
 
+const CLASSES_LIST = [
+  'Class 10',
+  'Class 9',
+  'Class 8',
+  'Class 7',
+  'Class 6',
+  'Class 5',
+  'Class 4',
+  'Class 3',
+  'Class 2',
+  'Class 1',
+  'Class 11',
+  'Class 12',
+];
+
 export default function CoursesPage() {
   const { lang, t } = useLanguage();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [activeClassFilter, setActiveClassFilter] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -110,42 +126,42 @@ export default function CoursesPage() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const loadCourses = async () => {
-    setIsRefreshing(true);
+  const loadCourses = async (isSilent = false) => {
+    if (!isSilent) setIsRefreshing(true);
     try {
       const data = await AdminApi.getCourses();
       setCourses(data);
     } catch (e) {
       console.warn('loadCourses error:', e);
     } finally {
-      setIsRefreshing(false);
+      if (!isSilent) setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadCourses();
+    loadCourses(false);
 
     let channel: any = null;
     if (isSupabaseConfigured) {
       channel = supabase
         .channel('admin-courses-sync')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
-          loadCourses();
+          loadCourses(true);
         })
         .subscribe();
     }
 
-    // Active heartbeat polling every 3s when tab is visible for instant parity
+    // Active heartbeat polling every 5s when tab is visible for instant parity (SILENT)
     const pollInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        loadCourses();
+        loadCourses(true);
       }
-    }, 3000);
+    }, 5000);
 
-    const handleFocus = () => loadCourses();
+    const handleFocus = () => loadCourses(true);
     const handleVisibility = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        loadCourses();
+        loadCourses(true);
       }
     };
     window.addEventListener('focus', handleFocus);
@@ -212,6 +228,13 @@ export default function CoursesPage() {
     }
   };
 
+  const getDerivedClassName = (course: Course) => {
+    if ((course as any).class_name) return (course as any).class_name;
+    const match = course.title.match(/Class\s*(\d+)/i) || (course.tagline ? course.tagline.match(/Class\s*(\d+)/i) : null);
+    if (match) return `Class ${match[1]}`;
+    return 'Class 10';
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     const boardIdMap: Record<string, string> = {
@@ -219,6 +242,12 @@ export default function CoursesPage() {
       JAC: 'b0000000-0000-0000-0000-000000000002',
     };
     const classIdMap: Record<string, string> = {
+      'Class 1': 'c0000000-0000-0000-0000-000000000001',
+      'Class 2': 'c0000000-0000-0000-0000-000000000002',
+      'Class 3': 'c0000000-0000-0000-0000-000000000003',
+      'Class 4': 'c0000000-0000-0000-0000-000000000004',
+      'Class 5': 'c0000000-0000-0000-0000-000000000005',
+      'Class 6': 'c0000000-0000-0000-0000-000000000006',
       'Class 7': 'c0000000-0000-0000-0000-000000000007',
       'Class 8': 'c0000000-0000-0000-0000-000000000008',
       'Class 9': 'c0000000-0000-0000-0000-000000000009',
@@ -270,7 +299,7 @@ export default function CoursesPage() {
       title: course.title,
       title_hi: course.title_hi || course.title,
       board_code: course.title.includes('JAC') || course.board_id?.includes('2') ? 'JAC' : 'BSEB',
-      class_name: 'Class 10',
+      class_name: getDerivedClassName(course),
       is_free: course.is_free,
       price: course.price,
       discount_price: course.discount_price || course.price,
@@ -285,12 +314,37 @@ export default function CoursesPage() {
     e.preventDefault();
     if (!editingCourse) return;
 
+    const boardIdMap: Record<string, string> = {
+      BSEB: 'b0000000-0000-0000-0000-000000000001',
+      JAC: 'b0000000-0000-0000-0000-000000000002',
+    };
+    const classIdMap: Record<string, string> = {
+      'Class 1': 'c0000000-0000-0000-0000-000000000001',
+      'Class 2': 'c0000000-0000-0000-0000-000000000002',
+      'Class 3': 'c0000000-0000-0000-0000-000000000003',
+      'Class 4': 'c0000000-0000-0000-0000-000000000004',
+      'Class 5': 'c0000000-0000-0000-0000-000000000005',
+      'Class 6': 'c0000000-0000-0000-0000-000000000006',
+      'Class 7': 'c0000000-0000-0000-0000-000000000007',
+      'Class 8': 'c0000000-0000-0000-0000-000000000008',
+      'Class 9': 'c0000000-0000-0000-0000-000000000009',
+      'Class 10': 'c0000000-0000-0000-0000-000000000010',
+      'Class 11': 'c0000000-0000-0000-0000-000000000011',
+      'Class 12': 'c0000000-0000-0000-0000-000000000012',
+    };
+
+    const board_id = boardIdMap[editFormData.board_code] || 'b0000000-0000-0000-0000-000000000001';
+    const class_id = classIdMap[editFormData.class_name] || 'c0000000-0000-0000-0000-000000000010';
+
     const updated = await AdminApi.updateCourse(editingCourse.id, {
       title: editFormData.title,
       title_hi: editFormData.title_hi,
       description: editFormData.description,
       description_hi: editFormData.description_hi,
       thumbnail_url: editThumbnailUrl,
+      board_id,
+      class_id,
+      class_name: editFormData.class_name,
       is_free: editFormData.is_free,
       price: editFormData.is_free ? 0 : Number(editFormData.price),
       discount_price: editFormData.is_free ? 0 : Number(editFormData.discount_price),
@@ -298,7 +352,20 @@ export default function CoursesPage() {
     });
 
     if (updated) {
-      setCourses((prev) => prev.map((c) => (c.id === editingCourse.id ? updated : c)));
+      setCourses((prev) =>
+        prev.map((c) =>
+          c.id === editingCourse.id
+            ? {
+                ...c,
+                ...updated,
+                class_name: editFormData.class_name,
+                board_id,
+                class_id,
+                thumbnail_url: editThumbnailUrl,
+              }
+            : c
+        )
+      );
     }
     setIsEditModalOpen(false);
     setEditingCourse(null);
@@ -487,6 +554,14 @@ export default function CoursesPage() {
     setContentFormUrl('');
   };
 
+  const filteredCourses = courses.filter((c) => {
+    if (activeClassFilter === 'ALL') return true;
+    const derivedClass = getDerivedClassName(c);
+    if (derivedClass.toLowerCase() === activeClassFilter.toLowerCase()) return true;
+    const pattern = new RegExp(`\\b${activeClassFilter}\\b`, 'i');
+    return pattern.test(c.title) || (c.tagline ? pattern.test(c.tagline) : false);
+  });
+
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
@@ -508,7 +583,7 @@ export default function CoursesPage() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
-              onClick={loadCourses}
+              onClick={() => loadCourses(false)}
               disabled={isRefreshing}
               className="flex items-center space-x-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 disabled:opacity-50"
               title="Refresh courses from database"
@@ -526,12 +601,31 @@ export default function CoursesPage() {
           </div>
         </div>
 
+        {/* Class Filter Bar (Parity with Mobile App) */}
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs">
+          {['ALL', ...CLASSES_LIST].map((cls) => (
+            <button
+              key={cls}
+              onClick={() => setActiveClassFilter(cls)}
+              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition cursor-pointer ${
+                activeClassFilter === cls
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+              }`}
+            >
+              {cls === 'ALL' ? t('सभी कक्षाएं (ALL)', 'ALL Classes') : cls}
+            </button>
+          ))}
+        </div>
+
         {/* Course Cards Grid */}
-        {courses.length === 0 ? (
+        {filteredCourses.length === 0 ? (
           <div className="py-16 text-center bg-white rounded-2xl border border-dashed border-slate-200">
             <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-sm font-bold text-slate-700">
-              {t('अभी कोई कोर्स नहीं है', 'No courses in database')}
+              {activeClassFilter === 'ALL'
+                ? t('अभी कोई कोर्स नहीं है', 'No courses in database')
+                : t(`${activeClassFilter} में अभी कोई कोर्स नहीं है`, `No courses found in ${activeClassFilter}`)}
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
               {t('ऊपर "+ नया कोर्स जोड़ें" बटन दबाकर या मोबाइल ऐप से नया कोर्स जोड़ें।', 'Create your first course with "+ Add New Course" or from the mobile app.')}
@@ -539,7 +633,7 @@ export default function CoursesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {courses.map((course) => {
+            {filteredCourses.map((course) => {
             const resolvedThumb = getResolvedThumbnailUrl(course.thumbnail_url);
             return (
               <div
@@ -555,7 +649,10 @@ export default function CoursesPage() {
                       (e.currentTarget as HTMLImageElement).src = 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
                     }}
                   />
-                  <div className="absolute top-3 left-3 flex space-x-2">
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-600 text-white shadow-xs">
+                      {getDerivedClassName(course)}
+                    </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white backdrop-blur-xs">
                       {t('सत्र 2026-27', 'Session 2026-27')}
                     </span>
@@ -703,12 +800,11 @@ export default function CoursesPage() {
                     onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
-                    <option value="Class 7">कक्षा 7</option>
-                    <option value="Class 8">कक्षा 8</option>
-                    <option value="Class 9">कक्षा 9</option>
-                    <option value="Class 10">कक्षा 10</option>
-                    <option value="Class 11">कक्षा 11 (विज्ञान)</option>
-                    <option value="Class 12">कक्षा 12 (विज्ञान)</option>
+                    {CLASSES_LIST.map((cls) => (
+                      <option key={cls} value={cls}>
+                        {cls}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -880,6 +976,38 @@ export default function CoursesPage() {
                       onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      {t('बोर्ड (Board)', 'Board')}
+                    </label>
+                    <select
+                      value={editFormData.board_code}
+                      onChange={(e) => setEditFormData({ ...editFormData, board_code: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="BSEB">BSEB (बिहार बोर्ड)</option>
+                      <option value="JAC">JAC (झारखंड बोर्ड)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      {t('कक्षा (Class)', 'Class')}
+                    </label>
+                    <select
+                      value={editFormData.class_name}
+                      onChange={(e) => setEditFormData({ ...editFormData, class_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      {CLASSES_LIST.map((cls) => (
+                        <option key={cls} value={cls}>
+                          {cls}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
