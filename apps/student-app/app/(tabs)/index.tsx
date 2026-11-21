@@ -72,36 +72,18 @@ export default function StudentHomeScreen() {
 
   const loadCachedData = useCallback(async () => {
     try {
-      const [fetchedCourses, fetchedLive] = await Promise.all([
+      const [fetchedCourses, fetchedLive, pays, studs] = await Promise.all([
         academicService.getCourses(),
         academicService.getLiveClasses(),
+        academicService.getPayments(),
+        academicService.getStudents(),
       ]);
       if (Array.isArray(fetchedCourses)) {
         setCourses(fetchedCourses);
       }
       setLiveClasses(fetchedLive);
-
-      // Fetch Live counts from Supabase or cached repository
-      if (isSupabaseConfigured) {
-        try {
-          const [pendingRes, studentsRes] = await Promise.all([
-            supabase.from('payments').select('id', { count: 'exact' }).eq('status', 'pending'),
-            supabase.from('profiles').select('id', { count: 'exact' }).eq('is_active', true),
-          ]);
-          setPendingApprovalsCount(pendingRes.count ?? 0);
-          setActiveStudentsCount(studentsRes.count ?? 0);
-        } catch {
-          const pays = await academicService.getPayments();
-          const studs = await academicService.getStudents();
-          setPendingApprovalsCount(pays.filter((p: any) => p.status === 'pending').length);
-          setActiveStudentsCount(studs.filter((s: any) => s.is_active).length);
-        }
-      } else {
-        const pays = await academicService.getPayments();
-        const studs = await academicService.getStudents();
-        setPendingApprovalsCount(pays.filter((p: any) => p.status === 'pending').length);
-        setActiveStudentsCount(studs.filter((s: any) => s.is_active).length);
-      }
+      setPendingApprovalsCount(pays.filter((p: any) => p.status === 'pending').length);
+      setActiveStudentsCount(studs.filter((s: any) => s.is_active).length);
     } catch {
       // Graceful fallback
     }

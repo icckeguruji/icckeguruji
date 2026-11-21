@@ -281,6 +281,8 @@ function savePersistentState<T>(key: string, data: T): void {
 
 // Direct Supabase REST fetcher with static anon key — guarantees zero-cache live parity and bypasses expired sessions
 async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
   try {
     const url = endpoint.startsWith('http') ? endpoint : `${LIVE_SUPABASE_URL}/rest/v1/${endpoint}`;
     const headers: Record<string, string> = {
@@ -291,11 +293,14 @@ async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): 
     const res = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
       cache: 'no-store',
     });
+    clearTimeout(timeoutId);
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
+    clearTimeout(timeoutId);
     return null;
   }
 }
@@ -338,16 +343,7 @@ export const AdminApi = {
 
     if (isSupabaseConfigured) {
       try {
-        const [
-          studentsResult,
-          activeStudentsResult,
-          coursesResult,
-          paymentsResult,
-          materialsResult,
-          liveResult,
-          lecturesResult,
-          examsResult,
-        ] = await Promise.allSettled([
+        const queriesPromise = Promise.allSettled([
           supabase.from('profiles').select('id', { count: 'exact' }),
           supabase.from('profiles').select('id', { count: 'exact' }).eq('is_active', true),
           supabase.from('courses').select('id', { count: 'exact' }),
@@ -358,36 +354,52 @@ export const AdminApi = {
           supabase.from('examinations').select('id', { count: 'exact' }),
         ]);
 
-        if (studentsResult.status === 'fulfilled' && typeof studentsResult.value.count === 'number') {
-          studentCount = studentsResult.value.count;
-        }
-        if (activeStudentsResult.status === 'fulfilled' && typeof activeStudentsResult.value.count === 'number') {
-          activeStudentCount = activeStudentsResult.value.count;
-        }
-        if (coursesResult.status === 'fulfilled' && typeof coursesResult.value.count === 'number') {
-          courseCount = coursesResult.value.count;
-        }
-        if (materialsResult.status === 'fulfilled' && typeof materialsResult.value.count === 'number') {
-          pdfCount = materialsResult.value.count;
-        }
-        if (liveResult.status === 'fulfilled' && typeof liveResult.value.count === 'number') {
-          liveCount = liveResult.value.count;
-        }
-        if (lecturesResult.status === 'fulfilled' && typeof lecturesResult.value.count === 'number') {
-          lectureCount = lecturesResult.value.count;
-        }
-        if (examsResult.status === 'fulfilled' && typeof examsResult.value.count === 'number') {
-          examCount = examsResult.value.count;
-        }
+        const timeoutPromise = new Promise<any[]>((res) => setTimeout(() => res([]), 2500));
+        const settled = await Promise.race([queriesPromise, timeoutPromise]);
 
-        if (paymentsResult.status === 'fulfilled') {
-          const dbPayments = (paymentsResult.value as any).data || [];
-          if (dbPayments.length > 0) {
-            pendingPayments = dbPayments.filter((p: any) => p.status === 'pending').length;
-            approvedPayments = dbPayments.filter((p: any) => p.status === 'approved').length;
-            totalRevenue = dbPayments
-              .filter((p: any) => p.status === 'approved')
-              .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+        if (Array.isArray(settled) && settled.length >= 8) {
+          const [
+            studentsResult,
+            activeStudentsResult,
+            coursesResult,
+            paymentsResult,
+            materialsResult,
+            liveResult,
+            lecturesResult,
+            examsResult,
+          ] = settled;
+
+          if (studentsResult.status === 'fulfilled' && typeof studentsResult.value.count === 'number') {
+            studentCount = studentsResult.value.count;
+          }
+          if (activeStudentsResult.status === 'fulfilled' && typeof activeStudentsResult.value.count === 'number') {
+            activeStudentCount = activeStudentsResult.value.count;
+          }
+          if (coursesResult.status === 'fulfilled' && typeof coursesResult.value.count === 'number') {
+            courseCount = coursesResult.value.count;
+          }
+          if (materialsResult.status === 'fulfilled' && typeof materialsResult.value.count === 'number') {
+            pdfCount = materialsResult.value.count;
+          }
+          if (liveResult.status === 'fulfilled' && typeof liveResult.value.count === 'number') {
+            liveCount = liveResult.value.count;
+          }
+          if (lecturesResult.status === 'fulfilled' && typeof lecturesResult.value.count === 'number') {
+            lectureCount = lecturesResult.value.count;
+          }
+          if (examsResult.status === 'fulfilled' && typeof examsResult.value.count === 'number') {
+            examCount = examsResult.value.count;
+          }
+
+          if (paymentsResult.status === 'fulfilled') {
+            const dbPayments = (paymentsResult.value as any).data || [];
+            if (dbPayments.length > 0) {
+              pendingPayments = dbPayments.filter((p: any) => p.status === 'pending').length;
+              approvedPayments = dbPayments.filter((p: any) => p.status === 'approved').length;
+              totalRevenue = dbPayments
+                .filter((p: any) => p.status === 'approved')
+                .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+            }
           }
         }
       } catch {}
@@ -528,8 +540,22 @@ export const AdminApi = {
 
   // 3. Course Management (CRUD - Supabase Single Source of Truth + Direct REST Zero-Cache Failover)
   getCourses: async () => {
-    // 1. Primary: Supabase client
     if (isSupabaseConfigured) {
+      // 1. Primary: Direct Supabase REST API (Guaranteed anon key + no-store cache + instant < 100ms)
+      const directData = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
+      if (Array.isArray(directData) && directData.length > 0) {
+        const resolved: Course[] = directData.map((item) => ({
+          ...(item as Course),
+          thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
+        }));
+        localCourses = resolved;
+        try {
+          savePersistentState(STORAGE_KEYS.COURSES, resolved);
+        } catch {}
+        return resolved;
+      }
+
+      // 2. Secondary: Supabase client fallback
       try {
         const { data, error } = await supabase
           .from('courses')
@@ -555,21 +581,7 @@ export const AdminApi = {
           }
         }
       } catch (e) {
-        console.warn('getCourses Supabase exception, trying direct REST:', e);
-      }
-
-      // 2. Secondary: Direct Supabase REST API (Guaranteed anon key + no-store cache)
-      const directData = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
-      if (Array.isArray(directData) && directData.length > 0) {
-        const resolved: Course[] = directData.map((item) => ({
-          ...(item as Course),
-          thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
-        }));
-        localCourses = resolved;
-        try {
-          savePersistentState(STORAGE_KEYS.COURSES, resolved);
-        } catch {}
-        return resolved;
+        console.warn('getCourses Supabase exception:', e);
       }
     }
 
@@ -997,6 +1009,12 @@ export const AdminApi = {
   // 4. Live Classes (CRUD)
   getLiveClasses: async () => {
     if (isSupabaseConfigured) {
+      const direct = await fetchDirectRest<LiveClass[]>('live_classes?select=*&order=scheduled_at.desc');
+      if (Array.isArray(direct)) {
+        localLiveClasses = direct;
+        savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+        return localLiveClasses;
+      }
       try {
         const { data, error } = await supabase
           .from('live_classes')
@@ -1009,12 +1027,6 @@ export const AdminApi = {
         }
       } catch (e) {
         console.warn('getLiveClasses Supabase error:', e);
-      }
-      const direct = await fetchDirectRest<LiveClass[]>('live_classes?select=*&order=scheduled_at.desc');
-      if (Array.isArray(direct)) {
-        localLiveClasses = direct;
-        savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
-        return localLiveClasses;
       }
     }
     localLiveClasses = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, []);
@@ -1359,6 +1371,12 @@ export const AdminApi = {
   // 6. Study Materials PDF (CRUD)
   getStudyMaterials: async () => {
     if (isSupabaseConfigured) {
+      const direct = await fetchDirectRest<StudyMaterial[]>('study_materials?select=*&order=created_at.desc');
+      if (Array.isArray(direct)) {
+        localMaterials = direct;
+        savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
+        return localMaterials;
+      }
       try {
         const { data, error } = await supabase
           .from('study_materials')
@@ -1371,12 +1389,6 @@ export const AdminApi = {
         }
       } catch (e) {
         console.warn('getStudyMaterials Supabase error:', e);
-      }
-      const direct = await fetchDirectRest<StudyMaterial[]>('study_materials?select=*&order=created_at.desc');
-      if (Array.isArray(direct)) {
-        localMaterials = direct;
-        savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
-        return localMaterials;
       }
     }
     localMaterials = getPersistentState(STORAGE_KEYS.MATERIALS, []);

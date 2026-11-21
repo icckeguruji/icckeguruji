@@ -3,11 +3,38 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => {
-    if (Platform.OS === 'web') {
-      return Promise.resolve(typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null);
+  getItem: async (key: string) => {
+    try {
+      let raw: string | null = null;
+      if (Platform.OS === 'web') {
+        raw = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+      } else {
+        raw = await SecureStore.getItemAsync(key);
+      }
+      if (raw && key.endsWith('-auth-token')) {
+        try {
+          const parsed = JSON.parse(raw);
+          const token = parsed?.access_token || (Array.isArray(parsed) ? parsed[0] : null);
+          if (token && token.includes('.')) {
+            const payload = JSON.parse(
+              atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+            );
+            if (payload?.exp && payload.exp * 1000 < Date.now()) {
+              console.warn('Proactively purged expired Supabase session token in mobile:', key);
+              if (Platform.OS === 'web') {
+                if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+              } else {
+                await SecureStore.deleteItemAsync(key);
+              }
+              return null;
+            }
+          }
+        } catch {}
+      }
+      return raw;
+    } catch {
+      return null;
     }
-    return SecureStore.getItemAsync(key);
   },
   setItem: (key: string, value: string) => {
     if (Platform.OS === 'web') {

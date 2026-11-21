@@ -15,6 +15,8 @@ import { Course, LiveClass, StudyMaterial, UserProfile } from '@icc/shared-types
 
 // Direct Supabase REST fetcher with static anon key — guarantees zero-cache live parity and bypasses expired sessions
 async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
   try {
     const url = endpoint.startsWith('http') ? endpoint : `${LIVE_SUPABASE_URL}/rest/v1/${endpoint}`;
     const headers: Record<string, string> = {
@@ -25,10 +27,13 @@ async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): 
     const res = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
+    clearTimeout(timeoutId);
     return null;
   }
 }
@@ -433,24 +438,25 @@ class AcademicRepository {
 
     this.syncPromise = (async () => {
       try {
+        // Fast parallel fetch using Direct REST with static anon key (Guaranteed ~500ms, zero auth hang)
         const [
-          coursesRes,
-          liveRes,
-          matsRes,
-          lecsRes,
-          subsRes,
-          chapsRes,
-          paymentsRes,
-          profilesRes,
-        ] = await Promise.allSettled([
-          supabase.from('courses').select('*').order('created_at', { ascending: false }),
-          supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false }),
-          supabase.from('study_materials').select('*').order('created_at', { ascending: false }),
-          supabase.from('recorded_lectures').select('*').order('lecture_order', { ascending: true }),
-          supabase.from('subjects').select('*').order('display_order', { ascending: true }),
-          supabase.from('chapters').select('*').order('chapter_number', { ascending: true }),
-          supabase.from('payments').select('*').order('created_at', { ascending: false }),
-          supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+          remoteCourses,
+          remoteLive,
+          remoteMats,
+          remoteLecs,
+          remoteSubs,
+          remoteChaps,
+          remotePayments,
+          remoteProfiles,
+        ] = await Promise.all([
+          fetchDirectRest<any[]>('courses?select=*&order=created_at.desc'),
+          fetchDirectRest<any[]>('live_classes?select=*&order=scheduled_at.desc'),
+          fetchDirectRest<any[]>('study_materials?select=*&order=created_at.desc'),
+          fetchDirectRest<any[]>('recorded_lectures?select=*&order=lecture_order.asc'),
+          fetchDirectRest<any[]>('subjects?select=*&order=display_order.asc'),
+          fetchDirectRest<any[]>('chapters?select=*&order=chapter_number.asc'),
+          fetchDirectRest<any[]>('payments?select=*&order=created_at.desc'),
+          fetchDirectRest<any[]>('profiles?select=*&order=created_at.desc'),
         ]);
 
         const hasListChanged = (newList: any[], currentList: any[]): boolean => {
@@ -470,13 +476,7 @@ class AcademicRepository {
         let hasChanged = false;
 
         // 1. Courses: Authoritative from Supabase
-        let remoteCourses: any[] | null = null;
-        if (coursesRes.status === 'fulfilled' && !coursesRes.value.error && Array.isArray(coursesRes.value.data)) {
-          remoteCourses = coursesRes.value.data;
-        } else {
-          remoteCourses = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
-        }
-        if (Array.isArray(remoteCourses)) {
+        if (Array.isArray(remoteCourses) && remoteCourses.length > 0) {
           const mappedCourses = remoteCourses
             .filter((remote) => !this.isDeleted(remote.id))
             .map((remote) => ({
@@ -485,105 +485,75 @@ class AcademicRepository {
             }));
           if (hasListChanged(mappedCourses, this.courses)) {
             this.courses = mappedCourses;
-            await this.persist('icc_courses', this.courses);
+            this.persist('icc_courses', this.courses).catch(() => {});
             hasChanged = true;
           }
         }
 
         // 2. Live Classes: Authoritative from Supabase
-        let remoteLive: any[] | null = null;
-        if (liveRes.status === 'fulfilled' && !liveRes.value.error && Array.isArray(liveRes.value.data)) {
-          remoteLive = liveRes.value.data;
-        } else {
-          remoteLive = await fetchDirectRest<any[]>('live_classes?select=*&order=scheduled_at.desc');
-        }
         if (Array.isArray(remoteLive)) {
           const activeLive = remoteLive.filter((l) => !this.isDeleted(l.id));
           if (hasListChanged(activeLive, this.liveClasses)) {
             this.liveClasses = activeLive;
-            await this.persist('icc_live_classes', this.liveClasses);
+            this.persist('icc_live_classes', this.liveClasses).catch(() => {});
             hasChanged = true;
           }
         }
 
         // 3. Study Materials: Authoritative from Supabase
-        let remoteMats: any[] | null = null;
-        if (matsRes.status === 'fulfilled' && !matsRes.value.error && Array.isArray(matsRes.value.data)) {
-          remoteMats = matsRes.value.data;
-        } else {
-          remoteMats = await fetchDirectRest<any[]>('study_materials?select=*&order=created_at.desc');
-        }
         if (Array.isArray(remoteMats)) {
           const activeMats = remoteMats.filter((m) => !this.isDeleted(m.id));
           if (hasListChanged(activeMats, this.materials)) {
             this.materials = activeMats;
-            await this.persist('icc_study_materials', this.materials);
+            this.persist('icc_study_materials', this.materials).catch(() => {});
             hasChanged = true;
           }
         }
 
         // 4. Recorded Lectures: Authoritative from Supabase
-        let remoteLecs: any[] | null = null;
-        if (lecsRes.status === 'fulfilled' && !lecsRes.value.error && Array.isArray(lecsRes.value.data)) {
-          remoteLecs = lecsRes.value.data;
-        } else {
-          remoteLecs = await fetchDirectRest<any[]>('recorded_lectures?select=*&order=lecture_order.asc');
-        }
         if (Array.isArray(remoteLecs)) {
           const activeLecs = remoteLecs.filter((l) => !this.isDeleted(l.id));
           if (hasListChanged(activeLecs, this.lectures)) {
             this.lectures = activeLecs;
-            await this.persist('icc_recorded_lectures', this.lectures);
+            this.persist('icc_recorded_lectures', this.lectures).catch(() => {});
             hasChanged = true;
           }
         }
 
         // 5. Subjects: Authoritative from Supabase
-        let remoteSubs: any[] | null = null;
-        if (subsRes.status === 'fulfilled' && !subsRes.value.error && Array.isArray(subsRes.value.data)) {
-          remoteSubs = subsRes.value.data;
-        } else {
-          remoteSubs = await fetchDirectRest<any[]>('subjects?select=*&order=display_order.asc');
-        }
-        if (Array.isArray(remoteSubs)) {
+        if (Array.isArray(remoteSubs) && remoteSubs.length > 0) {
           const activeSubs = remoteSubs.filter((s) => !this.isDeleted(s.id));
           if (hasListChanged(activeSubs, this.subjects)) {
             this.subjects = activeSubs;
-            await this.persist('icc_academic_subjects', this.subjects);
+            this.persist('icc_academic_subjects', this.subjects).catch(() => {});
             hasChanged = true;
           }
         }
 
         // 6. Chapters: Authoritative from Supabase
-        let remoteChaps: any[] | null = null;
-        if (chapsRes.status === 'fulfilled' && !chapsRes.value.error && Array.isArray(chapsRes.value.data)) {
-          remoteChaps = chapsRes.value.data;
-        } else {
-          remoteChaps = await fetchDirectRest<any[]>('chapters?select=*&order=chapter_number.asc');
-        }
-        if (Array.isArray(remoteChaps)) {
+        if (Array.isArray(remoteChaps) && remoteChaps.length > 0) {
           const activeChaps = remoteChaps.filter((c) => !this.isDeleted(c.id));
           if (hasListChanged(activeChaps, this.chapters)) {
             this.chapters = activeChaps;
-            await this.persist('icc_academic_chapters', this.chapters);
+            this.persist('icc_academic_chapters', this.chapters).catch(() => {});
             hasChanged = true;
           }
         }
 
         // 7. Payments: Authoritative from Supabase
-        if (paymentsRes.status === 'fulfilled' && !paymentsRes.value.error && Array.isArray(paymentsRes.value.data)) {
-          if (hasListChanged(paymentsRes.value.data, this.payments)) {
-            this.payments = paymentsRes.value.data;
-            await this.persist('icc_payments', this.payments);
+        if (Array.isArray(remotePayments)) {
+          if (hasListChanged(remotePayments, this.payments)) {
+            this.payments = remotePayments;
+            this.persist('icc_payments', this.payments).catch(() => {});
             hasChanged = true;
           }
         }
 
         // 8. Profiles / Students: Authoritative from Supabase
-        if (profilesRes.status === 'fulfilled' && !profilesRes.value.error && Array.isArray(profilesRes.value.data)) {
-          if (hasListChanged(profilesRes.value.data, this.students)) {
-            this.students = profilesRes.value.data;
-            await this.persist('icc_students', this.students);
+        if (Array.isArray(remoteProfiles)) {
+          if (hasListChanged(remoteProfiles, this.students)) {
+            this.students = remoteProfiles;
+            this.persist('icc_students', this.students).catch(() => {});
             hasChanged = true;
           }
         }

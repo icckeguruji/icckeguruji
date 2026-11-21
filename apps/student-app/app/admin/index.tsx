@@ -148,8 +148,14 @@ export default function AndroidAdminDashboardScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await academicService.syncFromCloud();
-    await loadAllData();
+    try {
+      await academicService.syncFromCloud();
+      await loadAllData();
+    } catch {
+      // Graceful fallback
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // --- COURSE CRUD ---
