@@ -273,7 +273,7 @@ export default function LoginScreen() {
                   <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
                     {rememberMe && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
                   </View>
-                  <Text style={styles.rememberMeText}>Remember Me / याद रखें</Text>
+                  <Text style={styles.rememberMeText}>Remember Me</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

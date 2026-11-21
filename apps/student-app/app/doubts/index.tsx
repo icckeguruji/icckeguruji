@@ -74,7 +74,7 @@ export default function StudentDoubtsScreen() {
   const [doubts, setDoubts] = useState<DoubtItem[]>([
     {
       id: 'd-1',
-      subject: 'Science (विज्ञान)',
+      subject: 'Science',
       title: 'विस्थापन एवं द्विविस्थापन अभिक्रिया में क्या अंतर है?',
       description: 'सर, कृपया उदाहरण सहित समझाएं कि कॉपर सल्फेट और आयरन की क्रिया विस्थापन क्यों है?',
       status: 'resolved',
@@ -83,7 +83,7 @@ export default function StudentDoubtsScreen() {
     },
     {
       id: 'd-2',
-      subject: 'Mathematics (गणित)',
+      subject: 'Mathematics',
       title: 'यूक्लिड विभाजन प्रमेयिका द्वारा HCF ज्ञात करने में शेषफल शून्य न आने पर क्या करें?',
       description: 'कृपया 135 और 225 के HCF का चरणबद्ध हल बताएं।',
       status: 'open',

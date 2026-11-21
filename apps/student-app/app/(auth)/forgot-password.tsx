@@ -31,11 +31,7 @@ export default function ForgotPasswordScreen() {
     const trimmed = email.trim().toLowerCase();
 
     if (!trimmed || !trimmed.includes('@')) {
-      setErrorMsg(
-        language === 'hi'
-          ? 'कृपया मान्य ईमेल पता दर्ज करें'
-          : 'Please enter a valid email address'
-      );
+      setErrorMsg('Please enter a valid email address');
       return;
     }
 

@@ -823,7 +823,7 @@ export default function StudentProfileScreen() {
                     🤖 Director AI Copilot
                   </Text>
                   <Text style={styles.adminHubRowSub}>
-                    Bolkar/likhkar courses, live classes aur fees manage karein
+                    Manage courses, live classes and fee approvals with AI
                   </Text>
                 </View>
                 <View style={[styles.pendingBadge, { backgroundColor: '#2563EB' }]}>
@@ -840,7 +840,7 @@ export default function StudentProfileScreen() {
                   <BookOpen size={18} color="#4F46E5" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Course Management (कोर्स प्रबंधन)</Text>
+                  <Text style={styles.adminHubRowTitle}>Course Management</Text>
                   <Text style={styles.adminHubRowSub}>Create, edit & manage syllabus and subjects</Text>
                 </View>
                 <ChevronRight size={18} color="#94A3B8" />
@@ -855,7 +855,7 @@ export default function StudentProfileScreen() {
                   <Video size={18} color="#DC2626" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Live Classes Hub (लाइव क्लास प्रबंधन)</Text>
+                  <Text style={styles.adminHubRowTitle}>Live Classes Hub</Text>
                   <Text style={styles.adminHubRowSub}>Schedule YouTube Live & batch broadcasts</Text>
                 </View>
                 <ChevronRight size={18} color="#94A3B8" />
@@ -870,7 +870,7 @@ export default function StudentProfileScreen() {
                   <FileText size={18} color="#9333EA" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>PDF Notes & Study Materials (नोट्स)</Text>
+                  <Text style={styles.adminHubRowTitle}>PDF Notes & Study Materials</Text>
                   <Text style={styles.adminHubRowSub}>Upload & manage handwritten formula notes</Text>
                 </View>
                 <ChevronRight size={18} color="#94A3B8" />
@@ -946,7 +946,7 @@ export default function StudentProfileScreen() {
                   <ShieldCheck size={18} color="#334155" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Zero-Cost Resource Meter (कोटा स्थिति)</Text>
+                  <Text style={styles.adminHubRowTitle}>Zero-Cost Resource Meter</Text>
                   <Text style={styles.adminHubRowSub}>PostgreSQL DB, Storage & ₹0/month spend meter</Text>
                 </View>
                 <ChevronRight size={18} color="#94A3B8" />
@@ -957,20 +957,20 @@ export default function StudentProfileScreen() {
                 style={[styles.adminHubRow, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1 }]}
                 onPress={() => {
                   Alert.alert(
-                    '⚠️ 100% Blank Slate (सब खाली करें)',
-                    'क्या आप वाकई सभी पुराने कोर्सेस, नोट्स और डमी डेटा को हटाकर ऐप को पूरी तरह खाली (Blank Slate) करना चाहते हैं? इसके बाद आप शुरू से अपने नए कोर्सेस मैन्युअली जोड़ सकेंगे।',
+                    '⚠️ Reset: Wipe Legacy Data',
+                    'Are you sure you want to remove all legacy courses, notes, and demo data to reset the database to a blank slate? You can then add new courses manually.',
                     [
                       { text: 'Cancel', style: 'cancel' },
                       {
-                        text: 'हाँ, सब खाली करें (Wipe All)',
+                        text: 'Wipe All Data',
                         style: 'destructive',
                         onPress: async () => {
                           try {
                             await academicService.purgeAllData();
                             await loadDirectorData();
-                            Alert.alert('सफलता!', 'सभी पुराना डेटा पूरी तरह हटा दिया गया है। अब आपका ऐप 100% ब्लैंक स्लेट है!');
+                            Alert.alert('Success', 'All legacy data has been removed. The database is now ready for your new courses!');
                           } catch {
-                            Alert.alert('Error', 'डेटा खाली करने में समस्या आई।');
+                            Alert.alert('Error', 'Failed to wipe database.');
                           }
                         },
                       },
@@ -986,7 +986,7 @@ export default function StudentProfileScreen() {
                     🗑️ Blank Slate: Wipe All Dummy Data
                   </Text>
                   <Text style={styles.adminHubRowSub}>
-                    शुरू से नया डेटा डालने के लिए सभी पुराने कोर्सेस खाली करें
+                    Reset database to blank slate to start fresh
                   </Text>
                 </View>
                 <View style={[styles.pendingBadge, { backgroundColor: '#DC2626' }]}>
@@ -1834,7 +1834,7 @@ export default function StudentProfileScreen() {
               <Text style={styles.inputLabel}>Announcement Title *</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. Sunday Mega Test Schedule (रविवार टेस्ट सूचना)"
+                placeholder="e.g. Sunday Mega Test Schedule"
                 value={broadcastTitle}
                 onChangeText={setBroadcastTitle}
               />

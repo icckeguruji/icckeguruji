@@ -224,18 +224,18 @@ export default function TeachersPage() {
                   <input
                     type="text"
                     required
-                    placeholder="उदा. प्रो. राकेश रंजन"
+                    placeholder="e.g. Prof. Rakesh Ranjan"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('योग्यता (Qualification)', 'Qualification')}</label>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('शिक्षक का पूरा नाम', 'Full Name')}</label>
                   <input
                     type="text"
                     required
-                    placeholder="उदा. M.Sc. (Physics), B.Ed. - 8 Years Exp."
+                    placeholder="e.g. M.Sc. (Physics), B.Ed. - 8 Years Exp."
                     value={formData.qualification}
                     onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -246,7 +246,7 @@ export default function TeachersPage() {
                   <input
                     type="text"
                     required
-                    placeholder="उदा. Physics, Mathematics"
+                    placeholder="e.g. Physics, Mathematics"
                     value={formData.subjects}
                     onChange={(e) => setFormData({ ...formData, subjects: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"

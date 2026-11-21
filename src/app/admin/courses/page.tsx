@@ -947,8 +947,8 @@ export default function CoursesPage() {
                       onChange={(e) => setEditFormData({ ...editFormData, board_code: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
-                      <option value="BSEB">BSEB (बिहार बोर्ड)</option>
-                      <option value="JAC">JAC (झारखंड बोर्ड)</option>
+                      <option value="BSEB">BSEB (Bihar Board)</option>
+                      <option value="JAC">JAC (Jharkhand Board)</option>
                     </select>
                   </div>
                   <div>

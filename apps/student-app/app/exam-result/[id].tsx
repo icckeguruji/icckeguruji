@@ -92,7 +92,7 @@ export default function ExamResultScreen() {
             <Text style={{ fontSize: 20 }}>📲</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.whatsappTitle}>माता-पिता को WhatsApp पर भेजें</Text>
+            <Text style={styles.whatsappTitle}>Send Report Card to Parents on WhatsApp</Text>
             <Text style={styles.whatsappSub}>
               Send official scorecard summary to {user?.guardian_name || 'Parent'} ({user?.guardian_phone || 'WhatsApp'})
             </Text>

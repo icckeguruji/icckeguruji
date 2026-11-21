@@ -961,8 +961,9 @@ const styles = StyleSheet.create({
   noteTypeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 3,
+    marginBottom: 4,
   },
   noteType: {
     fontSize: 10,

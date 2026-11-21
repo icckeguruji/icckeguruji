@@ -38,16 +38,16 @@ export default function SecurePdfViewerScreen() {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
         <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 8, textAlign: 'center' }}>
-          नोट्स उपलब्ध नहीं है (Material Not Found)
+          Study Material Not Found
         </Text>
         <Text style={{ fontSize: 14, color: '#94A3B8', textAlign: 'center', marginBottom: 20 }}>
-          यह स्टडी मटेरियल हटा दिया गया है या उपलब्ध नहीं है।
+          This study material has been removed or is temporarily unavailable.
         </Text>
         <TouchableOpacity
           style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}
           onPress={() => router.back()}
         >
-          <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>वापस जाएँ</Text>
+          <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );

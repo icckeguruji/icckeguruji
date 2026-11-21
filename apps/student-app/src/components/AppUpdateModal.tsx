@@ -122,7 +122,7 @@ export function AppUpdateModal() {
                 activeOpacity={0.8}
               >
                 <Smartphone size={16} color="#FFFFFF" />
-                <Text style={styles.installBtnText}>Tap to Install APK (इंस्टॉल करें)</Text>
+                <Text style={styles.installBtnText}>Tap to Install APK</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -142,7 +142,7 @@ export function AppUpdateModal() {
                 activeOpacity={0.8}
               >
                 <ArrowDownCircle size={16} color="#FFFFFF" />
-                <Text style={styles.updateBtnText}>Update Now (अपडेट करें)</Text>
+                <Text style={styles.updateBtnText}>Update Now</Text>
               </TouchableOpacity>
             </View>
           )}

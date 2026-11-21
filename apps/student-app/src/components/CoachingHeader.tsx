@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, ScrollView, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Modal, ScrollView, Linking, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDirectorStore } from '../store/useDirectorStore';
 import { academicService } from '../services/academicService';
@@ -61,7 +61,7 @@ export function CoachingHeader({
 
   const handleOpenWhatsApp = () => {
     setIsDrawerOpen(false);
-    Linking.openURL('https://wa.me/919771350910?text=Namaste%20BADE%20SIR%2C%20IDEAL%20COACHING%20CENTRE%20Query');
+    Linking.openURL('https://wa.me/919771350910?text=Hello%20BADE%20SIR%2C%20IDEAL%20COACHING%20CENTRE%20Query');
   };
 
   const handleLogout = async () => {
@@ -152,7 +152,7 @@ export function CoachingHeader({
       {/* Slide-out Hamburger Drawer Modal */}
       <Modal
         visible={isDrawerOpen}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setIsDrawerOpen(false)}
       >
@@ -175,12 +175,20 @@ export function CoachingHeader({
                 style={styles.closeBtn}
                 onPress={() => setIsDrawerOpen(false)}
                 activeOpacity={0.7}
+                accessibilityLabel="Close Navigation Menu"
               >
                 <X size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.drawerScroll}>
+            <ScrollView
+              style={styles.drawerScrollView}
+              contentContainerStyle={styles.drawerScrollContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              bounces={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {/* Profile Card */}
               <View style={styles.userCard}>
                 <View style={styles.userCardTop}>
@@ -519,6 +527,13 @@ export function CoachingHeader({
               </View>
             </ScrollView>
           </View>
+
+          {/* Dismiss Backdrop */}
+          <TouchableOpacity
+            style={styles.backdropTouch}
+            activeOpacity={1}
+            onPress={() => setIsDrawerOpen(false)}
+          />
         </View>
       </Modal>
     </View>
@@ -581,12 +596,14 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: 0.2,
+    flexShrink: 1,
   },
   tagline: {
     fontSize: 10,
     color: '#D97706',
     fontWeight: '700',
     marginTop: 1,
+    flexShrink: 1,
   },
   rightActions: {
     flexDirection: 'row',
@@ -700,26 +717,27 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    justifyContent: 'flex-start',
+    flexDirection: 'row',
   },
   drawerContainer: {
     width: '84%',
     maxWidth: 340,
     height: '100%',
     backgroundColor: '#FFFFFF',
-    paddingTop: 45,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingTop: Platform.OS === 'ios' ? 52 : 38,
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
-    elevation: 16,
+    elevation: 20,
+    display: 'flex',
+    flexDirection: 'column',
   },
   drawerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -750,9 +768,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#F1F5F9',
   },
-  drawerScroll: {
+  drawerScrollView: {
+    flex: 1,
+  },
+  drawerScrollContent: {
+    paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 40,
+    paddingBottom: 80,
+  },
+  backdropTouch: {
+    flex: 1,
   },
   userCard: {
     backgroundColor: '#F8FAFC',

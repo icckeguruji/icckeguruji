@@ -35,13 +35,13 @@ interface DirectorAiModalProps {
 }
 
 const QUICK_PROMPT_PILLS = [
-  { label: '✨ + नया कोर्स बनाएं', prompt: 'Class 10 ke liye naya Topper Course add kar do ₹499 me' },
-  { label: '🗑️ सब डमी डेटा खाली करें', prompt: 'Sabhi purane dummy course aur notes khali kar do, mujhe shuru se add karna hai' },
-  { label: '🔴 लाइव क्लास शुरू करें', prompt: 'Aaj shaam 7 baje Class 10 Math ka Live Class schedule kar do' },
-  { label: '📑 PDF नोट्स जोड़ें', prompt: 'Class 10 Science Chapter 1 ka handwritten notes add kar do' },
-  { label: '💳 पेंडिंग फीस अप्रूव करें', prompt: 'Sabhi pending student fees approve kar do' },
-  { label: '📢 सभी छात्रों को नोटिस भेजें', prompt: 'Sabhi students ko notice bhej do ki kal subah 8 baje test hoga' },
-  { label: '📊 कोचिंग ओवरव्यू रिपोर्ट', prompt: 'Coaching ka overview aur student report dikhao' },
+  { label: '✨ + Add Course', prompt: 'Add a new Class 10 State Board Topper Course for ₹499' },
+  { label: '🗑️ Wipe Demo Data', prompt: 'Wipe all legacy demo courses and materials to start clean' },
+  { label: '🔴 Schedule Live', prompt: 'Schedule a Live Class for Class 10 Math today at 7:00 PM' },
+  { label: '📑 Upload PDF', prompt: 'Upload handwritten PDF notes for Class 10 Science Chapter 1' },
+  { label: '💳 Approve Fees', prompt: 'Approve all pending student course fee payments' },
+  { label: '📢 Broadcast Notice', prompt: 'Broadcast announcement to all students: Sunday Mock Test at 8 AM' },
+  { label: '📊 System Overview', prompt: 'Show coaching center status and active student count' },
 ];
 
 export function DirectorAiModal({ visible, onClose }: DirectorAiModalProps) {
@@ -54,7 +54,7 @@ export function DirectorAiModal({ visible, onClose }: DirectorAiModalProps) {
     {
       id: 'welcome-msg',
       sender: 'ai',
-      text: 'प्रणाम बड़े सर! 🙏\n\nमैं आपका **ICC Director AI Copilot** हूँ। आप मुझे बोलकर या लिखकर जो भी आदेश देंगे, मैं ऐप में वह कार्य तुरंत पूरा कर दूँगा:\n\n• **नया कोर्स जोड़ना** (Class 1 से 12)\n• **लाइव क्लास शेड्यूल करना**\n• **स्टडी नोट्स PDF अपलोड करना**\n• **पेंडिंग फीस अप्रूव करना**\n• **सभी छात्रों को नोटिस भेजना**\n\nबताइए आज क्या कार्य करना है?',
+      text: 'Welcome Director BADE SIR! 👑\n\nI am your **ICC Director AI Copilot**. You can instruct me in voice or text to execute administrative tasks:\n\n• **Add New Courses** (Class 1 to 12)\n• **Schedule Live Masterclasses**\n• **Upload PDF Study Materials**\n• **Approve Student UPI Fees**\n• **Broadcast Student Notifications**\n\nHow may I assist you today?',
       timestamp: 'Just now',
     },
   ]);
@@ -91,7 +91,7 @@ export function DirectorAiModal({ visible, onClose }: DirectorAiModalProps) {
         {
           id: `err-${Date.now()}`,
           sender: 'ai',
-          text: 'क्षमा करें बड़े सर, कार्य पूरा करने में कुछ रुकावट आई। कृपया पुनः प्रयास करें।',
+          text: 'Apologies Director Sir, encountered an issue executing the request. Please try again.',
           timestamp: 'Just now',
         },
       ]);
@@ -106,7 +106,7 @@ export function DirectorAiModal({ visible, onClose }: DirectorAiModalProps) {
       {
         id: `reset-${Date.now()}`,
         sender: 'ai',
-        text: 'चैट रीसेट हो गई है बड़े सर! नया आदेश दें।',
+        text: 'Chat history reset. Ready for your instructions, Director Sir.',
         timestamp: 'Just now',
       },
     ]);
@@ -280,7 +280,7 @@ export function DirectorAiModal({ visible, onClose }: DirectorAiModalProps) {
                 <View style={[styles.bubble, styles.aiBubble, { paddingVertical: 12, paddingHorizontal: 16 }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <ActivityIndicator size="small" color="#2563EB" />
-                    <Text style={styles.thinkingText}>बड़े सर के आदेश का पालन किया जा रहा है...</Text>
+                    <Text style={styles.thinkingText}>Autonomous AI executing Director command...</Text>
                   </View>
                 </View>
               </View>
@@ -293,7 +293,7 @@ export function DirectorAiModal({ visible, onClose }: DirectorAiModalProps) {
               style={styles.textInput}
               value={input}
               onChangeText={setInput}
-              placeholder="बड़े सर, जो काम करवाना है यहाँ लिखें..."
+              placeholder="Type any administrative instruction here..."
               placeholderTextColor="#94A3B8"
               multiline={false}
               returnKeyType="send"

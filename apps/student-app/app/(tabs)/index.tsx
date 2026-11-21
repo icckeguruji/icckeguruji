@@ -135,99 +135,6 @@ export default function StudentHomeScreen() {
           />
         }
       >
-        {/* Director Mobile Unified Admin Hub */}
-        {isAdmin && (
-          <View style={styles.adminQuickPanel}>
-            <View style={styles.adminQuickHeader}>
-              <View style={styles.adminQuickBadge}>
-                <ShieldCheck size={16} color="#B45309" />
-                <Text style={styles.adminQuickBadgeText}>👑 Director Command Center (BADE SIR)</Text>
-              </View>
-              <Text style={styles.adminQuickSub}>All administrative features unified inside app</Text>
-            </View>
-
-            {/* Director AI Copilot Assistant Trigger */}
-            <TouchableOpacity
-              style={styles.adminAiBanner}
-              onPress={() => setIsAiModalOpen(true)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.adminAiIconBox}>
-                <Bot size={22} color="#2563EB" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.adminAiBannerTitle}>🤖 Director AI Copilot</Text>
-                  <View style={styles.aiLiveBadge}>
-                    <Text style={styles.aiLiveBadgeText}>AUTONOMOUS</Text>
-                  </View>
-                </View>
-                <Text style={styles.adminAiBannerSub}>
-                  बोलकर या लिखकर नए कोर्स, लाइव क्लास व फीस अप्रूवल कराएं
-                </Text>
-              </View>
-              <ChevronRight size={18} color="#2563EB" />
-            </TouchableOpacity>
-
-            {/* Quick Metrics (100% Live Database Counts) */}
-            <View style={styles.metricsRow}>
-              <TouchableOpacity
-                style={styles.metricCard}
-                onPress={() => router.push('/(tabs)/profile')}
-              >
-                <CreditCard size={16} color="#2563EB" />
-                <Text style={styles.metricNumber}>{pendingApprovalsCount} Pending</Text>
-                <Text style={styles.metricLabel}>Fee Approvals</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.metricCard}
-                onPress={() => router.push('/(tabs)/profile')}
-              >
-                <Users size={16} color="#059669" />
-                <Text style={styles.metricNumber}>{activeStudentsCount} Active</Text>
-                <Text style={styles.metricLabel}>Total Students</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.metricCard}
-                onPress={() => router.push('/(tabs)/courses')}
-              >
-                <BookOpen size={16} color="#D97706" />
-                <Text style={styles.metricNumber}>{courses.length}</Text>
-                <Text style={styles.metricLabel}>Target Courses</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Inline Action Shortcuts */}
-            <View style={styles.adminActionShortcuts}>
-              <TouchableOpacity
-                style={[styles.adminActionBtn, { backgroundColor: '#DC2626' }]}
-                onPress={() => router.push('/(tabs)/live')}
-              >
-                <Radio size={13} color="#FFFFFF" />
-                <Text style={styles.adminActionBtnText}>🔴 Go Live</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.adminActionBtn, { backgroundColor: '#2563EB' }]}
-                onPress={() => router.push('/(tabs)/courses')}
-              >
-                <Plus size={13} color="#FFFFFF" />
-                <Text style={styles.adminActionBtnText}>+ Course</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.adminActionBtn, { backgroundColor: '#059669' }]}
-                onPress={() => router.push('/(tabs)/notes')}
-              >
-                <FileText size={13} color="#FFFFFF" />
-                <Text style={styles.adminActionBtnText}>+ PDF</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
         {/* Live Class Highlight Banner */}
         <View style={styles.liveCard}>
           <View style={styles.liveBadgeRow}>
@@ -838,6 +745,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,

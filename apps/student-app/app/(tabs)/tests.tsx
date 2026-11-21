@@ -401,7 +401,7 @@ export default function StudentTestsScreen() {
             {/* ---------------------------------------------------- */}
             {quizPhase === 'config' && (
               <ScrollView style={styles.modalBody}>
-                <Text style={styles.label}>1. Select Subject (विषय चुनें)</Text>
+                <Text style={styles.label}>1. Select Subject</Text>
                 <View style={styles.subjectChips}>
                   {SUBJECTS_LIST.map((sub) => (
                     <TouchableOpacity

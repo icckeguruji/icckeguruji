@@ -923,8 +923,8 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setFormData({ ...formData, board_code: e.target.value })}
                     className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="BSEB">BSEB (बिहार बोर्ड)</option>
-                    <option value="JAC">JAC (झारखंड बोर्ड)</option>
+                    <option value="BSEB">BSEB (Bihar Board)</option>
+                    <option value="JAC">JAC (Jharkhand Board)</option>
                   </select>
                 </div>
 
@@ -1085,8 +1085,8 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setEditFormData({ ...editFormData, board_code: e.target.value })}
                     className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="BSEB">BSEB (बिहार बोर्ड)</option>
-                    <option value="JAC">JAC (झारखंड बोर्ड)</option>
+                    <option value="BSEB">BSEB (Bihar Board)</option>
+                    <option value="JAC">JAC (Jharkhand Board)</option>
                   </select>
                 </div>
 
@@ -1301,7 +1301,7 @@ export default function AdminDashboardPage() {
                     />
                     <input
                       type="text"
-                      placeholder="विषय नाम (उदा. विज्ञान)"
+                      placeholder="Subject Name (e.g. Science)"
                       value={newSubjectNameHi}
                       onChange={(e) => setNewSubjectNameHi(e.target.value)}
                       className="px-2.5 py-1.5 border rounded-lg text-xs"

@@ -353,7 +353,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `✅ **कोर्स सफलतापूर्वक तैयार कर दिया गया है!**\n\n📌 **नाम:** ${newCourse.title}\n📚 **कक्षा:** ${className}\n💰 **फीस:** ₹${discountPrice} (असली फीस: ₹${regularPrice})\n🗓️ **वैधता:** 365 दिन (पूरा सत्र)\n\nयह कोर्स अब छात्र ऐप और आपके डायरेक्टर कंसोल में तुरंत लाइव उपलब्ध है।`,
+          text: `✅ **Course successfully created & published!**\n\n📌 **Title:** ${newCourse.title}\n📚 **Target Class:** ${className}\n💰 **Fee:** ₹${discountPrice} (Regular: ₹${regularPrice})\n🗓️ **Validity:** 365 Days\n\nThis course is now live across student apps and director console.`,
           timestamp,
           actionResult: {
             type: 'course_created',
@@ -375,7 +375,7 @@ class DirectorAiAgentService {
 
         const liveClass = await academicService.scheduleLiveClass({
           title,
-          title_hi: `${className} लाइव मास्टरक्लास - बड़े सर`,
+          title_hi: `${className} Live Masterclass - BADE SIR`,
           youtube_video_id: videoId,
           class_name: className,
           status: 'live',
@@ -385,7 +385,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `🔴 **लाइव क्लास सफलतापूर्वक शेड्यूल और एक्टिवेट कर दी गई है!**\n\n📌 **विषय:** ${title}\n📚 **कक्षा:** ${className}\n📺 **स्ट्रीम:** Secure In-App Streaming Active\n\nछात्र अब 'Live' टैब में जाकर सीधे क्लास अटेंड कर सकते हैं।`,
+          text: `🔴 **Live class successfully scheduled & activated!**\n\n📌 **Topic:** ${title}\n📚 **Class:** ${className}\n📺 **Streaming:** Secure In-App Streaming Active\n\nStudents can now attend directly in the 'Live' tab.`,
           timestamp,
           actionResult: {
             type: 'live_scheduled',
@@ -406,7 +406,7 @@ class DirectorAiAgentService {
 
         const material = await academicService.addStudyMaterial({
           title,
-          title_hi: `${className} हस्तलिखित संपूर्ण नोट्स`,
+          title_hi: `${className} Handwritten Master Notes`,
           class_name: className,
           material_type: 'chapter_notes',
           file_path: 'bseb/notes.pdf',
@@ -416,7 +416,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `📑 **स्टडी मटेरियल पीडीएफ सफलतापूर्वक अपलोड कर दी गई है!**\n\n📌 **शीर्षक:** ${material.title}\n📚 **कक्षा:** ${className}\n🔒 **सुरक्षा:** DRM Protected (स्क्रीनशॉट व डाउनलोड लॉक)\n\nछात्र इसे 'Study Materials' टैब में ऑफलाइन भी पढ़ सकते हैं।`,
+          text: `📑 **Study material PDF uploaded successfully!**\n\n📌 **Title:** ${material.title}\n📚 **Class:** ${className}\n🔒 **Security:** DRM Protected (Screenshot & Download Locked)\n\nStudents can view this in the 'Study Materials' tab.`,
           timestamp,
           actionResult: {
             type: 'material_added',
@@ -439,7 +439,7 @@ class DirectorAiAgentService {
           return {
             id: `msg-${Date.now()}`,
             sender: 'ai',
-            text: 'बड़े सर, अभी कोई भी पेंडिंग फीस अनुरोध नहीं है। सभी छात्रों के पिछले पेमेंट पहले से अप्रूव और कोर्सेज अनलॉक हैं! 👍',
+            text: 'Director Sir, there are no pending fee approval requests. All previous student payments are already approved and courses unlocked! 👍',
             timestamp,
             actionResult: {
               type: 'payments_approved',
@@ -461,7 +461,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `💳 **${pending.length} छात्रों के पेंडिंग पेमेंट अप्रूव कर दिए गए हैं!**\n\nसभी संबंधित छात्रों के कोर्सेज तुरंत स्थायी रूप से अनलॉक हो गए हैं और उनके रसीद पर 'Approved & Verified' का ग्रीन बैज लग गया है।`,
+          text: `💳 **Approved ${pending.length} pending student fee payments!**\n\nAll courses for these students have been permanently unlocked and marked with verified receipts.`,
           timestamp,
           actionResult: {
             type: 'payments_approved',
@@ -477,12 +477,12 @@ class DirectorAiAgentService {
 
       case 'broadcast_notice': {
         const noticeTitle = params.title || 'IDEAL COACHING CENTRE Notice';
-        const msg = params.message || 'सभी छात्र ध्यान दें: कल की कक्षाएं निर्धारित समय पर चलेंगी।';
+        const msg = params.message || 'All students please note: Classes will proceed as scheduled.';
 
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `📢 **सूचना सफलतापूर्वक सभी छात्रों को ब्राडकास्ट कर दी गई है!**\n\n📌 **शीर्षक:** ${noticeTitle}\n📝 **संदेश:** ${msg}\n\nयह सूचना सभी नामांकित छात्रों के ऐप नोटिफिकेशन और सूचना बोर्ड पर लाइव हो गई है।`,
+          text: `📢 **Notice broadcasted to all enrolled students!**\n\n📌 **Title:** ${noticeTitle}\n📝 **Message:** ${msg}\n\nThis notification is now active on all student dashboards.`,
           timestamp,
           actionResult: {
             type: 'broadcast_sent',
@@ -509,7 +509,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `📊 **आइडियल कोचिंग सेंटर — लाइव ओवरव्यू रिपोर्ट (BADE SIR)**\n\n📚 **कुल एक्टिव कोर्सेज:** ${courses.length}\n🔴 **लाइव / आगामी कक्षाएं:** ${live.length}\n📑 **स्टडी मटेरियल पीडीएफ:** ${mats.length}\n👥 **कुल नामांकित छात्र:** ${students.length}\n💳 **पेंडिंग फीस अप्रूवल:** ${pendingPay} लंबित\n\nकोचिंग का सिस्टम पूरी तरह सुचारू रूप से चल रहा है।`,
+          text: `📊 **IDEAL COACHING CENTRE — Live Overview Report (BADE SIR)**\n\n📚 **Active Courses:** ${courses.length}\n🔴 **Live / Scheduled Classes:** ${live.length}\n📑 **Study Material PDFs:** ${mats.length}\n👥 **Enrolled Students:** ${students.length}\n💳 **Pending Fee Approvals:** ${pendingPay} pending\n\nSystem operational and running smoothly.`,
           timestamp,
           actionResult: {
             type: 'summary_view',
@@ -537,7 +537,7 @@ class DirectorAiAgentService {
           return {
             id: `msg-${Date.now()}`,
             sender: 'ai',
-            text: `🗑️ **कोर्स हटा दिया गया है!**\n\n📌 **हटाया गया:** ${match.title}\nयह कोर्स अब कैटलॉग से स्थायी रूप से हटा दिया गया है।`,
+            text: `🗑️ **Course deleted successfully!**\n\n📌 **Removed:** ${match.title}\nThis course has been permanently removed from the catalog.`,
             timestamp,
             actionResult: {
               type: 'course_deleted',
@@ -554,7 +554,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `बड़े सर, मुझे हटाने के लिए कोई ऐसा कोर्स नहीं मिला। कृपया कोर्स का सही नाम या कक्षा बताएं।`,
+          text: `Director Sir, could not locate a matching course to remove. Please specify the exact course title or class.`,
           timestamp,
         };
       }
@@ -564,7 +564,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: `🗑️ **ऐप 100% खाली (Blank Slate) कर दिया गया है!**\n\nबड़े सर, आपके आदेशानुसार डेटाबेस और स्थानीय स्टोरेज से सभी पुराने डमी कोर्सेस, विषय, और पीडीएफ नोट्स पूरी तरह खाली कर दिए गए हैं।\n\nअब आपका ऐप पूरी तरह नया और खाली है—आप जो भी नया कोर्स खुद जोड़ेंगे केवल वही दिखेगा। 👍`,
+          text: `🗑️ **Database Wiped Clean (Blank Slate Active)!**\n\nDirector Sir, all legacy demo courses, subjects, and PDF notes have been purged from database and local cache.\n\nThe catalog is now 100% fresh and clean. Only new courses you add will appear. 👍`,
           timestamp,
           actionResult: {
             type: 'course_deleted',
@@ -582,7 +582,7 @@ class DirectorAiAgentService {
         return {
           id: `msg-${Date.now()}`,
           sender: 'ai',
-          text: intent.reply_text || 'हाँ बड़े सर, बताएं अगला क्या कार्य करना है?',
+          text: intent.reply_text || 'Ready for your next instruction, Director Sir.',
           timestamp,
         };
     }

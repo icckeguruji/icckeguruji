@@ -110,7 +110,7 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
             className="flex items-center justify-center space-x-1.5 w-full py-1.5 px-2.5 rounded-lg text-[11px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition"
           >
             <Globe className="w-3.5 h-3.5 text-amber-400" />
-            <span>🌐 View Website / मुख्य वेबसाइट</span>
+            <span>🌐 View Website</span>
           </Link>
         </div>
       </div>

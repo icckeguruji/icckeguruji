@@ -50,8 +50,8 @@ const mockQuestions: QuestionItem[] = [
     text: 'Rusting of iron is an example of redox reaction and slow oxidation.',
     text_hi: 'लोहे पर जंग लगना एक रेडॉक्स (उपचयन-अपचयन) अभिक्रिया और मंद ऑक्सीकरण का उदाहरण है।',
     options: [
-      { id: 'true', text: 'True (सत्य)', text_hi: 'सत्य' },
-      { id: 'false', text: 'False (असत्य)', text_hi: 'असत्य' },
+      { id: 'true', text: 'True', text_hi: 'सत्य' },
+      { id: 'false', text: 'False', text_hi: 'असत्य' },
     ],
     marks: 1,
   },

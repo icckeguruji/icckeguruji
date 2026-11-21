@@ -520,7 +520,7 @@ export default function StudentCoursesScreen() {
                       onPress={() => router.push(`/course/${course.id}`)}
                     >
                       <BookOpen size={14} color="#2563EB" />
-                      <Text style={styles.viewCourseBtnText}>Open Syllabus & Chapters</Text>
+                      <Text style={styles.viewCourseBtnText} numberOfLines={1}>Syllabus & Chapters</Text>
                     </TouchableOpacity>
 
                     {course.is_free ? (
@@ -942,6 +942,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#2563EB',
+    flexShrink: 1,
   },
   freeBtn: {
     paddingHorizontal: 14,

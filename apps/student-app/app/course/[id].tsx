@@ -416,16 +416,16 @@ export default function CourseDetailsScreen() {
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 8, textAlign: 'center' }}>
-            कोर्स उपलब्ध नहीं है (Course Not Available)
+            Course Not Available
           </Text>
           <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center', marginBottom: 20 }}>
-            यह कोर्स हटा दिया गया है या उपलब्ध नहीं है।
+            This course has been removed or is temporarily unavailable.
           </Text>
           <TouchableOpacity
             style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}
             onPress={() => router.replace('/courses')}
           >
-            <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>सभी कोर्सेस देखें</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>View All Courses</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -488,7 +488,7 @@ export default function CourseDetailsScreen() {
             <View>
               <View style={styles.sectionHeaderRow}>
                 <View>
-                  <Text style={styles.sectionHeading}>Subjects (विषय सूची)</Text>
+                  <Text style={styles.sectionHeading}>Course Subjects</Text>
                   <Text style={styles.sectionSubHeading}>
                     Tap a subject to explore sub-subjects and chapters
                   </Text>
@@ -600,7 +600,7 @@ export default function CourseDetailsScreen() {
               <View style={styles.sectionHeaderRow}>
                 <View>
                   <Text style={styles.sectionHeading}>
-                    {selectedSubSubject ? selectedSubSubject.name : selectedSubject.name} Chapters (पाठ सूची)
+                    {selectedSubSubject ? selectedSubSubject.name : selectedSubject.name} Chapters
                   </Text>
                   <Text style={styles.sectionSubHeading}>
                     Tap a chapter for live class, recorded videos & handwritten PDF notes
@@ -754,7 +754,7 @@ export default function CourseDetailsScreen() {
                           onPress={() => router.push(`/lecture/${item.id}`)}
                         >
                           <Play size={16} color="#FFFFFF" />
-                          <Text style={styles.joinLiveBtnText}>Join Live Broadcast (लाइव देखें)</Text>
+                          <Text style={styles.joinLiveBtnText}>Join Live Broadcast</Text>
                         </TouchableOpacity>
                       </View>
                     ))
@@ -871,7 +871,7 @@ export default function CourseDetailsScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Add New Subject (नया विषय)</Text>
+              <Text style={styles.modalHeading}>Add New Subject</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
                 <X size={20} color="#64748B" />
               </TouchableOpacity>
@@ -885,7 +885,7 @@ export default function CourseDetailsScreen() {
             />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubject}>
-              <Text style={styles.submitBtnText}>Save Subject (विषय जोड़ें)</Text>
+              <Text style={styles.submitBtnText}>Save Subject</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -910,7 +910,7 @@ export default function CourseDetailsScreen() {
             />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubSubject}>
-              <Text style={styles.submitBtnText}>Add Sub-Subject (उप-विषय जोड़ें)</Text>
+              <Text style={styles.submitBtnText}>Add Sub-Subject</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -921,7 +921,7 @@ export default function CourseDetailsScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Add Chapter (नया पाठ)</Text>
+              <Text style={styles.modalHeading}>Add Chapter</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
                 <X size={20} color="#64748B" />
               </TouchableOpacity>
@@ -942,7 +942,7 @@ export default function CourseDetailsScreen() {
             />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateChapter}>
-              <Text style={styles.submitBtnText}>Add Chapter (पाठ जोड़ें)</Text>
+              <Text style={styles.submitBtnText}>Add Chapter</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -980,7 +980,7 @@ export default function CourseDetailsScreen() {
             />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleAddVideoLecture}>
-              <Text style={styles.submitBtnText}>Save Video Lecture (वीडियो जोड़ें)</Text>
+              <Text style={styles.submitBtnText}>Save Video Lecture</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1021,7 +1021,7 @@ export default function CourseDetailsScreen() {
               style={[styles.submitBtn, { backgroundColor: '#DC2626' }]}
               onPress={handleScheduleLiveClass}
             >
-              <Text style={styles.submitBtnText}>Broadcast Live (लाइव शुरू करें)</Text>
+              <Text style={styles.submitBtnText}>Broadcast Live</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1067,7 +1067,7 @@ export default function CourseDetailsScreen() {
               style={[styles.submitBtn, { backgroundColor: '#059669' }]}
               onPress={handleSaveUploadedPdfNotes}
             >
-              <Text style={styles.submitBtnText}>Save Notes (नोट्स सेव करें)</Text>
+              <Text style={styles.submitBtnText}>Save Notes</Text>
             </TouchableOpacity>
           </View>
         </View>
