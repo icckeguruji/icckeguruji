@@ -604,14 +604,6 @@ export default function ChapterContentScreen() {
                 placeholder="e.g. Masterclass on Chemical Reactions"
                 placeholderTextColor="#94A3B8"
               />
-              <Text style={styles.fieldLabel}>Hindi Title (Optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={formTitleHi}
-                onChangeText={setFormTitleHi}
-                placeholder="e.g. रासायनिक अभिक्रियाएँ लाइव"
-                placeholderTextColor="#94A3B8"
-              />
               <Text style={styles.fieldLabel}>YouTube Live URL or Video ID *</Text>
               <TextInput
                 style={styles.input}

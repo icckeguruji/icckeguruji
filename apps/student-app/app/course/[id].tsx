@@ -883,12 +883,6 @@ export default function CourseDetailsScreen() {
               value={formTitle}
               onChangeText={setFormTitle}
             />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Hindi Name (e.g. विज्ञान / गणित)"
-              value={formTitleHi}
-              onChangeText={setFormTitleHi}
-            />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubject}>
               <Text style={styles.submitBtnText}>Save Subject (विषय जोड़ें)</Text>
@@ -914,12 +908,6 @@ export default function CourseDetailsScreen() {
               value={formTitle}
               onChangeText={setFormTitle}
             />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Hindi Name (e.g. रसायन विज्ञान / भौतिकी)"
-              value={formTitleHi}
-              onChangeText={setFormTitleHi}
-            />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubSubject}>
               <Text style={styles.submitBtnText}>Add Sub-Subject (उप-विषय जोड़ें)</Text>
@@ -944,12 +932,6 @@ export default function CourseDetailsScreen() {
               placeholder="Chapter Title (e.g. Chemical Reactions)"
               value={formTitle}
               onChangeText={setFormTitle}
-            />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Hindi Title (e.g. रासायनिक अभिक्रियाएँ एवं समीकरण)"
-              value={formTitleHi}
-              onChangeText={setFormTitleHi}
             />
             <TextInput
               style={[styles.modalInput, { height: 70 }]}

@@ -251,6 +251,46 @@ const SAMPLE_RESERVED_IDS = new Set([
   'live0000-0000-0000-0000-000000000003',
 ]);
 
+export interface Teacher {
+  id: string;
+  full_name: string;
+  qualification: string;
+  subjects: string;
+  email: string;
+  mobile: string;
+  assignedBatches: number;
+}
+
+export const defaultTeachersList: Teacher[] = [
+  {
+    id: 't-0',
+    full_name: 'BADE SIR (Director / बड़े सर)',
+    qualification: 'Founder & Academic Director - 12+ Years Experience',
+    subjects: 'Senior Physics, Mathematics & Board Strategy',
+    email: 'icckeguruji@gmail.com',
+    mobile: '+91 9771350910',
+    assignedBatches: 4,
+  },
+  {
+    id: 't-1',
+    full_name: 'Er. R. K. Sharma (इंजी. आर. के. शर्मा)',
+    qualification: 'B.Tech (NIT Patna) - 10+ Years Experience',
+    subjects: 'Physics & Mathematics (भौतिकी एवं गणित)',
+    email: 'rksharma@idealcoaching.in',
+    mobile: '9876543220',
+    assignedBatches: 3,
+  },
+  {
+    id: 't-2',
+    full_name: 'Dr. S. N. Mishra (डॉ. एस. एन. मिश्रा)',
+    qualification: 'M.Sc, Ph.D (Patna University)',
+    subjects: 'Chemistry & Biology (रसायन शास्त्र एवं जीव विज्ञान)',
+    email: 'snmishra@idealcoaching.in',
+    mobile: '9876543221',
+    assignedBatches: 2,
+  },
+];
+
 class AcademicRepository {
   private courses: Course[] = [];
   private subjects: AcademicSubject[] = [];
@@ -260,6 +300,7 @@ class AcademicRepository {
   private materials: StudyMaterial[] = [];
   private payments: any[] = [];
   private students: UserProfile[] = [];
+  private teachers: Teacher[] = [...defaultTeachersList];
   private listeners: Set<() => void> = new Set();
   private deletedIds: Set<string> = new Set();
   private isLoaded: boolean = false;
@@ -332,7 +373,7 @@ class AcademicRepository {
     try {
       let rawDeleted = null;
       let isInitialized = null;
-      let sCourses = null, sSubs = null, sChaps = null, sLecs = null, sLive = null, sMats = null, sPayments = null, sStudents = null;
+      let sCourses = null, sSubs = null, sChaps = null, sLecs = null, sLive = null, sMats = null, sPayments = null, sStudents = null, sTeachers = null;
 
       if (Platform.OS !== 'web') {
         rawDeleted = await SecureStore.getItemAsync('icc_deleted_ids');
@@ -345,6 +386,7 @@ class AcademicRepository {
         sMats = await SecureStore.getItemAsync('icc_study_materials');
         sPayments = await SecureStore.getItemAsync('icc_payments');
         sStudents = await SecureStore.getItemAsync('icc_students');
+        sTeachers = await SecureStore.getItemAsync('icc_teachers');
       } else if (typeof window !== 'undefined') {
         rawDeleted = localStorage.getItem('icc_deleted_ids');
         isInitialized = localStorage.getItem('icc_storage_initialized');
@@ -356,6 +398,7 @@ class AcademicRepository {
         sMats = localStorage.getItem('icc_study_materials');
         sPayments = localStorage.getItem('icc_payments');
         sStudents = localStorage.getItem('icc_students');
+        sTeachers = localStorage.getItem('icc_teachers');
       }
 
       if (rawDeleted) {
@@ -394,6 +437,7 @@ class AcademicRepository {
         if (sMats !== null) this.materials = JSON.parse(sMats);
         if (sPayments !== null) this.payments = JSON.parse(sPayments);
         if (sStudents !== null) this.students = JSON.parse(sStudents);
+        if (sTeachers !== null) this.teachers = JSON.parse(sTeachers);
       }
 
       // Filter out any tombstoned / deleted items
@@ -1506,6 +1550,40 @@ class AcademicRepository {
     );
     await this.persist('icc_students', this.students);
     return [...this.students];
+  }
+
+  // --- DIRECTOR CONTROLS: TEACHERS (FULL CRUD) ---
+  async getTeachers(): Promise<Teacher[]> {
+    await this.ensureLoaded();
+    return [...this.teachers];
+  }
+
+  async addTeacher(teacherData: Omit<Teacher, 'id'>): Promise<Teacher> {
+    await this.ensureLoaded();
+    const newTeacher: Teacher = {
+      id: `t-${Date.now()}`,
+      ...teacherData,
+    };
+    this.teachers = [newTeacher, ...this.teachers];
+    this.persist('icc_teachers', this.teachers).catch(() => {});
+    this.notify();
+    return newTeacher;
+  }
+
+  async updateTeacher(id: string, updates: Partial<Teacher>): Promise<Teacher | null> {
+    await this.ensureLoaded();
+    this.teachers = this.teachers.map((t) => (t.id === id ? { ...t, ...updates } : t));
+    this.persist('icc_teachers', this.teachers).catch(() => {});
+    this.notify();
+    return this.teachers.find((t) => t.id === id) || null;
+  }
+
+  async deleteTeacher(id: string): Promise<boolean> {
+    await this.ensureLoaded();
+    this.teachers = this.teachers.filter((t) => t.id !== id);
+    this.persist('icc_teachers', this.teachers).catch(() => {});
+    this.notify();
+    return true;
   }
 }
 

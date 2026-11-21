@@ -317,7 +317,7 @@ export default function ManualUpiPaymentScreen() {
                   <User size={18} color="#94A3B8" />
                   <TextInput
                     style={styles.textInput}
-                    placeholder="e.g. Rohit Kumar"
+                    placeholder="e.g. Student Full Name"
                     placeholderTextColor="#94A3B8"
                     value={fullName}
                     onChangeText={setFullName}
@@ -333,7 +333,7 @@ export default function ManualUpiPaymentScreen() {
                   <User size={18} color="#94A3B8" />
                   <TextInput
                     style={styles.textInput}
-                    placeholder="e.g. rohit_kumar"
+                    placeholder="e.g. student_username"
                     placeholderTextColor="#94A3B8"
                     autoCapitalize="none"
                     value={username}

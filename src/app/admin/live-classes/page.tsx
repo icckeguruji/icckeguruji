@@ -147,7 +147,7 @@ export default function LiveClassesPage() {
         titleHi="यूट्यूब लाइव क्लास शेड्यूलर"
         titleEn="YouTube Live Class Scheduler"
         subtitleHi="यूट्यूब लाइव स्ट्रीम आईडी द्वारा निःशुल्क असीमित बैंडविड्थ लाइव प्रसारण"
-        subtitleEn="Schedule, edit and manage live classes with real-time Supabase sync"
+        subtitleEn="Schedule, edit and manage live classes with real-time sync"
       />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -313,19 +313,6 @@ export default function LiveClassesPage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('क्लास का शीर्षक (हिंदी)', 'Class Title (Hindi)')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title_hi}
-                    onChange={(e) => setFormData({ ...formData, title_hi: e.target.value })}
-                    placeholder="उदा. विज्ञान अध्याय 1: रासायनिक अभिक्रियाएं लाइव क्लास"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
                     {t('यूट्यूब वीडियो आईडी या लिंक', 'YouTube Video ID or Full URL')}
                   </label>
                   <input
@@ -413,18 +400,6 @@ export default function LiveClassesPage() {
                     required
                     value={editFormData.title}
                     onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('क्लास का शीर्षक (हिंदी)', 'Class Title (Hindi)')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.title_hi}
-                    onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>

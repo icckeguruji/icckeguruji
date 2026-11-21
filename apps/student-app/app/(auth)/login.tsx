@@ -16,8 +16,9 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations } from '@icc/shared-utils';
 import { supabase } from '../../src/lib/supabase';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff, Check } from 'lucide-react-native';
 import { UserProfile } from '@icc/shared-types';
+import * as SecureStore from 'expo-secure-store';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -27,28 +28,9 @@ export default function LoginScreen() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  const isMobile = (val: string) => /^\d{10}$/.test(val.trim());
-  const isEmail = (val: string) => val.includes('@');
-
-  const defaultStudentUser: UserProfile = {
-    id: 'u0000000-0000-0000-0000-000000000001',
-    username: 'rohit_kumar',
-    full_name: 'Rohit Kumar',
-    mobile_number: '9876543210',
-    email: 'rohit.kumar@example.com',
-    board_code: 'BSEB',
-    class_id: 'c0000000-0000-0000-0000-000000000010',
-    district: 'Patna',
-    school_name: 'Patna Collegiate High School',
-    preferred_language: 'en',
-    is_active: true,
-    role: 'student',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
 
   const defaultAdminUser: UserProfile = {
     id: 'adm00000-0000-0000-0000-000000000001',
@@ -72,46 +54,20 @@ export default function LoginScreen() {
     const trimmedPw = password.trim();
 
     if (!trimmedId || trimmedId.length < 3) {
-      setErrorMsg(
-        'Please enter a valid mobile number, username, or email'
-      );
+      setErrorMsg('Please enter your mobile number, username, or email');
       return;
     }
     if (!trimmedPw || trimmedPw.length < 4) {
-      setErrorMsg(
-        'Please enter your password (at least 4 characters)'
-      );
+      setErrorMsg('Please enter your password (at least 4 characters)');
       return;
     }
 
     setLoading(true);
 
     try {
-      let emailToUse = trimmedId;
-
-      if (!trimmedId.includes('@')) {
-        try {
-          const { data: rpcData } = await supabase.rpc('get_email_by_identifier', {
-            p_identifier: trimmedId,
-          });
-          if (rpcData) emailToUse = rpcData as string;
-        } catch {
-          try {
-            const { data: phoneData } = await supabase.rpc('get_email_by_phone', {
-              phone_number: trimmedId,
-            });
-            if (phoneData) emailToUse = phoneData as string;
-          } catch {}
-        }
-      }
-
-      // Check for demo student mobile / username mapping
       const idLower = trimmedId.toLowerCase();
-      if (idLower === '9876543210' || idLower === 'demo_student' || idLower === 'rohit_kumar') {
-        emailToUse = 'student@icc.com';
-      }
 
-      // 1. Check if Director / Admin is logging in
+      // 1. Director / Admin Login
       const isAdminLogin =
         idLower === 'icckeguruji@gmail.com' ||
         idLower.endsWith('9771350910') ||
@@ -135,18 +91,44 @@ export default function LoginScreen() {
         }
 
         if (adminSuccess) {
+          // Store remember me choice
+          if (Platform.OS !== 'web') {
+            await SecureStore.setItemAsync('icc_remember_me', rememberMe ? 'true' : 'false');
+          } else if (typeof window !== 'undefined') {
+            localStorage.setItem('icc_remember_me', rememberMe ? 'true' : 'false');
+          }
+
           setUser(defaultAdminUser);
           router.replace('/(tabs)');
           return;
         } else {
-          setErrorMsg('Invalid password! Please enter the valid Director password.');
+          setErrorMsg('Invalid password for Director login. Please try again.');
           setLoading(false);
           return;
         }
       }
 
-      // 2. Try Supabase official student sign in
+      // 2. Student Login via Supabase
+      let emailToUse = trimmedId;
+      if (!trimmedId.includes('@')) {
+        try {
+          const { data: rpcData } = await supabase.rpc('get_email_by_identifier', {
+            p_identifier: trimmedId,
+          });
+          if (rpcData) emailToUse = rpcData as string;
+        } catch {
+          try {
+            const { data: phoneData } = await supabase.rpc('get_email_by_phone', {
+              phone_number: trimmedId,
+            });
+            if (phoneData) emailToUse = phoneData as string;
+          } catch {}
+        }
+      }
+
       let loggedIn = false;
+      let authenticatedProfile: UserProfile | null = null;
+
       if (emailToUse.includes('@')) {
         try {
           const { data, error } = await supabase.auth.signInWithPassword({
@@ -155,38 +137,52 @@ export default function LoginScreen() {
           });
           if (!error && data?.user) {
             loggedIn = true;
-            setUser({
-              ...defaultStudentUser,
-              id: data.user.id,
-              email: data.user.email || emailToUse,
-              full_name: (data.user.user_metadata?.full_name as string) || 'Demo Student',
-            });
+            // Fetch profile
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', data.user.id)
+                .single();
+              if (profileData) {
+                authenticatedProfile = profileData as UserProfile;
+              }
+            } catch {}
+
+            if (!authenticatedProfile) {
+              authenticatedProfile = {
+                id: data.user.id,
+                username: data.user.email?.split('@')[0] || 'student',
+                full_name: (data.user.user_metadata?.full_name as string) || 'Student',
+                mobile_number: (data.user.user_metadata?.mobile_number as string) || '',
+                email: data.user.email || emailToUse,
+                board_code: 'BSEB',
+                class_id: undefined,
+                district: '',
+                school_name: undefined,
+                preferred_language: 'en',
+                is_active: true,
+                role: 'student',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              };
+            }
           }
         } catch {}
       }
 
-      // 3. Demo student credentials check fallback
-      if (!loggedIn) {
-        const isDemoStudent =
-          (idLower === 'student@icc.com' || idLower === '9876543210' || idLower === 'demo_student' || idLower === 'rohit_kumar') &&
-          trimmedPw === 'student123';
-
-        if (isDemoStudent) {
-          loggedIn = true;
-          setUser({
-            ...defaultStudentUser,
-            email: 'student@icc.com',
-            mobile_number: '9876543210',
-            username: 'demo_student',
-            full_name: 'Rohit Kumar (Demo Student)',
-          });
+      if (loggedIn && authenticatedProfile) {
+        // Persist Remember Me preference
+        if (Platform.OS !== 'web') {
+          await SecureStore.setItemAsync('icc_remember_me', rememberMe ? 'true' : 'false');
+        } else if (typeof window !== 'undefined') {
+          localStorage.setItem('icc_remember_me', rememberMe ? 'true' : 'false');
         }
-      }
 
-      if (loggedIn) {
+        setUser(authenticatedProfile);
         router.replace('/(tabs)');
       } else {
-        setErrorMsg('Invalid login ID or password. Please verify your credentials.');
+        setErrorMsg('Invalid login credentials. Please check your phone / email and password.');
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Login failed. Please check your credentials.');
@@ -205,9 +201,6 @@ export default function LoginScreen() {
           <View>
             <View style={styles.header}>
               <View style={styles.topBarRow}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                  <Text style={styles.backBtnText}>←</Text>
-                </TouchableOpacity>
                 <View style={styles.brandBadge}>
                   <Image
                     source={require('../../assets/logo.png')}
@@ -217,12 +210,11 @@ export default function LoginScreen() {
                   <Text style={styles.brandTitle}>IDEAL COACHING CENTRE</Text>
                 </View>
               </View>
-              <Text style={styles.title}>Student Login</Text>
+              <Text style={styles.title}>Student & Director Login</Text>
               <Text style={styles.subtitle}>
-                BSEB & JAC Board • Dir: BADE SIR (Sarotiya)
+                BSEB & JAC Board • Dir: BADE SIR (Mahagama, Godda)
               </Text>
             </View>
-
 
             {errorMsg ? (
               <View style={styles.errorBox}>
@@ -239,7 +231,7 @@ export default function LoginScreen() {
                 style={styles.input}
                 value={identifier}
                 onChangeText={setIdentifier}
-                placeholder="9876543210, rohit_kumar, or email"
+                placeholder="Enter Mobile Number or Email"
                 placeholderTextColor="#94A3B8"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -271,15 +263,27 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Forgot Password Link */}
-              <TouchableOpacity
-                style={styles.forgotRow}
-                onPress={() => router.push('/(auth)/forgot-password')}
-              >
-                <Text style={styles.forgotLink}>
-                  Forgot Password?
-                </Text>
-              </TouchableOpacity>
+              {/* Remember Me & Forgot Password Row */}
+              <View style={styles.optionsRow}>
+                <TouchableOpacity
+                  style={styles.rememberMeRow}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                    {rememberMe && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+                  </View>
+                  <Text style={styles.rememberMeText}>Remember Me / याद रखें</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => router.push('/(auth)/forgot-password')}
+                >
+                  <Text style={styles.forgotLink}>
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               <TouchableOpacity
                 style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
@@ -292,11 +296,10 @@ export default function LoginScreen() {
                   <Text style={styles.submitBtnText}>Log In</Text>
                 )}
               </TouchableOpacity>
-
             </View>
           </View>
 
-          {/* Bottom Enroll Switch (Registration is merged into Course Enrollment) */}
+          {/* Bottom Enroll Switch */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               New student?{' '}
@@ -326,183 +329,152 @@ const styles = StyleSheet.create({
   topBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
+    justifyContent: 'flex-start',
+    marginBottom: 16,
   },
   brandBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#F8FAFC',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   headerLogo: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
-    padding: 2,
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    overflow: 'hidden',
   },
   brandTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  backBtnText: {
-    fontSize: 18,
-    color: '#0F172A',
-    fontWeight: 'bold',
+    color: '#1E3A8A',
+    letterSpacing: 0.5,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: '#0F172A',
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
     color: '#64748B',
-    marginTop: 4,
-  },
-  quickAccessBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-    borderRadius: 14,
-    padding: 12,
-    marginVertical: 16,
-    gap: 10,
-  },
-  quickAccessIcon: {
-    fontSize: 24,
-  },
-  quickAccessTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#1D4ED8',
-  },
-  quickAccessSub: {
-    fontSize: 11,
-    color: '#3B82F6',
-    marginTop: 1,
-  },
-  quickAccessArrow: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2563EB',
+    marginBottom: 20,
   },
   errorBox: {
     backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
     borderWidth: 1,
+    borderColor: '#FECACA',
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+    padding: 12,
+    marginBottom: 16,
   },
   errorText: {
-    fontSize: 12,
     color: '#DC2626',
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
   form: {
-    gap: 2,
+    gap: 8,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#334155',
-    marginBottom: 6,
-    marginTop: 6,
+    marginBottom: 4,
   },
   input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: 8,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
     color: '#0F172A',
-    marginBottom: 10,
+    backgroundColor: '#F8FAFC',
+    marginBottom: 12,
   },
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     position: 'relative',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   eyeBtn: {
     position: 'absolute',
     right: 14,
     top: 14,
-    padding: 4,
+    zIndex: 1,
   },
-  forgotRow: {
-    alignItems: 'flex-end',
-    marginBottom: 16,
+  optionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
     marginTop: 2,
   },
-  forgotLink: {
-    fontSize: 13,
+  rememberMeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#94A3B8',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  rememberMeText: {
+    fontSize: 12,
+    color: '#475569',
     fontWeight: '600',
+  },
+  forgotLink: {
     color: '#2563EB',
+    fontSize: 12,
+    fontWeight: '600',
   },
   submitBtn: {
     backgroundColor: '#2563EB',
+    borderRadius: 8,
     paddingVertical: 14,
-    borderRadius: 12,
     alignItems: 'center',
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 4,
-    marginTop: 6,
+    elevation: 3,
   },
   submitBtnDisabled: {
-    opacity: 0.7,
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   submitBtnText: {
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  directorQuickBtn: {
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1.5,
-    borderColor: '#F59E0B',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  directorQuickText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#92400E',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 16,
   },
   footerText: {
     fontSize: 13,

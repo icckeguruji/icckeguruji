@@ -341,20 +341,6 @@ export default function StudyMaterialsPage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('शीर्षक (हिंदी)', 'Title (Hindi)')}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title_hi}
-                    onChange={(e) => setFormData({ ...formData, title_hi: e.target.value })}
-                    placeholder="उदा. रासायनिक अभिक्रियाएँ - संपूर्ण हस्तलिखित नोट्स"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
                     {t('कक्षा (Class)', 'Class')}
                   </label>
                   <select
@@ -487,22 +473,12 @@ export default function StudyMaterialsPage() {
 
               <form onSubmit={handleUpdate} className="space-y-4 pt-4 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('शीर्षक (English)', 'Title (English)')}</label>
+                  <label className="block font-semibold text-slate-700 mb-1">{t('शीर्षक (Title)', 'Title')}</label>
                   <input
                     type="text"
                     required
                     value={editFormData.title}
                     onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">{t('शीर्षक (हिंदी)', 'Title (Hindi)')}</label>
-                  <input
-                    type="text"
-                    required
-                    value={editFormData.title_hi}
-                    onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>

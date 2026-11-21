@@ -762,33 +762,18 @@ export default function CoursesPage() {
               </div>
 
               <form onSubmit={handleCreateCourse} className="space-y-4 pt-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      {t('कोर्स का शीर्षक (English)', 'Course Title (English)')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="e.g. Class 10th All Subjects Mastery"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      {t('कोर्स का शीर्षक (हिंदी)', 'Course Title (Hindi)')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.title_hi}
-                      onChange={(e) => setFormData({ ...formData, title_hi: e.target.value })}
-                      placeholder="उदा. कक्षा 10वीं संपूर्ण विषय तैयारी"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    {t('कोर्स का शीर्षक (Course Title)', 'Course Title')}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g. Class 10th Board Exam Complete Batch"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
                 </div>
 
                 <div>
@@ -810,26 +795,13 @@ export default function CoursesPage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('विवरण (English Description)', 'Description (English)')}
+                    {t('कोर्स का विवरण (Description)', 'Description')}
                   </label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Comprehensive target batch with daily live classes, complete NCERT solutions and notes..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('विवरण (हिंदी Description)', 'Description (Hindi)')}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.description_hi}
-                    onChange={(e) => setFormData({ ...formData, description_hi: e.target.value })}
-                    placeholder="परीक्षा पर अंतिम और मजबूत प्रहार! प्रतिदिन लाइव कक्षाएं..."
+                    placeholder="Comprehensive target batch with daily live classes, complete NCERT solutions, and handwritten notes..."
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
@@ -952,31 +924,17 @@ export default function CoursesPage() {
               </div>
 
               <form onSubmit={handleUpdateCourse} className="space-y-4 pt-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      {t('कोर्स का शीर्षक (English)', 'Course Title (English)')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editFormData.title}
-                      onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      {t('कोर्स का शीर्षक (हिंदी)', 'Course Title (Hindi)')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editFormData.title_hi}
-                      onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    {t('कोर्स का शीर्षक (Course Title)', 'Course Title')}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1013,24 +971,12 @@ export default function CoursesPage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('विवरण (English Description)', 'Description (English)')}
+                    {t('कोर्स का विवरण (Description)', 'Description')}
                   </label>
                   <textarea
-                    rows={2}
+                    rows={3}
                     value={editFormData.description}
                     onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('विवरण (हिंदी Description)', 'Description (Hindi)')}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={editFormData.description_hi}
-                    onChange={(e) => setEditFormData({ ...editFormData, description_hi: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
@@ -1366,24 +1312,15 @@ export default function CoursesPage() {
                           placeholder="Chapter Title (e.g. Ch 1: Real Numbers)"
                           value={newChapterTitle}
                           onChange={(e) => setNewChapterTitle(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                          className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                         />
-                        <div className="flex space-x-1.5">
-                          <input
-                            type="text"
-                            placeholder="Hindi Title (Optional)"
-                            value={newChapterTitleHi}
-                            onChange={(e) => setNewChapterTitleHi(e.target.value)}
-                            className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                          />
-                          <button
-                            type="submit"
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Add</span>
-                          </button>
-                        </div>
+                        <button
+                          type="submit"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add Chapter</span>
+                        </button>
                       </form>
 
                       {/* Chapters Items */}

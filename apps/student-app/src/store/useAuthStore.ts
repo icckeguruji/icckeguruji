@@ -20,59 +20,50 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-const defaultStudent: UserProfile = {
-  id: 'u0000000-0000-0000-0000-000000000001',
-  username: 'rohit_kumar',
-  full_name: 'Rohit Kumar',
-  mobile_number: '9876543210',
-  email: 'rohit.kumar@example.com',
-  dob: '2008-05-15',
-  guardian_name: 'Shri Manoj Kumar',
-  guardian_phone: '9876500001',
-  board_code: 'BSEB',
-  class_id: 'c0000000-0000-0000-0000-000000000010',
-  district: 'Patna',
-  school_name: 'Patna Collegiate High School',
-  preferred_language: 'en',
-  is_active: true,
-  quiz_points: 60,
-  badges: ['Bronze Scholar'],
-  created_at: '2026-04-01T00:00:00Z',
-  updated_at: '2026-04-01T00:00:00Z',
-};
-
 export const useAuthStore = create<AuthState>((set, get) => ({
-  isAuthenticated: true, // Default to demo student for immediate app usability
-  user: defaultStudent,
-  language: 'en', // Default language is English as required
+  isAuthenticated: false, // Default: NOT logged in. Requires explicit login or remembered session
+  user: null,
+  language: 'en',
   selectedBoard: 'BSEB',
   selectedClass: 'Class 10',
   isDarkMode: false,
 
   initAuthStore: async () => {
     try {
+      let rememberMe = 'false';
+      let storedProfile: string | null = null;
+
       if (Platform.OS !== 'web') {
-        const storedProfile = await SecureStore.getItemAsync('icc_user_profile');
-        if (storedProfile) {
-          const parsed = JSON.parse(storedProfile);
-          set({
-            user: parsed,
-            isAuthenticated: true,
-            selectedBoard: parsed.board_code || get().selectedBoard,
-          });
+        rememberMe = (await SecureStore.getItemAsync('icc_remember_me')) || 'false';
+        if (rememberMe === 'true') {
+          storedProfile = await SecureStore.getItemAsync('icc_user_profile');
         }
       } else if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('icc_user_profile');
-        if (stored) {
-          const parsed = JSON.parse(stored);
+        rememberMe = localStorage.getItem('icc_remember_me') || 'false';
+        if (rememberMe === 'true') {
+          storedProfile = localStorage.getItem('icc_user_profile');
+        }
+      }
+
+      // Only auto-login if Remember Me was explicitly checked AND a real profile exists
+      if (rememberMe === 'true' && storedProfile) {
+        const parsed = JSON.parse(storedProfile);
+        // Exclude dummy demo student
+        if (parsed && parsed.id && parsed.username !== 'rohit_kumar') {
           set({
             user: parsed,
             isAuthenticated: true,
             selectedBoard: parsed.board_code || get().selectedBoard,
           });
+          return;
         }
       }
-    } catch {}
+
+      // Otherwise remain logged out
+      set({ isAuthenticated: false, user: null });
+    } catch {
+      set({ isAuthenticated: false, user: null });
+    }
   },
 
   setLanguage: (language: AppLanguage) => {
@@ -131,9 +122,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (Platform.OS !== 'web') {
       await SecureStore.deleteItemAsync('icc_session').catch(() => {});
       await SecureStore.deleteItemAsync('icc_user_profile').catch(() => {});
+      await SecureStore.deleteItemAsync('icc_remember_me').catch(() => {});
     } else if (typeof window !== 'undefined') {
       try {
+        localStorage.removeItem('icc_session');
         localStorage.removeItem('icc_user_profile');
+        localStorage.removeItem('icc_remember_me');
       } catch {}
     }
     set({ isAuthenticated: false, user: null });

@@ -60,7 +60,7 @@ export default function ReportsPage() {
     setDownloading(reportId);
     setTimeout(() => {
       // Mock CSV generation and download trigger
-      const dummyCsv = `ID,Name,Board,Class,Date,Status\n1,Rohit Kumar,BSEB,Class 10,2026-04-01,Active\n2,Priya Singh,JAC,Class 10,2026-04-02,Active\n3,Amit Yadav,BSEB,Class 10,2026-04-03,Active`;
+      const dummyCsv = `ID,Name,Board,Class,Date,Status\n1,Registered Student,BSEB,Class 10,2026-04-01,Active`;
       const blob = new Blob([dummyCsv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

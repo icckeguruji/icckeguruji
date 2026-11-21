@@ -316,7 +316,7 @@ export function PublicEnrollmentModal({
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Rohit Kumar"
+                      placeholder="e.g. Student Full Name"
                       value={fullName}
                       onChange={(e) => handleAutoFillUsername(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"

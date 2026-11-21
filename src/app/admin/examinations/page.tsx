@@ -201,7 +201,7 @@ export default function ExaminationsPage() {
         titleHi="ऑनलाइन परीक्षा प्रबंधन"
         titleEn="Online Examination Portal"
         subtitleHi="एमसीक्यू प्रश्न पत्र निर्माण, संपादन एवं परिणाम प्रकाशन"
-        subtitleEn="Create, edit and manage examinations with real-time Supabase sync"
+        subtitleEn="Create, edit and manage examinations with real-time sync"
       />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -340,19 +340,6 @@ export default function ExaminationsPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('परीक्षा का शीर्षक (हिंदी)', 'Exam Title (Hindi)')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title_hi}
-                    onChange={(e) => setFormData({ ...formData, title_hi: e.target.value })}
-                    placeholder="उदा. कक्षा 10 विज्ञान: साप्ताहिक रविवार टेस्ट"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">
@@ -461,18 +448,6 @@ export default function ExaminationsPage() {
                     required
                     value={editFormData.title}
                     onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('परीक्षा का शीर्षक (हिंदी)', 'Exam Title (Hindi)')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.title_hi}
-                    onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>

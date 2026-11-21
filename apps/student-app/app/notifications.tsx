@@ -252,7 +252,7 @@ export default function NotificationsScreen() {
         <View style={styles.footerInfoBox}>
           <Sparkles size={16} color="#D97706" />
           <Text style={styles.footerInfoText}>
-            Push Notifications powered by Supabase Realtime & Expo Gateway. Free for all BSEB/JAC students.
+            Instant Institute Notifications. Free for all BSEB/JAC students.
           </Text>
         </View>
       </ScrollView>

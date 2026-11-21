@@ -231,7 +231,48 @@ const STORAGE_KEYS = {
   EXAMINATIONS: 'icc_v4_examinations',
   SUBJECTS: 'icc_v4_subjects',
   ADMIN_PROFILE: 'icc_v4_profile',
+  TEACHERS: 'icc_v4_teachers',
 };
+
+export interface TeacherItem {
+  id: string;
+  full_name: string;
+  qualification: string;
+  subjects: string;
+  email: string;
+  mobile: string;
+  assignedBatches: number;
+}
+
+const defaultTeachers: TeacherItem[] = [
+  {
+    id: 't-0',
+    full_name: 'BADE SIR (Director / बड़े सर)',
+    qualification: 'Founder & Academic Director - 12+ Years Experience',
+    subjects: 'Senior Physics, Mathematics & Board Strategy',
+    email: 'icckeguruji@gmail.com',
+    mobile: '+91 9771350910',
+    assignedBatches: 4,
+  },
+  {
+    id: 't-1',
+    full_name: 'Er. R. K. Sharma (इंजी. आर. के. शर्मा)',
+    qualification: 'B.Tech (NIT Patna) - 10+ Years Experience',
+    subjects: 'Physics & Mathematics (भौतिकी एवं गणित)',
+    email: 'rksharma@idealcoaching.in',
+    mobile: '9876543220',
+    assignedBatches: 3,
+  },
+  {
+    id: 't-2',
+    full_name: 'Dr. S. N. Mishra (डॉ. एस. एन. मिश्रा)',
+    qualification: 'M.Sc, Ph.D (Patna University)',
+    subjects: 'Chemistry & Biology (रसायन शास्त्र एवं जीव विज्ञान)',
+    email: 'snmishra@idealcoaching.in',
+    mobile: '9876543221',
+    assignedBatches: 2,
+  },
+];
 
 // Helper to retrieve data from localStorage (browser-safe, permanent)
 function getPersistentState<T>(key: string, defaultData: T): T {
@@ -315,6 +356,7 @@ let localLiveClasses: LiveClass[] = getPersistentState(STORAGE_KEYS.LIVE_CLASSES
 let localLectures: RecordedLectureItem[] = getPersistentState(STORAGE_KEYS.RECORDED_LECTURES, []);
 let localExams: ExaminationItem[] = getPersistentState(STORAGE_KEYS.EXAMINATIONS, []);
 let localAdminProfile: AdminProfileData = getPersistentState(STORAGE_KEYS.ADMIN_PROFILE, { ...defaultAdminProfile });
+let localTeachers: TeacherItem[] = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
 
 export const AdminApi = {
   // 1. Analytics Summary
@@ -1904,5 +1946,36 @@ export const AdminApi = {
       } catch {}
     }
     return { success: true, message: 'Simulated email dispatch' };
+  },
+
+  // 12. Teachers (Full CRUD with persistent local store)
+  getTeachers: async (): Promise<TeacherItem[]> => {
+    localTeachers = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
+    return localTeachers;
+  },
+
+  createTeacher: async (teacherData: Omit<TeacherItem, 'id'>): Promise<TeacherItem> => {
+    localTeachers = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
+    const newTeacher: TeacherItem = {
+      id: `t-${Date.now()}`,
+      ...teacherData,
+    };
+    localTeachers = [newTeacher, ...localTeachers];
+    savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
+    return newTeacher;
+  },
+
+  updateTeacher: async (teacherId: string, updates: Partial<TeacherItem>): Promise<TeacherItem | null> => {
+    localTeachers = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
+    localTeachers = localTeachers.map((t) => (t.id === teacherId ? { ...t, ...updates } : t));
+    savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
+    return localTeachers.find((t) => t.id === teacherId) || null;
+  },
+
+  deleteTeacher: async (teacherId: string): Promise<boolean> => {
+    localTeachers = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
+    localTeachers = localTeachers.filter((t) => t.id !== teacherId);
+    savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
+    return true;
   },
 };

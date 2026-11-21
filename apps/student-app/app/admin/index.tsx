@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { academicService, getResolvedThumbnailUrl, AcademicSubject } from '../../src/services/academicService';
+import { academicService, getResolvedThumbnailUrl, AcademicSubject, Teacher } from '../../src/services/academicService';
 import { Course, LiveClass, StudyMaterial, UserProfile, Payment } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import * as DocumentPicker from 'expo-document-picker';
@@ -85,6 +85,7 @@ export default function AndroidAdminDashboardScreen() {
   const [studyMaterials, setStudyMaterials] = useState<StudyMaterial[]>([]);
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
   // Modals
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -96,6 +97,17 @@ export default function AndroidAdminDashboardScreen() {
     price: '999',
     discount_price: '499',
     description: '',
+  });
+
+  const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [teacherForm, setTeacherForm] = useState({
+    full_name: '',
+    qualification: '',
+    subjects: '',
+    email: '',
+    mobile: '',
+    assignedBatches: '1',
   });
 
   const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
@@ -112,7 +124,7 @@ export default function AndroidAdminDashboardScreen() {
   const loadAllData = useCallback(async () => {
     try {
       await academicService.ensureLoaded();
-      const [allCourses, allLive, allVids, allMats, allStudents, allPayments] =
+      const [allCourses, allLive, allVids, allMats, allStudents, allPayments, allTeachers] =
         await Promise.all([
           academicService.getCourses(),
           academicService.getLiveClasses(),
@@ -120,6 +132,7 @@ export default function AndroidAdminDashboardScreen() {
           academicService.getStudyMaterials(),
           academicService.getStudents(),
           academicService.getPayments(),
+          academicService.getTeachers(),
         ]);
       setCourses(allCourses);
       setLiveClasses(allLive);
@@ -127,6 +140,7 @@ export default function AndroidAdminDashboardScreen() {
       setStudyMaterials(allMats);
       setStudents(allStudents);
       setPayments(allPayments);
+      setTeachers(allTeachers);
     } catch (e) {
       console.warn('Admin load error:', e);
     } finally {
@@ -205,6 +219,84 @@ export default function AndroidAdminDashboardScreen() {
           style: 'destructive',
           onPress: async () => {
             await academicService.deleteCourse(course.id);
+            loadAllData();
+          },
+        },
+      ]
+    );
+  };
+
+  // --- TEACHER ACTIONS (FULL CRUD) ---
+  const handleOpenAddTeacher = () => {
+    setEditingTeacher(null);
+    setTeacherForm({
+      full_name: '',
+      qualification: '',
+      subjects: '',
+      email: '',
+      mobile: '',
+      assignedBatches: '1',
+    });
+    setIsTeacherModalOpen(true);
+  };
+
+  const handleOpenEditTeacher = (tItem: Teacher) => {
+    setEditingTeacher(tItem);
+    setTeacherForm({
+      full_name: tItem.full_name,
+      qualification: tItem.qualification,
+      subjects: tItem.subjects,
+      email: tItem.email,
+      mobile: tItem.mobile,
+      assignedBatches: String(tItem.assignedBatches || 1),
+    });
+    setIsTeacherModalOpen(true);
+  };
+
+  const handleSaveTeacher = async () => {
+    if (!teacherForm.full_name.trim()) {
+      Alert.alert('Required', 'Please enter teacher full name');
+      return;
+    }
+    try {
+      if (editingTeacher) {
+        await academicService.updateTeacher(editingTeacher.id, {
+          full_name: teacherForm.full_name.trim(),
+          qualification: teacherForm.qualification.trim(),
+          subjects: teacherForm.subjects.trim(),
+          email: teacherForm.email.trim(),
+          mobile: teacherForm.mobile.trim(),
+          assignedBatches: Number(teacherForm.assignedBatches) || 1,
+        });
+      } else {
+        await academicService.addTeacher({
+          full_name: teacherForm.full_name.trim(),
+          qualification: teacherForm.qualification.trim(),
+          subjects: teacherForm.subjects.trim(),
+          email: teacherForm.email.trim(),
+          mobile: teacherForm.mobile.trim(),
+          assignedBatches: Number(teacherForm.assignedBatches) || 1,
+        });
+      }
+      setIsTeacherModalOpen(false);
+      setEditingTeacher(null);
+      loadAllData();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to save teacher.');
+    }
+  };
+
+  const handleDeleteTeacher = (tItem: Teacher) => {
+    Alert.alert(
+      'Delete Teacher Record',
+      `Are you sure you want to delete "${tItem.full_name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await academicService.deleteTeacher(tItem.id);
             loadAllData();
           },
         },
@@ -901,33 +993,62 @@ export default function AndroidAdminDashboardScreen() {
         {/* TAB 9: TEACHERS */}
         {activeTab === 'teachers' && (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionHeading}>FACULTY & TEACHER DIRECTORY</Text>
-            <View style={styles.itemCard}>
-              <View style={styles.itemCardHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemTitle}>BADE SIR (Director)</Text>
-                  <Text style={styles.itemSub}>Subject: Mathematics & Physics</Text>
-                  <Text style={styles.itemSub}>📞 +91 9771350910 • Sarotiya, Mahagama</Text>
-                </View>
-                <View style={styles.primaryBadge}>
-                  <Text style={styles.primaryBadgeText}>Director</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.sectionHeading}>FACULTY & TEACHERS ({teachers.length})</Text>
+              <TouchableOpacity
+                style={styles.addSmallBtn}
+                onPress={handleOpenAddTeacher}
+              >
+                <Plus size={14} color="#FFFFFF" />
+                <Text style={styles.addSmallBtnText}>Add Teacher</Text>
+              </TouchableOpacity>
+            </View>
+
+            {teachers.map((tItem) => (
+              <View key={tItem.id} style={styles.itemCard}>
+                <View style={styles.itemCardHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle}>{tItem.full_name}</Text>
+                    <Text style={styles.itemSub}>{tItem.qualification}</Text>
+                    <Text style={[styles.itemSub, { color: '#2563EB', fontWeight: '700' }]}>
+                      Subject: {tItem.subjects}
+                    </Text>
+                    <Text style={styles.itemSub}>📞 {tItem.mobile} • ✉️ {tItem.email}</Text>
+                    <Text style={[styles.itemSub, { color: '#059669' }]}>
+                      Assigned Batches: {tItem.assignedBatches || 1}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={styles.iconActionBtn}
+                      onPress={() => handleOpenEditTeacher(tItem)}
+                    >
+                      <Edit3 size={15} color="#2563EB" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.iconActionBtn, { backgroundColor: '#FEE2E2' }]}
+                      onPress={() => handleDeleteTeacher(tItem)}
+                    >
+                      <Trash2 size={15} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
+            ))}
           </View>
         )}
 
         {/* TAB 10: SETTINGS */}
         {activeTab === 'settings' && (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionHeading}>CLOUD & SYSTEM DIAGNOSTICS</Text>
+            <Text style={styles.sectionHeading}>SYSTEM & DATA SYNC</Text>
             <View style={styles.itemCard}>
-              <Text style={styles.itemTitle}>Supabase Database Sync</Text>
-              <Text style={styles.itemSub}>Connected to project: gshjxcoyfrskxnpdqooy</Text>
-              <Text style={styles.itemSub}>State: Real-time PostgreSQL Replication Active</Text>
+              <Text style={styles.itemTitle}>Institute Live Data Sync</Text>
+              <Text style={styles.itemSub}>Cloud Database: Fully Connected & Active</Text>
+              <Text style={styles.itemSub}>Mode: Real-time 2-Way Sync Active</Text>
               <TouchableOpacity style={styles.syncFullBtn} onPress={handleRefresh}>
                 <RefreshCw size={14} color="#2563EB" />
-                <Text style={styles.syncFullText}>Force Re-sync Entire Cache</Text>
+                <Text style={styles.syncFullText}>Refresh & Sync All Records</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -958,14 +1079,6 @@ export default function AndroidAdminDashboardScreen() {
                 value={courseForm.title}
                 onChangeText={(t) => setCourseForm({ ...courseForm, title: t })}
                 placeholder="e.g. BSEB Class 10 Board Exam Batch"
-                placeholderTextColor="#94A3B8"
-              />
-              <Text style={styles.fieldLabel}>Hindi Title</Text>
-              <TextInput
-                style={styles.input}
-                value={courseForm.title_hi}
-                onChangeText={(t) => setCourseForm({ ...courseForm, title_hi: t })}
-                placeholder="e.g. बिहार बोर्ड कक्षा 10 संकल्प बैच"
                 placeholderTextColor="#94A3B8"
               />
               <Text style={styles.fieldLabel}>Class / Grade</Text>
@@ -1008,6 +1121,90 @@ export default function AndroidAdminDashboardScreen() {
               <TouchableOpacity style={styles.submitBtn} onPress={handleSaveCourse}>
                 <Text style={styles.submitBtnText}>
                   {editingCourse ? 'Save Changes' : 'Create & Publish Course'}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* TEACHER MODAL (ADD / EDIT) */}
+      <Modal
+        visible={isTeacherModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsTeacherModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeading}>
+                {editingTeacher ? 'Edit Teacher Details' : 'Add New Teacher'}
+              </Text>
+              <TouchableOpacity onPress={() => setIsTeacherModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.fieldLabel}>Teacher Full Name *</Text>
+              <TextInput
+                style={styles.input}
+                value={teacherForm.full_name}
+                onChangeText={(t) => setTeacherForm({ ...teacherForm, full_name: t })}
+                placeholder="e.g. Prof. Rajesh Ranjan"
+                placeholderTextColor="#94A3B8"
+              />
+              <Text style={styles.fieldLabel}>Qualification</Text>
+              <TextInput
+                style={styles.input}
+                value={teacherForm.qualification}
+                onChangeText={(t) => setTeacherForm({ ...teacherForm, qualification: t })}
+                placeholder="e.g. M.Sc. (Physics), B.Ed."
+                placeholderTextColor="#94A3B8"
+              />
+              <Text style={styles.fieldLabel}>Subjects Taught</Text>
+              <TextInput
+                style={styles.input}
+                value={teacherForm.subjects}
+                onChangeText={(t) => setTeacherForm({ ...teacherForm, subjects: t })}
+                placeholder="e.g. Physics & Mathematics"
+                placeholderTextColor="#94A3B8"
+              />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Mobile Number</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={teacherForm.mobile}
+                    onChangeText={(t) => setTeacherForm({ ...teacherForm, mobile: t })}
+                    placeholder="9876543210"
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Assigned Batches</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={teacherForm.assignedBatches}
+                    onChangeText={(t) => setTeacherForm({ ...teacherForm, assignedBatches: t })}
+                    placeholder="2"
+                    keyboardType="number-pad"
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+              </View>
+              <Text style={styles.fieldLabel}>Email Address</Text>
+              <TextInput
+                style={styles.input}
+                value={teacherForm.email}
+                onChangeText={(t) => setTeacherForm({ ...teacherForm, email: t })}
+                placeholder="teacher@idealcoaching.in"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSaveTeacher}>
+                <Text style={styles.submitBtnText}>
+                  {editingTeacher ? 'Update Teacher Record' : 'Save Teacher Record'}
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -1522,5 +1719,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  addSmallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  addSmallBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  iconActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -32,10 +32,10 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 pb-12">
       <AdminHeader
-        titleHi="प्लेटफ़ॉर्म सेटिंग्स एवं संसाधन कोटा"
-        titleEn="Platform Settings & Free-Tier Quota Monitor"
-        subtitleHi="संस्थान प्रोफ़ाइल, UPI भुगतान विन्यास एवं ₹0/माह निःशुल्क योजना अनुपालन"
-        subtitleEn="Configure institution profile, UPI VPA & monitor free-tier capacity"
+        titleHi="सेटिंग्स"
+        titleEn="Settings"
+        subtitleHi="संस्थान प्रोफ़ाइल, UPI भुगतान विन्यास एवं सिस्टम सेटिंग्स"
+        subtitleEn="Configure institution profile, UPI VPA & platform settings"
       />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -105,7 +105,7 @@ export default function SettingsPage() {
                 <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '0.1%' }}></div>
               </div>
               <p className="text-[10px] text-slate-400">
-                {t('सुपाबेस ईमेल ओटीपी (एसएमएस व्यय ₹0)', 'Supabase Email OTP (Zero SMS cost)')}
+                {t('सुरक्षित ईमेल ओटीपी प्रमाणीकरण', 'Secure Email OTP Verification')}
               </p>
             </div>
           </div>

@@ -671,7 +671,7 @@ export default function StudentProfileScreen() {
 
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={styles.userName}>{user?.full_name || 'Rohit Kumar'}</Text>
+              <Text style={styles.userName}>{user?.full_name || 'ICC Student'}</Text>
               <TouchableOpacity
                 style={styles.editPill}
                 onPress={openEditModal}
@@ -680,14 +680,14 @@ export default function StudentProfileScreen() {
                 <Text style={styles.editPillText}>Edit</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.userSub}>@{user?.username || 'rohit_kumar'}</Text>
+            <Text style={styles.userSub}>@{user?.username || 'student'}</Text>
             <View style={styles.contactRow}>
               <Phone size={12} color="#64748B" />
-              <Text style={styles.userContact}>+91 {user?.mobile_number || '9876543210'}</Text>
+              <Text style={styles.userContact}>+91 {user?.mobile_number || '9771350910'}</Text>
             </View>
             <View style={styles.contactRow}>
               <Mail size={12} color="#64748B" />
-              <Text style={styles.userEmail}>{user?.email || 'rohit.kumar@example.com'}</Text>
+              <Text style={styles.userEmail}>{user?.email || 'student@idealcoaching.in'}</Text>
             </View>
           </View>
         </View>
@@ -2005,7 +2005,7 @@ export default function StudentProfileScreen() {
               />
               <TextInput
                 style={[styles.textInput, { marginTop: 8 }]}
-                placeholder="PDF File Link (Google Drive / Supabase URL)"
+                placeholder="PDF File Link (Web Link / Document URL)"
                 value={newMaterialUrl}
                 onChangeText={setNewMaterialUrl}
               />
@@ -2185,7 +2185,7 @@ export default function StudentProfileScreen() {
 
                 <View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Supabase Storage</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Cloud Storage</Text>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#9333EA' }}>42.8 MB / 1000 MB (4.2%)</Text>
                   </View>
                   <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>

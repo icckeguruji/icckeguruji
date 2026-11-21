@@ -68,9 +68,9 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
     { href: '/admin/payments', icon: CreditCard, label: 'Payments & UTR' },
     { href: '/admin/notifications', icon: Bell, label: 'Push Notifications' },
     { href: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp AI Bot' },
-    { href: '/admin/teachers', icon: UserCheck, label: 'Teacher Records (रिकॉर्ड)' },
+    { href: '/admin/teachers', icon: UserCheck, label: 'Teachers' },
     { href: '/admin/reports', icon: BarChart3, label: 'Reports' },
-    { href: '/admin/settings', icon: Settings, label: 'Settings & Quota' },
+    { href: '/admin/settings', icon: Settings, label: 'Settings' },
   ];
 
   const sidebarContent = (

@@ -467,7 +467,7 @@ export function CoachingHeader({
                       try {
                         await academicService.syncFromCloud();
                         if (onRefresh) onRefresh();
-                        Alert.alert('☁️ Cloud Database Synced', 'All courses, live classes, study materials & student data have been synchronized with Supabase live cloud!');
+                        Alert.alert('☁️ Live Sync Complete', 'All courses, live classes, study materials and records have been synchronized successfully!');
                       } catch {
                         Alert.alert('Synced', 'Local cache and cloud state synchronized.');
                       }
@@ -477,8 +477,8 @@ export function CoachingHeader({
                       <RefreshCw size={18} color="#059669" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>Force Cloud Database Sync</Text>
-                      <Text style={styles.menuItemSubText}>Sync Supabase courses, subjects & live classes</Text>
+                      <Text style={styles.menuItemText}>Sync Latest Data</Text>
+                      <Text style={styles.menuItemSubText}>Sync latest courses, subjects & live classes</Text>
                     </View>
                     <ChevronRight size={16} color="#CBD5E1" />
                   </TouchableOpacity>

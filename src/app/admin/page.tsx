@@ -483,7 +483,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-semibold text-slate-700">
-              {t('लाइव क्लाउड सिंक सक्रिय (Supabase Live Cloud)', 'Live Cloud Sync (Supabase Live Cloud)')}
+              {t('लाइव क्लाउड सिंक सक्रिय', 'Live Cloud Sync Active')}
             </span>
             <span className="hidden sm:inline-block text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium border border-emerald-200">
               {courses.length} {t('कोर्स डेटाबेस में मौजूद', 'Courses in DB')}
@@ -628,7 +628,7 @@ export default function AdminDashboardPage() {
               </div>
               <p className="text-xs text-slate-500 mt-1">
                 {t(
-                  'मोबाइल ऐप और एडमिन डैशबोर्ड दोनों जगह पूर्णतः सिंक (Supabase Live)',
+                  'मोबाइल ऐप और एडमिन डैशबोर्ड दोनों जगह पूर्णतः लाइव सिंक',
                   'Bidirectionally synchronized in real-time across Android App and Web'
                 )}
               </p>
@@ -806,7 +806,7 @@ export default function AdminDashboardPage() {
             <div>
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-slate-300 flex items-center">
-                  <HardDrive className="w-3.5 h-3.5 mr-1 text-purple-400" /> Supabase Storage
+                  <HardDrive className="w-3.5 h-3.5 mr-1 text-purple-400" /> Cloud Storage
                 </span>
                 <span className="font-bold text-slate-200">42.8 MB / 1000 MB (4.2%)</span>
               </div>
@@ -909,19 +909,6 @@ export default function AdminDashboardPage() {
                   placeholder="e.g. Class 10 State Board Topper Course 2027"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {t('कोर्स का शीर्षक (हिंदी)', 'Course Title (Hindi)')}
-                </label>
-                <input
-                  type="text"
-                  placeholder="उदा. कक्षा 10वीं स्टेट बोर्ड टॉपर कोर्स 2027"
-                  value={formData.title_hi}
-                  onChange={(e) => setFormData({ ...formData, title_hi: e.target.value })}
                   className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1084,18 +1071,6 @@ export default function AdminDashboardPage() {
                   required
                   value={editFormData.title}
                   onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {t('कोर्स का शीर्षक (हिंदी)', 'Course Title (Hindi)')}
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.title_hi}
-                  onChange={(e) => setEditFormData({ ...editFormData, title_hi: e.target.value })}
                   className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1395,21 +1370,14 @@ export default function AdminDashboardPage() {
                 {/* Add Chapter Form */}
                 {selectedSubject && (
                   <form onSubmit={handleAddChapter} className="pt-3 border-t mt-3 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div>
                       <input
                         type="text"
-                        placeholder="Chapter Title (English)"
+                        placeholder="Chapter Title (e.g. Real Numbers)"
                         value={newChapterTitle}
                         onChange={(e) => setNewChapterTitle(e.target.value)}
                         required
-                        className="px-2.5 py-1.5 border rounded-lg text-xs"
-                      />
-                      <input
-                        type="text"
-                        placeholder="अध्याय शीर्षक (हिंदी)"
-                        value={newChapterTitleHi}
-                        onChange={(e) => setNewChapterTitleHi(e.target.value)}
-                        className="px-2.5 py-1.5 border rounded-lg text-xs"
+                        className="w-full px-2.5 py-1.5 border rounded-lg text-xs"
                       />
                     </div>
                     <button

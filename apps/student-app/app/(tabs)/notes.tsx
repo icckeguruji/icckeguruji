@@ -765,20 +765,12 @@ export default function StudentNotesScreen() {
                 )}
               </TouchableOpacity>
 
-              <Text style={styles.inputLabel}>Document Title (English) *</Text>
+              <Text style={styles.inputLabel}>Document Title *</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. Ch 01: Chemical Reactions Master Notes"
+                placeholder="e.g. Chapter 1: Chemical Reactions Master Notes"
                 value={noteForm.title}
-                onChangeText={(text) => setNoteForm((prev) => ({ ...prev, title: text }))}
-              />
-
-              <Text style={styles.inputLabel}>Title (Hindi / Urdu)</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="e.g. पाठ 01: रासायनिक अभिक्रियाएं हस्तलिखित नोट्स"
-                value={noteForm.title_hi}
-                onChangeText={(text) => setNoteForm((prev) => ({ ...prev, title_hi: text }))}
+                onChangeText={(text) => setNoteForm((prev) => ({ ...prev, title: text, title_hi: text }))}
               />
 
               <Text style={styles.inputLabel}>Description / Topics Covered</Text>
