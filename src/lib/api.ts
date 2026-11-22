@@ -508,8 +508,7 @@ export const AdminApi = {
 
   createStudent: async (studentData: Partial<UserProfile>) => {
     localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
-    const newStudent: UserProfile = {
-      id: `u-${Date.now()}`,
+    const payload = {
       username: studentData.username || `student_${Date.now().toString().slice(-4)}`,
       full_name: studentData.full_name || 'New Student',
       mobile_number: studentData.mobile_number || '9999999999',
@@ -521,32 +520,56 @@ export const AdminApi = {
       guardian_phone: studentData.guardian_phone || '',
       preferred_language: 'en',
       is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     if (isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase.from('profiles').insert(studentData).select().single();
+        const { data, error } = await supabase.from('profiles').insert(payload).select().single();
         if (!error && data) {
           localStudents = [data as UserProfile, ...localStudents];
           savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
           return data as UserProfile;
         }
-      } catch {}
-    }
+      } catch (e) {
+        console.error('createStudent Supabase error:', e);
+      }
 
-    localStudents = [newStudent, ...localStudents];
-    savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
-    return newStudent;
+      const direct = await fetchDirectRest<UserProfile[]>('profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(payload),
+      });
+      if (Array.isArray(direct) && direct[0]) {
+        localStudents = [direct[0], ...localStudents];
+        savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+        return direct[0];
+      }
+      throw new Error('Database Error: Failed to create student account in cloud database.');
+    }
+    throw new Error('Database Error: Cloud database is unavailable.');
   },
 
   updateStudent: async (studentId: string, updates: Partial<UserProfile>) => {
     localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
     if (isSupabaseConfigured) {
+      let updateConfirmed = false;
       try {
-        await supabase.from('profiles').update(updates).eq('id', studentId);
-      } catch {}
+        const { error } = await supabase.from('profiles').update(updates).eq('id', studentId);
+        if (!error) updateConfirmed = true;
+      } catch (e) {
+        console.error('updateStudent Supabase error:', e);
+      }
+      if (!updateConfirmed) {
+        const direct = await fetchDirectRest(`profiles?id=eq.${studentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+        if (direct !== null) updateConfirmed = true;
+      }
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update student in cloud database.');
+      }
     }
 
     localStudents = localStudents.map((s) =>
@@ -559,9 +582,22 @@ export const AdminApi = {
   deleteStudent: async (studentId: string) => {
     localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
-        await supabase.from('profiles').delete().eq('id', studentId);
-      } catch {}
+        const { error } = await supabase.from('profiles').delete().eq('id', studentId);
+        if (!error) deleteConfirmed = true;
+      } catch (e) {
+        console.error('deleteStudent Supabase error:', e);
+      }
+      if (!deleteConfirmed) {
+        const direct = await fetchDirectRest(`profiles?id=eq.${studentId}`, {
+          method: 'DELETE',
+        });
+        if (direct !== null) deleteConfirmed = true;
+      }
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete student from cloud database.');
+      }
     }
 
     localStudents = localStudents.filter((s) => s.id !== studentId);
@@ -571,9 +607,24 @@ export const AdminApi = {
 
   toggleStudentStatus: async (studentId: string, isActive: boolean) => {
     if (isSupabaseConfigured) {
+      let updateConfirmed = false;
       try {
-        await supabase.from('profiles').update({ is_active: isActive }).eq('id', studentId);
-      } catch {}
+        const { error } = await supabase.from('profiles').update({ is_active: isActive }).eq('id', studentId);
+        if (!error) updateConfirmed = true;
+      } catch (e) {
+        console.error('toggleStudentStatus Supabase error:', e);
+      }
+      if (!updateConfirmed) {
+        const direct = await fetchDirectRest(`profiles?id=eq.${studentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: isActive }),
+        });
+        if (direct !== null) updateConfirmed = true;
+      }
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update student active status in cloud database.');
+      }
     }
     localStudents = localStudents.map((s) => (s.id === studentId ? { ...s, is_active: isActive } : s));
     savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
@@ -1371,49 +1422,69 @@ export const AdminApi = {
           localLectures = [item, ...localLectures];
           savePersistentState(STORAGE_KEYS.RECORDED_LECTURES, localLectures);
           return item;
-        } else if (error) {
-          console.error('createRecordedLecture Supabase error:', error);
         }
       } catch (err) {
-        console.error('createRecordedLecture exception:', err);
+        console.error('createRecordedLecture Supabase error:', err);
       }
+
+      const direct = await fetchDirectRest<any[]>('recorded_lectures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(insertPayload),
+      });
+      if (Array.isArray(direct) && direct[0]) {
+        const item: RecordedLectureItem = {
+          id: direct[0].id,
+          title: direct[0].title,
+          title_hi: direct[0].title_hi,
+          youtube_video_id: direct[0].youtube_video_id,
+          duration_minutes: Math.round(direct[0].duration_seconds / 60) || 45,
+          lecture_order: direct[0].lecture_order,
+          is_free_preview: direct[0].is_free_preview,
+          subject: lec.subject || 'Science (विज्ञान)',
+          chapter: lec.chapter || 'Ch 1: Basics',
+          created_at: direct[0].created_at,
+        };
+        localLectures = [item, ...localLectures];
+        savePersistentState(STORAGE_KEYS.RECORDED_LECTURES, localLectures);
+        return item;
+      }
+      throw new Error('Database Error: Failed to save recorded lecture to cloud database.');
     }
-
-    const fallbackLec: RecordedLectureItem = {
-      id: `lec-${Date.now()}`,
-      title: insertPayload.title,
-      title_hi: insertPayload.title_hi,
-      youtube_video_id: insertPayload.youtube_video_id,
-      duration_minutes: lec.duration_minutes || 45,
-      lecture_order: insertPayload.lecture_order,
-      is_free_preview: insertPayload.is_free_preview,
-      subject: lec.subject || 'Science (विज्ञान)',
-      chapter: lec.chapter || 'Ch 1: Basics',
-      created_at: new Date().toISOString(),
-    };
-
-    localLectures = [fallbackLec, ...localLectures];
-    savePersistentState(STORAGE_KEYS.RECORDED_LECTURES, localLectures);
-    return fallbackLec;
+    throw new Error('Database Error: Cloud database is unavailable.');
   },
 
   updateRecordedLecture: async (lectureId: string, updates: Partial<RecordedLectureItem>) => {
     localLectures = getPersistentState(STORAGE_KEYS.RECORDED_LECTURES, localLectures);
 
     if (isSupabaseConfigured) {
-      try {
-        const dbUpdates: any = {};
-        if (updates.title) dbUpdates.title = updates.title;
-        if (updates.title_hi) dbUpdates.title_hi = updates.title_hi;
-        if (updates.youtube_video_id) dbUpdates.youtube_video_id = updates.youtube_video_id;
-        if (updates.duration_minutes) dbUpdates.duration_seconds = updates.duration_minutes * 60;
-        if (updates.lecture_order) dbUpdates.lecture_order = updates.lecture_order;
-        if (updates.is_free_preview !== undefined) dbUpdates.is_free_preview = updates.is_free_preview;
+      let updatedConfirmed = false;
+      const dbUpdates: any = {};
+      if (updates.title) dbUpdates.title = updates.title;
+      if (updates.title_hi) dbUpdates.title_hi = updates.title_hi;
+      if (updates.youtube_video_id) dbUpdates.youtube_video_id = updates.youtube_video_id;
+      if (updates.duration_minutes) dbUpdates.duration_seconds = updates.duration_minutes * 60;
+      if (updates.lecture_order) dbUpdates.lecture_order = updates.lecture_order;
+      if (updates.is_free_preview !== undefined) dbUpdates.is_free_preview = updates.is_free_preview;
 
+      try {
         const { error } = await supabase.from('recorded_lectures').update(dbUpdates).eq('id', lectureId);
-        if (error) console.error('updateRecordedLecture Supabase error:', error);
+        if (!error) updatedConfirmed = true;
       } catch (err) {
-        console.error('updateRecordedLecture exception:', err);
+        console.error('updateRecordedLecture Supabase error:', err);
+      }
+
+      if (!updatedConfirmed) {
+        const direct = await fetchDirectRest(`recorded_lectures?id=eq.${lectureId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dbUpdates),
+        });
+        if (direct !== null) updatedConfirmed = true;
+      }
+
+      if (!updatedConfirmed) {
+        throw new Error('Database Error: Failed to update recorded lecture in cloud database.');
       }
     }
 
@@ -1428,11 +1499,23 @@ export const AdminApi = {
     localLectures = getPersistentState(STORAGE_KEYS.RECORDED_LECTURES, localLectures);
 
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
         const { error } = await supabase.from('recorded_lectures').delete().eq('id', lectureId);
-        if (error) console.error('deleteRecordedLecture Supabase error:', error);
+        if (!error) deleteConfirmed = true;
       } catch (err) {
-        console.error('deleteRecordedLecture exception:', err);
+        console.error('deleteRecordedLecture Supabase error:', err);
+      }
+
+      if (!deleteConfirmed) {
+        const direct = await fetchDirectRest(`recorded_lectures?id=eq.${lectureId}`, {
+          method: 'DELETE',
+        });
+        if (direct !== null) deleteConfirmed = true;
+      }
+
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete recorded lecture from cloud database.');
       }
     }
 
@@ -1661,44 +1744,64 @@ export const AdminApi = {
           localExams = [item, ...localExams];
           savePersistentState(STORAGE_KEYS.EXAMINATIONS, localExams);
           return item;
-        } else if (error) {
-          console.error('createExamination Supabase error:', error);
         }
       } catch (err) {
-        console.error('createExamination exception:', err);
+        console.error('createExamination Supabase error:', err);
       }
+
+      const direct = await fetchDirectRest<any[]>('examinations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(insertPayload),
+      });
+      if (Array.isArray(direct) && direct[0]) {
+        const item: ExaminationItem = {
+          id: direct[0].id,
+          ...insertPayload,
+          question_count: exam.question_count || 15,
+          created_at: direct[0].created_at,
+        };
+        localExams = [item, ...localExams];
+        savePersistentState(STORAGE_KEYS.EXAMINATIONS, localExams);
+        return item;
+      }
+      throw new Error('Database Error: Failed to save examination to cloud database.');
     }
-
-    const fallbackExam: ExaminationItem = {
-      id: `ex-${Date.now()}`,
-      ...insertPayload,
-      question_count: exam.question_count || 15,
-      created_at: new Date().toISOString(),
-    };
-
-    localExams = [fallbackExam, ...localExams];
-    savePersistentState(STORAGE_KEYS.EXAMINATIONS, localExams);
-    return fallbackExam;
+    throw new Error('Database Error: Cloud database is unavailable.');
   },
 
   updateExamination: async (examId: string, updates: Partial<ExaminationItem>) => {
     localExams = getPersistentState(STORAGE_KEYS.EXAMINATIONS, localExams);
 
     if (isSupabaseConfigured) {
-      try {
-        const dbUpdates: any = {};
-        if (updates.title) dbUpdates.title = updates.title;
-        if (updates.title_hi) dbUpdates.title_hi = updates.title_hi;
-        if (updates.duration_minutes) dbUpdates.duration_minutes = Number(updates.duration_minutes);
-        if (updates.total_marks) dbUpdates.total_marks = Number(updates.total_marks);
-        if (updates.pass_marks) dbUpdates.pass_marks = Number(updates.pass_marks);
-        if (updates.negative_marking !== undefined) dbUpdates.negative_marking = Number(updates.negative_marking);
-        if (updates.exam_type) dbUpdates.exam_type = updates.exam_type;
+      let updateConfirmed = false;
+      const dbUpdates: any = {};
+      if (updates.title) dbUpdates.title = updates.title;
+      if (updates.title_hi) dbUpdates.title_hi = updates.title_hi;
+      if (updates.duration_minutes) dbUpdates.duration_minutes = Number(updates.duration_minutes);
+      if (updates.total_marks) dbUpdates.total_marks = Number(updates.total_marks);
+      if (updates.pass_marks) dbUpdates.pass_marks = Number(updates.pass_marks);
+      if (updates.negative_marking !== undefined) dbUpdates.negative_marking = Number(updates.negative_marking);
+      if (updates.exam_type) dbUpdates.exam_type = updates.exam_type;
 
+      try {
         const { error } = await supabase.from('examinations').update(dbUpdates).eq('id', examId);
-        if (error) console.error('updateExamination Supabase error:', error);
+        if (!error) updateConfirmed = true;
       } catch (err) {
-        console.error('updateExamination exception:', err);
+        console.error('updateExamination Supabase error:', err);
+      }
+
+      if (!updateConfirmed) {
+        const direct = await fetchDirectRest(`examinations?id=eq.${examId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dbUpdates),
+        });
+        if (direct !== null) updateConfirmed = true;
+      }
+
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update examination in cloud database.');
       }
     }
 
@@ -1713,11 +1816,23 @@ export const AdminApi = {
     localExams = getPersistentState(STORAGE_KEYS.EXAMINATIONS, localExams);
 
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
         const { error } = await supabase.from('examinations').delete().eq('id', examId);
-        if (error) console.error('deleteExamination Supabase error:', error);
+        if (!error) deleteConfirmed = true;
       } catch (err) {
-        console.error('deleteExamination exception:', err);
+        console.error('deleteExamination Supabase error:', err);
+      }
+
+      if (!deleteConfirmed) {
+        const direct = await fetchDirectRest(`examinations?id=eq.${examId}`, {
+          method: 'DELETE',
+        });
+        if (direct !== null) deleteConfirmed = true;
+      }
+
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete examination from cloud database.');
       }
     }
 

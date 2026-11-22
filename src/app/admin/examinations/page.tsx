@@ -69,28 +69,33 @@ export default function ExaminationsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created = await AdminApi.createExamination({
-      title: formData.title,
-      title_hi: formData.title_hi || formData.title,
-      duration_minutes: Number(formData.duration_minutes),
-      total_marks: Number(formData.total_marks),
-      pass_marks: Number(formData.pass_marks),
-      negative_marking: Number(formData.negative_marking),
-      exam_type: formData.exam_type,
-      question_count: Number(formData.question_count),
-    });
-    setExams((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
-    setIsModalOpen(false);
-    setFormData({
-      title: '',
-      title_hi: '',
-      duration_minutes: 30,
-      total_marks: 50,
-      pass_marks: 17,
-      negative_marking: 0.25,
-      exam_type: 'chapter_test',
-      question_count: 20,
-    });
+    try {
+      const created = await AdminApi.createExamination({
+        title: formData.title,
+        title_hi: formData.title_hi || formData.title,
+        duration_minutes: Number(formData.duration_minutes),
+        total_marks: Number(formData.total_marks),
+        pass_marks: Number(formData.pass_marks),
+        negative_marking: Number(formData.negative_marking),
+        exam_type: formData.exam_type,
+        question_count: Number(formData.question_count),
+      });
+      setExams((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
+      setIsModalOpen(false);
+      setFormData({
+        title: '',
+        title_hi: '',
+        duration_minutes: 30,
+        total_marks: 50,
+        pass_marks: 17,
+        negative_marking: 0.25,
+        exam_type: 'chapter_test',
+        question_count: 20,
+      });
+      alert('Examination successfully created and saved in cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to create examination.');
+    }
   };
 
   const openEditModal = (exam: ExaminationItem) => {
@@ -111,23 +116,27 @@ export default function ExaminationsPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingExam) return;
+    try {
+      const updated = await AdminApi.updateExamination(editingExam.id, {
+        title: editFormData.title,
+        title_hi: editFormData.title_hi,
+        duration_minutes: Number(editFormData.duration_minutes),
+        total_marks: Number(editFormData.total_marks),
+        pass_marks: Number(editFormData.pass_marks),
+        negative_marking: Number(editFormData.negative_marking),
+        exam_type: editFormData.exam_type,
+        question_count: Number(editFormData.question_count),
+      });
 
-    const updated = await AdminApi.updateExamination(editingExam.id, {
-      title: editFormData.title,
-      title_hi: editFormData.title_hi,
-      duration_minutes: Number(editFormData.duration_minutes),
-      total_marks: Number(editFormData.total_marks),
-      pass_marks: Number(editFormData.pass_marks),
-      negative_marking: Number(editFormData.negative_marking),
-      exam_type: editFormData.exam_type,
-      question_count: Number(editFormData.question_count),
-    });
-
-    if (updated) {
-      setExams((prev) => prev.map((x) => (x.id === editingExam.id ? updated : x)));
+      if (updated) {
+        setExams((prev) => prev.map((x) => (x.id === editingExam.id ? updated : x)));
+      }
+      setIsEditModalOpen(false);
+      setEditingExam(null);
+      alert('Examination successfully updated in cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to update examination.');
     }
-    setIsEditModalOpen(false);
-    setEditingExam(null);
   };
 
   const handleDelete = async (exam: ExaminationItem) => {
@@ -135,9 +144,13 @@ export default function ExaminationsPage() {
       `Are you sure you want to delete this examination:\n"${exam.title}"?\n\nThis cannot be undone.`
     );
     if (!confirmed) return;
-
-    await AdminApi.deleteExamination(exam.id);
-    setExams((prev) => prev.filter((x) => x.id !== exam.id));
+    try {
+      await AdminApi.deleteExamination(exam.id);
+      setExams((prev) => prev.filter((x) => x.id !== exam.id));
+      alert('Examination successfully deleted from cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to delete examination.');
+    }
   };
 
   const handleGenerateAiPaper = async () => {

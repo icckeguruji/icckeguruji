@@ -84,32 +84,42 @@ export default function StudentsPage() {
 
   const handleToggleStatus = async (student: UserProfile) => {
     const nextStatus = !student.is_active;
-    await AdminApi.toggleStudentStatus(student.id, nextStatus);
-    setStudents((prev) =>
-      prev.map((s) => (s.id === student.id ? { ...s, is_active: nextStatus } : s))
-    );
+    try {
+      await AdminApi.toggleStudentStatus(student.id, nextStatus);
+      setStudents((prev) =>
+        prev.map((s) => (s.id === student.id ? { ...s, is_active: nextStatus } : s))
+      );
+      alert(`Student account is now ${nextStatus ? 'Activated' : 'Deactivated'} in database!`);
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to change student status.');
+    }
   };
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created = await AdminApi.createStudent({
-      ...formData,
-      preferred_language: 'en',
-      is_active: true,
-    });
-    setStudents((prev) => [created, ...prev]);
-    setIsAddModalOpen(false);
-    setFormData({
-      full_name: '',
-      username: '',
-      mobile_number: '',
-      email: '',
-      board_code: 'BSEB',
-      district: 'Godda',
-      school_name: '',
-      guardian_name: '',
-      guardian_phone: '',
-    });
+    try {
+      const created = await AdminApi.createStudent({
+        ...formData,
+        preferred_language: 'en',
+        is_active: true,
+      });
+      setStudents((prev) => [created, ...prev]);
+      setIsAddModalOpen(false);
+      setFormData({
+        full_name: '',
+        username: '',
+        mobile_number: '',
+        email: '',
+        board_code: 'BSEB',
+        district: 'Godda',
+        school_name: '',
+        guardian_name: '',
+        guardian_phone: '',
+      });
+      alert('Student account successfully created and saved in cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to create student account.');
+    }
   };
 
   const openEditModal = (student: UserProfile) => {
@@ -131,16 +141,20 @@ export default function StudentsPage() {
   const handleUpdateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStudent) return;
+    try {
+      const updated = await AdminApi.updateStudent(editingStudent.id, {
+        ...editFormData,
+      });
 
-    const updated = await AdminApi.updateStudent(editingStudent.id, {
-      ...editFormData,
-    });
-
-    if (updated) {
-      setStudents((prev) => prev.map((s) => (s.id === editingStudent.id ? updated : s)));
+      if (updated) {
+        setStudents((prev) => prev.map((s) => (s.id === editingStudent.id ? updated : s)));
+      }
+      setIsEditModalOpen(false);
+      setEditingStudent(null);
+      alert('Student profile successfully updated in cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to update student.');
     }
-    setIsEditModalOpen(false);
-    setEditingStudent(null);
   };
 
   const handleDeleteStudent = async (student: UserProfile) => {
@@ -148,9 +162,13 @@ export default function StudentsPage() {
       `Are you sure you want to delete student:\n"${student.full_name}" (@${student.username})?\n\nThis will remove the student account from database.`
     );
     if (!confirmed) return;
-
-    await AdminApi.deleteStudent(student.id);
-    setStudents((prev) => prev.filter((s) => s.id !== student.id));
+    try {
+      await AdminApi.deleteStudent(student.id);
+      setStudents((prev) => prev.filter((s) => s.id !== student.id));
+      alert('Student account successfully deleted from cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to delete student account.');
+    }
   };
 
   const sendParentWhatsApp = (student: UserProfile, reportType: 'attendance' | 'performance') => {

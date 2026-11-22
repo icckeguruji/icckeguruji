@@ -55,29 +55,34 @@ export default function RecordedLecturesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const vidId = extractYouTubeVideoId(formData.youtube_video_id);
-    const created = await AdminApi.createRecordedLecture({
-      title: formData.title,
-      title_hi: formData.title_hi || formData.title,
-      youtube_video_id: vidId,
-      duration_minutes: Number(formData.duration_minutes),
-      lecture_order: Number(formData.lecture_order),
-      is_free_preview: formData.is_free_preview,
-      subject: formData.subject,
-      chapter: formData.chapter,
-    });
-    setLectures((prev) => [created, ...prev.filter((l) => l.id !== created.id)]);
-    setIsModalOpen(false);
-    setFormData({
-      title: '',
-      title_hi: '',
-      youtube_video_id: '',
-      duration_minutes: 45,
-      is_free_preview: false,
-      lecture_order: (lectures.length + 1),
-      subject: 'Science (विज्ञान)',
-      chapter: 'Ch 1: Basics',
-    });
+    try {
+      const vidId = extractYouTubeVideoId(formData.youtube_video_id);
+      const created = await AdminApi.createRecordedLecture({
+        title: formData.title,
+        title_hi: formData.title_hi || formData.title,
+        youtube_video_id: vidId,
+        duration_minutes: Number(formData.duration_minutes),
+        lecture_order: Number(formData.lecture_order),
+        is_free_preview: formData.is_free_preview,
+        subject: formData.subject,
+        chapter: formData.chapter,
+      });
+      setLectures((prev) => [created, ...prev.filter((l) => l.id !== created.id)]);
+      setIsModalOpen(false);
+      setFormData({
+        title: '',
+        title_hi: '',
+        youtube_video_id: '',
+        duration_minutes: 45,
+        is_free_preview: false,
+        lecture_order: (lectures.length + 1),
+        subject: 'Science (विज्ञान)',
+        chapter: 'Ch 1: Basics',
+      });
+      alert('Recorded lecture successfully saved to cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to save lecture. Please try again.');
+    }
   };
 
   const openEditModal = (lec: RecordedLectureItem) => {
@@ -98,24 +103,28 @@ export default function RecordedLecturesPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingLecture) return;
+    try {
+      const vidId = extractYouTubeVideoId(editFormData.youtube_video_id);
+      const updated = await AdminApi.updateRecordedLecture(editingLecture.id, {
+        title: editFormData.title,
+        title_hi: editFormData.title_hi,
+        youtube_video_id: vidId,
+        duration_minutes: Number(editFormData.duration_minutes),
+        lecture_order: Number(editFormData.lecture_order),
+        is_free_preview: editFormData.is_free_preview,
+        subject: editFormData.subject,
+        chapter: editFormData.chapter,
+      });
 
-    const vidId = extractYouTubeVideoId(editFormData.youtube_video_id);
-    const updated = await AdminApi.updateRecordedLecture(editingLecture.id, {
-      title: editFormData.title,
-      title_hi: editFormData.title_hi,
-      youtube_video_id: vidId,
-      duration_minutes: Number(editFormData.duration_minutes),
-      lecture_order: Number(editFormData.lecture_order),
-      is_free_preview: editFormData.is_free_preview,
-      subject: editFormData.subject,
-      chapter: editFormData.chapter,
-    });
-
-    if (updated) {
-      setLectures((prev) => prev.map((l) => (l.id === editingLecture.id ? updated : l)));
+      if (updated) {
+        setLectures((prev) => prev.map((l) => (l.id === editingLecture.id ? updated : l)));
+      }
+      setIsEditModalOpen(false);
+      setEditingLecture(null);
+      alert('Recorded lecture successfully updated in cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to update lecture. Please try again.');
     }
-    setIsEditModalOpen(false);
-    setEditingLecture(null);
   };
 
   const handleDelete = async (lec: RecordedLectureItem) => {
@@ -123,9 +132,13 @@ export default function RecordedLecturesPage() {
       `Are you sure you want to delete this recorded lecture:\n"${lec.title}"?\n\nThis will remove it from the catalog.`
     );
     if (!confirmed) return;
-
-    await AdminApi.deleteRecordedLecture(lec.id);
-    setLectures((prev) => prev.filter((l) => l.id !== lec.id));
+    try {
+      await AdminApi.deleteRecordedLecture(lec.id);
+      setLectures((prev) => prev.filter((l) => l.id !== lec.id));
+      alert('Recorded lecture successfully deleted from cloud database!');
+    } catch (err: any) {
+      alert(err.message || 'Database Error: Failed to delete lecture. Please try again.');
+    }
   };
 
   return (
