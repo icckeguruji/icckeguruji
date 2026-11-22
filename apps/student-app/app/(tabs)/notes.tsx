@@ -77,6 +77,7 @@ export default function StudentNotesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const theme = useAppTheme();
+  const isDark = theme.isDark;
 
   const isAdmin =
     user?.role === 'admin' ||
@@ -344,9 +345,9 @@ export default function StudentNotesScreen() {
         is_free: true,
       });
       loadLocalMaterials();
-      Alert.alert('Success', 'PDF Study Material uploaded and linked to curriculum!');
+      Alert.alert('Success', 'PDF Study Material saved to cloud database and linked to curriculum!');
     } catch (err: any) {
-      Alert.alert('Upload Error', err.message || 'Failed to save study material');
+      Alert.alert('Database Error', err?.message || 'Failed to save study material to database. Please check your connection and try again.');
     }
   };
 
@@ -358,9 +359,13 @@ export default function StudentNotesScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await academicService.deleteStudyMaterial(id);
-          loadLocalMaterials();
-          Alert.alert('Deleted', 'Note removed from library.');
+          try {
+            await academicService.deleteStudyMaterial(id);
+            loadLocalMaterials();
+            Alert.alert('Success', 'Note removed from cloud database successfully.');
+          } catch (err: any) {
+            Alert.alert('Database Error', err?.message || 'Failed to delete note from database.');
+          }
         },
       },
     ]);
@@ -622,33 +627,56 @@ export default function StudentNotesScreen() {
         onRequestClose={() => setIsUploadModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: isDark ? '#121212' : '#FFFFFF',
+                borderColor: isDark ? '#27272A' : '#E2E8F0',
+                borderWidth: isDark ? 1 : 0,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.modalHeader,
+                {
+                  backgroundColor: isDark ? '#000000' : '#F8FAFC',
+                  borderBottomColor: isDark ? '#27272A' : '#E2E8F0',
+                },
+              ]}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <FileText size={20} color="#2563EB" />
-                <Text style={styles.modalTitle}>Upload Handwritten PDF Notes</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Upload Handwritten PDF Notes</Text>
               </View>
               <TouchableOpacity onPress={() => setIsUploadModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
               {/* AI Auto-Fill Helper */}
               <TouchableOpacity
-                style={styles.aiHelperBanner}
+                style={[
+                  styles.aiHelperBanner,
+                  {
+                    backgroundColor: isDark ? '#1E1530' : '#F3E8FF',
+                    borderColor: isDark ? '#6B21A8' : '#D8B4FE',
+                  },
+                ]}
                 onPress={handleAiAutoFill}
                 disabled={aiGenerating}
                 activeOpacity={0.8}
               >
-                <Sparkles size={16} color="#7C3AED" />
-                <Text style={styles.aiHelperText}>
+                <Sparkles size={16} color="#A855F7" />
+                <Text style={[styles.aiHelperText, { color: isDark ? '#C084FC' : '#6B21A8' }]}>
                   {aiGenerating ? 'AI Generating Notes...' : '✨ Auto-Fill Missing Fields with AI'}
                 </Text>
               </TouchableOpacity>
 
               {/* 1. Class Dropdown Selector */}
-              <Text style={styles.inputLabel}>1. Select Target Class *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>1. Select Target Class *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {CLASSES_LIST.map((cls) => (
@@ -656,6 +684,10 @@ export default function StudentNotesScreen() {
                       key={cls}
                       style={[
                         styles.dropdownPill,
+                        {
+                          backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                          borderColor: isDark ? '#27272A' : '#CBD5E1',
+                        },
                         selectedClass === cls && styles.dropdownPillActive,
                       ]}
                       onPress={() => handleSelectClass(cls)}
@@ -663,6 +695,7 @@ export default function StudentNotesScreen() {
                       <Text
                         style={[
                           styles.dropdownPillText,
+                          { color: selectedClass === cls ? '#FFFFFF' : theme.textSecondary },
                           selectedClass === cls && styles.dropdownPillTextActive,
                         ]}
                       >
@@ -674,7 +707,7 @@ export default function StudentNotesScreen() {
               </ScrollView>
 
               {/* 2. Subject Dropdown Selector */}
-              <Text style={styles.inputLabel}>2. Select Subject *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>2. Select Subject *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {subjectsList.map((sub) => (
@@ -682,6 +715,10 @@ export default function StudentNotesScreen() {
                       key={sub.id}
                       style={[
                         styles.dropdownPill,
+                        {
+                          backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                          borderColor: isDark ? '#27272A' : '#CBD5E1',
+                        },
                         selectedSubject?.id === sub.id && styles.dropdownPillActive,
                       ]}
                       onPress={() => handleSelectSubject(sub)}
@@ -689,6 +726,7 @@ export default function StudentNotesScreen() {
                       <Text
                         style={[
                           styles.dropdownPillText,
+                          { color: selectedSubject?.id === sub.id ? '#FFFFFF' : theme.textSecondary },
                           selectedSubject?.id === sub.id && styles.dropdownPillTextActive,
                         ]}
                       >
@@ -702,13 +740,17 @@ export default function StudentNotesScreen() {
               {/* 3. Sub-Subject Dropdown Selector (If Multi-Disciplinary) */}
               {selectedSubject?.has_sub_subjects && selectedSubject.sub_subjects ? (
                 <View style={{ marginBottom: 6 }}>
-                  <Text style={styles.inputLabel}>3. Select Sub-Subject (Discipline) *</Text>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>3. Select Sub-Subject (Discipline) *</Text>
                   <View style={{ flexDirection: 'row', gap: 6 }}>
                     {selectedSubject.sub_subjects.map((subSub) => (
                       <TouchableOpacity
                         key={subSub.id}
                         style={[
                           styles.dropdownPill,
+                          {
+                            backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                            borderColor: isDark ? '#27272A' : '#CBD5E1',
+                          },
                           selectedSubSubject?.id === subSub.id && styles.dropdownPillActiveGreen,
                         ]}
                         onPress={() => handleSelectSubSubject(subSub)}
@@ -716,6 +758,7 @@ export default function StudentNotesScreen() {
                         <Text
                           style={[
                             styles.dropdownPillText,
+                            { color: selectedSubSubject?.id === subSub.id ? '#FFFFFF' : theme.textSecondary },
                             selectedSubSubject?.id === subSub.id && styles.dropdownPillTextActive,
                           ]}
                         >
@@ -728,7 +771,7 @@ export default function StudentNotesScreen() {
               ) : null}
 
               {/* 4. Chapter Dropdown Selector */}
-              <Text style={styles.inputLabel}>4. Select Curriculum Chapter (Auto-Linked) *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>4. Select Curriculum Chapter (Auto-Linked) *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {chaptersList.map((chap) => (
@@ -736,6 +779,10 @@ export default function StudentNotesScreen() {
                       key={chap.id}
                       style={[
                         styles.dropdownPill,
+                        {
+                          backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                          borderColor: isDark ? '#27272A' : '#CBD5E1',
+                        },
                         selectedChapter?.id === chap.id && styles.dropdownPillActiveAmber,
                       ]}
                       onPress={() => setSelectedChapter(chap)}
@@ -743,6 +790,7 @@ export default function StudentNotesScreen() {
                       <Text
                         style={[
                           styles.dropdownPillText,
+                          { color: selectedChapter?.id === chap.id ? '#FFFFFF' : theme.textSecondary },
                           selectedChapter?.id === chap.id && styles.dropdownPillTextActive,
                         ]}
                         numberOfLines={1}
@@ -755,16 +803,23 @@ export default function StudentNotesScreen() {
               </ScrollView>
 
               {/* Document Picker Box */}
-              <Text style={styles.inputLabel}>5. Select PDF File from Device *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>5. Select PDF File from Device *</Text>
               <TouchableOpacity
-                style={[styles.filePickerBox, pickedFile && styles.filePickerBoxSelected]}
+                style={[
+                  styles.filePickerBox,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#F8FAFC',
+                    borderColor: isDark ? '#27272A' : '#CBD5E1',
+                  },
+                  pickedFile && styles.filePickerBoxSelected,
+                ]}
                 onPress={handlePickDocument}
                 activeOpacity={0.8}
               >
                 {pickedFile ? (
                   <View style={{ alignItems: 'center', gap: 4 }}>
                     <FileCheck size={32} color="#059669" />
-                    <Text style={styles.pickedFileName} numberOfLines={1}>
+                    <Text style={[styles.pickedFileName, { color: theme.text }]} numberOfLines={1}>
                       {pickedFile.name}
                     </Text>
                     <Text style={styles.pickedFileSize}>
@@ -773,33 +828,50 @@ export default function StudentNotesScreen() {
                   </View>
                 ) : (
                   <View style={{ alignItems: 'center', gap: 6 }}>
-                    <Upload size={32} color="#2563EB" />
-                    <Text style={styles.pickerPromptTitle}>Select PDF from Device Storage</Text>
-                    <Text style={styles.pickerPromptSub}>
+                    <Upload size={32} color="#3B82F6" />
+                    <Text style={[styles.pickerPromptTitle, { color: theme.text }]}>Select PDF from Device Storage</Text>
+                    <Text style={[styles.pickerPromptSub, { color: theme.textSecondary }]}>
                       Handwritten notes, NCERT solutions or question bank
                     </Text>
                   </View>
                 )}
               </TouchableOpacity>
 
-              <Text style={styles.inputLabel}>Document Title *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Document Title *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="e.g. Chapter 1: Chemical Reactions Master Notes"
                 value={noteForm.title}
                 onChangeText={(text) => setNoteForm((prev) => ({ ...prev, title: text, title_hi: text }))}
               />
 
-              <Text style={styles.inputLabel}>Description / Topics Covered</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Description / Topics Covered</Text>
               <TextInput
-                style={[styles.textInput, { minHeight: 60 }]}
+                style={[
+                  styles.textInput,
+                  {
+                    minHeight: 60,
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 multiline
                 placeholder="Key concepts, formula sheets, NCERT questions..."
                 value={noteForm.description}
                 onChangeText={(text) => setNoteForm((prev) => ({ ...prev, description: text }))}
               />
 
-              <Text style={styles.inputLabel}>Material Type</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Material Type</Text>
               <View style={styles.typeRow}>
                 {[
                   { id: 'chapter_notes' as MaterialType, label: 'Chapter Notes' },
@@ -811,6 +883,10 @@ export default function StudentNotesScreen() {
                     key={type.id}
                     style={[
                       styles.typeChip,
+                      {
+                        backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                        borderColor: isDark ? '#27272A' : '#E2E8F0',
+                      },
                       noteForm.material_type === type.id && styles.typeChipActive,
                     ]}
                     onPress={() =>
@@ -820,6 +896,7 @@ export default function StudentNotesScreen() {
                     <Text
                       style={[
                         styles.typeChipText,
+                        { color: noteForm.material_type === type.id ? '#FFFFFF' : theme.textSecondary },
                         noteForm.material_type === type.id && styles.typeChipTextActive,
                       ]}
                     >
@@ -831,7 +908,14 @@ export default function StudentNotesScreen() {
 
               <View style={styles.freeToggleRow}>
                 <TouchableOpacity
-                  style={[styles.toggleBtn, noteForm.is_free && styles.toggleBtnActive]}
+                  style={[
+                    styles.toggleBtn,
+                    {
+                      backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                      borderColor: isDark ? '#27272A' : '#CBD5E1',
+                    },
+                    noteForm.is_free && styles.toggleBtnActive,
+                  ]}
                   onPress={() => setNoteForm((p) => ({ ...p, is_free: true }))}
                 >
                   <Text
@@ -842,7 +926,14 @@ export default function StudentNotesScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.toggleBtn, !noteForm.is_free && styles.toggleBtnActive]}
+                  style={[
+                    styles.toggleBtn,
+                    {
+                      backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                      borderColor: isDark ? '#27272A' : '#CBD5E1',
+                    },
+                    !noteForm.is_free && styles.toggleBtnActive,
+                  ]}
                   onPress={() => setNoteForm((p) => ({ ...p, is_free: false }))}
                 >
                   <Text
@@ -857,7 +948,15 @@ export default function StudentNotesScreen() {
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View
+              style={[
+                styles.modalFooter,
+                {
+                  backgroundColor: isDark ? '#000000' : '#F8FAFC',
+                  borderTopColor: isDark ? '#27272A' : '#E2E8F0',
+                },
+              ]}
+            >
               <TouchableOpacity
                 style={styles.cancelBtn}
                 onPress={() => setIsUploadModalOpen(false)}

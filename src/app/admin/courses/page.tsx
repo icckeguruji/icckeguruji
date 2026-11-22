@@ -259,37 +259,42 @@ export default function CoursesPage() {
     const board_id = boardIdMap[formData.board_code] || 'b0000000-0000-0000-0000-000000000001';
     const class_id = classIdMap[formData.class_name] || 'c0000000-0000-0000-0000-000000000010';
 
-    const created = await AdminApi.createCourse({
-      title: formData.title,
-      title_hi: formData.title_hi || formData.title,
-      description: formData.description,
-      description_hi: formData.description_hi,
-      thumbnail_url: thumbnailUrl,
-      board_id,
-      class_id,
-      session_id: 'a0000000-0000-0000-0000-000000000001',
-      is_free: formData.is_free,
-      price: formData.is_free ? 0 : Number(formData.price),
-      discount_price: formData.is_free ? 0 : Number(formData.discount_price),
-      validity_days: Number(formData.validity_days),
-      class_name: formData.class_name,
-      is_published: true,
-    } as any);
-    setCourses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
-    setIsModalOpen(false);
-    setThumbnailUrl('/thumbnails/batch-b3-class10.jpg');
-    setFormData({
-      title: '',
-      title_hi: '',
-      board_code: 'BSEB',
-      class_name: 'Class 10',
-      is_free: false,
-      price: 999,
-      discount_price: 499,
-      validity_days: 365,
-      description: '',
-      description_hi: '',
-    });
+    try {
+      const created = await AdminApi.createCourse({
+        title: formData.title,
+        title_hi: formData.title_hi || formData.title,
+        description: formData.description,
+        description_hi: formData.description_hi,
+        thumbnail_url: thumbnailUrl,
+        board_id,
+        class_id,
+        session_id: 'a0000000-0000-0000-0000-000000000001',
+        is_free: formData.is_free,
+        price: formData.is_free ? 0 : Number(formData.price),
+        discount_price: formData.is_free ? 0 : Number(formData.discount_price),
+        validity_days: Number(formData.validity_days),
+        class_name: formData.class_name,
+        is_published: true,
+      } as any);
+      setCourses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
+      setIsModalOpen(false);
+      setThumbnailUrl('/thumbnails/batch-b3-class10.jpg');
+      setFormData({
+        title: '',
+        title_hi: '',
+        board_code: 'BSEB',
+        class_name: 'Class 10',
+        is_free: false,
+        price: 999,
+        discount_price: 499,
+        validity_days: 365,
+        description: '',
+        description_hi: '',
+      });
+      alert('Success: Course created and saved to cloud database successfully!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to save course to cloud database. Please try again.'));
+    }
   };
 
   const openEditModal = (course: Course) => {
@@ -336,39 +341,44 @@ export default function CoursesPage() {
     const board_id = boardIdMap[editFormData.board_code] || 'b0000000-0000-0000-0000-000000000001';
     const class_id = classIdMap[editFormData.class_name] || 'c0000000-0000-0000-0000-000000000010';
 
-    const updated = await AdminApi.updateCourse(editingCourse.id, {
-      title: editFormData.title,
-      title_hi: editFormData.title_hi,
-      description: editFormData.description,
-      description_hi: editFormData.description_hi,
-      thumbnail_url: editThumbnailUrl,
-      board_id,
-      class_id,
-      class_name: editFormData.class_name,
-      is_free: editFormData.is_free,
-      price: editFormData.is_free ? 0 : Number(editFormData.price),
-      discount_price: editFormData.is_free ? 0 : Number(editFormData.discount_price),
-      validity_days: Number(editFormData.validity_days),
-    });
+    try {
+      const updated = await AdminApi.updateCourse(editingCourse.id, {
+        title: editFormData.title,
+        title_hi: editFormData.title_hi,
+        description: editFormData.description,
+        description_hi: editFormData.description_hi,
+        thumbnail_url: editThumbnailUrl,
+        board_id,
+        class_id,
+        class_name: editFormData.class_name,
+        is_free: editFormData.is_free,
+        price: editFormData.is_free ? 0 : Number(editFormData.price),
+        discount_price: editFormData.is_free ? 0 : Number(editFormData.discount_price),
+        validity_days: Number(editFormData.validity_days),
+      });
 
-    if (updated) {
-      setCourses((prev) =>
-        prev.map((c) =>
-          c.id === editingCourse.id
-            ? {
-                ...c,
-                ...updated,
-                class_name: editFormData.class_name,
-                board_id,
-                class_id,
-                thumbnail_url: editThumbnailUrl,
-              }
-            : c
-        )
-      );
+      if (updated) {
+        setCourses((prev) =>
+          prev.map((c) =>
+            c.id === editingCourse.id
+              ? {
+                  ...c,
+                  ...updated,
+                  class_name: editFormData.class_name,
+                  board_id,
+                  class_id,
+                  thumbnail_url: editThumbnailUrl,
+                }
+              : c
+          )
+        );
+      }
+      setIsEditModalOpen(false);
+      setEditingCourse(null);
+      alert('Success: Course updated and saved to cloud database successfully!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to update course in cloud database.'));
     }
-    setIsEditModalOpen(false);
-    setEditingCourse(null);
   };
 
   const handleDeleteCourse = async (course: Course) => {
@@ -377,8 +387,13 @@ export default function CoursesPage() {
     );
     if (!confirmed) return;
 
-    await AdminApi.deleteCourse(course.id);
-    setCourses((prev) => prev.filter((c) => c.id !== course.id));
+    try {
+      await AdminApi.deleteCourse(course.id);
+      setCourses((prev) => prev.filter((c) => c.id !== course.id));
+      alert('Success: Course permanently removed from cloud database.');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to delete course from database.'));
+    }
   };
 
   // --- Curriculum Management Logic ---
@@ -399,13 +414,18 @@ export default function CoursesPage() {
     e.preventDefault();
     if (!curriculumCourse || !newSubjectName.trim()) return;
 
-    const created = await AdminApi.createCourseSubject(curriculumCourse.id, {
-      name: newSubjectName.trim(),
-      name_hi: newSubjectNameHi.trim() || newSubjectName.trim(),
-    });
-    setCourseSubjects((prev) => [...prev, created]);
-    setNewSubjectName('');
-    setNewSubjectNameHi('');
+    try {
+      const created = await AdminApi.createCourseSubject(curriculumCourse.id, {
+        name: newSubjectName.trim(),
+        name_hi: newSubjectNameHi.trim() || newSubjectName.trim(),
+      });
+      setCourseSubjects((prev) => [...prev, created]);
+      setNewSubjectName('');
+      setNewSubjectNameHi('');
+      alert('Success: Subject added and saved to cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to save subject to database.'));
+    }
   };
 
   const handleDeleteSubject = async (sub: CourseSubject) => {
@@ -413,14 +433,19 @@ export default function CoursesPage() {
     const confirm = window.confirm(`Delete subject "${sub.name}" from this course?`);
     if (!confirm) return;
 
-    await AdminApi.deleteCourseSubject(curriculumCourse.id, sub.id);
-    setCourseSubjects((prev) => prev.filter((s) => s.id !== sub.id));
-    if (selectedSubject?.id === sub.id) {
-      setSelectedSubject(null);
-      setSelectedSubSubject(null);
-      setSubSubjects([]);
-      setSubjectChapters([]);
-      setActiveChapterContent(null);
+    try {
+      await AdminApi.deleteCourseSubject(curriculumCourse.id, sub.id);
+      setCourseSubjects((prev) => prev.filter((s) => s.id !== sub.id));
+      if (selectedSubject?.id === sub.id) {
+        setSelectedSubject(null);
+        setSelectedSubSubject(null);
+        setSubSubjects([]);
+        setSubjectChapters([]);
+        setActiveChapterContent(null);
+      }
+      alert('Success: Subject deleted from database.');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to delete subject from database.'));
     }
   };
 
@@ -471,19 +496,24 @@ export default function CoursesPage() {
     e.preventDefault();
     if (!curriculumCourse || !selectedSubject || !newChapterTitle.trim()) return;
 
-    const created = await AdminApi.createSubjectChapter(
-      selectedSubject.id,
-      curriculumCourse.id,
-      {
-        title: newChapterTitle.trim(),
-        title_hi: newChapterTitleHi.trim() || newChapterTitle.trim(),
-        chapter_number: subjectChapters.length + 1,
-        sub_subject_id: selectedSubSubject?.id,
-      }
-    );
-    setSubjectChapters((prev) => [...prev, created]);
-    setNewChapterTitle('');
-    setNewChapterTitleHi('');
+    try {
+      const created = await AdminApi.createSubjectChapter(
+        selectedSubject.id,
+        curriculumCourse.id,
+        {
+          title: newChapterTitle.trim(),
+          title_hi: newChapterTitleHi.trim() || newChapterTitle.trim(),
+          chapter_number: subjectChapters.length + 1,
+          sub_subject_id: selectedSubSubject?.id,
+        }
+      );
+      setSubjectChapters((prev) => [...prev, created]);
+      setNewChapterTitle('');
+      setNewChapterTitleHi('');
+      alert('Success: Chapter created and saved to cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to save chapter to database.'));
+    }
   };
 
   const handleDeleteChapter = async (chap: SubjectChapter) => {
@@ -491,10 +521,15 @@ export default function CoursesPage() {
     const confirm = window.confirm(`Delete chapter "${chap.title}"?`);
     if (!confirm) return;
 
-    await AdminApi.deleteSubjectChapter(selectedSubject.id, chap.id);
-    setSubjectChapters((prev) => prev.filter((c) => c.id !== chap.id));
-    if (activeChapterContent?.id === chap.id) {
-      setActiveChapterContent(null);
+    try {
+      await AdminApi.deleteSubjectChapter(selectedSubject.id, chap.id);
+      setSubjectChapters((prev) => prev.filter((c) => c.id !== chap.id));
+      if (activeChapterContent?.id === chap.id) {
+        setActiveChapterContent(null);
+      }
+      alert('Success: Chapter deleted from database.');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to delete chapter from database.'));
     }
   };
 

@@ -69,24 +69,29 @@ export default function LiveClassesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const vidId = extractYouTubeVideoId(formData.youtube_video_id);
-    const created = await AdminApi.createLiveClass({
-      title: formData.title,
-      title_hi: formData.title_hi || formData.title,
-      youtube_video_id: vidId,
-      scheduled_at: new Date(formData.scheduled_at).toISOString(),
-      duration_minutes: Number(formData.duration_minutes),
-      status: formData.status || 'scheduled',
-    });
-    setClasses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
-    setIsModalOpen(false);
-    setFormData({
-      title: '',
-      title_hi: '',
-      youtube_video_id: '',
-      scheduled_at: new Date(Date.now() + 3600000 * 2).toISOString().slice(0, 16),
-      duration_minutes: 60,
-      status: 'scheduled',
-    });
+    try {
+      const created = await AdminApi.createLiveClass({
+        title: formData.title,
+        title_hi: formData.title_hi || formData.title,
+        youtube_video_id: vidId,
+        scheduled_at: new Date(formData.scheduled_at).toISOString(),
+        duration_minutes: Number(formData.duration_minutes),
+        status: formData.status || 'scheduled',
+      });
+      setClasses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
+      setIsModalOpen(false);
+      setFormData({
+        title: '',
+        title_hi: '',
+        youtube_video_id: '',
+        scheduled_at: new Date(Date.now() + 3600000 * 2).toISOString().slice(0, 16),
+        duration_minutes: 60,
+        status: 'scheduled',
+      });
+      alert('Success: Live class scheduled and saved to cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to schedule live class in database.'));
+    }
   };
 
   const openEditModal = (cls: LiveClass) => {
@@ -107,20 +112,25 @@ export default function LiveClassesPage() {
     if (!editingClass) return;
 
     const vidId = extractYouTubeVideoId(editFormData.youtube_video_id);
-    const updated = await AdminApi.updateLiveClass(editingClass.id, {
-      title: editFormData.title,
-      title_hi: editFormData.title_hi,
-      youtube_video_id: vidId,
-      scheduled_at: new Date(editFormData.scheduled_at).toISOString(),
-      duration_minutes: Number(editFormData.duration_minutes),
-      status: editFormData.status,
-    });
+    try {
+      const updated = await AdminApi.updateLiveClass(editingClass.id, {
+        title: editFormData.title,
+        title_hi: editFormData.title_hi,
+        youtube_video_id: vidId,
+        scheduled_at: new Date(editFormData.scheduled_at).toISOString(),
+        duration_minutes: Number(editFormData.duration_minutes),
+        status: editFormData.status,
+      });
 
-    if (updated) {
-      setClasses((prev) => prev.map((c) => (c.id === editingClass.id ? updated : c)));
+      if (updated) {
+        setClasses((prev) => prev.map((c) => (c.id === editingClass.id ? updated : c)));
+      }
+      setIsEditModalOpen(false);
+      setEditingClass(null);
+      alert('Success: Live class updated and saved to cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to update live class in database.'));
     }
-    setIsEditModalOpen(false);
-    setEditingClass(null);
   };
 
   const handleDelete = async (cls: LiveClass) => {
@@ -129,15 +139,25 @@ export default function LiveClassesPage() {
     );
     if (!confirmed) return;
 
-    await AdminApi.deleteLiveClass(cls.id);
-    setClasses((prev) => prev.filter((c) => c.id !== cls.id));
+    try {
+      await AdminApi.deleteLiveClass(cls.id);
+      setClasses((prev) => prev.filter((c) => c.id !== cls.id));
+      alert('Success: Live class deleted from database.');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to delete live class from database.'));
+    }
   };
 
   const handleToggleLiveStatus = async (cls: LiveClass) => {
     const nextStatus = cls.status === 'live' ? 'completed' : 'live';
-    const updated = await AdminApi.updateLiveClass(cls.id, { status: nextStatus });
-    if (updated) {
-      setClasses((prev) => prev.map((c) => (c.id === cls.id ? updated : c)));
+    try {
+      const updated = await AdminApi.updateLiveClass(cls.id, { status: nextStatus });
+      if (updated) {
+        setClasses((prev) => prev.map((c) => (c.id === cls.id ? updated : c)));
+      }
+      alert(`Success: Live class status updated to ${nextStatus}.`);
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to update live status in database.'));
     }
   };
 

@@ -705,17 +705,10 @@ export const AdminApi = {
         savePersistentState(STORAGE_KEYS.COURSES, localCourses);
         return resolved;
       }
+      throw new Error('Database Error: Failed to save course to cloud database. Please verify internet connectivity.');
     }
 
-    const fallbackCourse: Course = {
-      ...insertPayload,
-      lecture_count: 0,
-      material_count: 0,
-    };
-
-    localCourses = [fallbackCourse, ...localCourses.filter((c) => c.id !== fallbackCourse.id)];
-    savePersistentState(STORAGE_KEYS.COURSES, localCourses);
-    return fallbackCourse;
+    throw new Error('Database Error: Cloud database is not configured or unavailable.');
   },
 
   updateCourse: async (courseId: string, updates: Partial<Course>) => {
@@ -740,32 +733,42 @@ export const AdminApi = {
     }
 
     if (isSupabaseConfigured) {
+      let updateConfirmed = false;
       try {
         if (isValidUUID(courseId)) {
           const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', courseId);
-          if (error) {
+          if (!error) {
+            updateConfirmed = true;
+          } else {
             console.warn('updateCourse Supabase error, trying direct REST PATCH:', error);
-            await fetchDirectRest(`courses?id=eq.${courseId}`, {
+            const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(cleanUpdates),
             });
+            if (patchRes !== null) updateConfirmed = true;
           }
         } else {
           const existing = localCourses.find((c) => c.id === courseId);
           if (existing?.title) {
-            await supabase.from('courses').update(cleanUpdates).eq('title', existing.title);
+            const { error } = await supabase.from('courses').update(cleanUpdates).eq('title', existing.title);
+            if (!error) updateConfirmed = true;
           }
         }
       } catch (err) {
         console.warn('updateCourse exception, trying direct REST:', err);
         if (isValidUUID(courseId)) {
-          await fetchDirectRest(`courses?id=eq.${courseId}`, {
+          const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(cleanUpdates),
           });
+          if (patchRes !== null) updateConfirmed = true;
         }
+      }
+
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update course in cloud database.');
       }
     }
 
@@ -788,6 +791,7 @@ export const AdminApi = {
     const target = localCourses.find((c) => c.id === courseId);
 
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
         if (isValidUUID(courseId)) {
           // Pre-delete related records to prevent foreign key errors
@@ -798,19 +802,28 @@ export const AdminApi = {
             supabase.from('recorded_lectures').delete().eq('course_id', courseId),
           ]);
           const { error } = await supabase.from('courses').delete().eq('id', courseId);
-          if (error) {
+          if (!error) {
+            deleteConfirmed = true;
+          } else {
             console.warn('deleteCourse Supabase error, trying direct REST DELETE:', error);
-            await fetchDirectRest(`courses?id=eq.${courseId}`, { method: 'DELETE' });
+            const delRes = await fetchDirectRest(`courses?id=eq.${courseId}`, { method: 'DELETE' });
+            if (delRes !== null) deleteConfirmed = true;
           }
         }
         if (target?.title) {
-          await supabase.from('courses').delete().eq('title', target.title);
+          const { error } = await supabase.from('courses').delete().eq('title', target.title);
+          if (!error) deleteConfirmed = true;
         }
       } catch (err) {
         console.warn('deleteCourse exception, trying direct REST DELETE:', err);
         if (isValidUUID(courseId)) {
-          await fetchDirectRest(`courses?id=eq.${courseId}`, { method: 'DELETE' });
+          const delRes = await fetchDirectRest(`courses?id=eq.${courseId}`, { method: 'DELETE' });
+          if (delRes !== null) deleteConfirmed = true;
         }
+      }
+
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete course from cloud database.');
       }
     }
     localCourses = localCourses.filter((c) => c.id !== courseId);
@@ -878,23 +891,28 @@ export const AdminApi = {
         savePersistentState(key, [...current, direct[0]]);
         return direct[0];
       }
+      throw new Error('Database Error: Failed to save subject to cloud database.');
     }
-    const fallback = { id: `sub-${Date.now()}`, ...payload };
-    const key = `icc_course_subs_${courseId}`;
-    const current = getPersistentState<any[]>(key, []);
-    savePersistentState(key, [...current, fallback]);
-    return fallback;
+    throw new Error('Database Error: Cloud database is unavailable.');
   },
 
   deleteCourseSubject: async (courseId: string, subjectId: string) => {
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
         const { error } = await supabase.from('subjects').delete().eq('id', subjectId);
-        if (error) {
-          await fetchDirectRest(`subjects?id=eq.${subjectId}`, { method: 'DELETE' });
+        if (!error) {
+          deleteConfirmed = true;
+        } else {
+          const res = await fetchDirectRest(`subjects?id=eq.${subjectId}`, { method: 'DELETE' });
+          if (res !== null) deleteConfirmed = true;
         }
       } catch (e) {
-        await fetchDirectRest(`subjects?id=eq.${subjectId}`, { method: 'DELETE' });
+        const res = await fetchDirectRest(`subjects?id=eq.${subjectId}`, { method: 'DELETE' });
+        if (res !== null) deleteConfirmed = true;
+      }
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete subject from cloud database.');
       }
     }
     const key = `icc_course_subs_${courseId}`;
@@ -1007,23 +1025,28 @@ export const AdminApi = {
         savePersistentState(key, [...current, res]);
         return res;
       }
+      throw new Error('Database Error: Failed to save chapter to cloud database.');
     }
-    const fallback = { id: `ch-${Date.now()}`, ...payload, sub_subject_id: chapter.sub_subject_id };
-    const key = `icc_subj_chaps_${subjectId}`;
-    const current = getPersistentState<any[]>(key, []);
-    savePersistentState(key, [...current, fallback]);
-    return fallback;
+    throw new Error('Database Error: Cloud database is unavailable.');
   },
 
   deleteSubjectChapter: async (subjectId: string, chapterId: string) => {
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
         const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
-        if (error) {
-          await fetchDirectRest(`chapters?id=eq.${chapterId}`, { method: 'DELETE' });
+        if (!error) {
+          deleteConfirmed = true;
+        } else {
+          const res = await fetchDirectRest(`chapters?id=eq.${chapterId}`, { method: 'DELETE' });
+          if (res !== null) deleteConfirmed = true;
         }
       } catch (e) {
-        await fetchDirectRest(`chapters?id=eq.${chapterId}`, { method: 'DELETE' });
+        const res = await fetchDirectRest(`chapters?id=eq.${chapterId}`, { method: 'DELETE' });
+        if (res !== null) deleteConfirmed = true;
+      }
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete chapter from cloud database.');
       }
     }
     const key = `icc_subj_chaps_${subjectId}`;
@@ -1123,38 +1146,38 @@ export const AdminApi = {
         savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
         return direct[0] as LiveClass;
       }
+      throw new Error('Database Error: Failed to save live class to cloud database.');
     }
-
-    const fallbackLive: LiveClass = {
-      id: `live-${Date.now()}`,
-      ...insertPayload,
-      created_at: new Date().toISOString(),
-    };
-
-    localLiveClasses = [fallbackLive, ...localLiveClasses];
-    savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
-    return fallbackLive;
+    throw new Error('Database Error: Cloud database is unavailable.');
   },
 
   updateLiveClass: async (classId: string, updates: Partial<LiveClass>) => {
     localLiveClasses = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
 
     if (isSupabaseConfigured) {
+      let updateConfirmed = false;
       try {
         const { error } = await supabase.from('live_classes').update(updates).eq('id', classId);
-        if (error) {
-          await fetchDirectRest(`live_classes?id=eq.${classId}`, {
+        if (!error) {
+          updateConfirmed = true;
+        } else {
+          const res = await fetchDirectRest(`live_classes?id=eq.${classId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates),
           });
+          if (res !== null) updateConfirmed = true;
         }
       } catch (err) {
-        await fetchDirectRest(`live_classes?id=eq.${classId}`, {
+        const res = await fetchDirectRest(`live_classes?id=eq.${classId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updates),
         });
+        if (res !== null) updateConfirmed = true;
+      }
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update live class in cloud database.');
       }
     }
 
@@ -1224,13 +1247,21 @@ export const AdminApi = {
     localLiveClasses = getPersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
 
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
         const { error } = await supabase.from('live_classes').delete().eq('id', classId);
-        if (error) {
-          await fetchDirectRest(`live_classes?id=eq.${classId}`, { method: 'DELETE' });
+        if (!error) {
+          deleteConfirmed = true;
+        } else {
+          const res = await fetchDirectRest(`live_classes?id=eq.${classId}`, { method: 'DELETE' });
+          if (res !== null) deleteConfirmed = true;
         }
       } catch (err) {
-        await fetchDirectRest(`live_classes?id=eq.${classId}`, { method: 'DELETE' });
+        const res = await fetchDirectRest(`live_classes?id=eq.${classId}`, { method: 'DELETE' });
+        if (res !== null) deleteConfirmed = true;
+      }
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete live class from cloud database.');
       }
     }
     localLiveClasses = localLiveClasses.filter((l) => l.id !== classId);
@@ -1488,39 +1519,38 @@ export const AdminApi = {
         savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
         return direct[0] as StudyMaterial;
       }
+      throw new Error('Database Error: Failed to upload study material to cloud database.');
     }
-
-    const newMat: StudyMaterial = {
-      id: `mat-${Date.now()}`,
-      ...insertPayload,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    localMaterials = [newMat, ...localMaterials];
-    savePersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
-    return newMat;
+    throw new Error('Database Error: Cloud database is unavailable.');
   },
 
   updateStudyMaterial: async (materialId: string, updates: Partial<StudyMaterial>) => {
     localMaterials = getPersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
 
     if (isSupabaseConfigured) {
+      let updateConfirmed = false;
       try {
         const { error } = await supabase.from('study_materials').update(updates).eq('id', materialId);
-        if (error) {
-          await fetchDirectRest(`study_materials?id=eq.${materialId}`, {
+        if (!error) {
+          updateConfirmed = true;
+        } else {
+          const res = await fetchDirectRest(`study_materials?id=eq.${materialId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates),
           });
+          if (res !== null) updateConfirmed = true;
         }
       } catch (err) {
-        await fetchDirectRest(`study_materials?id=eq.${materialId}`, {
+        const res = await fetchDirectRest(`study_materials?id=eq.${materialId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updates),
         });
+        if (res !== null) updateConfirmed = true;
+      }
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update study material in cloud database.');
       }
     }
 
@@ -1535,13 +1565,21 @@ export const AdminApi = {
     localMaterials = getPersistentState(STORAGE_KEYS.MATERIALS, localMaterials);
 
     if (isSupabaseConfigured) {
+      let deleteConfirmed = false;
       try {
         const { error } = await supabase.from('study_materials').delete().eq('id', materialId);
-        if (error) {
-          await fetchDirectRest(`study_materials?id=eq.${materialId}`, { method: 'DELETE' });
+        if (!error) {
+          deleteConfirmed = true;
+        } else {
+          const res = await fetchDirectRest(`study_materials?id=eq.${materialId}`, { method: 'DELETE' });
+          if (res !== null) deleteConfirmed = true;
         }
       } catch (err) {
-        await fetchDirectRest(`study_materials?id=eq.${materialId}`, { method: 'DELETE' });
+        const res = await fetchDirectRest(`study_materials?id=eq.${materialId}`, { method: 'DELETE' });
+        if (res !== null) deleteConfirmed = true;
+      }
+      if (!deleteConfirmed) {
+        throw new Error('Database Error: Failed to delete study material from cloud database.');
       }
     }
     localMaterials = localMaterials.filter((m) => m.id !== materialId);

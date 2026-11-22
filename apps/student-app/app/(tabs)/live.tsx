@@ -72,6 +72,7 @@ const CLASSES_LIST = [
 export default function StudentLiveScreen() {
   const { user } = useAuthStore();
   const theme = useAppTheme();
+  const isDark = theme.isDark;
   const isAdmin =
     user?.role === 'admin' ||
     user?.role === 'super_admin' ||
@@ -304,10 +305,10 @@ export default function StudentLiveScreen() {
       loadLocalData();
       Alert.alert(
         liveForm.start_immediately ? '🔴 Now Streaming Live!' : '📅 Live Class Scheduled!',
-        'Session is directly linked to the syllabus chapter and students can join in-app.'
+        'Session has been saved to cloud database and linked to the syllabus chapter.'
       );
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to schedule live class');
+      Alert.alert('Database Error', err?.message || 'Failed to save live class to database. Please check your connection and try again.');
     }
   };
 
@@ -317,10 +318,10 @@ export default function StudentLiveScreen() {
       loadLocalData();
       Alert.alert(
         'Stream Status Updated',
-        status === 'live' ? 'Live stream has started!' : 'Stream marked as completed.'
+        status === 'live' ? 'Live stream has started and updated in cloud database!' : 'Stream marked as completed in cloud database.'
       );
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to update stream status');
+      Alert.alert('Database Error', err?.message || 'Failed to update stream status in database.');
     }
   };
 
@@ -338,9 +339,9 @@ export default function StudentLiveScreen() {
               const remaining = liveClasses.filter((item) => item.id !== id);
               setSelectedStream(remaining[0] || null);
             }
-            Alert.alert('Deleted', 'Stream session permanently deleted.');
+            Alert.alert('Success', 'Live stream session removed from cloud database.');
           } catch (err: any) {
-            Alert.alert('Error', err.message || 'Failed to delete stream');
+            Alert.alert('Database Error', err?.message || 'Failed to delete stream from database.');
           }
         },
       },
@@ -649,32 +650,55 @@ export default function StudentLiveScreen() {
         onRequestClose={() => setIsLiveModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: isDark ? '#121212' : '#FFFFFF',
+                borderColor: isDark ? '#27272A' : '#E2E8F0',
+                borderWidth: isDark ? 1 : 0,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.modalHeader,
+                {
+                  backgroundColor: isDark ? '#000000' : '#F8FAFC',
+                  borderBottomColor: isDark ? '#27272A' : '#E2E8F0',
+                },
+              ]}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Video size={20} color="#DC2626" />
-                <Text style={styles.modalTitle}>Broadcast / Schedule Live Session</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Broadcast / Schedule Live Session</Text>
               </View>
               <TouchableOpacity onPress={() => setIsLiveModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
               {/* AI Auto-Fill Helper */}
               <TouchableOpacity
-                style={styles.aiHelperBanner}
+                style={[
+                  styles.aiHelperBanner,
+                  {
+                    backgroundColor: isDark ? '#1E1530' : '#F3E8FF',
+                    borderColor: isDark ? '#6B21A8' : '#D8B4FE',
+                  },
+                ]}
                 onPress={handleAiAutoFill}
                 disabled={aiGenerating}
               >
-                <Sparkles size={16} color="#7C3AED" />
-                <Text style={styles.aiHelperText}>
+                <Sparkles size={16} color="#A855F7" />
+                <Text style={[styles.aiHelperText, { color: isDark ? '#C084FC' : '#6B21A8' }]}>
                   {aiGenerating ? 'AI Generating Session...' : '✨ Auto-Fill Session with AI'}
                 </Text>
               </TouchableOpacity>
 
               {/* 1. Class Dropdown Selector */}
-              <Text style={styles.inputLabel}>1. Select Target Class *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>1. Select Target Class *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {CLASSES_LIST.map((cls) => (
@@ -682,6 +706,10 @@ export default function StudentLiveScreen() {
                       key={cls}
                       style={[
                         styles.dropdownPill,
+                        {
+                          backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                          borderColor: isDark ? '#27272A' : '#CBD5E1',
+                        },
                         selectedClass === cls && styles.dropdownPillActive,
                       ]}
                       onPress={() => handleSelectClass(cls)}
@@ -689,6 +717,7 @@ export default function StudentLiveScreen() {
                       <Text
                         style={[
                           styles.dropdownPillText,
+                          { color: selectedClass === cls ? '#FFFFFF' : theme.textSecondary },
                           selectedClass === cls && styles.dropdownPillTextActive,
                         ]}
                       >
@@ -700,7 +729,7 @@ export default function StudentLiveScreen() {
               </ScrollView>
 
               {/* 2. Subject Dropdown Selector */}
-              <Text style={styles.inputLabel}>2. Select Subject *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>2. Select Subject *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {subjectsList.map((sub) => (
@@ -708,6 +737,10 @@ export default function StudentLiveScreen() {
                       key={sub.id}
                       style={[
                         styles.dropdownPill,
+                        {
+                          backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                          borderColor: isDark ? '#27272A' : '#CBD5E1',
+                        },
                         selectedSubject?.id === sub.id && styles.dropdownPillActive,
                       ]}
                       onPress={() => handleSelectSubject(sub)}
@@ -715,6 +748,7 @@ export default function StudentLiveScreen() {
                       <Text
                         style={[
                           styles.dropdownPillText,
+                          { color: selectedSubject?.id === sub.id ? '#FFFFFF' : theme.textSecondary },
                           selectedSubject?.id === sub.id && styles.dropdownPillTextActive,
                         ]}
                       >
@@ -728,13 +762,17 @@ export default function StudentLiveScreen() {
               {/* 3. Sub-Subject Dropdown Selector (If Multi-Disciplinary) */}
               {selectedSubject?.has_sub_subjects && selectedSubject.sub_subjects ? (
                 <View style={{ marginBottom: 6 }}>
-                  <Text style={styles.inputLabel}>3. Select Sub-Subject (Discipline) *</Text>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>3. Select Sub-Subject (Discipline) *</Text>
                   <View style={{ flexDirection: 'row', gap: 6 }}>
                     {selectedSubject.sub_subjects.map((subSub) => (
                       <TouchableOpacity
                         key={subSub.id}
                         style={[
                           styles.dropdownPill,
+                          {
+                            backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                            borderColor: isDark ? '#27272A' : '#CBD5E1',
+                          },
                           selectedSubSubject?.id === subSub.id && styles.dropdownPillActiveGreen,
                         ]}
                         onPress={() => handleSelectSubSubject(subSub)}
@@ -742,6 +780,7 @@ export default function StudentLiveScreen() {
                         <Text
                           style={[
                             styles.dropdownPillText,
+                            { color: selectedSubSubject?.id === subSub.id ? '#FFFFFF' : theme.textSecondary },
                             selectedSubSubject?.id === subSub.id && styles.dropdownPillTextActive,
                           ]}
                         >
@@ -754,7 +793,7 @@ export default function StudentLiveScreen() {
               ) : null}
 
               {/* 4. Chapter Dropdown Selector */}
-              <Text style={styles.inputLabel}>4. Select Curriculum Chapter (Auto-Linked) *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>4. Select Curriculum Chapter (Auto-Linked) *</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {chaptersList.map((ch) => (
@@ -762,6 +801,10 @@ export default function StudentLiveScreen() {
                       key={ch.id}
                       style={[
                         styles.dropdownPill,
+                        {
+                          backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                          borderColor: isDark ? '#27272A' : '#CBD5E1',
+                        },
                         selectedChapter?.id === ch.id && styles.dropdownPillActiveBlue,
                       ]}
                       onPress={() => setSelectedChapter(ch)}
@@ -769,6 +812,7 @@ export default function StudentLiveScreen() {
                       <Text
                         style={[
                           styles.dropdownPillText,
+                          { color: selectedChapter?.id === ch.id ? '#FFFFFF' : theme.textSecondary },
                           selectedChapter?.id === ch.id && styles.dropdownPillTextActive,
                         ]}
                       >
@@ -779,17 +823,33 @@ export default function StudentLiveScreen() {
                 </View>
               </ScrollView>
 
-              <Text style={styles.inputLabel}>Session Title *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Session Title *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="e.g. Chemical Reactions: Balance Equation Practice"
                 value={liveForm.title}
                 onChangeText={(text) => setLiveForm((prev) => ({ ...prev, title: text }))}
               />
 
-              <Text style={styles.inputLabel}>YouTube Live URL or Stream ID *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>YouTube Live URL or Stream ID *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="Paste YouTube Link or Video ID (e.g. jfKfPfyJRdk)"
                 value={liveForm.youtube_video_id}
                 onChangeText={(text) =>
@@ -798,21 +858,35 @@ export default function StudentLiveScreen() {
               />
 
               {/* Start Date & Time Selection (No Manual Typing) */}
-              <Text style={styles.inputLabel}>Date & Time of Session *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Date & Time of Session *</Text>
               <TouchableOpacity
-                style={styles.datePickerTrigger}
+                style={[
+                  styles.datePickerTrigger,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                  },
+                ]}
                 onPress={() => setIsDateTimePickerOpen(true)}
               >
-                <Calendar size={16} color="#2563EB" />
-                <Text style={styles.datePickerTriggerText}>{liveForm.scheduledDisplay}</Text>
+                <Calendar size={16} color="#3B82F6" />
+                <Text style={[styles.datePickerTriggerText, { color: theme.text }]}>{liveForm.scheduledDisplay}</Text>
                 <Text style={styles.datePickerChangeHint}>Tap to change</Text>
               </TouchableOpacity>
 
               <View style={styles.formRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Duration (Minutes)</Text>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Duration (Minutes)</Text>
                   <TextInput
-                    style={styles.textInput}
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: theme.inputBg,
+                        borderColor: theme.inputBorder,
+                        color: theme.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.textMuted}
                     keyboardType="numeric"
                     placeholder="60"
                     value={liveForm.duration_minutes}
@@ -822,7 +896,7 @@ export default function StudentLiveScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Status Mode</Text>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Status Mode</Text>
                   <View style={styles.statusToggleRow}>
                     <TouchableOpacity
                       style={[
@@ -861,7 +935,15 @@ export default function StudentLiveScreen() {
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View
+              style={[
+                styles.modalFooter,
+                {
+                  backgroundColor: isDark ? '#000000' : '#F8FAFC',
+                  borderTopColor: isDark ? '#27272A' : '#E2E8F0',
+                },
+              ]}
+            >
               <TouchableOpacity
                 style={styles.cancelBtn}
                 onPress={() => setIsLiveModalOpen(false)}

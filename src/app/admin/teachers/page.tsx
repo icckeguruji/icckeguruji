@@ -46,24 +46,29 @@ export default function TeachersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created = await AdminApi.createTeacher({
-      full_name: formData.full_name,
-      qualification: formData.qualification,
-      subjects: formData.subjects,
-      email: formData.email,
-      mobile: formData.mobile,
-      assignedBatches: Number(formData.assignedBatches) || 1,
-    });
-    setTeachers((prev) => [created, ...prev]);
-    setIsModalOpen(false);
-    setFormData({
-      full_name: '',
-      qualification: '',
-      subjects: '',
-      email: '',
-      mobile: '',
-      assignedBatches: 1,
-    });
+    try {
+      const created = await AdminApi.createTeacher({
+        full_name: formData.full_name,
+        qualification: formData.qualification,
+        subjects: formData.subjects,
+        email: formData.email,
+        mobile: formData.mobile,
+        assignedBatches: Number(formData.assignedBatches) || 1,
+      });
+      setTeachers((prev) => [created, ...prev]);
+      setIsModalOpen(false);
+      setFormData({
+        full_name: '',
+        qualification: '',
+        subjects: '',
+        email: '',
+        mobile: '',
+        assignedBatches: 1,
+      });
+      alert('Success: Teacher profile added and saved successfully!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to add teacher profile.'));
+    }
   };
 
   const openEditModal = (teacher: TeacherItem) => {
@@ -82,25 +87,35 @@ export default function TeachersPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeacher) return;
-    const updated = await AdminApi.updateTeacher(editingTeacher.id, {
-      full_name: editFormData.full_name,
-      qualification: editFormData.qualification,
-      subjects: editFormData.subjects,
-      email: editFormData.email,
-      mobile: editFormData.mobile,
-      assignedBatches: Number(editFormData.assignedBatches) || 1,
-    });
-    if (updated) {
-      setTeachers((prev) => prev.map((tItem) => (tItem.id === editingTeacher.id ? updated : tItem)));
+    try {
+      const updated = await AdminApi.updateTeacher(editingTeacher.id, {
+        full_name: editFormData.full_name,
+        qualification: editFormData.qualification,
+        subjects: editFormData.subjects,
+        email: editFormData.email,
+        mobile: editFormData.mobile,
+        assignedBatches: Number(editFormData.assignedBatches) || 1,
+      });
+      if (updated) {
+        setTeachers((prev) => prev.map((tItem) => (tItem.id === editingTeacher.id ? updated : tItem)));
+      }
+      setIsEditModalOpen(false);
+      setEditingTeacher(null);
+      alert('Success: Teacher record updated and saved successfully!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to update teacher record.'));
     }
-    setIsEditModalOpen(false);
-    setEditingTeacher(null);
   };
 
   const handleDelete = async (teacher: TeacherItem) => {
     if (confirm(`Are you sure you want to remove teacher record "${teacher.full_name}"?`)) {
-      await AdminApi.deleteTeacher(teacher.id);
-      setTeachers((prev) => prev.filter((tItem) => tItem.id !== teacher.id));
+      try {
+        await AdminApi.deleteTeacher(teacher.id);
+        setTeachers((prev) => prev.filter((tItem) => tItem.id !== teacher.id));
+        alert('Success: Teacher record removed successfully.');
+      } catch (err: any) {
+        alert('Database Error: ' + (err?.message || 'Failed to remove teacher record.'));
+      }
     }
   };
 

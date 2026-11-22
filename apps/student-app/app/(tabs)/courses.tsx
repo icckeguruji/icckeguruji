@@ -250,7 +250,7 @@ export default function StudentCoursesScreen() {
           thumbnail_url: courseForm.thumbnail_url,
           class_name: courseForm.class_name,
         } as any);
-        Alert.alert('Success', 'Course details updated successfully!');
+        Alert.alert('Success', 'Course details saved to cloud database successfully!');
       } else {
         await academicService.addCourse({
           title: titleToUse,
@@ -266,13 +266,13 @@ export default function StudentCoursesScreen() {
           is_free: false,
           is_published: true,
         } as any);
-        Alert.alert('Course Published! 🎓', 'New course is now live and ready for student enrollment!');
+        Alert.alert('Course Published! 🎓', 'New course has been saved to cloud database and is live!');
       }
 
       setIsCourseModalOpen(false);
       loadLocalCourses();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to save course');
+      Alert.alert('Database Error', err?.message || 'Failed to save course to database. Please check your connection and try again.');
     }
   };
 
@@ -290,9 +290,9 @@ export default function StudentCoursesScreen() {
             try {
               await academicService.deleteCourse(courseId);
               loadLocalCourses();
-              Alert.alert('Deleted', 'Course removed from catalog.');
+              Alert.alert('Success', 'Course deleted from cloud database successfully.');
             } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to delete course');
+              Alert.alert('Database Error', err?.message || 'Failed to delete course from database.');
             }
           },
         },
@@ -578,49 +578,88 @@ export default function StudentCoursesScreen() {
         onRequestClose={() => setIsCourseModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: isDark ? '#121212' : '#FFFFFF',
+                borderColor: isDark ? '#27272A' : '#E2E8F0',
+                borderWidth: isDark ? 1 : 0,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.modalHeader,
+                {
+                  backgroundColor: isDark ? '#000000' : '#F8FAFC',
+                  borderBottomColor: isDark ? '#27272A' : '#E2E8F0',
+                },
+              ]}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <ShieldCheck size={20} color="#2563EB" />
-                <Text style={styles.modalTitle}>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>
                   {editingCourseId ? 'Edit Course' : 'Create New Target Course'}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setIsCourseModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
               {/* AI Auto-Fill Helper Banner */}
               <TouchableOpacity
-                style={styles.aiHelperBanner}
+                style={[
+                  styles.aiHelperBanner,
+                  {
+                    backgroundColor: isDark ? '#1E1530' : '#F3E8FF',
+                    borderColor: isDark ? '#6B21A8' : '#D8B4FE',
+                  },
+                ]}
                 onPress={handleAiAutoFill}
                 disabled={aiGenerating}
               >
-                <Sparkles size={16} color="#7C3AED" />
-                <Text style={styles.aiHelperText}>
+                <Sparkles size={16} color="#A855F7" />
+                <Text style={[styles.aiHelperText, { color: isDark ? '#C084FC' : '#6B21A8' }]}>
                   {aiGenerating ? 'AI Generating Content...' : '✨ Auto-Fill Missing Fields with AI'}
                 </Text>
               </TouchableOpacity>
 
-              <Text style={styles.inputLabel}>Course Title (Name) *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Course Title (Name) *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="e.g. Class 10 State Board Topper Course 2027"
                 value={courseForm.title}
                 onChangeText={(text) => setCourseForm((prev) => ({ ...prev, title: text }))}
               />
 
-              <Text style={styles.inputLabel}>Tagline / Subtitle *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Tagline / Subtitle *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="e.g. Full Syllabus Live Coaching & Handwritten Notes"
                 value={courseForm.tagline}
                 onChangeText={(text) => setCourseForm((prev) => ({ ...prev, tagline: text }))}
               />
 
-              <Text style={styles.inputLabel}>Target Class</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Target Class</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {CLASSES_LIST.map((cls) => (
@@ -628,6 +667,10 @@ export default function StudentCoursesScreen() {
                       key={cls}
                       style={[
                         styles.classModalPill,
+                        {
+                          backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+                          borderColor: isDark ? '#27272A' : '#CBD5E1',
+                        },
                         courseForm.class_name === cls && styles.classModalPillActive,
                       ]}
                       onPress={() => setCourseForm((p) => ({ ...p, class_name: cls }))}
@@ -635,6 +678,7 @@ export default function StudentCoursesScreen() {
                       <Text
                         style={[
                           styles.classModalPillText,
+                          { color: courseForm.class_name === cls ? '#FFFFFF' : theme.textSecondary },
                           courseForm.class_name === cls && styles.classModalPillTextActive,
                         ]}
                       >
@@ -646,21 +690,35 @@ export default function StudentCoursesScreen() {
               </ScrollView>
 
               {/* Start Date Picker (Touch Selection - No Typing) */}
-              <Text style={styles.inputLabel}>Course Start Date *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Course Start Date *</Text>
               <TouchableOpacity
-                style={styles.datePickerTrigger}
+                style={[
+                  styles.datePickerTrigger,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                  },
+                ]}
                 onPress={() => setIsDatePickerOpen(true)}
               >
-                <Calendar size={16} color="#2563EB" />
-                <Text style={styles.datePickerTriggerText}>{courseForm.start_date}</Text>
+                <Calendar size={16} color="#3B82F6" />
+                <Text style={[styles.datePickerTriggerText, { color: theme.text }]}>{courseForm.start_date}</Text>
                 <Text style={styles.datePickerChangeHint}>Tap to change</Text>
               </TouchableOpacity>
 
               <View style={styles.formRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Original Price (₹)</Text>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Original Price (₹)</Text>
                   <TextInput
-                    style={styles.textInput}
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: theme.inputBg,
+                        borderColor: theme.inputBorder,
+                        color: theme.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.textMuted}
                     keyboardType="numeric"
                     placeholder="999"
                     value={courseForm.price}
@@ -668,9 +726,17 @@ export default function StudentCoursesScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Sale / Offer Price (₹)</Text>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Sale / Offer Price (₹)</Text>
                   <TextInput
-                    style={styles.textInput}
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: theme.inputBg,
+                        borderColor: theme.inputBorder,
+                        color: theme.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.textMuted}
                     keyboardType="numeric"
                     placeholder="499"
                     value={courseForm.discount_price}
@@ -681,9 +747,17 @@ export default function StudentCoursesScreen() {
                 </View>
               </View>
 
-              <Text style={styles.inputLabel}>Validity Duration (Days)</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Validity Duration (Days)</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 keyboardType="numeric"
                 placeholder="365"
                 value={courseForm.validity_days}
@@ -692,9 +766,19 @@ export default function StudentCoursesScreen() {
                 }
               />
 
-              <Text style={styles.inputLabel}>Course Description</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Course Description</Text>
               <TextInput
-                style={[styles.textInput, { height: 70, textAlignVertical: 'top' }]}
+                style={[
+                  styles.textInput,
+                  {
+                    height: 70,
+                    textAlignVertical: 'top',
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 multiline
                 numberOfLines={3}
                 placeholder="Course features, syllabus overview & live class schedule..."
@@ -702,7 +786,7 @@ export default function StudentCoursesScreen() {
                 onChangeText={(text) => setCourseForm((prev) => ({ ...prev, description: text }))}
               />
 
-              <Text style={styles.inputLabel}>Course Thumbnail Photo</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Course Thumbnail Photo</Text>
               {courseForm.thumbnail_url ? (
                 <View style={styles.thumbnailPreviewContainer}>
                   <Image
@@ -720,27 +804,61 @@ export default function StudentCoursesScreen() {
               ) : null}
 
               <View style={styles.photoActionRow}>
-                <TouchableOpacity style={styles.photoBtn} onPress={handlePickThumbnail}>
-                  <ImageIcon size={15} color="#2563EB" />
-                  <Text style={styles.photoBtnText}>Gallery Photo</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.photoBtn,
+                    {
+                      backgroundColor: isDark ? '#18181B' : '#EFF6FF',
+                      borderColor: isDark ? '#27272A' : '#BFDBFE',
+                    },
+                  ]}
+                  onPress={handlePickThumbnail}
+                >
+                  <ImageIcon size={15} color="#3B82F6" />
+                  <Text style={[styles.photoBtnText, { color: '#3B82F6' }]}>Gallery Photo</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.photoBtn} onPress={handleCaptureThumbnail}>
-                  <Camera size={15} color="#2563EB" />
-                  <Text style={styles.photoBtnText}>Camera</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.photoBtn,
+                    {
+                      backgroundColor: isDark ? '#18181B' : '#EFF6FF',
+                      borderColor: isDark ? '#27272A' : '#BFDBFE',
+                    },
+                  ]}
+                  onPress={handleCaptureThumbnail}
+                >
+                  <Camera size={15} color="#3B82F6" />
+                  <Text style={[styles.photoBtnText, { color: '#3B82F6' }]}>Camera</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.inputLabel, { marginTop: 6 }]}>Or Thumbnail Web Link</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 6 }]}>Or Thumbnail Web Link</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                    color: theme.text,
+                  },
+                ]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="https://..."
                 value={courseForm.thumbnail_url}
                 onChangeText={(text) => setCourseForm((prev) => ({ ...prev, thumbnail_url: text }))}
               />
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View
+              style={[
+                styles.modalFooter,
+                {
+                  backgroundColor: isDark ? '#000000' : '#F8FAFC',
+                  borderTopColor: isDark ? '#27272A' : '#E2E8F0',
+                },
+              ]}
+            >
               <TouchableOpacity
                 style={styles.cancelBtn}
                 onPress={() => setIsCourseModalOpen(false)}

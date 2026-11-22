@@ -90,31 +90,36 @@ export default function StudyMaterialsPage() {
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created = await AdminApi.uploadStudyMaterial({
-      title: formData.title || formData.file_name,
-      title_hi: formData.title_hi || formData.title || formData.file_name,
-      board_id: formData.board_id,
-      class_id: formData.class_id,
-      subject_id: formData.subject_id,
-      material_type: formData.material_type,
-      file_path: `bseb/class10/science/${formData.file_name}`,
-      file_size_bytes: fileSizeBytes,
-      is_free: formData.is_free,
-    });
-    setMaterials((prev) => [created, ...prev]);
-    setIsUploadOpen(false);
-    setSelectedFile(null);
-    setFileSizeBytes(2150000);
-    setFormData({
-      title: '',
-      title_hi: '',
-      board_id: 'b0000000-0000-0000-0000-000000000001',
-      class_id: 'c0000000-0000-0000-0000-000000000010',
-      subject_id: 'sub00000-0000-0000-0000-000000000002',
-      material_type: 'chapter_notes',
-      file_name: 'notes.pdf',
-      is_free: false,
-    });
+    try {
+      const created = await AdminApi.uploadStudyMaterial({
+        title: formData.title || formData.file_name,
+        title_hi: formData.title_hi || formData.title || formData.file_name,
+        board_id: formData.board_id,
+        class_id: formData.class_id,
+        subject_id: formData.subject_id,
+        material_type: formData.material_type,
+        file_path: `bseb/class10/science/${formData.file_name}`,
+        file_size_bytes: fileSizeBytes,
+        is_free: formData.is_free,
+      });
+      setMaterials((prev) => [created, ...prev]);
+      setIsUploadOpen(false);
+      setSelectedFile(null);
+      setFileSizeBytes(2150000);
+      setFormData({
+        title: '',
+        title_hi: '',
+        board_id: 'b0000000-0000-0000-0000-000000000001',
+        class_id: 'c0000000-0000-0000-0000-000000000010',
+        subject_id: 'sub00000-0000-0000-0000-000000000002',
+        material_type: 'chapter_notes',
+        file_name: 'notes.pdf',
+        is_free: false,
+      });
+      alert('Success: Study material uploaded and saved to cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to upload study material to database.'));
+    }
   };
 
   const openEditModal = (mat: StudyMaterial) => {
@@ -132,18 +137,23 @@ export default function StudyMaterialsPage() {
     e.preventDefault();
     if (!editingItem) return;
 
-    const updated = await AdminApi.updateStudyMaterial(editingItem.id, {
-      title: editFormData.title,
-      title_hi: editFormData.title_hi,
-      material_type: editFormData.material_type,
-      is_free: editFormData.is_free,
-    });
+    try {
+      const updated = await AdminApi.updateStudyMaterial(editingItem.id, {
+        title: editFormData.title,
+        title_hi: editFormData.title_hi,
+        material_type: editFormData.material_type,
+        is_free: editFormData.is_free,
+      });
 
-    if (updated) {
-      setMaterials((prev) => prev.map((m) => (m.id === editingItem.id ? updated : m)));
+      if (updated) {
+        setMaterials((prev) => prev.map((m) => (m.id === editingItem.id ? updated : m)));
+      }
+      setIsEditOpen(false);
+      setEditingItem(null);
+      alert('Success: Study material updated and saved to cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to update study material in database.'));
     }
-    setIsEditOpen(false);
-    setEditingItem(null);
   };
 
   const handleDelete = async (mat: StudyMaterial) => {
@@ -152,8 +162,13 @@ export default function StudyMaterialsPage() {
     );
     if (!confirmed) return;
 
-    await AdminApi.deleteStudyMaterial(mat.id);
-    setMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+    try {
+      await AdminApi.deleteStudyMaterial(mat.id);
+      setMaterials((prev) => prev.filter((m) => m.id !== mat.id));
+      alert('Success: Study material deleted from database.');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to delete study material from database.'));
+    }
   };
 
   const filteredMaterials = materials.filter((m) => {

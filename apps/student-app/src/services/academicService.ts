@@ -831,15 +831,7 @@ class AcademicRepository {
       }
     }
 
-    const fallbackCourse: Course = {
-      ...insertPayload,
-      lecture_count: 0,
-      material_count: 0,
-    };
-    this.courses = [fallbackCourse, ...this.courses.filter((c) => c.id !== fallbackCourse.id)];
-    await this.persist('icc_courses', this.courses);
-    this.notify();
-    return fallbackCourse;
+    throw new Error('Database Error: Failed to save course to cloud database. Please check your internet connection.');
   }
 
   async createCourse(data: Partial<Course>): Promise<Course> {
@@ -875,48 +867,54 @@ class AcademicRepository {
       cleanUpdates.class_id = getSafeClassId(updates.class_id, cleanUpdates.class_name);
     }
 
-    this.courses = this.courses.map((c) => (c.id === id ? { ...c, ...cleanUpdates } : c));
-    await this.persist('icc_courses', this.courses);
-    this.notify();
-
+    let isSaved = false;
     if (isSupabaseConfigured) {
       try {
         if (isValidUUID(id)) {
           const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', id);
-          if (error) {
-            await fetchDirectRest(`courses?id=eq.${id}`, {
+          if (!error) {
+            isSaved = true;
+          } else {
+            const res = await fetchDirectRest(`courses?id=eq.${id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(cleanUpdates),
             });
+            if (res) isSaved = true;
           }
         } else if (updates.title) {
-          await supabase.from('courses').update(cleanUpdates).eq('title', updates.title);
+          const { error } = await supabase.from('courses').update(cleanUpdates).eq('title', updates.title);
+          if (!error) isSaved = true;
         }
       } catch (e) {
         console.warn('Supabase update warning:', e);
         if (isValidUUID(id)) {
-          await fetchDirectRest(`courses?id=eq.${id}`, {
+          const res = await fetchDirectRest(`courses?id=eq.${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(cleanUpdates),
           });
+          if (res) isSaved = true;
         }
       }
     }
+
+    if (!isSaved) {
+      throw new Error('Database Error: Unable to update course in cloud database. Please check your connection.');
+    }
+
+    this.courses = this.courses.map((c) => (c.id === id ? { ...c, ...cleanUpdates } : c));
+    await this.persist('icc_courses', this.courses);
+    this.notify();
 
     return this.courses.find((c) => c.id === id) || (cleanUpdates as Course);
   }
 
   async deleteCourse(id: string): Promise<void> {
     await this.ensureLoaded();
-    this.deletedIds.add(id);
     const course = this.courses.find((c) => c.id === id);
 
-    this.courses = this.courses.filter((c) => c.id !== id);
-    await this.persist('icc_courses', this.courses);
-    this.notify();
-
+    let isDeleted = false;
     if (isSupabaseConfigured) {
       try {
         if (isValidUUID(id)) {
@@ -928,20 +926,33 @@ class AcademicRepository {
             supabase.from('recorded_lectures').delete().eq('course_id', id),
           ]);
           const { error } = await supabase.from('courses').delete().eq('id', id);
-          if (error) {
+          if (!error) {
+            isDeleted = true;
+          } else {
             await fetchDirectRest(`courses?id=eq.${id}`, { method: 'DELETE' });
+            isDeleted = true;
           }
-        }
-        if (course?.title) {
-          await supabase.from('courses').delete().eq('title', course.title);
+        } else if (course?.title) {
+          const { error } = await supabase.from('courses').delete().eq('title', course.title);
+          if (!error) isDeleted = true;
         }
       } catch (e) {
         console.warn('Supabase delete warning:', e);
         if (isValidUUID(id)) {
           await fetchDirectRest(`courses?id=eq.${id}`, { method: 'DELETE' });
+          isDeleted = true;
         }
       }
     }
+
+    if (!isDeleted) {
+      throw new Error('Database Error: Unable to delete course from cloud database. Please check your connection.');
+    }
+
+    this.deletedIds.add(id);
+    this.courses = this.courses.filter((c) => c.id !== id);
+    await this.persist('icc_courses', this.courses);
+    this.notify();
   }
 
   // --- SUBJECTS (Course Scoped or Class Scoped) ---
@@ -981,8 +992,6 @@ class AcademicRepository {
   async addSubject(sub: Partial<AcademicSubject>): Promise<AcademicSubject> {
     await this.ensureLoaded();
     const subId = sub.id && isValidUUID(sub.id) ? sub.id : generateUUID();
-    this.deletedIds.delete(subId);
-    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
     const newSub: AcademicSubject = {
       id: subId,
@@ -997,12 +1006,10 @@ class AcademicRepository {
       sub_subjects: sub.sub_subjects || [],
       display_order: this.subjects.length + 1,
     };
-    this.subjects.push(newSub);
-    await this.persist('icc_academic_subjects', this.subjects);
-    this.notify();
 
-    try {
-      if (isSupabaseConfigured) {
+    let isSaved = false;
+    if (isSupabaseConfigured) {
+      try {
         const payload: any = {
           id: newSub.id,
           name: newSub.name,
@@ -1015,30 +1022,61 @@ class AcademicRepository {
         if (newSub.course_id && isValidUUID(newSub.course_id)) {
           payload.course_id = newSub.course_id;
         }
-        await supabase.from('subjects').upsert(payload);
+        const { error } = await supabase.from('subjects').upsert(payload);
+        if (!error) {
+          isSaved = true;
+        } else {
+          const direct = await fetchDirectRest('subjects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (direct) isSaved = true;
+        }
+      } catch (e) {
+        console.warn('Supabase addSubject error:', e);
       }
-    } catch (e) {
-      console.warn('Supabase addSubject warning:', e);
     }
 
+    if (!isSaved) {
+      throw new Error('Database Error: Unable to save subject to cloud database. Please check your connection.');
+    }
+
+    this.deletedIds.delete(subId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+    this.subjects.push(newSub);
+    await this.persist('icc_academic_subjects', this.subjects);
+    this.notify();
     return newSub;
   }
 
   async deleteSubject(id: string): Promise<void> {
     await this.ensureLoaded();
+    let isDeleted = false;
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('subjects').delete().eq('id', id);
+        if (!error) {
+          isDeleted = true;
+        } else {
+          await fetchDirectRest(`subjects?id=eq.${id}`, { method: 'DELETE' });
+          isDeleted = true;
+        }
+      } catch (e) {
+        console.warn('Supabase deleteSubject error:', e);
+      }
+    }
+
+    if (!isDeleted) {
+      throw new Error('Database Error: Unable to delete subject from cloud database. Please check your connection.');
+    }
+
     this.deletedIds.add(id);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
     this.subjects = this.subjects.filter((s) => s.id !== id);
     await this.persist('icc_academic_subjects', this.subjects);
     this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('subjects').delete().eq('id', id);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteSubject warning:', e);
-    }
   }
 
   // --- SUB-SUBJECTS ---
@@ -1077,8 +1115,6 @@ class AcademicRepository {
   async addChapter(data: Partial<AcademicChapter>): Promise<AcademicChapter> {
     await this.ensureLoaded();
     const chapterId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
-    this.deletedIds.delete(chapterId);
-    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
     const newChapter: AcademicChapter = {
       id: chapterId,
@@ -1094,12 +1130,10 @@ class AcademicRepository {
       lecture_count: 0,
       material_count: 0,
     };
-    this.chapters.push(newChapter);
-    await this.persist('icc_academic_chapters', this.chapters);
-    this.notify();
 
-    try {
-      if (isSupabaseConfigured) {
+    let isSaved = false;
+    if (isSupabaseConfigured) {
+      try {
         const payload: any = {
           id: newChapter.id,
           title: newChapter.title,
@@ -1113,30 +1147,61 @@ class AcademicRepository {
         if (newChapter.course_id && isValidUUID(newChapter.course_id)) {
           payload.course_id = newChapter.course_id;
         }
-        await supabase.from('chapters').upsert(payload);
+        const { error } = await supabase.from('chapters').upsert(payload);
+        if (!error) {
+          isSaved = true;
+        } else {
+          const direct = await fetchDirectRest('chapters', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (direct) isSaved = true;
+        }
+      } catch (e) {
+        console.warn('Supabase addChapter error:', e);
       }
-    } catch (e) {
-      console.warn('Supabase addChapter warning:', e);
     }
 
+    if (!isSaved) {
+      throw new Error('Database Error: Unable to save chapter to cloud database. Please check your connection.');
+    }
+
+    this.deletedIds.delete(chapterId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+    this.chapters.push(newChapter);
+    await this.persist('icc_academic_chapters', this.chapters);
+    this.notify();
     return newChapter;
   }
 
   async deleteChapter(id: string): Promise<void> {
     await this.ensureLoaded();
+    let isDeleted = false;
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('chapters').delete().eq('id', id);
+        if (!error) {
+          isDeleted = true;
+        } else {
+          await fetchDirectRest(`chapters?id=eq.${id}`, { method: 'DELETE' });
+          isDeleted = true;
+        }
+      } catch (e) {
+        console.warn('Supabase deleteChapter error:', e);
+      }
+    }
+
+    if (!isDeleted) {
+      throw new Error('Database Error: Unable to delete chapter from cloud database. Please check your connection.');
+    }
+
     this.deletedIds.add(id);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
     this.chapters = this.chapters.filter((c) => c.id !== id);
     await this.persist('icc_academic_chapters', this.chapters);
     this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('chapters').delete().eq('id', id);
-      }
-    } catch (e) {
-      console.warn('Supabase deleteChapter warning:', e);
-    }
   }
 
   // --- CHAPTER CONTENT: RECORDED VIDEOS ---
@@ -1148,8 +1213,6 @@ class AcademicRepository {
   async addRecordedLecture(data: Partial<RecordedLecture>): Promise<RecordedLecture> {
     await this.ensureLoaded();
     const lecId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
-    this.deletedIds.delete(lecId);
-    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
     const validCourseId =
       (data.course_id && isValidUUID(data.course_id) ? data.course_id : null) ||
@@ -1169,20 +1232,11 @@ class AcademicRepository {
       is_free_preview: Boolean(data.is_free_preview),
       lecture_order: this.lectures.length + 1,
     };
-    this.lectures = this.lectures.filter((l) => l.id !== lecId);
-    this.lectures.push(newLec);
-    await this.persist('icc_recorded_lectures', this.lectures);
 
-    const ch = this.chapters.find((c) => c.id === data.chapter_id);
-    if (ch) {
-      ch.lecture_count = (ch.lecture_count || 0) + 1;
-      await this.persist('icc_academic_chapters', this.chapters);
-    }
-    this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.from('recorded_lectures').upsert({
+    let isSaved = false;
+    if (isSupabaseConfigured) {
+      try {
+        const payload = {
           id: newLec.id,
           course_id: newLec.course_id,
           subject_id: newLec.subject_id,
@@ -1194,34 +1248,75 @@ class AcademicRepository {
           duration_seconds: newLec.duration_seconds,
           is_free_preview: newLec.is_free_preview,
           lecture_order: newLec.lecture_order,
-        });
-        if (error) console.error('Supabase addRecordedLecture error:', error);
+        };
+        const { error } = await supabase.from('recorded_lectures').upsert(payload);
+        if (!error) {
+          isSaved = true;
+        } else {
+          const direct = await fetchDirectRest('recorded_lectures', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (direct) isSaved = true;
+        }
+      } catch (e) {
+        console.warn('Supabase addRecordedLecture error:', e);
       }
-    } catch {}
+    }
 
+    if (!isSaved) {
+      throw new Error('Database Error: Unable to save video lecture to cloud database. Please check your connection.');
+    }
+
+    this.deletedIds.delete(lecId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+    this.lectures = this.lectures.filter((l) => l.id !== lecId);
+    this.lectures.push(newLec);
+    await this.persist('icc_recorded_lectures', this.lectures);
+
+    const ch = this.chapters.find((c) => c.id === data.chapter_id);
+    if (ch) {
+      ch.lecture_count = (ch.lecture_count || 0) + 1;
+      await this.persist('icc_academic_chapters', this.chapters);
+    }
+    this.notify();
     return newLec;
   }
 
   async deleteRecordedLecture(id: string): Promise<void> {
     await this.ensureLoaded();
     const item = this.lectures.find((l) => l.id === id);
+    let isDeleted = false;
+
+    if (isSupabaseConfigured) {
+      try {
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('recorded_lectures').delete().eq('id', id);
+          if (!error) isDeleted = true;
+          else {
+            await fetchDirectRest(`recorded_lectures?id=eq.${id}`, { method: 'DELETE' });
+            isDeleted = true;
+          }
+        }
+        if (item?.title) {
+          await supabase.from('recorded_lectures').delete().eq('title', item.title);
+          isDeleted = true;
+        }
+      } catch (e) {
+        console.warn('Supabase deleteRecordedLecture error:', e);
+      }
+    }
+
+    if (!isDeleted) {
+      throw new Error('Database Error: Unable to delete video lecture from cloud database. Please check your connection.');
+    }
+
     this.deletedIds.add(id);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
     this.lectures = this.lectures.filter((l) => l.id !== id);
     await this.persist('icc_recorded_lectures', this.lectures);
     this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        if (isValidUUID(id)) {
-          const { error } = await supabase.from('recorded_lectures').delete().eq('id', id);
-          if (error) console.error('Supabase deleteRecordedLecture error:', error);
-        }
-        if (item?.title) {
-          await supabase.from('recorded_lectures').delete().eq('title', item.title);
-        }
-      }
-    } catch {}
   }
 
   // --- CHAPTER CONTENT: LIVE CLASSES ---
@@ -1237,8 +1332,6 @@ class AcademicRepository {
   async scheduleLiveClass(data: Partial<LiveClass> & { chapter_id?: string; subject_id?: string; class_name?: string }): Promise<LiveClass> {
     await this.ensureLoaded();
     const liveId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
-    this.deletedIds.delete(liveId);
-    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
     const validCourseId =
       (data.course_id && isValidUUID(data.course_id) ? data.course_id : null) ||
@@ -1262,14 +1355,10 @@ class AcademicRepository {
     if (data.subject_id) (newLive as any).subject_id = data.subject_id;
     if (data.class_name) (newLive as any).class_name = data.class_name;
 
-    this.liveClasses = this.liveClasses.filter((l) => l.id !== liveId);
-    this.liveClasses.unshift(newLive);
-    await this.persist('icc_live_classes', this.liveClasses);
-    this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.from('live_classes').upsert({
+    let isSaved = false;
+    if (isSupabaseConfigured) {
+      try {
+        const payload = {
           id: newLive.id,
           course_id: newLive.course_id,
           title: newLive.title,
@@ -1280,12 +1369,33 @@ class AcademicRepository {
           duration_minutes: newLive.duration_minutes,
           status: newLive.status,
           class_name: (newLive as any).class_name,
-        });
-        if (error) console.error('Supabase scheduleLiveClass error:', error);
+        };
+        const { error } = await supabase.from('live_classes').upsert(payload);
+        if (!error) {
+          isSaved = true;
+        } else {
+          const direct = await fetchDirectRest('live_classes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (direct) isSaved = true;
+        }
+      } catch (e) {
+        console.warn('scheduleLiveClass error:', e);
       }
-    } catch (e) {
-      console.warn('scheduleLiveClass warning:', e);
     }
+
+    if (!isSaved) {
+      throw new Error('Database Error: Unable to save live class to cloud database. Please check your connection.');
+    }
+
+    this.deletedIds.delete(liveId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+    this.liveClasses = this.liveClasses.filter((l) => l.id !== liveId);
+    this.liveClasses.unshift(newLive);
+    await this.persist('icc_live_classes', this.liveClasses);
+    this.notify();
 
     return newLive;
   }
@@ -1293,40 +1403,57 @@ class AcademicRepository {
   async updateLiveClassStatus(id: string, status: 'scheduled' | 'live' | 'completed' | 'cancelled'): Promise<void> {
     await this.ensureLoaded();
     const item = this.liveClasses.find((l) => l.id === id);
-    if (item) {
-      item.status = status;
-      await this.persist('icc_live_classes', this.liveClasses);
-      this.notify();
-      if (isSupabaseConfigured && isValidUUID(id)) {
-        try {
-          await supabase.from('live_classes').update({ status }).eq('id', id);
-        } catch {}
-      }
+    if (!item) return;
 
-      // Automatic Live-to-Recording Lifecycle: SCHEDULED -> LIVE -> ENDED_PROCESSING -> RECORDED_READY
-      if (status === 'completed' && item.youtube_video_id) {
-        try {
-          const existing = this.lectures.find(
-            (lec) =>
-              lec.youtube_video_id === item.youtube_video_id ||
-              (lec.title === item.title && lec.chapter_id === (item as any).chapter_id)
-          );
-          if (!existing) {
-            await this.addRecordedLecture({
-              course_id: item.course_id,
-              subject_id: (item as any).subject_id || this.subjects[0]?.id,
-              chapter_id: (item as any).chapter_id || this.chapters[0]?.id,
-              title: item.title,
-              title_hi: item.title_hi || item.title,
-              description: item.description,
-              youtube_video_id: item.youtube_video_id,
-              duration_seconds: (item.duration_minutes || 60) * 60,
-              is_free_preview: false,
-            });
-          }
-        } catch (err) {
-          console.error('AcademicService auto promotion error:', err);
+    let isSaved = false;
+    if (isSupabaseConfigured && isValidUUID(id)) {
+      try {
+        const { error } = await supabase.from('live_classes').update({ status }).eq('id', id);
+        if (!error) isSaved = true;
+        else {
+          await fetchDirectRest(`live_classes?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          });
+          isSaved = true;
         }
+      } catch {}
+    } else {
+      isSaved = true;
+    }
+
+    if (!isSaved) {
+      throw new Error('Database Error: Unable to update live class status in cloud database.');
+    }
+
+    item.status = status;
+    await this.persist('icc_live_classes', this.liveClasses);
+    this.notify();
+
+    // Automatic Live-to-Recording Lifecycle: SCHEDULED -> LIVE -> ENDED_PROCESSING -> RECORDED_READY
+    if (status === 'completed' && item.youtube_video_id) {
+      try {
+        const existing = this.lectures.find(
+          (lec) =>
+            lec.youtube_video_id === item.youtube_video_id ||
+            (lec.title === item.title && lec.chapter_id === (item as any).chapter_id)
+        );
+        if (!existing) {
+          await this.addRecordedLecture({
+            course_id: item.course_id,
+            subject_id: (item as any).subject_id || this.subjects[0]?.id,
+            chapter_id: (item as any).chapter_id || this.chapters[0]?.id,
+            title: item.title,
+            title_hi: item.title_hi || item.title,
+            description: item.description,
+            youtube_video_id: item.youtube_video_id,
+            duration_seconds: (item.duration_minutes || 60) * 60,
+            is_free_preview: false,
+          });
+        }
+      } catch (err) {
+        console.error('AcademicService auto promotion error:', err);
       }
     }
   }
@@ -1334,27 +1461,37 @@ class AcademicRepository {
   async deleteLiveClass(id: string): Promise<void> {
     await this.ensureLoaded();
     const item = this.liveClasses.find((l) => l.id === id);
+    let isDeleted = false;
+
+    if (isSupabaseConfigured) {
+      try {
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('live_classes').delete().eq('id', id);
+          if (!error) isDeleted = true;
+          else {
+            await fetchDirectRest(`live_classes?id=eq.${id}`, { method: 'DELETE' });
+            isDeleted = true;
+          }
+        }
+        if (item?.title) {
+          await supabase.from('live_classes').delete().eq('title', item.title);
+          isDeleted = true;
+        }
+      } catch (e) {
+        console.warn('deleteLiveClass error:', e);
+      }
+    }
+
+    if (!isDeleted) {
+      throw new Error('Database Error: Unable to delete live class from cloud database. Please check your connection.');
+    }
+
     this.deletedIds.add(id);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
-
     this.liveClasses = this.liveClasses.filter((l) => l.id !== id);
     await this.persist('icc_live_modified', 'true');
     await this.persist('icc_live_classes', this.liveClasses);
     this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        if (isValidUUID(id)) {
-          const { error } = await supabase.from('live_classes').delete().eq('id', id);
-          if (error) console.error('Supabase deleteLiveClass error:', error);
-        }
-        if (item?.title) {
-          await supabase.from('live_classes').delete().eq('title', item.title);
-        }
-      }
-    } catch (e) {
-      console.warn('deleteLiveClass warning:', e);
-    }
   }
 
   // --- CHAPTER CONTENT: STUDY MATERIALS PDF ---
@@ -1370,8 +1507,6 @@ class AcademicRepository {
   async addStudyMaterial(data: Partial<StudyMaterial> & { class_name?: string }): Promise<StudyMaterial> {
     await this.ensureLoaded();
     const matId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
-    this.deletedIds.delete(matId);
-    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
 
     const defaultBoardId = 'b0000000-0000-0000-0000-000000000001';
     const defaultClassId = 'c0000000-0000-0000-0000-000000000010';
@@ -1400,21 +1535,10 @@ class AcademicRepository {
     };
     if (data.class_name) (newMat as any).class_name = data.class_name;
 
-    this.materials = this.materials.filter((m) => m.id !== matId);
-    this.materials.unshift(newMat);
-    await this.persist('icc_study_materials', this.materials);
-
-    const ch = this.chapters.find((c) => c.id === chapterId);
-    if (ch) {
-      ch.material_count = (ch.material_count || 0) + 1;
-      await this.persist('icc_academic_chapters', this.chapters);
-    }
-
-    this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.from('study_materials').upsert({
+    let isSaved = false;
+    if (isSupabaseConfigured) {
+      try {
+        const payload = {
           id: newMat.id,
           board_id: newMat.board_id,
           class_id: newMat.class_id,
@@ -1428,40 +1552,77 @@ class AcademicRepository {
           material_type: newMat.material_type,
           is_free: newMat.is_free,
           class_name: (newMat as any).class_name,
-        });
-        if (error) console.error('Supabase addStudyMaterial error:', error);
+        };
+        const { error } = await supabase.from('study_materials').upsert(payload);
+        if (!error) {
+          isSaved = true;
+        } else {
+          const direct = await fetchDirectRest('study_materials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (direct) isSaved = true;
+        }
+      } catch (e) {
+        console.warn('addStudyMaterial error:', e);
       }
-    } catch (e) {
-      console.warn('addStudyMaterial warning:', e);
     }
 
+    if (!isSaved) {
+      throw new Error('Database Error: Unable to upload study material to cloud database. Please check your connection.');
+    }
+
+    this.deletedIds.delete(matId);
+    await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
+    this.materials = this.materials.filter((m) => m.id !== matId);
+    this.materials.unshift(newMat);
+    await this.persist('icc_study_materials', this.materials);
+
+    const ch = this.chapters.find((c) => c.id === chapterId);
+    if (ch) {
+      ch.material_count = (ch.material_count || 0) + 1;
+      await this.persist('icc_academic_chapters', this.chapters);
+    }
+
+    this.notify();
     return newMat;
   }
 
   async deleteStudyMaterial(id: string): Promise<void> {
     await this.ensureLoaded();
     const item = this.materials.find((m) => m.id === id);
+    let isDeleted = false;
+
+    if (isSupabaseConfigured) {
+      try {
+        if (isValidUUID(id)) {
+          const { error } = await supabase.from('study_materials').delete().eq('id', id);
+          if (!error) isDeleted = true;
+          else {
+            await fetchDirectRest(`study_materials?id=eq.${id}`, { method: 'DELETE' });
+            isDeleted = true;
+          }
+        }
+        if (item?.title) {
+          await supabase.from('study_materials').delete().eq('title', item.title);
+          isDeleted = true;
+        }
+      } catch (e) {
+        console.warn('deleteStudyMaterial error:', e);
+      }
+    }
+
+    if (!isDeleted) {
+      throw new Error('Database Error: Unable to delete study material from cloud database. Please check your connection.');
+    }
+
     this.deletedIds.add(id);
     await this.persist('icc_deleted_ids', Array.from(this.deletedIds));
-
     this.materials = this.materials.filter((m) => m.id !== id);
     await this.persist('icc_materials_modified', 'true');
     await this.persist('icc_study_materials', this.materials);
     this.notify();
-
-    try {
-      if (isSupabaseConfigured) {
-        if (isValidUUID(id)) {
-          const { error } = await supabase.from('study_materials').delete().eq('id', id);
-          if (error) console.error('Supabase deleteStudyMaterial error:', error);
-        }
-        if (item?.title) {
-          await supabase.from('study_materials').delete().eq('title', item.title);
-        }
-      }
-    } catch (e) {
-      console.warn('deleteStudyMaterial warning:', e);
-    }
   }
 
   // --- DIRECTOR CONTROLS: PAYMENTS ---

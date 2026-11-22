@@ -80,6 +80,7 @@ const PRESET_AVATARS = [
 export default function StudentProfileScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const isDark = theme.isDark;
   const {
     user,
     selectedBoard,
@@ -232,9 +233,13 @@ export default function StudentProfileScreen() {
           text: 'Approve & Unlock',
           style: 'default',
           onPress: async () => {
-            const updated = await academicService.approvePayment(payId, user?.id);
-            setPayments(updated);
-            Alert.alert('✅ Approved!', `${studentName}'s enrollment has been activated and permanently unlocked.`);
+            try {
+              const updated = await academicService.approvePayment(payId, user?.id);
+              setPayments(updated);
+              Alert.alert('Success', `Payment confirmed & saved to database for ${studentName}.`);
+            } catch (err: any) {
+              Alert.alert('Database Error', err?.message || 'Failed to update payment status in database.');
+            }
           },
         },
       ]
@@ -251,9 +256,13 @@ export default function StudentProfileScreen() {
           text: 'Reject',
           style: 'destructive',
           onPress: async () => {
-            const updated = await academicService.rejectPayment(payId, user?.id);
-            setPayments(updated);
-            Alert.alert('Rejected', `Payment submission for ${studentName} has been rejected.`);
+            try {
+              const updated = await academicService.rejectPayment(payId, user?.id);
+              setPayments(updated);
+              Alert.alert('Success', `Payment rejection saved to database for ${studentName}.`);
+            } catch (err: any) {
+              Alert.alert('Database Error', err?.message || 'Failed to reject payment in database.');
+            }
           },
         },
       ]
@@ -261,13 +270,17 @@ export default function StudentProfileScreen() {
   };
 
   const handleToggleStudent = async (student: UserProfile) => {
-    const updated = await academicService.toggleStudentStatus(student.id);
-    setStudents(updated);
-    const updatedStudent = updated.find((s) => s.id === student.id);
-    Alert.alert(
-      'Status Updated',
-      `${student.full_name} is now ${updatedStudent?.is_active ? 'Active' : 'Suspended'}.`
-    );
+    try {
+      const updated = await academicService.toggleStudentStatus(student.id);
+      setStudents(updated);
+      const updatedStudent = updated.find((s) => s.id === student.id);
+      Alert.alert(
+        'Success',
+        `Student status saved to database: ${student.full_name} is now ${updatedStudent?.is_active ? 'Active' : 'Suspended'}.`
+      );
+    } catch (err: any) {
+      Alert.alert('Database Error', err?.message || 'Failed to update student status in database.');
+    }
   };
 
   const handleSendParentWhatsApp = (student: UserProfile, type: 'attendance' | 'test') => {
@@ -318,7 +331,7 @@ export default function StudentProfileScreen() {
     setIsBroadcastModalOpen(false);
     setBroadcastTitle('');
     setBroadcastMsg('');
-    Alert.alert('📢 Broadcast Sent!', 'Your announcement has been sent to all students.');
+    Alert.alert('Broadcast Sent', 'Your announcement has been sent to all students.');
   };
 
   const handleScheduleLive = async () => {
@@ -335,10 +348,10 @@ export default function StudentProfileScreen() {
       });
       setNewLiveTitle('');
       setNewLiveUrl('');
-      loadDirectorData();
-      Alert.alert('Success', 'Live class scheduled successfully!');
-    } catch {
-      Alert.alert('Error', 'Failed to schedule live class');
+      await loadDirectorData();
+      Alert.alert('Success', 'Live class scheduled and saved to cloud database successfully!');
+    } catch (err: any) {
+      Alert.alert('Database Error', err?.message || 'Failed to schedule live class in database. Please try again.');
     }
   };
 
@@ -349,8 +362,13 @@ export default function StudentProfileScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await academicService.deleteLiveClass(id);
-          loadDirectorData();
+          try {
+            await academicService.deleteLiveClass(id);
+            await loadDirectorData();
+            Alert.alert('Success', 'Live class deleted successfully from database.');
+          } catch (err: any) {
+            Alert.alert('Database Error', err?.message || 'Failed to delete live class from database.');
+          }
         },
       },
     ]);
@@ -369,10 +387,10 @@ export default function StudentProfileScreen() {
       });
       setNewMaterialTitle('');
       setNewMaterialUrl('');
-      loadDirectorData();
-      Alert.alert('Success', 'Study material uploaded successfully!');
-    } catch {
-      Alert.alert('Error', 'Failed to upload study material');
+      await loadDirectorData();
+      Alert.alert('Success', 'Study material uploaded and saved to cloud database successfully!');
+    } catch (err: any) {
+      Alert.alert('Database Error', err?.message || 'Failed to upload study material to database.');
     }
   };
 
@@ -383,8 +401,13 @@ export default function StudentProfileScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await academicService.deleteStudyMaterial(id);
-          loadDirectorData();
+          try {
+            await academicService.deleteStudyMaterial(id);
+            await loadDirectorData();
+            Alert.alert('Success', 'Study material deleted successfully from database.');
+          } catch (err: any) {
+            Alert.alert('Database Error', err?.message || 'Failed to delete study material from database.');
+          }
         },
       },
     ]);
@@ -460,17 +483,6 @@ export default function StudentProfileScreen() {
     }
 
     try {
-      updateProfile({
-        full_name: fullName.trim(),
-        mobile_number: mobileNumber.trim(),
-        email: email.trim(),
-        guardian_name: guardianName.trim(),
-        guardian_phone: guardianPhone.trim(),
-        school_name: schoolName.trim(),
-        district: district.trim(),
-      });
-      setClass(selectedClassForm);
-
       // Attempt live Supabase profile sync
       if (user?.id) {
         const updatePayload = {
@@ -482,19 +494,31 @@ export default function StudentProfileScreen() {
           district: district.trim(),
           school_name: schoolName.trim(),
         };
-        try {
-          await supabase.from('profiles').update(updatePayload).eq('id', user.id);
-        } catch {}
-        try {
-          await supabase.from('users').update(updatePayload).eq('id', user.id);
-        } catch {}
+        const { error: profErr } = await supabase.from('profiles').update(updatePayload).eq('id', user.id);
+        if (profErr) {
+          const { error: userErr } = await supabase.from('users').update(updatePayload).eq('id', user.id);
+          if (userErr && profErr) {
+            Alert.alert('Database Error', 'Failed to save profile to database: ' + (profErr.message || userErr.message));
+            return;
+          }
+        }
       }
 
+      updateProfile({
+        full_name: fullName.trim(),
+        mobile_number: mobileNumber.trim(),
+        email: email.trim(),
+        guardian_name: guardianName.trim(),
+        guardian_phone: guardianPhone.trim(),
+        school_name: schoolName.trim(),
+        district: district.trim(),
+      });
+      setClass(selectedClassForm);
+
       setIsEditProfileOpen(false);
-      Alert.alert('Success', 'Your profile details have been successfully updated!');
-    } catch {
-      setIsEditProfileOpen(false);
-      Alert.alert('Profile Saved', 'Profile details updated in your local app state.');
+      Alert.alert('Success', 'Profile details saved to cloud database successfully!');
+    } catch (err: any) {
+      Alert.alert('Database Error', err?.message || 'Failed to save profile to database.');
     }
   };
 
@@ -647,16 +671,16 @@ export default function StudentProfileScreen() {
       {/* Branded Coaching Header with Logo & Name */}
       <CoachingHeader />
 
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Student Profile</Text>
-        <Text style={styles.headerSub}>
+      <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Student Profile</Text>
+        <Text style={[styles.headerSub, { color: theme.textSecondary }]}>
           Manage student details, password credentials and profile photo
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* User Card with Photo / Avatar Uploader */}
-        <View style={styles.userCard}>
+        <View style={[styles.userCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
           <View style={styles.avatarContainer}>
             {user?.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
@@ -678,7 +702,7 @@ export default function StudentProfileScreen() {
 
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={styles.userName}>{user?.full_name || 'ICC Student'}</Text>
+              <Text style={[styles.userName, { color: theme.text }]}>{user?.full_name || 'ICC Student'}</Text>
               <TouchableOpacity
                 style={styles.editPill}
                 onPress={openEditModal}
@@ -690,17 +714,17 @@ export default function StudentProfileScreen() {
             <Text style={styles.userSub}>@{user?.username || 'student'}</Text>
             <View style={styles.contactRow}>
               <Phone size={12} color="#64748B" />
-              <Text style={styles.userContact}>+91 {user?.mobile_number || '9771350910'}</Text>
+              <Text style={[styles.userContact, { color: theme.textSecondary }]}>+91 {user?.mobile_number || '9771350910'}</Text>
             </View>
             <View style={styles.contactRow}>
               <Mail size={12} color="#64748B" />
-              <Text style={styles.userEmail}>{user?.email || 'student@idealcoaching.in'}</Text>
+              <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{user?.email || 'student@idealcoaching.in'}</Text>
             </View>
           </View>
         </View>
 
         {/* Academic Details & Quiz Performance Summary Card */}
-        <View style={styles.academicCard}>
+        <View style={[styles.academicCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
           <View style={styles.academicRow}>
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>Quiz Points</Text>
@@ -716,12 +740,12 @@ export default function StudentProfileScreen() {
             </View>
           </View>
 
-          <View style={styles.academicDivider} />
+          <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
 
           <View style={styles.academicRow}>
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>Enrolled Class</Text>
-              <Text style={styles.academicValue}>{selectedClass || 'Class 10'}</Text>
+              <Text style={[styles.academicValue, { color: theme.text }]}>{selectedClass || 'Class 10'}</Text>
             </View>
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>Status</Text>
@@ -729,33 +753,33 @@ export default function StudentProfileScreen() {
             </View>
           </View>
 
-          <View style={styles.academicDivider} />
+          <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
 
           <View style={styles.academicRow}>
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>School / College</Text>
-              <Text style={styles.academicValue} numberOfLines={1}>
+              <Text style={[styles.academicValue, { color: theme.text }]} numberOfLines={1}>
                 {user?.school_name || 'Patna Collegiate High School'}
               </Text>
             </View>
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>District</Text>
-              <Text style={styles.academicValue}>{user?.district || 'Patna'}</Text>
+              <Text style={[styles.academicValue, { color: theme.text }]}>{user?.district || 'Patna'}</Text>
             </View>
           </View>
 
-          <View style={styles.academicDivider} />
+          <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
 
           <View style={styles.academicRow}>
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>Guardian / Parent</Text>
-              <Text style={styles.academicValue} numberOfLines={1}>
+              <Text style={[styles.academicValue, { color: theme.text }]} numberOfLines={1}>
                 {user?.guardian_name || 'Shri Manoj Kumar'}
               </Text>
             </View>
             <View style={styles.academicCol}>
               <Text style={styles.academicLabel}>Guardian Phone</Text>
-              <Text style={styles.academicValue}>
+              <Text style={[styles.academicValue, { color: theme.text }]}>
                 {user?.guardian_phone ? `+91 ${user.guardian_phone}` : '+91 9876500001'}
               </Text>
             </View>
@@ -805,31 +829,50 @@ export default function StudentProfileScreen() {
         </View>
 
         {/* General Options & Actions */}
-        <View style={styles.menuSection}>
+        <View style={[styles.menuSection, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
           {/* Director Administration Center */}
           {isAdmin && (
-            <View style={styles.directorAdminCard}>
+            <View
+              style={[
+                styles.directorAdminCard,
+                {
+                  backgroundColor: isDark ? '#141416' : '#FFFBEB',
+                  borderColor: isDark ? '#78350F' : '#F59E0B',
+                },
+              ]}
+            >
               <View style={styles.directorCardHeader}>
                 <View style={styles.directorBadge}>
-                  <ShieldCheck size={16} color="#92400E" />
-                  <Text style={styles.directorBadgeTitle}>👑 Director Command Center (BADE SIR)</Text>
+                  <ShieldCheck size={16} color={isDark ? '#FBBF24' : '#92400E'} />
+                  <Text style={[styles.directorBadgeTitle, { color: isDark ? '#FBBF24' : '#92400E' }]}>
+                    👑 Director Command Center (BADE SIR)
+                  </Text>
                 </View>
-                <Text style={styles.directorCardSub}>Unified administrative control inside mobile app</Text>
+                <Text style={[styles.directorCardSub, { color: isDark ? '#FCD34D' : '#B45309' }]}>
+                  Unified administrative control inside mobile app
+                </Text>
               </View>
 
               {/* 🤖 Director AI Copilot Autonomous Agent Trigger */}
               <TouchableOpacity
-                style={[styles.adminHubRow, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE', borderWidth: 1.5 }]}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#EFF6FF',
+                    borderColor: isDark ? '#3B82F6' : '#BFDBFE',
+                    borderWidth: 1.5,
+                  },
+                ]}
                 onPress={() => setIsAiModalOpen(true)}
               >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#DBEAFE' }]}>
-                  <Bot size={20} color="#2563EB" />
+                <View style={[styles.adminHubIconBox, { backgroundColor: '#2563EB' }]}>
+                  <Bot size={20} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: '#1E3A8A', fontWeight: '800' }]}>
+                  <Text style={[styles.adminHubRowTitle, { color: '#3B82F6', fontWeight: '800' }]}>
                     🤖 Director AI Copilot
                   </Text>
-                  <Text style={styles.adminHubRowSub}>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>
                     Manage courses, live classes and fee approvals with AI
                   </Text>
                 </View>
@@ -840,59 +883,83 @@ export default function StudentProfileScreen() {
 
               {/* 📚 Course Management */}
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => router.push('/(tabs)/courses')}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#EEF2FF' }]}>
                   <BookOpen size={18} color="#4F46E5" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Course Management</Text>
-                  <Text style={styles.adminHubRowSub}>Create, edit & manage syllabus and subjects</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Course Management</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Create, edit & manage syllabus and subjects</Text>
                 </View>
-                <ChevronRight size={18} color="#94A3B8" />
+                <ChevronRight size={18} color={theme.textMuted} />
               </TouchableOpacity>
 
               {/* 🔴 Live Classes Hub */}
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => setIsLiveModalOpen(true)}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#FEF2F2' }]}>
                   <Video size={18} color="#DC2626" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Live Classes Hub</Text>
-                  <Text style={styles.adminHubRowSub}>Schedule YouTube Live & batch broadcasts</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Live Classes Hub</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Schedule YouTube Live & batch broadcasts</Text>
                 </View>
-                <ChevronRight size={18} color="#94A3B8" />
+                <ChevronRight size={18} color={theme.textMuted} />
               </TouchableOpacity>
 
               {/* 📑 PDF Notes & Study Materials */}
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => setIsNotesModalOpen(true)}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#FAF5FF' }]}>
                   <FileText size={18} color="#9333EA" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>PDF Notes & Study Materials</Text>
-                  <Text style={styles.adminHubRowSub}>Upload & manage handwritten formula notes</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>PDF Notes & Study Materials</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Upload & manage handwritten formula notes</Text>
                 </View>
-                <ChevronRight size={18} color="#94A3B8" />
+                <ChevronRight size={18} color={theme.textMuted} />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => setIsPaymentModalOpen(true)}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#FEF3C7' }]}>
                   <CreditCard size={18} color="#D97706" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>UPI Fee Approvals</Text>
-                  <Text style={styles.adminHubRowSub}>Review screenshot, verify UTR & unlock courses</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>UPI Fee Approvals</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Review screenshot, verify UTR & unlock courses</Text>
                 </View>
                 <View style={styles.pendingBadge}>
                   <Text style={styles.pendingBadgeText}>
@@ -902,103 +969,85 @@ export default function StudentProfileScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => setIsStudentModalOpen(true)}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#EFF6FF' }]}>
                   <Users size={18} color="#2563EB" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Student Directory & WhatsApp Alerts</Text>
-                  <Text style={styles.adminHubRowSub}>Direct call & WhatsApp parent reports</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Student Directory & WhatsApp Alerts</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Direct call & WhatsApp parent reports</Text>
                 </View>
-                <ChevronRight size={18} color="#94A3B8" />
+                <ChevronRight size={18} color={theme.textMuted} />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => setIsBroadcastModalOpen(true)}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#F0FDF4' }]}>
                   <Bell size={18} color="#16A34A" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Broadcast Announcement</Text>
-                  <Text style={styles.adminHubRowSub}>Send push notification to all students</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Broadcast Announcement</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Send push notification to all students</Text>
                 </View>
-                <ChevronRight size={18} color="#94A3B8" />
+                <ChevronRight size={18} color={theme.textMuted} />
               </TouchableOpacity>
 
               {/* 💬 WhatsApp AI Bot Status */}
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => setIsBotModalOpen(true)}
               >
                 <View style={[styles.adminHubIconBox, { backgroundColor: '#ECFDF5' }]}>
                   <MessageSquare size={18} color="#059669" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>WhatsApp AI Bot Status</Text>
-                  <Text style={styles.adminHubRowSub}>Active 24/7 automated admission inquiry agent</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>WhatsApp AI Bot Status</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Active 24/7 automated admission inquiry agent</Text>
                 </View>
-                <ChevronRight size={18} color="#94A3B8" />
+                <ChevronRight size={18} color={theme.textMuted} />
               </TouchableOpacity>
 
               {/* ⚙️ System Settings & Storage */}
               <TouchableOpacity
-                style={styles.adminHubRow}
+                style={[
+                  styles.adminHubRow,
+                  {
+                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
+                    borderColor: isDark ? '#27272A' : '#FDE68A',
+                  },
+                ]}
                 onPress={() => setIsQuotaModalOpen(true)}
               >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#F8FAFC' }]}>
-                  <Settings size={18} color="#334155" />
+                <View style={[styles.adminHubIconBox, { backgroundColor: isDark ? '#18181B' : '#F8FAFC' }]}>
+                  <Settings size={18} color={theme.textSecondary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.adminHubRowTitle}>Settings & System Storage</Text>
-                  <Text style={styles.adminHubRowSub}>Storage usage, active limits and cloud status</Text>
+                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Settings & System Storage</Text>
+                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Storage usage, active limits and cloud status</Text>
                 </View>
-                <ChevronRight size={18} color="#94A3B8" />
-              </TouchableOpacity>
-
-              {/* 🗑️ Blank Slate: Wipe All Dummy Data */}
-              <TouchableOpacity
-                style={[styles.adminHubRow, { backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1 }]}
-                onPress={() => {
-                  Alert.alert(
-                    '⚠️ Reset: Wipe Legacy Data',
-                    'Are you sure you want to remove all legacy courses, notes, and demo data to reset the database to a blank slate? You can then add new courses manually.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Wipe All Data',
-                        style: 'destructive',
-                        onPress: async () => {
-                          try {
-                            await academicService.purgeAllData();
-                            await loadDirectorData();
-                            Alert.alert('Success', 'All legacy data has been removed. The database is now ready for your new courses!');
-                          } catch {
-                            Alert.alert('Error', 'Failed to wipe database.');
-                          }
-                        },
-                      },
-                    ]
-                  );
-                }}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#FEE2E2' }]}>
-                  <Trash2 size={18} color="#DC2626" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: '#DC2626', fontWeight: '800' }]}>
-                    🗑️ Blank Slate: Wipe All Dummy Data
-                  </Text>
-                  <Text style={styles.adminHubRowSub}>
-                    Reset database to blank slate to start fresh
-                  </Text>
-                </View>
-                <View style={[styles.pendingBadge, { backgroundColor: '#DC2626' }]}>
-                  <Text style={[styles.pendingBadgeText, { color: '#FFFFFF' }]}>WIPE</Text>
-                </View>
+                <ChevronRight size={18} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
           )}
@@ -1013,11 +1062,11 @@ export default function StudentProfileScreen() {
                 <Edit3 size={18} color="#2563EB" />
               </View>
               <View>
-                <Text style={styles.menuItemText}>Update Personal Details</Text>
-                <Text style={styles.menuItemSub}>Name, Mobile, Guardian, Photo & School</Text>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Update Personal Details</Text>
+                <Text style={[styles.menuItemSub, { color: theme.textSecondary }]}>Name, Mobile, Guardian, Photo & School</Text>
               </View>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
+            <ChevronRight size={18} color={theme.textMuted} />
           </TouchableOpacity>
 
           {/* Change Password Item */}
@@ -1030,28 +1079,11 @@ export default function StudentProfileScreen() {
                 <KeyRound size={18} color="#D97706" />
               </View>
               <View>
-                <Text style={styles.menuItemText}>Change Password</Text>
-                <Text style={styles.menuItemSub}>Update your login credentials</Text>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Change Password</Text>
+                <Text style={[styles.menuItemSub, { color: theme.textSecondary }]}>Update your login credentials</Text>
               </View>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
-          </TouchableOpacity>
-
-          {/* Change Profile Photo Item */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => setIsPhotoModalOpen(true)}
-          >
-            <View style={styles.menuLeft}>
-              <View style={[styles.iconBox, { backgroundColor: '#F3E8FF' }]}>
-                <Camera size={18} color="#9333EA" />
-              </View>
-              <View>
-                <Text style={styles.menuItemText}>Upload / Change Photo</Text>
-                <Text style={styles.menuItemSub}>Select profile avatar or custom image</Text>
-              </View>
-            </View>
-            <ChevronRight size={18} color="#94A3B8" />
+            <ChevronRight size={18} color={theme.textMuted} />
           </TouchableOpacity>
 
           {/* Link WhatsApp Account */}
@@ -1230,17 +1262,17 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsEditProfileOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Student Details</Text>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Update Student Details</Text>
               <TouchableOpacity onPress={() => setIsEditProfileOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               {/* Profile Photo / Avatar Option in Edit Modal */}
-              <View style={styles.modalAvatarSection}>
+              <View style={[styles.modalAvatarSection, { backgroundColor: isDark ? '#18181B' : '#EFF6FF', borderColor: isDark ? '#27272A' : '#DBEAFE' }]}>
                 <View style={styles.modalAvatarRow}>
                   <View style={styles.modalAvatarContainer}>
                     {user?.avatar_url ? (
@@ -1254,8 +1286,8 @@ export default function StudentProfileScreen() {
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.modalAvatarTitle}>Profile Photo</Text>
-                    <Text style={styles.modalAvatarSub}>Select avatar or custom photo link</Text>
+                    <Text style={[styles.modalAvatarTitle, { color: theme.text }]}>Profile Photo</Text>
+                    <Text style={[styles.modalAvatarSub, { color: theme.textSecondary }]}>Select avatar or custom photo link</Text>
                     <TouchableOpacity
                       style={styles.modalAvatarBtn}
                       onPress={() => setIsPhotoModalOpen(true)}
@@ -1269,9 +1301,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Full Name</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Full Name</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   value={fullName}
                   onChangeText={setFullName}
                   placeholder="Student Full Name"
@@ -1279,9 +1312,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Mobile / WhatsApp Number (+91)</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Mobile / WhatsApp Number (+91)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   value={mobileNumber}
                   onChangeText={setMobileNumber}
                   placeholder="10-digit Mobile Number"
@@ -1291,9 +1325,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email ID</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Email ID</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   value={email}
                   onChangeText={setEmail}
                   placeholder="student@example.com"
@@ -1304,9 +1339,10 @@ export default function StudentProfileScreen() {
 
               {/* Guardian Name & Mobile Number */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Guardian / Parent Name</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Guardian / Parent Name</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   value={guardianName}
                   onChangeText={setGuardianName}
                   placeholder="Father's / Mother's / Guardian's Full Name"
@@ -1314,9 +1350,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Guardian Mobile Number (+91)</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Guardian Mobile Number (+91)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   value={guardianPhone}
                   onChangeText={setGuardianPhone}
                   placeholder="10-digit Guardian Mobile Number"
@@ -1326,9 +1363,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>School / College Name</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>School / College Name</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   value={schoolName}
                   onChangeText={setSchoolName}
                   placeholder="Your School or College"
@@ -1336,9 +1374,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>District</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>District</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   value={district}
                   onChangeText={setDistrict}
                   placeholder="e.g. Godda / Patna / Ranchi"
@@ -1346,15 +1385,23 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Class</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Class</Text>
                 <View style={styles.classPickerRow}>
                   {['Class 9', 'Class 10', 'Class 11', 'Class 12'].map((cls) => (
                     <TouchableOpacity
                       key={cls}
-                      style={[styles.classPillBtn, selectedClassForm === cls && styles.classPillBtnActive]}
+                      style={[
+                        styles.classPillBtn,
+                        { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#E2E8F0' },
+                        selectedClassForm === cls && styles.classPillBtnActive
+                      ]}
                       onPress={() => setSelectedClassForm(cls)}
                     >
-                      <Text style={[styles.classPillBtnText, selectedClassForm === cls && styles.classPillBtnTextActive]}>
+                      <Text style={[
+                        styles.classPillBtnText,
+                        { color: theme.textSecondary },
+                        selectedClassForm === cls && styles.classPillBtnTextActive
+                      ]}>
                         {cls}
                       </Text>
                     </TouchableOpacity>
@@ -1363,12 +1410,12 @@ export default function StudentProfileScreen() {
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsEditProfileOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.saveBtn}
@@ -1389,19 +1436,20 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsChangePasswordOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Change Password</Text>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Change Password</Text>
               <TouchableOpacity onPress={() => setIsChangePasswordOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Current Password</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Current Password</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   secureTextEntry
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
@@ -1410,9 +1458,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>New Password (min 6 characters)</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>New Password (min 6 characters)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   secureTextEntry
                   value={newPassword}
                   onChangeText={setNewPassword}
@@ -1421,9 +1470,10 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Confirm New Password</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Confirm New Password</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   secureTextEntry
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -1432,12 +1482,12 @@ export default function StudentProfileScreen() {
               </View>
             </View>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsChangePasswordOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.saveBtn}
@@ -1461,21 +1511,21 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsPhotoModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Choose Profile Photo</Text>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Choose Profile Photo</Text>
               <TouchableOpacity onPress={() => setIsPhotoModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
               {/* Device Upload Actions */}
-              <View style={styles.deviceUploadCard}>
-                <Text style={styles.deviceUploadTitle}>Upload from Your Device</Text>
+              <View style={[styles.deviceUploadCard, { backgroundColor: isDark ? '#18181B' : '#F8FAFC', borderColor: isDark ? '#27272A' : '#E2E8F0' }]}>
+                <Text style={[styles.deviceUploadTitle, { color: theme.text }]}>Upload from Your Device</Text>
                 <View style={styles.deviceActionRow}>
                   <TouchableOpacity
-                    style={styles.galleryUploadBtn}
+                    style={[styles.galleryUploadBtn, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderColor: isDark ? '#3B82F6' : '#DBEAFE' }]}
                     onPress={handlePickFromGallery}
                     activeOpacity={0.8}
                   >
@@ -1484,7 +1534,7 @@ export default function StudentProfileScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.cameraUploadBtn}
+                    style={[styles.cameraUploadBtn, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: isDark ? '#059669' : '#A7F3D0' }]}
                     onPress={handleCaptureCamera}
                     activeOpacity={0.8}
                   >
@@ -1494,7 +1544,7 @@ export default function StudentProfileScreen() {
                 </View>
               </View>
 
-              <Text style={styles.presetHeading}>Or Select Curated Student Avatar</Text>
+              <Text style={[styles.presetHeading, { color: theme.textSecondary }]}>Or Select Curated Student Avatar</Text>
               <View style={styles.avatarGrid}>
                 {PRESET_AVATARS.map((url, idx) => (
                   <TouchableOpacity
@@ -1508,10 +1558,11 @@ export default function StudentProfileScreen() {
                 ))}
               </View>
 
-              <Text style={[styles.presetHeading, { marginTop: 18 }]}>Or Enter Custom Photo URL</Text>
+              <Text style={[styles.presetHeading, { color: theme.textSecondary, marginTop: 18 }]}>Or Enter Custom Photo URL</Text>
               <View style={styles.customUrlRow}>
                 <TextInput
-                  style={[styles.textInput, { flex: 1 }]}
+                  style={[styles.textInput, { flex: 1, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                  placeholderTextColor={theme.textMuted}
                   placeholder="https://example.com/photo.jpg"
                   value={customPhotoUrl}
                   onChangeText={setCustomPhotoUrl}
@@ -1526,12 +1577,12 @@ export default function StudentProfileScreen() {
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsPhotoModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Close</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1546,28 +1597,28 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsWhatsAppModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <MessageSquare size={20} color="#059669" />
-                <Text style={styles.modalTitle}>Link WhatsApp Assistant</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Link WhatsApp Assistant</Text>
               </View>
               <TouchableOpacity onPress={() => setIsWhatsAppModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <View style={[styles.modalBody, { paddingVertical: 16 }]}>
-              <Text style={{ fontSize: 13, color: '#475569', lineHeight: 18, marginBottom: 14 }}>
+              <Text style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 18, marginBottom: 14 }}>
                 Send this secure verification code to the IDEAL COACHING CENTRE WhatsApp bot to link your student profile.
               </Text>
 
               {waLinkToken ? (
-                <View style={{ backgroundColor: '#EFF6FF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#BFDBFE', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#1E40AF', textTransform: 'uppercase' }}>
+                <View style={{ backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: isDark ? '#3B82F6' : '#BFDBFE', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#93C5FD' : '#1E40AF', textTransform: 'uppercase' }}>
                     One-Time Verification Code (Valid 5 Mins)
                   </Text>
-                  <Text style={{ fontSize: 24, fontWeight: '800', fontFamily: 'monospace', color: '#1D4ED8', letterSpacing: 2 }}>
+                  <Text style={{ fontSize: 24, fontWeight: '800', fontFamily: 'monospace', color: isDark ? '#60A5FA' : '#1D4ED8', letterSpacing: 2 }}>
                     #LINK {waLinkToken}
                   </Text>
 
@@ -1584,19 +1635,19 @@ export default function StudentProfileScreen() {
                 </View>
               ) : null}
 
-              <View style={{ marginTop: 14, backgroundColor: '#FEF3C7', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#FDE68A' }}>
-                <Text style={{ fontSize: 11, color: '#92400E', lineHeight: 16 }}>
+              <View style={{ marginTop: 14, backgroundColor: isDark ? '#272008' : '#FEF3C7', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#78350F' : '#FDE68A' }}>
+                <Text style={{ fontSize: 11, color: isDark ? '#FDE68A' : '#92400E', lineHeight: 16 }}>
                   💡 Once linked, you can ask for your live class schedule, study notes, and Sunday test results directly on WhatsApp 24/7!
                 </Text>
               </View>
             </View>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsWhatsAppModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Done</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1611,14 +1662,14 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsPaymentModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <CreditCard size={20} color="#D97706" />
-                <Text style={styles.modalTitle}>Pending UPI Fee Approvals</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Pending UPI Fee Approvals</Text>
               </View>
               <TouchableOpacity onPress={() => setIsPaymentModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -1634,6 +1685,7 @@ export default function StudentProfileScreen() {
                   key={tab.key}
                   style={[
                     styles.paymentFilterTab,
+                    { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#E2E8F0' },
                     paymentFilter === tab.key && styles.paymentFilterTabActive,
                   ]}
                   onPress={() => setPaymentFilter(tab.key as any)}
@@ -1642,6 +1694,7 @@ export default function StudentProfileScreen() {
                   <Text
                     style={[
                       styles.paymentFilterTabText,
+                      { color: theme.textSecondary },
                       paymentFilter === tab.key && styles.paymentFilterTabTextActive,
                     ]}
                   >
@@ -1657,8 +1710,8 @@ export default function StudentProfileScreen() {
                 .length === 0 ? (
                 <View style={styles.emptyPaymentsBox}>
                   <CheckCircle size={38} color="#10B981" />
-                  <Text style={styles.emptyPaymentsTitle}>All Caught Up!</Text>
-                  <Text style={styles.emptyPaymentsSub}>
+                  <Text style={[styles.emptyPaymentsTitle, { color: theme.text }]}>All Caught Up!</Text>
+                  <Text style={[styles.emptyPaymentsSub, { color: theme.textSecondary }]}>
                     {paymentFilter === 'pending'
                       ? 'No pending fee verification requests at this moment.'
                       : `No receipts found under ${paymentFilter} status.`}
@@ -1668,13 +1721,13 @@ export default function StudentProfileScreen() {
                 payments
                   .filter((p) => (paymentFilter === 'all' ? true : p.status === paymentFilter))
                   .map((p) => (
-                    <View key={p.id} style={styles.paymentCard}>
+                    <View key={p.id} style={[styles.paymentCard, { backgroundColor: isDark ? '#18181B' : '#F8FAFC', borderColor: isDark ? '#27272A' : '#E2E8F0' }]}>
                       <View style={styles.paymentCardHeader}>
                         <View>
-                          <Text style={styles.paymentStudentName}>
+                          <Text style={[styles.paymentStudentName, { color: theme.text }]}>
                             {p.student?.full_name || 'ICC Student'}
                           </Text>
-                          <Text style={styles.paymentMobile}>
+                          <Text style={[styles.paymentMobile, { color: theme.textSecondary }]}>
                             +91 {p.student?.mobile_number || '9876543210'}
                           </Text>
                         </View>
@@ -1695,15 +1748,15 @@ export default function StudentProfileScreen() {
                       </View>
 
                       <View style={styles.paymentDetailRow}>
-                        <Text style={styles.paymentCourse}>
+                        <Text style={[styles.paymentCourse, { color: theme.textSecondary }]}>
                           {p.course?.title || 'Target Course'}
                         </Text>
-                        <Text style={styles.paymentAmount}>{formatINR(p.amount)}</Text>
+                        <Text style={[styles.paymentAmount, { color: theme.text }]}>{formatINR(p.amount)}</Text>
                       </View>
 
-                      <View style={styles.utrBox}>
-                        <Text style={styles.utrLabel}>UPI Ref / UTR:</Text>
-                        <Text style={styles.utrValue}>{p.upi_ref_number}</Text>
+                      <View style={[styles.utrBox, { backgroundColor: isDark ? '#121212' : '#EFF6FF', borderColor: isDark ? '#27272A' : '#DBEAFE' }]}>
+                        <Text style={[styles.utrLabel, { color: theme.textSecondary }]}>UPI Ref / UTR:</Text>
+                        <Text style={[styles.utrValue, { color: theme.text }]}>{p.upi_ref_number}</Text>
                       </View>
 
                       {/* Action buttons ONLY shown when pending — never for approved/rejected */}
@@ -1755,12 +1808,12 @@ export default function StudentProfileScreen() {
               )}
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsPaymentModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Close</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1775,21 +1828,22 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsStudentModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Users size={20} color="#2563EB" />
-                <Text style={styles.modalTitle}>Student Directory & WhatsApp Alerts</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Student Directory & WhatsApp Alerts</Text>
               </View>
               <TouchableOpacity onPress={() => setIsStudentModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.searchContainer}>
-              <Search size={16} color="#94A3B8" />
+            <View style={[styles.searchContainer, { backgroundColor: isDark ? '#18181B' : '#F8FAFC', borderColor: isDark ? '#27272A' : '#CBD5E1' }]}>
+              <Search size={16} color={theme.textMuted} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: theme.text }]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="Search by student name or mobile..."
                 value={studentSearch}
                 onChangeText={setStudentSearch}
@@ -1807,11 +1861,11 @@ export default function StudentProfileScreen() {
                   );
                 })
                 .map((student) => (
-                  <View key={student.id} style={styles.studentCard}>
+                  <View key={student.id} style={[styles.studentCard, { backgroundColor: isDark ? '#18181B' : '#F8FAFC', borderColor: isDark ? '#27272A' : '#E2E8F0' }]}>
                     <View style={styles.studentHeader}>
                       <View>
-                        <Text style={styles.studentName}>{student.full_name}</Text>
-                        <Text style={styles.studentMeta}>
+                        <Text style={[styles.studentName, { color: theme.text }]}>{student.full_name}</Text>
+                        <Text style={[styles.studentMeta, { color: theme.textSecondary }]}>
                           {student.board_code} Class 10 • {student.district}
                         </Text>
                       </View>
@@ -1828,7 +1882,7 @@ export default function StudentProfileScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.guardianInfo}>
+                    <Text style={[styles.guardianInfo, { color: theme.textMuted }]}>
                       Guardian: {student.guardian_name || 'N/A'} (+91 {student.guardian_phone || student.mobile_number})
                     </Text>
 
@@ -1863,12 +1917,12 @@ export default function StudentProfileScreen() {
                 ))}
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsStudentModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Close</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1883,29 +1937,31 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsBroadcastModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Bell size={20} color="#16A34A" />
-                <Text style={styles.modalTitle}>Broadcast Announcement</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Broadcast Announcement</Text>
               </View>
               <TouchableOpacity onPress={() => setIsBroadcastModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
-              <Text style={styles.inputLabel}>Announcement Title *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Announcement Title *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="e.g. Sunday Mega Test Schedule"
                 value={broadcastTitle}
                 onChangeText={setBroadcastTitle}
               />
 
-              <Text style={styles.inputLabel}>Message Details *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Message Details *</Text>
               <TextInput
-                style={[styles.textInput, { height: 90, textAlignVertical: 'top' }]}
+                style={[styles.textInput, { height: 90, textAlignVertical: 'top', backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                placeholderTextColor={theme.textMuted}
                 multiline
                 numberOfLines={4}
                 placeholder="Type your message for all enrolled students..."
@@ -1914,12 +1970,12 @@ export default function StudentProfileScreen() {
               />
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsBroadcastModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.saveBtn, { backgroundColor: '#16A34A' }]}
@@ -1950,14 +2006,14 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsLiveModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Video size={20} color="#DC2626" />
-                <Text style={styles.modalTitle}>Live Classes Management</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Live Classes Management</Text>
               </View>
               <TouchableOpacity onPress={() => setIsLiveModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -1966,13 +2022,15 @@ export default function StudentProfileScreen() {
                 🔴 Schedule New YouTube Live
               </Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="Class Title (e.g. Science Board Exam Marathon)"
                 value={newLiveTitle}
                 onChangeText={setNewLiveTitle}
               />
               <TextInput
-                style={[styles.textInput, { marginTop: 8 }]}
+                style={[styles.textInput, { marginTop: 8, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="YouTube Live URL or Stream Key"
                 value={newLiveUrl}
                 onChangeText={setNewLiveUrl}
@@ -1984,11 +2042,11 @@ export default function StudentProfileScreen() {
                 <Text style={styles.saveBtnText}>+ Schedule Live Class</Text>
               </TouchableOpacity>
 
-              <Text style={[styles.inputLabel, { marginTop: 20 }]}>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 20 }]}>
                 Scheduled Live Classes ({liveClasses.length})
               </Text>
               {liveClasses.length === 0 ? (
-                <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginVertical: 12 }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center', marginVertical: 12 }}>
                   No active live classes scheduled.
                 </Text>
               ) : (
@@ -1999,25 +2057,25 @@ export default function StudentProfileScreen() {
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      backgroundColor: '#FEF2F2',
+                      backgroundColor: isDark ? '#1C1917' : '#FEF2F2',
                       padding: 12,
                       borderRadius: 10,
                       marginBottom: 8,
                       borderWidth: 1,
-                      borderColor: '#FECACA',
+                      borderColor: isDark ? '#78350F' : '#FECACA',
                     }}
                   >
                     <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#991B1B' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCA5A5' : '#991B1B' }}>
                         {item.title}
                       </Text>
-                      <Text style={{ fontSize: 11, color: '#DC2626', marginTop: 2 }}>
+                      <Text style={{ fontSize: 11, color: isDark ? '#EF4444' : '#DC2626', marginTop: 2 }}>
                         Status: {item.status || 'scheduled'}
                       </Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => handleDeleteLive(item.id)}
-                      style={{ padding: 6, backgroundColor: '#FEE2E2', borderRadius: 8 }}
+                      style={{ padding: 6, backgroundColor: isDark ? '#27272A' : '#FEE2E2', borderRadius: 8 }}
                     >
                       <Trash2 size={16} color="#DC2626" />
                     </TouchableOpacity>
@@ -2026,12 +2084,12 @@ export default function StudentProfileScreen() {
               )}
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsLiveModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Close</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2046,14 +2104,14 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsNotesModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <FileText size={20} color="#9333EA" />
-                <Text style={styles.modalTitle}>PDF Notes & Study Materials</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>PDF Notes & Study Materials</Text>
               </View>
               <TouchableOpacity onPress={() => setIsNotesModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -2062,13 +2120,15 @@ export default function StudentProfileScreen() {
                 📄 Upload / Add PDF Notes
               </Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="Note Title (e.g. Chapter 1 Formula Sheet)"
                 value={newMaterialTitle}
                 onChangeText={setNewMaterialTitle}
               />
               <TextInput
-                style={[styles.textInput, { marginTop: 8 }]}
+                style={[styles.textInput, { marginTop: 8, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+                placeholderTextColor={theme.textMuted}
                 placeholder="PDF File Link (Web Link / Document URL)"
                 value={newMaterialUrl}
                 onChangeText={setNewMaterialUrl}
@@ -2080,11 +2140,11 @@ export default function StudentProfileScreen() {
                 <Text style={styles.saveBtnText}>+ Save Study Material</Text>
               </TouchableOpacity>
 
-              <Text style={[styles.inputLabel, { marginTop: 20 }]}>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary, marginTop: 20 }]}>
                 Uploaded Materials ({materials.length})
               </Text>
               {materials.length === 0 ? (
-                <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginVertical: 12 }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center', marginVertical: 12 }}>
                   No PDF notes uploaded yet.
                 </Text>
               ) : (
@@ -2095,25 +2155,25 @@ export default function StudentProfileScreen() {
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      backgroundColor: '#FAF5FF',
+                      backgroundColor: isDark ? '#1E1528' : '#FAF5FF',
                       padding: 12,
                       borderRadius: 10,
                       marginBottom: 8,
                       borderWidth: 1,
-                      borderColor: '#E9D5FF',
+                      borderColor: isDark ? '#581C87' : '#E9D5FF',
                     }}
                   >
                     <View style={{ flex: 1, paddingRight: 8 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B21A8' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#D8B4FE' : '#6B21A8' }}>
                         {m.title}
                       </Text>
-                      <Text style={{ fontSize: 11, color: '#9333EA', marginTop: 2 }}>
+                      <Text style={{ fontSize: 11, color: isDark ? '#C084FC' : '#9333EA', marginTop: 2 }}>
                         Type: {m.material_type || 'notes'}
                       </Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => handleDeleteMaterial(m.id)}
-                      style={{ padding: 6, backgroundColor: '#F3E8FF', borderRadius: 8 }}
+                      style={{ padding: 6, backgroundColor: isDark ? '#27272A' : '#F3E8FF', borderRadius: 8 }}
                     >
                       <Trash2 size={16} color="#9333EA" />
                     </TouchableOpacity>
@@ -2122,12 +2182,12 @@ export default function StudentProfileScreen() {
               )}
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsNotesModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Close</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2142,58 +2202,58 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsBotModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <MessageSquare size={20} color="#059669" />
-                <Text style={styles.modalTitle}>WhatsApp AI Assistant</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>WhatsApp AI Assistant</Text>
               </View>
               <TouchableOpacity onPress={() => setIsBotModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
               <View
                 style={{
-                  backgroundColor: '#ECFDF5',
+                  backgroundColor: isDark ? '#062B1D' : '#ECFDF5',
                   padding: 16,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: '#A7F3D0',
+                  borderColor: isDark ? '#065F46' : '#A7F3D0',
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#065F46' }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: isDark ? '#34D399' : '#065F46' }}>
                   🟢 Active & Online (24/7)
                 </Text>
-                <Text style={{ fontSize: 12, color: '#047857', marginTop: 4, textAlign: 'center' }}>
+                <Text style={{ fontSize: 12, color: isDark ? '#6EE7B7' : '#047857', marginTop: 4, textAlign: 'center' }}>
                   Automated course inquiry and admission bot is currently answering student queries on WhatsApp.
                 </Text>
               </View>
 
               <View style={{ marginTop: 16, gap: 10 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#F1F5F9' }}>
-                  <Text style={{ fontSize: 13, color: '#64748B' }}>Helpline Mobile</Text>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A' }}>+91 9771350910</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: isDark ? '#27272A' : '#F1F5F9' }}>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>Helpline Mobile</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }}>+91 9771350910</Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#F1F5F9' }}>
-                  <Text style={{ fontSize: 13, color: '#64748B' }}>Response Speed</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: isDark ? '#27272A' : '#F1F5F9' }}>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>Response Speed</Text>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>&lt; 2 Seconds</Text>
                 </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#F1F5F9' }}>
-                  <Text style={{ fontSize: 13, color: '#64748B' }}>Monthly Expense</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: isDark ? '#27272A' : '#F1F5F9' }}>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>Monthly Expense</Text>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>₹0 / Free Tier</Text>
                 </View>
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsBotModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Close</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2208,21 +2268,23 @@ export default function StudentProfileScreen() {
         onRequestClose={() => setIsQuotaModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Settings size={20} color="#2563EB" />
-                <Text style={styles.modalTitle}>Settings & System Storage</Text>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Settings & System Storage</Text>
               </View>
               <TouchableOpacity onPress={() => setIsQuotaModalOpen(false)}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.modalBody}>
               <View
                 style={{
-                  backgroundColor: '#0F172A',
+                  backgroundColor: isDark ? '#18181B' : '#0F172A',
+                  borderColor: isDark ? '#27272A' : '#1E293B',
+                  borderWidth: 1,
                   padding: 16,
                   borderRadius: 14,
                   marginBottom: 16,
@@ -2231,7 +2293,7 @@ export default function StudentProfileScreen() {
                 <Text style={{ color: '#38BDF8', fontSize: 14, fontWeight: '800' }}>
                   System Health: 100% Operational
                 </Text>
-                <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 4 }}>
+                <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
                   All servers, video delivery streams, and study material storage running smoothly.
                 </Text>
               </View>
@@ -2239,42 +2301,42 @@ export default function StudentProfileScreen() {
               <View style={{ gap: 14 }}>
                 <View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Database Storage</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>Database Storage</Text>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>14.2 MB / 500 MB (2.8%)</Text>
                   </View>
-                  <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                  <View style={{ height: 6, backgroundColor: isDark ? '#27272A' : '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
                     <View style={{ width: '2.8%', height: '100%', backgroundColor: '#2563EB' }} />
                   </View>
                 </View>
 
                 <View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Media & Study Notes Storage</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>Media & Study Notes Storage</Text>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#9333EA' }}>42.8 MB / 1000 MB (4.2%)</Text>
                   </View>
-                  <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                  <View style={{ height: 6, backgroundColor: isDark ? '#27272A' : '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
                     <View style={{ width: '4.2%', height: '100%', backgroundColor: '#9333EA' }} />
                   </View>
                 </View>
 
                 <View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>Active Student Accounts</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>Active Student Accounts</Text>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>Active & Ready</Text>
                   </View>
-                  <View style={{ height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                  <View style={{ height: 6, backgroundColor: isDark ? '#27272A' : '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
                     <View style={{ width: '5%', height: '100%', backgroundColor: '#16A34A' }} />
                   </View>
                 </View>
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0' }]}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
                 onPress={() => setIsQuotaModalOpen(false)}
               >
-                <Text style={styles.cancelBtnText}>Close</Text>
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
