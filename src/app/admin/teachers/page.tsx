@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi, TeacherItem } from '@/lib/api';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
   UserCheck,
   Plus,
@@ -40,8 +41,44 @@ export default function TeachersPage() {
     assignedBatches: 1,
   });
 
+  const loadTeachers = async () => {
+    try {
+      const data = await AdminApi.getTeachers();
+      setTeachers(data);
+    } catch (e) {
+      console.warn('loadTeachers error:', e);
+    }
+  };
+
   useEffect(() => {
-    AdminApi.getTeachers().then((data) => setTeachers(data));
+    loadTeachers();
+
+    let channel: any = null;
+    if (isSupabaseConfigured) {
+      channel = supabase
+        .channel('admin-teachers-sync')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'platform_settings' },
+          (payload: any) => {
+            if (payload?.new?.key === 'icc_teachers' || payload?.old?.key === 'icc_teachers') {
+              loadTeachers();
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadTeachers();
+      }
+    }, 4000);
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+    };
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {

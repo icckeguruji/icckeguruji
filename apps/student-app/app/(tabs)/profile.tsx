@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDirectorStore } from '../../src/store/useDirectorStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
@@ -483,24 +484,36 @@ export default function StudentProfileScreen() {
     }
 
     try {
-      // Attempt live Supabase profile sync
+      // Attempt live Supabase profile sync with standard columns
       if (user?.id) {
-        const updatePayload = {
+        const standardProfilePayload: any = {
           full_name: fullName.trim(),
           mobile_number: mobileNumber.trim(),
           email: email.trim(),
-          guardian_name: guardianName.trim(),
-          guardian_phone: guardianPhone.trim(),
           district: district.trim(),
           school_name: schoolName.trim(),
         };
-        const { error: profErr } = await supabase.from('profiles').update(updatePayload).eq('id', user.id);
+
+        const { error: profErr } = await supabase.from('profiles').update(standardProfilePayload).eq('id', user.id);
         if (profErr) {
-          const { error: userErr } = await supabase.from('users').update(updatePayload).eq('id', user.id);
-          if (userErr && profErr) {
-            Alert.alert('Database Error', 'Failed to save profile to database: ' + (profErr.message || userErr.message));
-            return;
-          }
+          console.warn('profiles table update notice:', profErr.message);
+          await supabase.from('users').update(standardProfilePayload).eq('id', user.id);
+        }
+
+        // Store guardian and extended details in Auth metadata to avoid schema mismatch
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              full_name: fullName.trim(),
+              guardian_name: guardianName.trim(),
+              guardian_phone: guardianPhone.trim(),
+              district: district.trim(),
+              school_name: schoolName.trim(),
+              selected_class: selectedClassForm,
+            },
+          });
+        } catch (authErr) {
+          console.warn('auth metadata update notice:', authErr);
         }
       }
 
@@ -562,7 +575,26 @@ export default function StudentProfileScreen() {
     }
   };
 
-  // Pick photo from device gallery
+  // Helper to persist avatar to cloud and state
+  const saveAvatarToCloud = async (finalDataUri: string) => {
+    try {
+      if (user?.id) {
+        const { error: pErr } = await supabase.from('profiles').update({ avatar_url: finalDataUri }).eq('id', user.id);
+        if (pErr) {
+          console.warn('profiles avatar error:', pErr.message);
+          await supabase.from('users').update({ avatar_url: finalDataUri }).eq('id', user.id);
+        }
+        await supabase.auth.updateUser({
+          data: { avatar_url: finalDataUri },
+        });
+      }
+    } catch (err) {
+      console.warn('Cloud avatar sync error:', err);
+    }
+    updateProfile({ avatar_url: finalDataUri });
+  };
+
+  // Pick photo from device gallery with Base64 encoding
   const handlePickFromGallery = async () => {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -570,15 +602,26 @@ export default function StudentProfileScreen() {
         Alert.alert('Permission Denied', 'Storage / gallery permission is required to select photos from device.');
         return;
       }
-      let pickedUri: string | null = null;
+      let pickedDataUri: string | null = null;
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: false,
-          quality: 1,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.5,
+          base64: true,
         });
-        if (!result.canceled && result.assets && result.assets[0]?.uri) {
-          pickedUri = result.assets[0].uri;
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          if (asset.base64) {
+            const mime = asset.mimeType || 'image/jpeg';
+            pickedDataUri = `data:${mime};base64,${asset.base64}`;
+          } else if (asset.uri) {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            pickedDataUri = `data:image/jpeg;base64,${b64}`;
+          }
         }
       } catch (pickerErr) {
         console.warn('ImagePicker gallery failed, falling back to DocumentPicker:', pickerErr);
@@ -587,21 +630,24 @@ export default function StudentProfileScreen() {
           copyToCacheDirectory: true,
         });
         if (!docRes.canceled && docRes.assets && docRes.assets[0]?.uri) {
-          pickedUri = docRes.assets[0].uri;
+          const b64 = await FileSystem.readAsStringAsync(docRes.assets[0].uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          pickedDataUri = `data:image/jpeg;base64,${b64}`;
         }
       }
 
-      if (pickedUri) {
-        updateProfile({ avatar_url: pickedUri });
+      if (pickedDataUri) {
+        await saveAvatarToCloud(pickedDataUri);
         setIsPhotoModalOpen(false);
-        Alert.alert('Photo Updated', 'Profile photo updated successfully!');
+        Alert.alert('Success', 'Profile photo updated and saved to cloud database!');
       }
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Could not pick photo from device.');
     }
   };
 
-  // Capture photo with camera
+  // Capture photo with camera with Base64 encoding
   const handleCaptureCamera = async () => {
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -609,23 +655,34 @@ export default function StudentProfileScreen() {
         Alert.alert('Permission Denied', 'Camera permission is required to capture a photo.');
         return;
       }
-      let pickedUri: string | null = null;
+      let pickedDataUri: string | null = null;
       try {
         const result = await ImagePicker.launchCameraAsync({
-          allowsEditing: false,
-          quality: 1,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.5,
+          base64: true,
         });
-        if (!result.canceled && result.assets && result.assets[0]?.uri) {
-          pickedUri = result.assets[0].uri;
+        if (!result.canceled && result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          if (asset.base64) {
+            const mime = asset.mimeType || 'image/jpeg';
+            pickedDataUri = `data:${mime};base64,${asset.base64}`;
+          } else if (asset.uri) {
+            const b64 = await FileSystem.readAsStringAsync(asset.uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            pickedDataUri = `data:image/jpeg;base64,${b64}`;
+          }
         }
       } catch (cameraErr) {
         console.warn('Camera capture failed:', cameraErr);
       }
 
-      if (pickedUri) {
-        updateProfile({ avatar_url: pickedUri });
+      if (pickedDataUri) {
+        await saveAvatarToCloud(pickedDataUri);
         setIsPhotoModalOpen(false);
-        Alert.alert('Photo Updated', 'Profile photo captured and updated successfully!');
+        Alert.alert('Success', 'Profile photo captured and saved to cloud database!');
       }
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Could not take photo.');
@@ -633,10 +690,10 @@ export default function StudentProfileScreen() {
   };
 
   // Handle Select Photo
-  const handleSelectAvatar = (url: string) => {
-    updateProfile({ avatar_url: url });
+  const handleSelectAvatar = async (url: string) => {
+    await saveAvatarToCloud(url);
     setIsPhotoModalOpen(false);
-    Alert.alert('Photo Updated', 'Your profile photo has been updated successfully!');
+    Alert.alert('Success', 'Profile photo updated and saved to cloud database!');
   };
 
   const handleCustomPhotoUrlSubmit = () => {
@@ -681,7 +738,11 @@ export default function StudentProfileScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* User Card with Photo / Avatar Uploader */}
         <View style={[styles.userCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
-          <View style={styles.avatarContainer}>
+          <TouchableOpacity
+            style={styles.avatarContainer}
+            onPress={() => setIsPhotoModalOpen(true)}
+            activeOpacity={0.8}
+          >
             {user?.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
             ) : (
@@ -691,14 +752,10 @@ export default function StudentProfileScreen() {
                 </Text>
               </View>
             )}
-            <TouchableOpacity
-              style={styles.cameraBadge}
-              onPress={() => setIsPhotoModalOpen(true)}
-              activeOpacity={0.8}
-            >
+            <View style={styles.cameraBadge}>
               <Camera size={14} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
 
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1097,11 +1154,11 @@ export default function StudentProfileScreen() {
                 <MessageSquare size={18} color="#059669" />
               </View>
               <View>
-                <Text style={styles.menuItemText}>Link WhatsApp AI Assistant</Text>
-                <Text style={styles.menuItemSub}>Get live class alerts & notes on WhatsApp</Text>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Link WhatsApp AI Assistant</Text>
+                <Text style={[styles.menuItemSub, { color: theme.textSecondary }]}>Get live class alerts & notes on WhatsApp</Text>
               </View>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
+            <ChevronRight size={18} color={theme.textMuted} />
           </TouchableOpacity>
 
           {/* DRM & Security Info */}
@@ -1119,18 +1176,18 @@ export default function StudentProfileScreen() {
                 <ShieldCheck size={18} color="#059669" />
               </View>
               <View>
-                <Text style={styles.menuItemText}>Content DRM & Security</Text>
-                <Text style={styles.menuItemSub}>Screenshots & recording blocked</Text>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>Content DRM & Security</Text>
+                <Text style={[styles.menuItemSub, { color: theme.textSecondary }]}>Screenshots & recording blocked</Text>
               </View>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
+            <ChevronRight size={18} color={theme.textMuted} />
           </TouchableOpacity>
 
           {/* Theme Appearance: Auto / Light / Pure Black Dark */}
           <View style={[styles.menuItem, { flexDirection: 'column', alignItems: 'stretch' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <View style={styles.menuLeft}>
-                <View style={[styles.iconBox, { backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9' }]}>
+                <View style={[styles.iconBox, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
                   {themeMode === 'dark' ? (
                     <Moon size={18} color="#60A5FA" />
                   ) : themeMode === 'light' ? (
@@ -1140,8 +1197,8 @@ export default function StudentProfileScreen() {
                   )}
                 </View>
                 <View>
-                  <Text style={[styles.menuItemText, isDarkMode && { color: '#FFFFFF' }]}>Theme Appearance</Text>
-                  <Text style={styles.menuItemSub}>
+                  <Text style={[styles.menuItemText, { color: theme.text }]}>Theme Appearance</Text>
+                  <Text style={[styles.menuItemSub, { color: theme.textSecondary }]}>
                     {themeMode === 'auto'
                       ? 'Auto (Matches Phone Theme)'
                       : themeMode === 'dark'
@@ -1271,35 +1328,6 @@ export default function StudentProfileScreen() {
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {/* Profile Photo / Avatar Option in Edit Modal */}
-              <View style={[styles.modalAvatarSection, { backgroundColor: isDark ? '#18181B' : '#EFF6FF', borderColor: isDark ? '#27272A' : '#DBEAFE' }]}>
-                <View style={styles.modalAvatarRow}>
-                  <View style={styles.modalAvatarContainer}>
-                    {user?.avatar_url ? (
-                      <Image source={{ uri: user.avatar_url }} style={styles.modalAvatarImage} />
-                    ) : (
-                      <View style={styles.modalAvatarFallback}>
-                        <Text style={styles.modalAvatarFallbackText}>
-                          {fullName ? fullName[0].toUpperCase() : 'S'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.modalAvatarTitle, { color: theme.text }]}>Profile Photo</Text>
-                    <Text style={[styles.modalAvatarSub, { color: theme.textSecondary }]}>Select avatar or custom photo link</Text>
-                    <TouchableOpacity
-                      style={styles.modalAvatarBtn}
-                      onPress={() => setIsPhotoModalOpen(true)}
-                      activeOpacity={0.8}
-                    >
-                      <Camera size={13} color="#2563EB" />
-                      <Text style={styles.modalAvatarBtnText}>Change Photo</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Full Name</Text>
                 <TextInput

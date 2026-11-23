@@ -21,6 +21,7 @@ import {
 } from '../../src/services/academicService';
 import { LiveClass, StudyMaterial } from '@icc/shared-types';
 import * as DocumentPicker from 'expo-document-picker';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import {
   ArrowLeft,
   Radio,
@@ -40,6 +41,8 @@ import {
 
 export default function ChapterContentScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
   const { id, courseId, subjectId } = useLocalSearchParams<{
     id: string;
     courseId?: string;
@@ -288,12 +291,15 @@ export default function ChapterContentScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={20} color="#0F172A" />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+        <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={[styles.backButton, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}
+          >
+            <ArrowLeft size={20} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading Chapter...</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Loading Chapter...</Text>
         </View>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#2563EB" />
@@ -303,15 +309,18 @@ export default function ChapterContentScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={20} color="#0F172A" />
+      <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[styles.backButton, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}
+        >
+          <ArrowLeft size={20} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerTextCol}>
-          <Text style={styles.headerSub}>Chapter Content</Text>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[styles.headerSub, { color: theme.textSecondary }]}>Chapter Content</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
             {chapter?.title || 'Chapter Details'}
           </Text>
         </View>
@@ -319,16 +328,16 @@ export default function ChapterContentScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Chapter Summary Card */}
-        <View style={styles.chapterCard}>
-          <View style={styles.chapterNumberBadge}>
+        <View style={[styles.chapterCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+          <View style={[styles.chapterNumberBadge, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderColor: isDark ? '#3B82F6' : '#BFDBFE' }]}>
             <Text style={styles.chapterNumberText}>
               Ch {chapter?.chapter_number || 1}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.chapterCardTitle}>{chapter?.title}</Text>
+            <Text style={[styles.chapterCardTitle, { color: theme.text }]}>{chapter?.title}</Text>
             {chapter?.description ? (
-              <Text style={styles.chapterCardDesc}>{chapter.description}</Text>
+              <Text style={[styles.chapterCardDesc, { color: theme.textSecondary }]}>{chapter.description}</Text>
             ) : null}
           </View>
         </View>
@@ -382,31 +391,31 @@ export default function ChapterContentScreen() {
         ) : null}
 
         {/* Content Navigation Tabs */}
-        <View style={styles.tabsRow}>
+        <View style={[styles.tabsRow, { backgroundColor: isDark ? '#141416' : '#F1F5F9' }]}>
           <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'all' && styles.tabBtnActive]}
+            style={[styles.tabBtn, activeTab === 'all' && [styles.tabBtnActive, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]]}
             onPress={() => setActiveTab('all')}
           >
-            <Layers size={14} color={activeTab === 'all' ? '#2563EB' : '#64748B'} />
-            <Text style={[styles.tabBtnText, activeTab === 'all' && styles.tabBtnTextActive]}>
+            <Layers size={14} color={activeTab === 'all' ? '#2563EB' : theme.textSecondary} />
+            <Text style={[styles.tabBtnText, { color: activeTab === 'all' ? '#2563EB' : theme.textSecondary }, activeTab === 'all' && styles.tabBtnTextActive]}>
               All ({recordedLectures.length + studyMaterials.length + (liveClasses.length > 0 ? 1 : 0)})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'videos' && styles.tabBtnActive]}
+            style={[styles.tabBtn, activeTab === 'videos' && [styles.tabBtnActive, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]]}
             onPress={() => setActiveTab('videos')}
           >
-            <Video size={14} color={activeTab === 'videos' ? '#2563EB' : '#64748B'} />
-            <Text style={[styles.tabBtnText, activeTab === 'videos' && styles.tabBtnTextActive]}>
+            <Video size={14} color={activeTab === 'videos' ? '#2563EB' : theme.textSecondary} />
+            <Text style={[styles.tabBtnText, { color: activeTab === 'videos' ? '#2563EB' : theme.textSecondary }, activeTab === 'videos' && styles.tabBtnTextActive]}>
               Videos ({recordedLectures.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'notes' && styles.tabBtnActive]}
+            style={[styles.tabBtn, activeTab === 'notes' && [styles.tabBtnActive, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF' }]]}
             onPress={() => setActiveTab('notes')}
           >
-            <FileText size={14} color={activeTab === 'notes' ? '#2563EB' : '#64748B'} />
-            <Text style={[styles.tabBtnText, activeTab === 'notes' && styles.tabBtnTextActive]}>
+            <FileText size={14} color={activeTab === 'notes' ? '#2563EB' : theme.textSecondary} />
+            <Text style={[styles.tabBtnText, { color: activeTab === 'notes' ? '#2563EB' : theme.textSecondary }, activeTab === 'notes' && styles.tabBtnTextActive]}>
               Notes ({studyMaterials.length})
             </Text>
           </TouchableOpacity>
@@ -414,7 +423,7 @@ export default function ChapterContentScreen() {
 
         {/* Admin Action Bar */}
         {isAdmin && (
-          <View style={styles.adminActionBar}>
+          <View style={[styles.adminActionBar, { backgroundColor: isDark ? '#18181B' : '#EFF6FF', borderColor: isDark ? '#27272A' : '#BFDBFE' }]}>
             <Text style={styles.adminActionHeading}>ADMINISTRATOR MANAGEMENT</Text>
             <View style={styles.adminActionButtonsRow}>
               <TouchableOpacity
@@ -455,39 +464,39 @@ export default function ChapterContentScreen() {
         {(activeTab === 'all' || activeTab === 'videos') && (
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeaderRow}>
-              <View style={styles.sectionIconBox}>
+              <View style={[styles.sectionIconBox, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
                 <Video size={16} color="#2563EB" />
               </View>
-              <Text style={styles.sectionTitle}>Recorded Video Lectures</Text>
-              <View style={styles.sectionCountBadge}>
-                <Text style={styles.sectionCountText}>{recordedLectures.length}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Recorded Video Lectures</Text>
+              <View style={[styles.sectionCountBadge, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                <Text style={[styles.sectionCountText, { color: theme.textSecondary }]}>{recordedLectures.length}</Text>
               </View>
             </View>
 
             {recordedLectures.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>No Recorded Lectures</Text>
-                <Text style={styles.emptySubtitle}>
+              <View style={[styles.emptyCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+                <Text style={[styles.emptyTitle, { color: theme.text }]}>No Recorded Lectures</Text>
+                <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
                   Recorded lectures will appear here once live sessions end or are published by admin.
                 </Text>
               </View>
             ) : (
               recordedLectures.map((lec, index) => (
-                <View key={lec.id} style={styles.lectureCard}>
+                <View key={lec.id} style={[styles.lectureCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
                   <TouchableOpacity
                     style={styles.lectureMainTouch}
                     onPress={() => router.push(`/lecture/${lec.id}` as any)}
                   >
-                    <View style={styles.lectureOrderBadge}>
-                      <Text style={styles.lectureOrderText}>{index + 1}</Text>
+                    <View style={[styles.lectureOrderBadge, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                      <Text style={[styles.lectureOrderText, { color: theme.textSecondary }]}>{index + 1}</Text>
                     </View>
                     <View style={styles.lectureInfo}>
-                      <Text style={styles.lectureTitle} numberOfLines={2}>
+                      <Text style={[styles.lectureTitle, { color: theme.text }]} numberOfLines={2}>
                         {lec.title}
                       </Text>
                       <View style={styles.lectureMetaRow}>
-                        <Clock size={12} color="#64748B" />
-                        <Text style={styles.lectureMetaText}>
+                        <Clock size={12} color={theme.textMuted} />
+                        <Text style={[styles.lectureMetaText, { color: theme.textSecondary }]}>
                           {Math.round(lec.duration_seconds / 60) || 45} mins • HD Video
                         </Text>
                       </View>
@@ -514,34 +523,34 @@ export default function ChapterContentScreen() {
         {(activeTab === 'all' || activeTab === 'notes') && (
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeaderRow}>
-              <View style={[styles.sectionIconBox, { backgroundColor: '#F0FDF4' }]}>
+              <View style={[styles.sectionIconBox, { backgroundColor: isDark ? '#064E3B' : '#F0FDF4' }]}>
                 <FileText size={16} color="#059669" />
               </View>
-              <Text style={styles.sectionTitle}>Handwritten PDF Notes & Worksheets</Text>
-              <View style={styles.sectionCountBadge}>
-                <Text style={styles.sectionCountText}>{studyMaterials.length}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Handwritten PDF Notes & Worksheets</Text>
+              <View style={[styles.sectionCountBadge, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                <Text style={[styles.sectionCountText, { color: theme.textSecondary }]}>{studyMaterials.length}</Text>
               </View>
             </View>
 
             {studyMaterials.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>No Notes Uploaded</Text>
-                <Text style={styles.emptySubtitle}>
+              <View style={[styles.emptyCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+                <Text style={[styles.emptyTitle, { color: theme.text }]}>No Notes Uploaded</Text>
+                <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
                   Director BADE SIR handwritten formula sheets and chapter notes will be accessible here.
                 </Text>
               </View>
             ) : (
               studyMaterials.map((mat) => (
-                <View key={mat.id} style={styles.materialCard}>
+                <View key={mat.id} style={[styles.materialCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
                   <TouchableOpacity
                     style={styles.materialMainTouch}
                     onPress={() => router.push(`/pdf-viewer/${mat.id}` as any)}
                   >
-                    <View style={styles.pdfIconBox}>
+                    <View style={[styles.pdfIconBox, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' }]}>
                       <FileText size={20} color="#059669" />
                     </View>
                     <View style={styles.materialInfo}>
-                      <Text style={styles.materialTitle} numberOfLines={2}>
+                      <Text style={[styles.materialTitle, { color: theme.text }]} numberOfLines={2}>
                         {mat.title}
                       </Text>
                       <View style={styles.materialMetaRow}>
@@ -580,39 +589,39 @@ export default function ChapterContentScreen() {
         onRequestClose={() => setModalType('none')}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <View style={[styles.modalBox, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Schedule Live Class</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Schedule Live Class</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.fieldLabel}>Class Title *</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Class Title *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 value={formTitle}
                 onChangeText={setFormTitle}
                 placeholder="e.g. Masterclass on Chemical Reactions"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
               />
-              <Text style={styles.fieldLabel}>YouTube Live URL or Video ID *</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>YouTube Live URL or Video ID *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 value={formVideoId}
                 onChangeText={setFormVideoId}
                 placeholder="e.g. jfKfPfyJRdk or https://youtube.com/live/..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
                 autoCapitalize="none"
               />
-              <Text style={styles.fieldLabel}>Duration (Minutes)</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Duration (Minutes)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 value={formDuration}
                 onChangeText={setFormDuration}
                 placeholder="60"
                 keyboardType="numeric"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
               />
               <TouchableOpacity
                 style={[styles.submitBtn, submitting && styles.btnDisabled]}
@@ -636,39 +645,39 @@ export default function ChapterContentScreen() {
         onRequestClose={() => setModalType('none')}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <View style={[styles.modalBox, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Add Recorded Video Lecture</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Add Recorded Video Lecture</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.fieldLabel}>Lecture Title *</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Lecture Title *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 value={formTitle}
                 onChangeText={setFormTitle}
                 placeholder="e.g. Lecture 1: Concept Explanation"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
               />
-              <Text style={styles.fieldLabel}>YouTube Link or Video ID *</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>YouTube Link or Video ID *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 value={formVideoId}
                 onChangeText={setFormVideoId}
                 placeholder="e.g. https://youtu.be/..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
                 autoCapitalize="none"
               />
-              <Text style={styles.fieldLabel}>Duration (Minutes)</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Duration (Minutes)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 value={formDuration}
                 onChangeText={setFormDuration}
                 placeholder="45"
                 keyboardType="numeric"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
               />
               <TouchableOpacity
                 style={[styles.submitBtn, submitting && styles.btnDisabled]}
@@ -692,23 +701,26 @@ export default function ChapterContentScreen() {
         onRequestClose={() => setModalType('none')}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <View style={[styles.modalBox, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Upload PDF Study Material</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Upload PDF Study Material</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.fieldLabel}>Document Title *</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Document Title *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
                 value={formTitle}
                 onChangeText={setFormTitle}
                 placeholder="e.g. Complete Handwritten Chapter Notes"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.textMuted}
               />
-              <TouchableOpacity style={styles.pickFileBtn} onPress={handlePickPdf}>
+              <TouchableOpacity
+                style={[styles.pickFileBtn, { backgroundColor: isDark ? '#18181B' : '#EFF6FF', borderColor: isDark ? '#3B82F6' : '#DBEAFE' }]}
+                onPress={handlePickPdf}
+              >
                 <FileText size={18} color="#2563EB" />
                 <Text style={styles.pickFileText}>
                   {formPdfName ? `Selected: ${formPdfName}` : 'Choose PDF Document from Storage'}

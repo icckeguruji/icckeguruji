@@ -27,6 +27,7 @@ import {
 import { Course, LiveClass, StudyMaterial } from '@icc/shared-types';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import {
   BookOpen,
   Radio,
@@ -68,6 +69,8 @@ const thumbMap: Record<string, any> = {
 
 export default function CourseDetailsScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, language } = useAuthStore();
   const t = translations[language] || translations.en;
@@ -391,12 +394,15 @@ export default function CourseDetailsScreen() {
 
   if (loading && !course) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.navBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={20} color="#0F172A" />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+        <View style={[styles.navBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={[styles.backButton, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}
+          >
+            <ArrowLeft size={20} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Course Details</Text>
+          <Text style={[styles.navTitle, { color: theme.text }]}>Course Details</Text>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#2563EB" />
@@ -407,18 +413,21 @@ export default function CourseDetailsScreen() {
 
   if (!course) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.navBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={20} color="#0F172A" />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+        <View style={[styles.navBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={[styles.backButton, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}
+          >
+            <ArrowLeft size={20} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Course Details</Text>
+          <Text style={[styles.navTitle, { color: theme.text }]}>Course Details</Text>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 8, textAlign: 'center' }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text, marginBottom: 8, textAlign: 'center' }}>
             Course Not Available
           </Text>
-          <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center', marginBottom: 20 }}>
+          <Text style={{ fontSize: 14, color: theme.textSecondary, textAlign: 'center', marginBottom: 20 }}>
             This course has been removed or is temporarily unavailable.
           </Text>
           <TouchableOpacity
@@ -433,15 +442,18 @@ export default function CourseDetailsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* Top Header & Breadcrumb Bar */}
-      <View style={styles.navBar}>
-        <TouchableOpacity onPress={handleBackHierarchy} style={styles.backButton}>
-          <ArrowLeft size={20} color="#0F172A" />
+      <View style={[styles.navBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
+        <TouchableOpacity
+          onPress={handleBackHierarchy}
+          style={[styles.backButton, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}
+        >
+          <ArrowLeft size={20} color={theme.text} />
         </TouchableOpacity>
 
         <View style={{ flex: 1, marginHorizontal: 8 }}>
-          <Text style={styles.navTitle} numberOfLines={1}>
+          <Text style={[styles.navTitle, { color: theme.text }]} numberOfLines={1}>
             {activeLevel === 'chapter_content'
               ? `${selectedChapter?.chapter_number ? `Ch ${selectedChapter.chapter_number}: ` : ''}${selectedChapter?.title}`
               : activeLevel === 'chapters'
@@ -450,7 +462,7 @@ export default function CourseDetailsScreen() {
               ? `${selectedSubject?.name} (Sub-Subjects)`
               : course.title}
           </Text>
-          <Text style={styles.navSubTitle}>
+          <Text style={[styles.navSubTitle, { color: theme.textSecondary }]}>
             {activeLevel === 'subjects'
               ? 'Course Curriculum'
               : `${selectedSubject?.name || ''} ${selectedSubSubject ? `› ${selectedSubSubject.name}` : ''}`}
@@ -488,8 +500,8 @@ export default function CourseDetailsScreen() {
             <View>
               <View style={styles.sectionHeaderRow}>
                 <View>
-                  <Text style={styles.sectionHeading}>Course Subjects</Text>
-                  <Text style={styles.sectionSubHeading}>
+                  <Text style={[styles.sectionHeading, { color: theme.text }]}>Course Subjects</Text>
+                  <Text style={[styles.sectionSubHeading, { color: theme.textSecondary }]}>
                     Tap a subject to explore sub-subjects and chapters
                   </Text>
                 </View>
@@ -505,46 +517,67 @@ export default function CourseDetailsScreen() {
                 )}
               </View>
 
-              <View style={styles.subjectsGrid}>
-                {subjects.map((sub) => (
-                  <TouchableOpacity
-                    key={sub.id}
-                    style={styles.subjectCard}
-                    onPress={() => handleSelectSubject(sub)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.subjectIconBox}>
-                      <BookOpen size={22} color="#2563EB" />
-                    </View>
+              {subjects.length === 0 ? (
+                <View style={[styles.emptyStateBox, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+                  <BookOpen size={36} color={isDark ? '#3B82F6' : '#2563EB'} />
+                  <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No Subjects Added Yet</Text>
+                  <Text style={[styles.emptyStateSub, { color: theme.textSecondary }]}>
+                    {isAdmin
+                      ? 'Tap "+ Add Subject" to create subjects for this course.'
+                      : 'Director BADE SIR is configuring the curriculum for this course.'}
+                  </Text>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.addActionButton, { marginTop: 12 }]}
+                      onPress={() => setModalType('add_subject')}
+                    >
+                      <Plus size={16} color="#FFFFFF" />
+                      <Text style={styles.addActionButtonText}>+ Add First Subject</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.subjectsGrid}>
+                  {subjects.map((sub) => (
+                    <TouchableOpacity
+                      key={sub.id}
+                      style={[styles.subjectCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
+                      onPress={() => handleSelectSubject(sub)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.subjectIconBox, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
+                        <BookOpen size={22} color="#2563EB" />
+                      </View>
 
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.subjectName}>{sub.name}</Text>
-                      <Text style={styles.subjectNameHi}>{sub.name_hi}</Text>
-                      <Text style={styles.subjectMeta}>
-                        {sub.has_sub_subjects
-                          ? `${sub.sub_subjects?.length || 3} Disciplines (Physics, Chemistry, Bio)`
-                          : 'Direct Chapters & Notes'}
-                      </Text>
-                    </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.subjectName, { color: theme.text }]}>{sub.name}</Text>
+                        <Text style={styles.subjectNameHi}>{sub.name_hi}</Text>
+                        <Text style={[styles.subjectMeta, { color: theme.textSecondary }]}>
+                          {sub.has_sub_subjects
+                            ? `${sub.sub_subjects?.length || 3} Disciplines (Physics, Chemistry, Bio)`
+                            : 'Direct Chapters & Notes'}
+                        </Text>
+                      </View>
 
-                    <View style={styles.subjectActionRight}>
-                      {isAdmin ? (
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleDeleteSubject(sub.id);
-                          }}
-                          style={styles.trashSmallBtn}
-                        >
-                          <Trash2 size={15} color="#EF4444" />
-                        </TouchableOpacity>
-                      ) : (
-                        <ChevronRight size={18} color="#94A3B8" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                      <View style={styles.subjectActionRight}>
+                        {isAdmin ? (
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSubject(sub.id);
+                            }}
+                            style={styles.trashSmallBtn}
+                          >
+                            <Trash2 size={15} color="#EF4444" />
+                          </TouchableOpacity>
+                        ) : (
+                          <ChevronRight size={18} color={theme.textMuted} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
@@ -553,10 +586,10 @@ export default function CourseDetailsScreen() {
             <View>
               <View style={styles.sectionHeaderRow}>
                 <View>
-                  <Text style={styles.sectionHeading}>
+                  <Text style={[styles.sectionHeading, { color: theme.text }]}>
                     {selectedSubject.name} Disciplines
                   </Text>
-                  <Text style={styles.sectionSubHeading}>
+                  <Text style={[styles.sectionSubHeading, { color: theme.textSecondary }]}>
                     Choose subject discipline to access chapter-wise videos & notes
                   </Text>
                 </View>
@@ -576,18 +609,18 @@ export default function CourseDetailsScreen() {
                 {selectedSubject.sub_subjects?.map((subSub) => (
                   <TouchableOpacity
                     key={subSub.id}
-                    style={styles.subSubjectCard}
+                    style={[styles.subSubjectCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
                     onPress={() => handleSelectSubSubject(subSub)}
                     activeOpacity={0.7}
                   >
-                    <View style={styles.subSubjectBadge}>
+                    <View style={[styles.subSubjectBadge, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' }]}>
                       <Layers size={20} color="#059669" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.subSubjectName}>{subSub.name}</Text>
+                      <Text style={[styles.subSubjectName, { color: theme.text }]}>{subSub.name}</Text>
                       <Text style={styles.subSubjectNameHi}>{subSub.name_hi}</Text>
                     </View>
-                    <ChevronRight size={18} color="#64748B" />
+                    <ChevronRight size={18} color={theme.textMuted} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -599,10 +632,10 @@ export default function CourseDetailsScreen() {
             <View>
               <View style={styles.sectionHeaderRow}>
                 <View>
-                  <Text style={styles.sectionHeading}>
+                  <Text style={[styles.sectionHeading, { color: theme.text }]}>
                     {selectedSubSubject ? selectedSubSubject.name : selectedSubject.name} Chapters
                   </Text>
-                  <Text style={styles.sectionSubHeading}>
+                  <Text style={[styles.sectionSubHeading, { color: theme.textSecondary }]}>
                     Tap a chapter for live class, recorded videos & handwritten PDF notes
                   </Text>
                 </View>
@@ -618,60 +651,81 @@ export default function CourseDetailsScreen() {
                 )}
               </View>
 
-              <View style={styles.chaptersList}>
-                {chapters.map((chap) => (
-                  <TouchableOpacity
-                    key={chap.id}
-                    style={styles.chapterCard}
-                    onPress={() => handleSelectChapter(chap)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.chapterNumberCircle}>
-                      <Text style={styles.chapterNumberText}>
-                        {chap.chapter_number < 10 ? `0${chap.chapter_number}` : chap.chapter_number}
-                      </Text>
-                    </View>
+              {chapters.length === 0 ? (
+                <View style={[styles.emptyStateBox, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+                  <BookOpen size={36} color={isDark ? '#3B82F6' : '#2563EB'} />
+                  <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No Chapters Added Yet</Text>
+                  <Text style={[styles.emptyStateSub, { color: theme.textSecondary }]}>
+                    {isAdmin
+                      ? 'Tap "+ Add Chapter" to create Chapter 01 for this subject.'
+                      : 'Director BADE SIR is curating syllabus chapters for this subject.'}
+                  </Text>
+                  {isAdmin && (
+                    <TouchableOpacity
+                      style={[styles.addActionButton, { marginTop: 12 }]}
+                      onPress={() => setModalType('add_chapter')}
+                    >
+                      <Plus size={16} color="#FFFFFF" />
+                      <Text style={styles.addActionButtonText}>+ Add First Chapter</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.chaptersList}>
+                  {chapters.map((chap) => (
+                    <TouchableOpacity
+                      key={chap.id}
+                      style={[styles.chapterCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
+                      onPress={() => handleSelectChapter(chap)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.chapterNumberCircle, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}>
+                        <Text style={styles.chapterNumberText}>
+                          {chap.chapter_number < 10 ? `0${chap.chapter_number}` : chap.chapter_number}
+                        </Text>
+                      </View>
 
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.chapterTitleText}>{chap.title}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.chapterTitleText, { color: theme.text }]}>{chap.title}</Text>
 
-                      <View style={styles.chapterPillRow}>
-                        {chap.live_count ? (
-                          <View style={styles.liveTagPill}>
-                            <Radio size={10} color="#DC2626" />
-                            <Text style={styles.liveTagText}>Live Available</Text>
+                        <View style={styles.chapterPillRow}>
+                          {chap.live_count ? (
+                            <View style={styles.liveTagPill}>
+                              <Radio size={10} color="#DC2626" />
+                              <Text style={styles.liveTagText}>Live Available</Text>
+                            </View>
+                          ) : null}
+
+                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                            <Video size={10} color="#2563EB" />
+                            <Text style={[styles.countPillText, { color: theme.textSecondary }]}>{chap.lecture_count || 0} Videos</Text>
                           </View>
-                        ) : null}
 
-                        <View style={styles.countPill}>
-                          <Video size={10} color="#2563EB" />
-                          <Text style={styles.countPillText}>{chap.lecture_count || 0} Videos</Text>
-                        </View>
-
-                        <View style={styles.countPill}>
-                          <FileText size={10} color="#059669" />
-                          <Text style={styles.countPillText}>{chap.material_count || 0} PDFs</Text>
+                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                            <FileText size={10} color="#059669" />
+                            <Text style={[styles.countPillText, { color: theme.textSecondary }]}>{chap.material_count || 0} PDFs</Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      {isAdmin && (
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleDeleteChapter(chap.id);
-                          }}
-                          style={styles.trashSmallBtn}
-                        >
-                          <Trash2 size={15} color="#EF4444" />
-                        </TouchableOpacity>
-                      )}
-                      <ChevronRight size={18} color="#94A3B8" />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {isAdmin && (
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleDeleteChapter(chap.id);
+                            }}
+                            style={styles.trashSmallBtn}
+                          >
+                            <Trash2 size={15} color="#EF4444" />
+                          </TouchableOpacity>
+                        )}
+                        <ChevronRight size={18} color={theme.textMuted} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
@@ -715,7 +769,7 @@ export default function CourseDetailsScreen() {
               {chapterContentTab === 'live' && (
                 <View style={styles.tabContentContainer}>
                   <View style={styles.sectionHeaderRow}>
-                    <Text style={styles.subSectionTitle}>🔴 Live Sessions for this Chapter</Text>
+                    <Text style={[styles.subSectionTitle, { color: theme.text }]}>🔴 Live Sessions for this Chapter</Text>
                     {isAdmin && (
                       <TouchableOpacity
                         style={styles.addActionButtonRed}
@@ -728,16 +782,16 @@ export default function CourseDetailsScreen() {
                   </View>
 
                   {liveClasses.length === 0 ? (
-                    <View style={styles.emptyStateBox}>
+                    <View style={[styles.emptyStateBox, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
                       <Radio size={32} color="#94A3B8" />
-                      <Text style={styles.emptyStateTitle}>No Active Live Class</Text>
-                      <Text style={styles.emptyStateSub}>
+                      <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No Active Live Class</Text>
+                      <Text style={[styles.emptyStateSub, { color: theme.textSecondary }]}>
                         Next live class for {selectedChapter.title} will be announced by Director BADE SIR.
                       </Text>
                     </View>
                   ) : (
                     liveClasses.map((item) => (
-                      <View key={item.id} style={styles.liveClassCard}>
+                      <View key={item.id} style={[styles.liveClassCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
                         <View style={styles.liveBadgeRow}>
                           <View style={styles.livePill}>
                             <View style={styles.pulseDot} />
@@ -745,8 +799,8 @@ export default function CourseDetailsScreen() {
                           </View>
                           <Text style={styles.liveDurationText}>{item.duration_minutes} Mins</Text>
                         </View>
-                        <Text style={styles.liveCardTitle}>{item.title}</Text>
-                        <Text style={styles.liveCardDesc}>{item.description}</Text>
+                        <Text style={[styles.liveCardTitle, { color: theme.text }]}>{item.title}</Text>
+                        <Text style={[styles.liveCardDesc, { color: theme.textSecondary }]}>{item.description}</Text>
 
                         <TouchableOpacity
                           style={styles.joinLiveBtn}
@@ -765,7 +819,7 @@ export default function CourseDetailsScreen() {
               {chapterContentTab === 'videos' && (
                 <View style={styles.tabContentContainer}>
                   <View style={styles.sectionHeaderRow}>
-                    <Text style={styles.subSectionTitle}>📹 Chapter Video Lectures</Text>
+                    <Text style={[styles.subSectionTitle, { color: theme.text }]}>📹 Chapter Video Lectures</Text>
                     {isAdmin && (
                       <TouchableOpacity
                         style={styles.addActionButton}
@@ -778,16 +832,16 @@ export default function CourseDetailsScreen() {
                   </View>
 
                   {recordedLectures.length === 0 ? (
-                    <View style={styles.emptyStateBox}>
+                    <View style={[styles.emptyStateBox, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
                       <Video size={32} color="#94A3B8" />
-                      <Text style={styles.emptyStateTitle}>No Videos Yet</Text>
-                      <Text style={styles.emptyStateSub}>Lectures will be added soon.</Text>
+                      <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No Videos Yet</Text>
+                      <Text style={[styles.emptyStateSub, { color: theme.textSecondary }]}>Lectures will be added soon.</Text>
                     </View>
                   ) : (
                     recordedLectures.map((lec, idx) => (
                       <TouchableOpacity
                         key={lec.id}
-                        style={styles.lectureCard}
+                        style={[styles.lectureCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
                         onPress={() => router.push(`/lecture/${lec.id}`)}
                         activeOpacity={0.7}
                       >
@@ -795,12 +849,12 @@ export default function CourseDetailsScreen() {
                           <Play size={16} color="#2563EB" />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.lectureTitle}>{lec.title}</Text>
-                          <Text style={styles.lectureMeta}>
+                          <Text style={[styles.lectureTitle, { color: theme.text }]}>{lec.title}</Text>
+                          <Text style={[styles.lectureMeta, { color: theme.textSecondary }]}>
                             ⏱️ {Math.round(lec.duration_seconds / 60)} Mins · High-Definition In-App Player
                           </Text>
                         </View>
-                        <ChevronRight size={18} color="#94A3B8" />
+                        <ChevronRight size={18} color={theme.textMuted} />
                       </TouchableOpacity>
                     ))
                   )}
@@ -811,7 +865,7 @@ export default function CourseDetailsScreen() {
               {chapterContentTab === 'notes' && (
                 <View style={styles.tabContentContainer}>
                   <View style={styles.sectionHeaderRow}>
-                    <Text style={styles.subSectionTitle}>📄 Handwritten Notes & Formulas</Text>
+                    <Text style={[styles.subSectionTitle, { color: theme.text }]}>📄 Handwritten Notes & Formulas</Text>
                     {isAdmin && (
                       <TouchableOpacity
                         style={styles.addActionButtonGreen}
@@ -824,10 +878,10 @@ export default function CourseDetailsScreen() {
                   </View>
 
                   {studyMaterials.length === 0 ? (
-                    <View style={styles.emptyStateBox}>
+                    <View style={[styles.emptyStateBox, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
                       <FileText size={32} color="#94A3B8" />
-                      <Text style={styles.emptyStateTitle}>No Notes Uploaded</Text>
-                      <Text style={styles.emptyStateSub}>
+                      <Text style={[styles.emptyStateTitle, { color: theme.text }]}>No Notes Uploaded</Text>
+                      <Text style={[styles.emptyStateSub, { color: theme.textSecondary }]}>
                         Director BADE SIR is compiling verified exam notes for this chapter.
                       </Text>
                     </View>
@@ -835,7 +889,7 @@ export default function CourseDetailsScreen() {
                     studyMaterials.map((mat) => (
                       <TouchableOpacity
                         key={mat.id}
-                        style={styles.pdfNoteCard}
+                        style={[styles.pdfNoteCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
                         onPress={() => router.push(`/pdf-viewer/${mat.id}`)}
                         activeOpacity={0.7}
                       >
@@ -843,8 +897,8 @@ export default function CourseDetailsScreen() {
                           <FileText size={18} color="#059669" />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.pdfTitle}>{mat.title}</Text>
-                          <Text style={styles.pdfMeta}>
+                          <Text style={[styles.pdfTitle, { color: theme.text }]}>{mat.title}</Text>
+                          <Text style={[styles.pdfMeta, { color: theme.textSecondary }]}>
                             📄 PDF · {(mat.file_size_bytes / 1024 / 1024).toFixed(1)} MB · Offline Available
                           </Text>
                         </View>
@@ -865,16 +919,17 @@ export default function CourseDetailsScreen() {
       {/* 1. Add Subject Modal */}
       <Modal visible={modalType === 'add_subject'} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Add New Subject</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Add New Subject</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Subject Name (e.g. Science / Mathematics)"
               value={formTitle}
               onChangeText={setFormTitle}
@@ -890,16 +945,17 @@ export default function CourseDetailsScreen() {
       {/* 2. Add Sub-Subject Modal */}
       <Modal visible={modalType === 'add_sub_subject'} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Add Sub-Subject Discipline</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Add Sub-Subject Discipline</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Discipline Name (e.g. Chemistry / Physics / Bio)"
               value={formTitle}
               onChangeText={setFormTitle}
@@ -915,22 +971,24 @@ export default function CourseDetailsScreen() {
       {/* 3. Add Chapter Modal */}
       <Modal visible={modalType === 'add_chapter'} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Add Chapter</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Add Chapter</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Chapter Title (e.g. Chemical Reactions)"
               value={formTitle}
               onChangeText={setFormTitle}
             />
             <TextInput
-              style={[styles.modalInput, { height: 70 }]}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text, height: 70 }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Key concepts or syllabus description..."
               multiline
               value={formDesc}
@@ -947,28 +1005,31 @@ export default function CourseDetailsScreen() {
       {/* 4. Add Video Lecture Modal */}
       <Modal visible={modalType === 'add_lecture'} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Add Recorded Lecture</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Add Recorded Lecture</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Lecture Title (e.g. Lec 01: Balancing Equations)"
               value={formTitle}
               onChangeText={setFormTitle}
             />
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="YouTube Video ID or Full Link (e.g. jfKfPfyJRdk)"
               value={formVideoId}
               onChangeText={setFormVideoId}
             />
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Duration in Minutes (e.g. 45)"
               keyboardType="numeric"
               value={formDuration}
@@ -985,28 +1046,31 @@ export default function CourseDetailsScreen() {
       {/* 5. Schedule / Go Live Modal */}
       <Modal visible={modalType === 'schedule_live'} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>🔴 Start / Schedule Live Class</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>🔴 Start / Schedule Live Class</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Live Class Title (e.g. Live Q&A and Board Prep)"
               value={formTitle}
               onChangeText={setFormTitle}
             />
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="YouTube Live Stream Link or ID"
               value={formVideoId}
               onChangeText={setFormVideoId}
             />
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Duration in Minutes (e.g. 60)"
               keyboardType="numeric"
               value={formDuration}
@@ -1026,33 +1090,35 @@ export default function CourseDetailsScreen() {
       {/* 6. Upload PDF Notes Modal with Device Picker */}
       <Modal visible={modalType === 'upload_notes'} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalHeading}>Upload PDF Notes from Device</Text>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Upload PDF Notes from Device</Text>
               <TouchableOpacity onPress={() => setModalType('none')}>
-                <X size={20} color="#64748B" />
+                <X size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Document Picker Trigger */}
             <TouchableOpacity
-              style={styles.filePickerButton}
+              style={[styles.filePickerButton, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5', borderColor: isDark ? '#059669' : '#A7F3D0' }]}
               onPress={handlePickAndUploadPdf}
             >
               <Upload size={22} color="#059669" />
-              <Text style={styles.filePickerButtonText}>
+              <Text style={[styles.filePickerButtonText, { color: isDark ? '#34D399' : '#059669' }]}>
                 {formPdfName ? `📄 Selected: ${formPdfName}` : 'Select PDF from Phone Storage'}
               </Text>
             </TouchableOpacity>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Notes Title (e.g. Handwritten Master Notes)"
               value={formTitle}
               onChangeText={setFormTitle}
             />
             <TextInput
-              style={[styles.modalInput, { height: 60 }]}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text, height: 60 }]}
+              placeholderTextColor={theme.textMuted}
               placeholder="Brief description for students..."
               multiline
               value={formDesc}

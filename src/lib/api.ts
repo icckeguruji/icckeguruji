@@ -695,11 +695,11 @@ export const AdminApi = {
     const defaultSessionId = 'a0000000-0000-0000-0000-000000000001';
     const courseId = course.id && isValidUUID(course.id) ? course.id : generateUUID();
 
-    const insertPayload: any = {
+    // Standard columns for database
+    const dbPayload: any = {
       id: courseId,
       title: course.title || 'New Course',
       title_hi: course.title_hi || course.title || 'New Course',
-      tagline: course.tagline || '',
       description: course.description || '',
       description_hi: course.description_hi || course.description || '',
       thumbnail_url: getResolvedThumbnailUrl(course.thumbnail_url),
@@ -710,7 +710,6 @@ export const AdminApi = {
       price: course.is_free ? 0 : (course.price ?? 999),
       discount_price: course.is_free ? 0 : (course.discount_price ?? 499),
       validity_days: course.validity_days ?? 365,
-      class_name: (course as any).class_name || 'Class 10',
       is_published: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -720,12 +719,14 @@ export const AdminApi = {
       try {
         const { data, error } = await supabase
           .from('courses')
-          .insert(insertPayload)
+          .insert(dbPayload)
           .select()
           .single();
         if (!error && data) {
-          const resolved = {
+          const resolved: Course = {
             ...(data as Course),
+            tagline: course.tagline || '',
+            class_name: (course as any).class_name || 'Class 10',
             thumbnail_url: getResolvedThumbnailUrl(data.thumbnail_url),
           };
           localCourses = [resolved, ...localCourses.filter((c) => c.id !== data.id)];
@@ -745,11 +746,13 @@ export const AdminApi = {
       const directCreated = await fetchDirectRest<any[]>('courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify(insertPayload),
+        body: JSON.stringify(dbPayload),
       });
       if (Array.isArray(directCreated) && directCreated[0]) {
-        const resolved = {
+        const resolved: Course = {
           ...(directCreated[0] as Course),
+          tagline: course.tagline || '',
+          class_name: (course as any).class_name || 'Class 10',
           thumbnail_url: getResolvedThumbnailUrl(directCreated[0].thumbnail_url),
         };
         localCourses = [resolved, ...localCourses.filter((c) => c.id !== resolved.id)];
@@ -765,44 +768,53 @@ export const AdminApi = {
   updateCourse: async (courseId: string, updates: Partial<Course>) => {
     localCourses = getPersistentState(STORAGE_KEYS.COURSES, localCourses);
     const rawUpdates = updates as any;
-    const allowedKeys = [
-      'title', 'title_hi', 'tagline', 'description', 'description_hi',
-      'thumbnail_url', 'board_id', 'class_id', 'session_id', 'is_free',
-      'price', 'discount_price', 'validity_days', 'class_name', 'is_published', 'updated_at'
-    ];
-    const cleanUpdates: any = { updated_at: new Date().toISOString() };
-    for (const key of allowedKeys) {
-      if (rawUpdates[key] !== undefined) {
-        cleanUpdates[key] = rawUpdates[key];
-      }
+    
+    // Valid DB columns strictly matching Supabase table
+    const dbPayload: any = { updated_at: new Date().toISOString() };
+    if (rawUpdates.title !== undefined) dbPayload.title = rawUpdates.title;
+    if (rawUpdates.title_hi !== undefined) dbPayload.title_hi = rawUpdates.title_hi;
+    if (rawUpdates.description !== undefined) dbPayload.description = rawUpdates.description;
+    if (rawUpdates.description_hi !== undefined) dbPayload.description_hi = rawUpdates.description_hi;
+    if (rawUpdates.thumbnail_url !== undefined) {
+      dbPayload.thumbnail_url = getResolvedThumbnailUrl(rawUpdates.thumbnail_url);
     }
-    if (cleanUpdates.thumbnail_url) {
-      cleanUpdates.thumbnail_url = getResolvedThumbnailUrl(cleanUpdates.thumbnail_url);
+    if (rawUpdates.board_id !== undefined) dbPayload.board_id = rawUpdates.board_id;
+    if (rawUpdates.class_id !== undefined || rawUpdates.class_name !== undefined) {
+      dbPayload.class_id = getSafeClassId(rawUpdates.class_id, rawUpdates.class_name);
     }
-    if (cleanUpdates.class_id || cleanUpdates.class_name) {
-      cleanUpdates.class_id = getSafeClassId(cleanUpdates.class_id, cleanUpdates.class_name);
-    }
+    if (rawUpdates.session_id !== undefined) dbPayload.session_id = rawUpdates.session_id;
+    if (rawUpdates.is_free !== undefined) dbPayload.is_free = rawUpdates.is_free;
+    if (rawUpdates.price !== undefined) dbPayload.price = Number(rawUpdates.price);
+    if (rawUpdates.discount_price !== undefined) dbPayload.discount_price = Number(rawUpdates.discount_price);
+    if (rawUpdates.validity_days !== undefined) dbPayload.validity_days = Number(rawUpdates.validity_days);
+    if (rawUpdates.is_published !== undefined) dbPayload.is_published = rawUpdates.is_published;
 
     if (isSupabaseConfigured) {
       let updateConfirmed = false;
       try {
         if (isValidUUID(courseId)) {
-          const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', courseId);
-          if (!error) {
+          // Attempt upsert first to guarantee save whether row exists or not
+          const { error: upsertErr } = await supabase.from('courses').upsert({ id: courseId, ...dbPayload }, { onConflict: 'id' });
+          if (!upsertErr) {
             updateConfirmed = true;
           } else {
-            console.warn('updateCourse Supabase error, trying direct REST PATCH:', error);
-            const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(cleanUpdates),
-            });
-            if (patchRes !== null) updateConfirmed = true;
+            console.warn('updateCourse upsert error, trying update:', upsertErr);
+            const { error: updateErr } = await supabase.from('courses').update(dbPayload).eq('id', courseId);
+            if (!updateErr) {
+              updateConfirmed = true;
+            } else {
+              const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dbPayload),
+              });
+              if (patchRes !== null) updateConfirmed = true;
+            }
           }
         } else {
           const existing = localCourses.find((c) => c.id === courseId);
           if (existing?.title) {
-            const { error } = await supabase.from('courses').update(cleanUpdates).eq('title', existing.title);
+            const { error } = await supabase.from('courses').update(dbPayload).eq('title', existing.title);
             if (!error) updateConfirmed = true;
           }
         }
@@ -812,7 +824,7 @@ export const AdminApi = {
           const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cleanUpdates),
+            body: JSON.stringify(dbPayload),
           });
           if (patchRes !== null) updateConfirmed = true;
         }
@@ -2101,9 +2113,36 @@ export const AdminApi = {
     return { success: true, message: 'Simulated email dispatch' };
   },
 
-  // 12. Teachers (Full CRUD with persistent local store)
+  // 12. Teachers (Full Cloud Real-Time Two-Way Sync via Supabase platform_settings & /api/teachers)
   getTeachers: async (): Promise<TeacherItem[]> => {
     localTeachers = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'icc_teachers')
+          .maybeSingle();
+        if (!error && data?.value && Array.isArray(data.value) && data.value.length > 0) {
+          localTeachers = data.value as TeacherItem[];
+          savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
+          return localTeachers;
+        }
+      } catch (e) {
+        console.warn('getTeachers cloud fetch error, trying /api/teachers:', e);
+      }
+      try {
+        const res = await fetch('/api/teachers', { cache: 'no-store' });
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list) && list.length > 0) {
+            localTeachers = list;
+            savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
+            return localTeachers;
+          }
+        }
+      } catch {}
+    }
     return localTeachers;
   },
 
@@ -2113,21 +2152,115 @@ export const AdminApi = {
       id: `t-${Date.now()}`,
       ...teacherData,
     };
-    localTeachers = [newTeacher, ...localTeachers];
+    const updated = [newTeacher, ...localTeachers.filter((t) => t.id !== newTeacher.id)];
+
+    if (isSupabaseConfigured) {
+      let isSaved = false;
+      try {
+        const { error } = await supabase.from('platform_settings').upsert({
+          key: 'icc_teachers',
+          value: updated,
+          description: 'Institute Teachers & Faculty List with real-time multi-client sync',
+          updated_at: new Date().toISOString(),
+        });
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('createTeacher Supabase error:', e);
+      }
+
+      if (!isSaved) {
+        try {
+          const res = await fetch('/api/teachers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTeacher),
+          });
+          if (res.ok) isSaved = true;
+        } catch {}
+      }
+
+      if (!isSaved) {
+        throw new Error('Database Error: Failed to save teacher to cloud database.');
+      }
+    }
+
+    localTeachers = updated;
     savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
     return newTeacher;
   },
 
   updateTeacher: async (teacherId: string, updates: Partial<TeacherItem>): Promise<TeacherItem | null> => {
     localTeachers = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
-    localTeachers = localTeachers.map((t) => (t.id === teacherId ? { ...t, ...updates } : t));
+    const updated = localTeachers.map((t) => (t.id === teacherId ? { ...t, ...updates } : t));
+
+    if (isSupabaseConfigured) {
+      let isSaved = false;
+      try {
+        const { error } = await supabase.from('platform_settings').upsert({
+          key: 'icc_teachers',
+          value: updated,
+          description: 'Institute Teachers & Faculty List with real-time multi-client sync',
+          updated_at: new Date().toISOString(),
+        });
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('updateTeacher Supabase error:', e);
+      }
+
+      if (!isSaved) {
+        try {
+          const res = await fetch('/api/teachers', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: teacherId, ...updates }),
+          });
+          if (res.ok) isSaved = true;
+        } catch {}
+      }
+
+      if (!isSaved) {
+        throw new Error('Database Error: Failed to update teacher in cloud database.');
+      }
+    }
+
+    localTeachers = updated;
     savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
     return localTeachers.find((t) => t.id === teacherId) || null;
   },
 
   deleteTeacher: async (teacherId: string): Promise<boolean> => {
     localTeachers = getPersistentState(STORAGE_KEYS.TEACHERS, [...defaultTeachers]);
-    localTeachers = localTeachers.filter((t) => t.id !== teacherId);
+    const updated = localTeachers.filter((t) => t.id !== teacherId);
+
+    if (isSupabaseConfigured) {
+      let isSaved = false;
+      try {
+        const { error } = await supabase.from('platform_settings').upsert({
+          key: 'icc_teachers',
+          value: updated,
+          description: 'Institute Teachers & Faculty List with real-time multi-client sync',
+          updated_at: new Date().toISOString(),
+        });
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('deleteTeacher Supabase error:', e);
+      }
+
+      if (!isSaved) {
+        try {
+          const res = await fetch(`/api/teachers?id=${teacherId}`, {
+            method: 'DELETE',
+          });
+          if (res.ok) isSaved = true;
+        } catch {}
+      }
+
+      if (!isSaved) {
+        throw new Error('Database Error: Failed to delete teacher from cloud database.');
+      }
+    }
+
+    localTeachers = updated;
     savePersistentState(STORAGE_KEYS.TEACHERS, localTeachers);
     return true;
   },

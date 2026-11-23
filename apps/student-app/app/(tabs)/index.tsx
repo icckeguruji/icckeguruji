@@ -305,10 +305,10 @@ export default function StudentHomeScreen() {
                   </Text>
                   <View style={styles.courseMetaRow}>
                     <Text style={styles.courseMeta}>
-                      {c.lecture_count || 45} In-App Lectures
+                      {c.lecture_count ?? 0} In-App Lectures
                     </Text>
                     <Text style={styles.courseMeta}>
-                      {c.material_count || 24} PDF Notes
+                      {c.material_count ?? 0} PDF Notes
                     </Text>
                     <Text style={styles.courseActiveStatus}>
                       Active

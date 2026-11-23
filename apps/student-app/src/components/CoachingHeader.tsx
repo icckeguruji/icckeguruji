@@ -228,9 +228,11 @@ export function CoachingHeader({
           </View>
 
           <View style={styles.pillGroup}>
-            <View style={styles.boardPill}>
-              <Text style={styles.boardPillText}>🏆 {user?.quiz_points || 0} PTS</Text>
-            </View>
+            {!isAdmin && (
+              <View style={styles.boardPill}>
+                <Text style={styles.boardPillText}>🏆 {user?.quiz_points || 0} PTS</Text>
+              </View>
+            )}
             <View
               style={[
                 styles.classPill,
@@ -369,9 +371,11 @@ export function CoachingHeader({
                       <Text style={styles.studentRoleText}>🎓 Student</Text>
                     </View>
                   )}
-                  <View style={styles.ptsBadge}>
-                    <Text style={styles.ptsBadgeText}>🏆 {user?.quiz_points || 0} PTS</Text>
-                  </View>
+                  {!isAdmin && (
+                    <View style={styles.ptsBadge}>
+                      <Text style={styles.ptsBadgeText}>🏆 {user?.quiz_points || 0} PTS</Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -541,22 +545,7 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 3. Classes & Subjects */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)/courses')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
-                      <GraduationCap size={18} color="#16A34A" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Classes & Subjects</Text>
-                      <Text style={styles.menuItemSubText}>Curriculum hierarchy & chapter catalog</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 4. Courses */}
+                  {/* 3. Courses & Curriculum */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handleNavigate('/(tabs)/courses')}
@@ -565,13 +554,13 @@ export function CoachingHeader({
                       <BookOpen size={18} color="#9333EA" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Courses</Text>
-                      <Text style={styles.menuItemSubText}>Create, edit & manage target courses</Text>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>Courses & Batches</Text>
+                      <Text style={styles.menuItemSubText}>Curriculum hierarchy, chapters & lectures</Text>
                     </View>
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 5. Live Classes */}
+                  {/* 4. Live Classes */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handleOpenDirectorModal('live_classes')}
@@ -586,22 +575,7 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 6. Recorded Videos */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)/courses')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FDF2F8' }]}>
-                      <PlaySquare size={18} color="#DB2777" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Recorded Videos</Text>
-                      <Text style={styles.menuItemSubText}>Chapter lecture library & previews</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 7. Notes & PDFs */}
+                  {/* 5. Notes & PDFs */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handleOpenDirectorModal('study_materials')}
@@ -616,7 +590,7 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 8. Payments & UTR */}
+                  {/* 6. Payments & UTR */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handleOpenDirectorModal('payment')}
@@ -631,7 +605,7 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 9. Push Notifications */}
+                  {/* 7. Push Notifications */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handleOpenDirectorModal('broadcast')}
@@ -646,7 +620,7 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 10. WhatsApp AI Bot */}
+                  {/* 8. WhatsApp AI Bot */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handleOpenDirectorModal('whatsapp_bot')}
@@ -661,15 +635,22 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 11. Teachers */}
+                  {/* 9. Teachers */}
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => {
+                    onPress={async () => {
                       setIsDrawerOpen(false);
-                      Alert.alert(
-                        'Faculty Directory',
-                        'Director: BADE SIR (Mathematics & Physics)\nFaculty: Er. Rohit (Chemistry & Biology)\nFaculty: Priya Madam (English & Grammar)\nSupport: 9771350910'
-                      );
+                      try {
+                        const faculty = await academicService.getTeachers();
+                        if (faculty.length === 0) {
+                          Alert.alert('Faculty Directory', 'Director: BADE SIR (Mathematics & Physics)\nPrimary instructor.');
+                        } else {
+                          const list = faculty.map(t => `• ${t.full_name} (${t.subjects}) - +91 ${t.mobile || '9771350910'}`).join('\n');
+                          Alert.alert('ICC Faculty Directory', `Active Teachers (${faculty.length}):\n\n${list}`);
+                        }
+                      } catch {
+                        Alert.alert('Faculty Directory', 'Director: BADE SIR (Mathematics & Physics)');
+                      }
                     }}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#F1F5F9' }]}>
@@ -682,7 +663,7 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
-                  {/* 12. Reports */}
+                  {/* 10. Reports */}
                   <TouchableOpacity
                     style={styles.menuItem}
                     onPress={() => handleOpenDirectorModal('quota_reports')}

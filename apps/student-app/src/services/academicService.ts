@@ -602,6 +602,33 @@ class AcademicRepository {
           }
         }
 
+        // 9. Teachers: Authoritative from Supabase platform_settings or /api/teachers
+        try {
+          let remoteTeachers: Teacher[] | null = null;
+          const { data: tData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', 'icc_teachers')
+            .maybeSingle();
+          if (tData?.value && Array.isArray(tData.value)) {
+            remoteTeachers = tData.value as Teacher[];
+          } else {
+            const tRes = await fetchDirectRest<any>('platform_settings?key=eq.icc_teachers&select=value');
+            if (Array.isArray(tRes) && tRes[0]?.value && Array.isArray(tRes[0].value)) {
+              remoteTeachers = tRes[0].value;
+            }
+          }
+          if (Array.isArray(remoteTeachers) && remoteTeachers.length > 0) {
+            if (hasListChanged(remoteTeachers, this.teachers)) {
+              this.teachers = remoteTeachers;
+              this.persist('icc_teachers', this.teachers).catch(() => {});
+              hasChanged = true;
+            }
+          }
+        } catch (tErr) {
+          console.warn('Sync teachers from cloud error:', tErr);
+        }
+
         if (hasChanged) {
           this.notify();
         }
@@ -751,14 +778,66 @@ class AcademicRepository {
     if (forceLive && isSupabaseConfigured) {
       await this.syncFromCloud();
     }
-    return this.courses.filter((c) => !this.isDeleted(c.id));
+    const active = this.courses.filter((c) => !this.isDeleted(c.id));
+    return active.map((c) => {
+      const cClass = (c.class_name || this.getClassNameFromCourse(c) || '').toLowerCase();
+      const realLecCount = this.lectures.filter((l) => {
+        if (l.course_id === c.id) return true;
+        const sub = this.subjects.find((s) => s.id === l.subject_id);
+        if (sub && (sub.course_id === c.id || (sub.class_name && sub.class_name.toLowerCase() === cClass))) {
+          return true;
+        }
+        return false;
+      }).length;
+
+      const realMatCount = this.materials.filter((m: any) => {
+        if (m.course_id === c.id) return true;
+        if (m.class_name && m.class_name.toLowerCase() === cClass) return true;
+        const sub = this.subjects.find((s) => s.id === m.subject_id);
+        if (sub && (sub.course_id === c.id || (sub.class_name && sub.class_name.toLowerCase() === cClass))) {
+          return true;
+        }
+        return false;
+      }).length;
+
+      return {
+        ...c,
+        lecture_count: realLecCount,
+        material_count: realMatCount,
+      };
+    });
   }
 
   async getCourseById(id: string): Promise<Course | undefined> {
     await this.ensureLoaded();
     const found = this.courses.find((c) => c.id === id);
     if (!found || this.deletedIds.has(found.id)) return undefined;
-    return found;
+
+    const cClass = (found.class_name || this.getClassNameFromCourse(found) || '').toLowerCase();
+    const realLecCount = this.lectures.filter((l) => {
+      if (l.course_id === found.id) return true;
+      const sub = this.subjects.find((s) => s.id === l.subject_id);
+      if (sub && (sub.course_id === found.id || (sub.class_name && sub.class_name.toLowerCase() === cClass))) {
+        return true;
+      }
+      return false;
+    }).length;
+
+    const realMatCount = this.materials.filter((m: any) => {
+      if (m.course_id === found.id) return true;
+      if (m.class_name && m.class_name.toLowerCase() === cClass) return true;
+      const sub = this.subjects.find((s) => s.id === m.subject_id);
+      if (sub && (sub.course_id === found.id || (sub.class_name && sub.class_name.toLowerCase() === cClass))) {
+        return true;
+      }
+      return false;
+    }).length;
+
+    return {
+      ...found,
+      lecture_count: realLecCount,
+      material_count: realMatCount,
+    };
   }
 
   async addCourse(data: Partial<Course>): Promise<Course> {
@@ -769,11 +848,11 @@ class AcademicRepository {
     const safeClassId = getSafeClassId(data.class_id, (data as any)?.class_name);
     const defaultSessionId = 'a0000000-0000-0000-0000-000000000001';
 
-    const insertPayload: any = {
+    // Strictly DB-valid columns
+    const dbPayload: any = {
       id: courseId,
       title: data.title || 'New Target Course',
       title_hi: data.title_hi || data.title || 'New Target Course',
-      tagline: data.tagline || 'Complete Board Exam Syllabus Mastery with BADE SIR',
       description: data.description || '',
       description_hi: data.description_hi || data.description || '',
       thumbnail_url: getResolvedThumbnailUrl(data.thumbnail_url),
@@ -784,7 +863,6 @@ class AcademicRepository {
       price: data.price !== undefined ? data.price : 999,
       discount_price: data.discount_price !== undefined ? data.discount_price : 499,
       validity_days: data.validity_days || 365,
-      class_name: (data as any).class_name || 'Class 10',
       is_published: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -794,12 +872,14 @@ class AcademicRepository {
       try {
         const { data: created, error } = await supabase
           .from('courses')
-          .insert(insertPayload)
+          .insert(dbPayload)
           .select()
           .single();
         if (!error && created) {
           const resolved: Course = {
             ...(created as Course),
+            tagline: data.tagline || '',
+            class_name: (data as any)?.class_name || 'Class 10',
             thumbnail_url: getResolvedThumbnailUrl(created.thumbnail_url),
           };
           this.courses = [resolved, ...this.courses.filter((c) => c.id !== resolved.id)];
@@ -817,11 +897,13 @@ class AcademicRepository {
       const directCreated = await fetchDirectRest<any[]>('courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify(insertPayload),
+        body: JSON.stringify(dbPayload),
       });
       if (Array.isArray(directCreated) && directCreated[0]) {
         const resolved: Course = {
           ...(directCreated[0] as Course),
+          tagline: data.tagline || '',
+          class_name: (data as any)?.class_name || 'Class 10',
           thumbnail_url: getResolvedThumbnailUrl(directCreated[0].thumbnail_url),
         };
         this.courses = [resolved, ...this.courses.filter((c) => c.id !== resolved.id)];
@@ -845,69 +927,76 @@ class AcademicRepository {
     return this.addCourse(data);
   }
 
-  // BULLETPROOF UPDATE: NEVER THROWS 'Course not found'
+  // BULLETPROOF UPDATE: NEVER THROWS 'Course not found' OR SCHEMA COLUMN ERRORS
   async updateCourse(id: string, updates: Partial<Course>): Promise<Course> {
     await this.ensureLoaded();
-    const cleanUpdates: any = {
-      title: updates.title,
-      title_hi: updates.title_hi,
-      tagline: updates.tagline,
-      description: updates.description,
-      description_hi: updates.description_hi,
-      thumbnail_url: updates.thumbnail_url ? getResolvedThumbnailUrl(updates.thumbnail_url) : undefined,
-      is_free: updates.is_free,
-      price: updates.price,
-      discount_price: updates.discount_price,
-      validity_days: updates.validity_days,
-      class_name: (updates as any).class_name,
+    const rawUpdates = updates as any;
+    const dbPayload: any = {
       updated_at: new Date().toISOString(),
     };
-    Object.keys(cleanUpdates).forEach((k) => cleanUpdates[k] === undefined && delete cleanUpdates[k]);
-    if (cleanUpdates.class_name) {
-      cleanUpdates.class_id = getSafeClassId(updates.class_id, cleanUpdates.class_name);
+    if (rawUpdates.title !== undefined) dbPayload.title = rawUpdates.title;
+    if (rawUpdates.title_hi !== undefined) dbPayload.title_hi = rawUpdates.title_hi;
+    if (rawUpdates.description !== undefined) dbPayload.description = rawUpdates.description;
+    if (rawUpdates.description_hi !== undefined) dbPayload.description_hi = rawUpdates.description_hi;
+    if (rawUpdates.thumbnail_url !== undefined) {
+      dbPayload.thumbnail_url = getResolvedThumbnailUrl(rawUpdates.thumbnail_url);
+    }
+    if (rawUpdates.is_free !== undefined) dbPayload.is_free = rawUpdates.is_free;
+    if (rawUpdates.price !== undefined) dbPayload.price = Number(rawUpdates.price);
+    if (rawUpdates.discount_price !== undefined) dbPayload.discount_price = Number(rawUpdates.discount_price);
+    if (rawUpdates.validity_days !== undefined) dbPayload.validity_days = Number(rawUpdates.validity_days);
+    if (rawUpdates.board_id !== undefined) dbPayload.board_id = rawUpdates.board_id;
+    if (rawUpdates.class_id !== undefined || rawUpdates.class_name !== undefined) {
+      dbPayload.class_id = getSafeClassId(rawUpdates.class_id, rawUpdates.class_name);
     }
 
     let isSaved = false;
     if (isSupabaseConfigured) {
       try {
         if (isValidUUID(id)) {
-          const { error } = await supabase.from('courses').update(cleanUpdates).eq('id', id);
-          if (!error) {
+          const { error: upsertErr } = await supabase.from('courses').upsert({ id, ...dbPayload }, { onConflict: 'id' });
+          if (!upsertErr) {
             isSaved = true;
           } else {
-            const res = await fetchDirectRest(`courses?id=eq.${id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(cleanUpdates),
-            });
-            if (res) isSaved = true;
+            console.warn('updateCourse upsert error, trying update:', upsertErr);
+            const { error: updateErr } = await supabase.from('courses').update(dbPayload).eq('id', id);
+            if (!updateErr) {
+              isSaved = true;
+            } else {
+              const res = await fetchDirectRest(`courses?id=eq.${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dbPayload),
+              });
+              if (res) isSaved = true;
+            }
           }
         } else if (updates.title) {
-          const { error } = await supabase.from('courses').update(cleanUpdates).eq('title', updates.title);
+          const { error } = await supabase.from('courses').update(dbPayload).eq('title', updates.title);
           if (!error) isSaved = true;
         }
       } catch (e) {
-        console.warn('Supabase update warning:', e);
-        if (isValidUUID(id)) {
-          const res = await fetchDirectRest(`courses?id=eq.${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cleanUpdates),
-          });
-          if (res) isSaved = true;
-        }
+        console.warn('updateCourse exception:', e);
       }
     }
 
-    if (!isSaved) {
-      throw new Error('Database Error: Unable to update course in cloud database. Please check your connection.');
+    if (!isSaved && isSupabaseConfigured) {
+      throw new Error('Database Error: Failed to update course in cloud database. Please verify internet connection.');
     }
 
-    this.courses = this.courses.map((c) => (c.id === id ? { ...c, ...cleanUpdates } : c));
+    this.courses = this.courses.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            ...updates,
+            thumbnail_url: updates.thumbnail_url ? getResolvedThumbnailUrl(updates.thumbnail_url) : c.thumbnail_url,
+            updated_at: new Date().toISOString(),
+          }
+        : c
+    );
     await this.persist('icc_courses', this.courses);
     this.notify();
-
-    return this.courses.find((c) => c.id === id) || (cleanUpdates as Course);
+    return this.courses.find((c) => c.id === id)!;
   }
 
   async deleteCourse(id: string): Promise<void> {
@@ -1104,12 +1193,44 @@ class AcademicRepository {
   // --- CHAPTERS (Subject Scoped) ---
   async getChapters(subjectId: string, subSubjectId?: string): Promise<AcademicChapter[]> {
     await this.ensureLoaded();
-    return this.chapters.filter((ch) => {
+    const local = this.chapters.filter((ch) => {
       if (this.isDeleted(ch.id)) return false;
       if (ch.subject_id !== subjectId) return false;
       if (subSubjectId) return ch.sub_subject_id === subSubjectId;
       return true;
     });
+    if (local.length > 0) return local;
+
+    if (isSupabaseConfigured) {
+      try {
+        let q = supabase
+          .from('chapters')
+          .select('*')
+          .eq('subject_id', subjectId)
+          .order('chapter_number', { ascending: true });
+        if (subSubjectId) q = q.eq('sub_subject_id', subSubjectId);
+        const { data, error } = await q;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const mapped: AcademicChapter[] = data.map((d: any) => ({
+            id: d.id,
+            subject_id: d.subject_id,
+            sub_subject_id: d.sub_subject_id,
+            chapter_number: d.chapter_number || 1,
+            title: d.title,
+            title_hi: d.title_hi || d.title,
+            description: d.description || '',
+            live_count: d.live_count || 0,
+            lecture_count: d.lecture_count || 0,
+            material_count: d.material_count || 0,
+          }));
+          this.chapters = [...this.chapters.filter((c) => c.subject_id !== subjectId), ...mapped];
+          return mapped;
+        }
+      } catch (e) {
+        console.warn('getChapters Supabase fetch error:', e);
+      }
+    }
+    return local;
   }
 
   async addChapter(data: Partial<AcademicChapter>): Promise<AcademicChapter> {
@@ -1713,9 +1834,25 @@ class AcademicRepository {
     return [...this.students];
   }
 
-  // --- DIRECTOR CONTROLS: TEACHERS (FULL CRUD) ---
+  // --- DIRECTOR CONTROLS: TEACHERS (FULL CLOUD TWO-WAY SYNC) ---
   async getTeachers(): Promise<Teacher[]> {
     await this.ensureLoaded();
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'icc_teachers')
+          .maybeSingle();
+        if (!error && data?.value && Array.isArray(data.value) && data.value.length > 0) {
+          this.teachers = data.value as Teacher[];
+          this.persist('icc_teachers', this.teachers).catch(() => {});
+          return [...this.teachers];
+        }
+      } catch (e) {
+        console.warn('getTeachers cloud fetch error:', e);
+      }
+    }
     return [...this.teachers];
   }
 
@@ -1725,24 +1862,118 @@ class AcademicRepository {
       id: `t-${Date.now()}`,
       ...teacherData,
     };
-    this.teachers = [newTeacher, ...this.teachers];
-    this.persist('icc_teachers', this.teachers).catch(() => {});
+    const updated = [newTeacher, ...this.teachers.filter((t) => t.id !== newTeacher.id)];
+
+    if (isSupabaseConfigured) {
+      let isSaved = false;
+      try {
+        const { error } = await supabase.from('platform_settings').upsert({
+          key: 'icc_teachers',
+          value: updated,
+          description: 'Institute Teachers & Faculty List with real-time multi-client sync',
+          updated_at: new Date().toISOString(),
+        });
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('addTeacher Supabase error:', e);
+      }
+
+      if (!isSaved) {
+        try {
+          const res = await fetch('https://icconline.vercel.app/api/teachers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTeacher),
+          });
+          if (res.ok) isSaved = true;
+        } catch {}
+      }
+
+      if (!isSaved) {
+        throw new Error('Database Error: Failed to save teacher to cloud database.');
+      }
+    }
+
+    this.teachers = updated;
+    await this.persist('icc_teachers', this.teachers);
     this.notify();
     return newTeacher;
   }
 
   async updateTeacher(id: string, updates: Partial<Teacher>): Promise<Teacher | null> {
     await this.ensureLoaded();
-    this.teachers = this.teachers.map((t) => (t.id === id ? { ...t, ...updates } : t));
-    this.persist('icc_teachers', this.teachers).catch(() => {});
+    const updated = this.teachers.map((t) => (t.id === id ? { ...t, ...updates } : t));
+
+    if (isSupabaseConfigured) {
+      let isSaved = false;
+      try {
+        const { error } = await supabase.from('platform_settings').upsert({
+          key: 'icc_teachers',
+          value: updated,
+          description: 'Institute Teachers & Faculty List with real-time multi-client sync',
+          updated_at: new Date().toISOString(),
+        });
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('updateTeacher Supabase error:', e);
+      }
+
+      if (!isSaved) {
+        try {
+          const res = await fetch('https://icconline.vercel.app/api/teachers', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...updates }),
+          });
+          if (res.ok) isSaved = true;
+        } catch {}
+      }
+
+      if (!isSaved) {
+        throw new Error('Database Error: Failed to update teacher in cloud database.');
+      }
+    }
+
+    this.teachers = updated;
+    await this.persist('icc_teachers', this.teachers);
     this.notify();
     return this.teachers.find((t) => t.id === id) || null;
   }
 
   async deleteTeacher(id: string): Promise<boolean> {
     await this.ensureLoaded();
-    this.teachers = this.teachers.filter((t) => t.id !== id);
-    this.persist('icc_teachers', this.teachers).catch(() => {});
+    const updated = this.teachers.filter((t) => t.id !== id);
+
+    if (isSupabaseConfigured) {
+      let isSaved = false;
+      try {
+        const { error } = await supabase.from('platform_settings').upsert({
+          key: 'icc_teachers',
+          value: updated,
+          description: 'Institute Teachers & Faculty List with real-time multi-client sync',
+          updated_at: new Date().toISOString(),
+        });
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('deleteTeacher Supabase error:', e);
+      }
+
+      if (!isSaved) {
+        try {
+          const res = await fetch(`https://icconline.vercel.app/api/teachers?id=${id}`, {
+            method: 'DELETE',
+          });
+          if (res.ok) isSaved = true;
+        } catch {}
+      }
+
+      if (!isSaved) {
+        throw new Error('Database Error: Failed to delete teacher from cloud database.');
+      }
+    }
+
+    this.teachers = updated;
+    await this.persist('icc_teachers', this.teachers);
     this.notify();
     return true;
   }
