@@ -100,6 +100,9 @@ export interface AcademicSubject {
   has_sub_subjects: boolean;
   sub_subjects?: SubSubject[];
   display_order: number;
+  chapter_count?: number;
+  lecture_count?: number;
+  material_count?: number;
 }
 
 export interface AcademicChapter {
@@ -1049,10 +1052,32 @@ class AcademicRepository {
     await this.ensureLoaded();
     let list = this.subjects.filter((s) => !this.isDeleted(s.id));
 
+    const computeSubjectCounts = (s: AcademicSubject): AcademicSubject => {
+      const subjectChapterIds = new Set(
+        this.chapters.filter((c) => !this.isDeleted(c.id) && c.subject_id === s.id).map((c) => c.id)
+      );
+      const lecCount = this.lectures.filter(
+        (l) => !this.isDeleted(l.id) && (l.subject_id === s.id || (l.chapter_id && subjectChapterIds.has(l.chapter_id)))
+      ).length;
+      const liveCount = this.liveClasses.filter(
+        (l) => !this.isDeleted(l.id) && ((l as any).subject_id === s.id || ((l as any).chapter_id && subjectChapterIds.has((l as any).chapter_id)))
+      ).length;
+      const matCount = this.materials.filter(
+        (m) => !this.isDeleted(m.id) && (m.subject_id === s.id || (m.chapter_id && subjectChapterIds.has(m.chapter_id)))
+      ).length;
+
+      return {
+        ...s,
+        chapter_count: subjectChapterIds.size,
+        lecture_count: lecCount + liveCount,
+        material_count: matCount,
+      };
+    };
+
     // When courseId is provided, return ONLY subjects explicitly belonging to this course
     // Zero auto-injection: Admin manually creates subjects for each course.
     if (courseId) {
-      return list.filter((s) => s.course_id === courseId);
+      return list.filter((s) => s.course_id === courseId).map(computeSubjectCounts);
     }
 
     if (className) {
@@ -1072,10 +1097,10 @@ class AcademicRepository {
         }
         return false;
       });
-      return list;
+      return list.map(computeSubjectCounts);
     }
 
-    return list;
+    return list.map(computeSubjectCounts);
   }
 
   async addSubject(sub: Partial<AcademicSubject>): Promise<AcademicSubject> {
@@ -1193,13 +1218,26 @@ class AcademicRepository {
   // --- CHAPTERS (Subject Scoped) ---
   async getChapters(subjectId: string, subSubjectId?: string): Promise<AcademicChapter[]> {
     await this.ensureLoaded();
+
+    const computeChapterCounts = (ch: AcademicChapter): AcademicChapter => {
+      const lecCount = this.lectures.filter((l) => !this.isDeleted(l.id) && l.chapter_id === ch.id).length;
+      const liveCount = this.liveClasses.filter((l) => !this.isDeleted(l.id) && (l as any).chapter_id === ch.id).length;
+      const matCount = this.materials.filter((m) => !this.isDeleted(m.id) && m.chapter_id === ch.id).length;
+      return {
+        ...ch,
+        lecture_count: lecCount,
+        live_count: liveCount,
+        material_count: matCount,
+      };
+    };
+
     const local = this.chapters.filter((ch) => {
       if (this.isDeleted(ch.id)) return false;
       if (ch.subject_id !== subjectId) return false;
       if (subSubjectId) return ch.sub_subject_id === subSubjectId;
       return true;
     });
-    if (local.length > 0) return local;
+    if (local.length > 0) return local.map(computeChapterCounts);
 
     if (isSupabaseConfigured) {
       try {
@@ -1219,18 +1257,18 @@ class AcademicRepository {
             title: d.title,
             title_hi: d.title_hi || d.title,
             description: d.description || '',
-            live_count: d.live_count || 0,
-            lecture_count: d.lecture_count || 0,
-            material_count: d.material_count || 0,
+            live_count: 0,
+            lecture_count: 0,
+            material_count: 0,
           }));
           this.chapters = [...this.chapters.filter((c) => c.subject_id !== subjectId), ...mapped];
-          return mapped;
+          return mapped.map(computeChapterCounts);
         }
       } catch (e) {
         console.warn('getChapters Supabase fetch error:', e);
       }
     }
-    return local;
+    return local.map(computeChapterCounts);
   }
 
   async addChapter(data: Partial<AcademicChapter>): Promise<AcademicChapter> {
@@ -1490,6 +1528,8 @@ class AcademicRepository {
           duration_minutes: newLive.duration_minutes,
           status: newLive.status,
           class_name: (newLive as any).class_name,
+          chapter_id: (newLive as any).chapter_id || null,
+          subject_id: (newLive as any).subject_id || null,
         };
         const { error } = await supabase.from('live_classes').upsert(payload);
         if (!error) {

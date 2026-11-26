@@ -551,12 +551,23 @@ export default function CourseDetailsScreen() {
 
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.subjectName, { color: theme.text }]}>{sub.name}</Text>
-                        <Text style={styles.subjectNameHi}>{sub.name_hi}</Text>
-                        <Text style={[styles.subjectMeta, { color: theme.textSecondary }]}>
-                          {sub.has_sub_subjects
-                            ? `${sub.sub_subjects?.length || 3} Disciplines (Physics, Chemistry, Bio)`
-                            : 'Direct Chapters & Notes'}
-                        </Text>
+                        {sub.name_hi && sub.name_hi !== sub.name ? (
+                          <Text style={styles.subjectNameHi}>{sub.name_hi}</Text>
+                        ) : null}
+                        <View style={[styles.chapterPillRow, { marginTop: 4 }]}>
+                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#EFF6FF' }]}>
+                            <Video size={10} color="#2563EB" />
+                            <Text style={[styles.countPillText, { color: isDark ? '#93C5FD' : '#2563EB' }]}>
+                              {sub.lecture_count || 0} Videos
+                            </Text>
+                          </View>
+                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#ECFDF5' }]}>
+                            <FileText size={10} color="#059669" />
+                            <Text style={[styles.countPillText, { color: isDark ? '#6EE7B7' : '#059669' }]}>
+                              {sub.material_count || 0} Notes
+                            </Text>
+                          </View>
+                        </View>
                       </View>
 
                       <View style={styles.subjectActionRight}>
@@ -687,23 +698,26 @@ export default function CourseDetailsScreen() {
 
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.chapterTitleText, { color: theme.text }]}>{chap.title}</Text>
+                        {chap.title_hi && chap.title_hi !== chap.title ? (
+                          <Text style={[styles.subjectNameHi, { marginTop: 1, marginBottom: 2 }]}>{chap.title_hi}</Text>
+                        ) : null}
 
                         <View style={styles.chapterPillRow}>
                           {chap.live_count ? (
                             <View style={styles.liveTagPill}>
                               <Radio size={10} color="#DC2626" />
-                              <Text style={styles.liveTagText}>Live Available</Text>
+                              <Text style={styles.liveTagText}>{chap.live_count} Live</Text>
                             </View>
                           ) : null}
 
-                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#EFF6FF' }]}>
                             <Video size={10} color="#2563EB" />
-                            <Text style={[styles.countPillText, { color: theme.textSecondary }]}>{chap.lecture_count || 0} Videos</Text>
+                            <Text style={[styles.countPillText, { color: isDark ? '#93C5FD' : '#2563EB' }]}>{chap.lecture_count || 0} Videos</Text>
                           </View>
 
-                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                          <View style={[styles.countPill, { backgroundColor: isDark ? '#18181B' : '#ECFDF5' }]}>
                             <FileText size={10} color="#059669" />
-                            <Text style={[styles.countPillText, { color: theme.textSecondary }]}>{chap.material_count || 0} PDFs</Text>
+                            <Text style={[styles.countPillText, { color: isDark ? '#6EE7B7' : '#059669' }]}>{chap.material_count || 0} Notes</Text>
                           </View>
                         </View>
                       </View>
@@ -934,6 +948,13 @@ export default function CourseDetailsScreen() {
               value={formTitle}
               onChangeText={setFormTitle}
             />
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Subject Name in Hindi / विषय का नाम हिंदी में (उदा. विज्ञान)"
+              value={formTitleHi}
+              onChangeText={setFormTitleHi}
+            />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubject}>
               <Text style={styles.submitBtnText}>Save Subject</Text>
@@ -960,6 +981,13 @@ export default function CourseDetailsScreen() {
               value={formTitle}
               onChangeText={setFormTitle}
             />
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Discipline in Hindi (उदा. रसायन विज्ञान, भौतिक विज्ञान)"
+              value={formTitleHi}
+              onChangeText={setFormTitleHi}
+            />
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubSubject}>
               <Text style={styles.submitBtnText}>Add Sub-Subject</Text>
@@ -985,6 +1013,13 @@ export default function CourseDetailsScreen() {
               placeholder="Chapter Title (e.g. Chemical Reactions)"
               value={formTitle}
               onChangeText={setFormTitle}
+            />
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Chapter Title in Hindi / अध्याय का नाम हिंदी में (उदा. रासायनिक अभिक्रियाएँ)"
+              value={formTitleHi}
+              onChangeText={setFormTitleHi}
             />
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text, height: 70 }]}

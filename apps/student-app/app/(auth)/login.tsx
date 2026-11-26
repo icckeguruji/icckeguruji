@@ -124,6 +124,21 @@ export default function LoginScreen() {
             if (phoneData) emailToUse = phoneData as string;
           } catch {}
         }
+
+        // Direct table fallback lookup by mobile number or username
+        if (!emailToUse.includes('@')) {
+          try {
+            const { data: directProf } = await supabase
+              .from('profiles')
+              .select('email')
+              .or(`mobile_number.eq.${trimmedId},username.eq.${trimmedId}`)
+              .limit(1)
+              .maybeSingle();
+            if (directProf?.email) {
+              emailToUse = directProf.email;
+            }
+          } catch {}
+        }
       }
 
       let loggedIn = false;

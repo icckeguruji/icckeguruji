@@ -1179,6 +1179,8 @@ export const AdminApi = {
       scheduled_at: cls.scheduled_at || new Date().toISOString(),
       duration_minutes: cls.duration_minutes || 60,
       status: cls.status || 'scheduled',
+      chapter_id: (cls as any).chapter_id || null,
+      subject_id: (cls as any).subject_id || null,
     };
 
     if (isSupabaseConfigured) {
@@ -1421,6 +1423,9 @@ export const AdminApi = {
         if (!error && data) {
           const item: RecordedLectureItem = {
             id: data.id,
+            course_id: data.course_id || insertPayload.course_id,
+            subject_id: data.subject_id || insertPayload.subject_id,
+            chapter_id: data.chapter_id || insertPayload.chapter_id,
             title: data.title,
             title_hi: data.title_hi,
             youtube_video_id: data.youtube_video_id,
@@ -1447,6 +1452,9 @@ export const AdminApi = {
       if (Array.isArray(direct) && direct[0]) {
         const item: RecordedLectureItem = {
           id: direct[0].id,
+          course_id: direct[0].course_id || insertPayload.course_id,
+          subject_id: direct[0].subject_id || insertPayload.subject_id,
+          chapter_id: direct[0].chapter_id || insertPayload.chapter_id,
           title: direct[0].title,
           title_hi: direct[0].title_hi,
           youtube_video_id: direct[0].youtube_video_id,

@@ -116,7 +116,19 @@ export default function StudentHomeScreen() {
   }, [loadCachedData]);
 
   const activeLive = liveClasses.find((l) => l.status === 'live') || liveClasses[0];
-  const enrolledCourses = courses.length > 0 ? courses.slice(0, 3) : [];
+  const enrolledCourses = courses.length > 0
+    ? (user?.role === 'admin'
+        ? courses.slice(0, 3)
+        : (courses.filter((c) => {
+            const cClass = (c.class_name || c.title || '').toLowerCase();
+            return cClass.includes('10') || c.id === 'ae78ea58-19aa-4ed4-86c8-336bd42c45ef';
+          }).length > 0
+            ? courses.filter((c) => {
+                const cClass = (c.class_name || c.title || '').toLowerCase();
+                return cClass.includes('10') || c.id === 'ae78ea58-19aa-4ed4-86c8-336bd42c45ef';
+              })
+            : courses.slice(0, 1)))
+    : [];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>

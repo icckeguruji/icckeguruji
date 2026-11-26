@@ -94,6 +94,11 @@ export default function CoursesPage() {
   const [newChapterTitleHi, setNewChapterTitleHi] = useState('');
   const [contentFormTitle, setContentFormTitle] = useState('');
   const [contentFormUrl, setContentFormUrl] = useState('');
+  const [contentFormMaterialTitle, setContentFormMaterialTitle] = useState('');
+  const [contentFormMaterialUrl, setContentFormMaterialUrl] = useState('');
+  const [curriculumLectures, setCurriculumLectures] = useState<RecordedLectureItem[]>([]);
+  const [curriculumLiveClasses, setCurriculumLiveClasses] = useState<LiveClass[]>([]);
+  const [curriculumMaterials, setCurriculumMaterials] = useState<StudyMaterial[]>([]);
 
   // Course Form States
   const [thumbnailUrl, setThumbnailUrl] = useState('/thumbnails/batch-b3-class10.jpg');
@@ -405,9 +410,39 @@ export default function CoursesPage() {
     setSubjectChapters([]);
     setActiveChapterContent(null);
     setLoadingCurriculum(true);
-    const subs = await AdminApi.getCourseSubjects(course.id);
+    const [subs, lecs, lives, mats] = await Promise.all([
+      AdminApi.getCourseSubjects(course.id),
+      AdminApi.getRecordedLectures(),
+      AdminApi.getLiveClasses(),
+      AdminApi.getStudyMaterials(),
+    ]);
     setCourseSubjects(subs);
+    setCurriculumLectures(lecs);
+    setCurriculumLiveClasses(lives);
+    setCurriculumMaterials(mats);
     setLoadingCurriculum(false);
+  };
+
+  const getSubjectVideoCount = (subId: string) => {
+    return (
+      curriculumLectures.filter((l) => l.subject_id === subId).length +
+      curriculumLiveClasses.filter((lc: any) => lc.subject_id === subId).length
+    );
+  };
+
+  const getSubjectPdfCount = (subId: string) => {
+    return curriculumMaterials.filter((m: any) => m.subject_id === subId).length;
+  };
+
+  const getChapterVideoCount = (chapId: string) => {
+    return (
+      curriculumLectures.filter((l) => l.chapter_id === chapId).length +
+      curriculumLiveClasses.filter((lc: any) => lc.chapter_id === chapId).length
+    );
+  };
+
+  const getChapterPdfCount = (chapId: string) => {
+    return curriculumMaterials.filter((m: any) => m.chapter_id === chapId).length;
   };
 
   const handleAddSubject = async (e: React.FormEvent) => {
@@ -547,7 +582,7 @@ export default function CoursesPage() {
 
   const handleAddChapterLiveClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!curriculumCourse || !activeChapterContent || !contentFormTitle.trim()) return;
+    if (!curriculumCourse || !selectedSubject || !activeChapterContent || !contentFormTitle.trim()) return;
     const cleanVid = contentFormUrl.includes('v=')
       ? contentFormUrl.split('v=')[1]?.split('&')[0]
       : contentFormUrl.includes('youtu.be/')
@@ -560,9 +595,11 @@ export default function CoursesPage() {
       youtube_video_id: cleanVid,
       status: 'live',
       duration_minutes: 60,
+      chapter_id: activeChapterContent.id,
+      subject_id: selectedSubject.id,
     } as any);
-    (created as any).chapter_id = activeChapterContent.id;
     setChapterLiveClasses((prev) => [created, ...prev]);
+    setCurriculumLiveClasses((prev) => [created, ...prev]);
     setContentFormTitle('');
     setContentFormUrl('');
   };
@@ -585,8 +622,27 @@ export default function CoursesPage() {
       duration_minutes: 45,
     });
     setChapterRecordedLectures((prev) => [created, ...prev]);
+    setCurriculumLectures((prev) => [created, ...prev]);
     setContentFormTitle('');
     setContentFormUrl('');
+  };
+
+  const handleAddChapterMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!curriculumCourse || !selectedSubject || !activeChapterContent || !contentFormMaterialTitle.trim()) return;
+    const created = await AdminApi.uploadStudyMaterial({
+      title: contentFormMaterialTitle.trim(),
+      title_hi: contentFormMaterialTitle.trim(),
+      board_id: curriculumCourse.board_id,
+      class_id: curriculumCourse.class_id,
+      subject_id: selectedSubject.id,
+      chapter_id: activeChapterContent.id,
+      file_path: contentFormMaterialUrl.trim() || 'bseb/class10/notes.pdf',
+    });
+    setChapterStudyMaterials((prev) => [created, ...prev]);
+    setCurriculumMaterials((prev) => [created, ...prev]);
+    setContentFormMaterialTitle('');
+    setContentFormMaterialUrl('');
   };
 
   const filteredCourses = courses.filter((c) => {
@@ -1165,7 +1221,7 @@ export default function CoursesPage() {
                     <div className="flex space-x-1.5">
                       <input
                         type="text"
-                        placeholder="Alternative Label (Optional)"
+                        placeholder="Subject Title in Hindi / विषय का नाम हिंदी में (उदा. विज्ञान)"
                         value={newSubjectNameHi}
                         onChange={(e) => setNewSubjectNameHi(e.target.value)}
                         className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
@@ -1207,6 +1263,26 @@ export default function CoursesPage() {
                                   {sub.name_hi}
                                 </p>
                               )}
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span
+                                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                    isSelected
+                                      ? 'bg-indigo-700/80 text-indigo-100'
+                                      : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                  }`}
+                                >
+                                  🎥 {getSubjectVideoCount(sub.id)} Videos
+                                </span>
+                                <span
+                                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                    isSelected
+                                      ? 'bg-indigo-700/80 text-indigo-100'
+                                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  }`}
+                                >
+                                  📄 {getSubjectPdfCount(sub.id)} Notes
+                                </span>
+                              </div>
                             </div>
                             <div className="flex items-center space-x-1">
                               <button
@@ -1347,15 +1423,24 @@ export default function CoursesPage() {
                           placeholder="Chapter Title (e.g. Ch 1: Real Numbers)"
                           value={newChapterTitle}
                           onChange={(e) => setNewChapterTitle(e.target.value)}
-                          className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                          className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                         />
-                        <button
-                          type="submit"
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Chapter</span>
-                        </button>
+                        <div className="flex space-x-1.5">
+                          <input
+                            type="text"
+                            placeholder="Chapter Title in Hindi / अध्याय का नाम हिंदी में (उदा. वास्तविक संख्याएँ)"
+                            value={newChapterTitleHi}
+                            onChange={(e) => setNewChapterTitleHi(e.target.value)}
+                            className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold flex items-center space-x-1 transition"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add</span>
+                          </button>
+                        </div>
                       </form>
 
                       {/* Chapters Items */}
@@ -1386,6 +1471,26 @@ export default function CoursesPage() {
                                       {chap.title_hi}
                                     </p>
                                   )}
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <span
+                                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                        isInspecting
+                                          ? 'bg-emerald-700/80 text-emerald-100'
+                                          : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                      }`}
+                                    >
+                                      🎥 {getChapterVideoCount(chap.id)} Videos
+                                    </span>
+                                    <span
+                                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                        isInspecting
+                                          ? 'bg-emerald-700/80 text-emerald-100'
+                                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      }`}
+                                    >
+                                      📄 {getChapterPdfCount(chap.id)} Notes
+                                    </span>
+                                  </div>
                                 </div>
                                 <div className="flex items-center space-x-1">
                                   <button
@@ -1509,6 +1614,28 @@ export default function CoursesPage() {
                         <FileText className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Study Materials ({chapterStudyMaterials.length})</span>
                       </span>
+                      <form onSubmit={handleAddChapterMaterial} className="space-y-1 mb-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Notes Title (उदा. Ch 1 हस्तलिखित नोट्स)"
+                          value={contentFormMaterialTitle}
+                          onChange={(e) => setContentFormMaterialTitle(e.target.value)}
+                          className="w-full px-2 py-1 text-xs border rounded"
+                        />
+                        <div className="flex space-x-1">
+                          <input
+                            type="text"
+                            placeholder="File path or URL (optional)"
+                            value={contentFormMaterialUrl}
+                            onChange={(e) => setContentFormMaterialUrl(e.target.value)}
+                            className="flex-1 px-2 py-1 text-xs border rounded"
+                          />
+                          <button type="submit" className="px-2 py-1 bg-emerald-600 text-white rounded text-xs font-semibold">
+                            + Notes
+                          </button>
+                        </div>
+                      </form>
                       <div className="space-y-1 max-h-36 overflow-y-auto">
                         {chapterStudyMaterials.length === 0 ? (
                           <p className="text-[11px] text-slate-400">No PDF notes attached yet.</p>
