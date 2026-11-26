@@ -20,7 +20,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDirectorStore } from '../../src/store/useDirectorStore';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { supabase } from '../../src/lib/supabase';
-import { useAppUpdateStore, CURRENT_APP_VERSION } from '../../src/services/appUpdateService';
+import { useAppUpdateStore, CURRENT_APP_VERSION, CURRENT_VERSION_CODE } from '../../src/services/appUpdateService';
 import { academicService } from '../../src/services/academicService';
 import { UserProfile, Payment } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
@@ -1280,11 +1280,11 @@ export default function StudentProfileScreen() {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={async () => {
-              const res = await useAppUpdateStore.getState().checkForUpdate();
+              const res = await useAppUpdateStore.getState().checkForUpdate(true);
               if (!res.hasUpdate) {
                 Alert.alert(
-                  'Up to Date! 🎉',
-                  `You are running the latest version of IDEAL COACHING CENTRE (v${CURRENT_APP_VERSION}).`
+                  'Up to Date! 🎉 (नवीनतम संस्करण)',
+                  `You are running the latest official version of IDEAL COACHING CENTRE (v${CURRENT_APP_VERSION}).`
                 );
               }
             }}
@@ -1294,8 +1294,8 @@ export default function StudentProfileScreen() {
                 <RefreshCw size={18} color="#2563EB" />
               </View>
               <View>
-                <Text style={styles.menuItemText}>Check for App Updates</Text>
-                <Text style={styles.menuItemSub}>Version v{CURRENT_APP_VERSION} (Build 1)</Text>
+                <Text style={styles.menuItemText}>Check for App Updates (ऐप अपडेट जांचें)</Text>
+                <Text style={styles.menuItemSub}>Version v{CURRENT_APP_VERSION} (Build {CURRENT_VERSION_CODE})</Text>
               </View>
             </View>
             <ChevronRight size={18} color="#94A3B8" />

@@ -188,8 +188,8 @@ export default function CoursesPage() {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 500;
+          const MAX_WIDTH = 640;
+          const MAX_HEIGHT = 360;
           let width = img.width;
           let height = img.height;
 
@@ -209,7 +209,7 @@ export default function CoursesPage() {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.75));
+          resolve(canvas.toDataURL('image/jpeg', 0.70));
         };
         img.src = e.target?.result as string;
       };
@@ -382,7 +382,8 @@ export default function CoursesPage() {
       setEditingCourse(null);
       alert('Success: Course updated and saved to cloud database successfully!');
     } catch (err: any) {
-      alert('Database Error: ' + (err?.message || 'Failed to update course in cloud database.'));
+      const msg = err?.message ? String(err.message).replace(/^(Database Error:\s*)+/i, '') : 'Failed to update course in cloud database.';
+      alert('Database Error: ' + msg);
     }
   };
 

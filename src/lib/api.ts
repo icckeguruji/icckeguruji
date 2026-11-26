@@ -323,7 +323,7 @@ function savePersistentState<T>(key: string, data: T): void {
 // Direct Supabase REST fetcher with static anon key — guarantees zero-cache live parity and bypasses expired sessions
 async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3500);
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
   try {
     const url = endpoint.startsWith('http') ? endpoint : `${LIVE_SUPABASE_URL}/rest/v1/${endpoint}`;
     const headers: Record<string, string> = {
@@ -339,7 +339,14 @@ async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): 
     });
     clearTimeout(timeoutId);
     if (!res.ok) return null;
-    return (await res.json()) as T;
+    if (res.status === 204) return {} as T;
+    const text = await res.text();
+    if (!text || text.trim() === '') return {} as T;
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return {} as T;
+    }
   } catch {
     clearTimeout(timeoutId);
     return null;
@@ -793,22 +800,27 @@ export const AdminApi = {
       let updateConfirmed = false;
       try {
         if (isValidUUID(courseId)) {
-          // Attempt upsert first to guarantee save whether row exists or not
-          const { error: upsertErr } = await supabase.from('courses').upsert({ id: courseId, ...dbPayload }, { onConflict: 'id' });
-          if (!upsertErr) {
+          // 1. Direct update by ID first (most standard & avoids missing not-null column errors on upsert)
+          const { error: updateErr } = await supabase.from('courses').update(dbPayload).eq('id', courseId);
+          if (!updateErr) {
             updateConfirmed = true;
           } else {
-            console.warn('updateCourse upsert error, trying update:', upsertErr);
-            const { error: updateErr } = await supabase.from('courses').update(dbPayload).eq('id', courseId);
-            if (!updateErr) {
+            console.warn('updateCourse Supabase update error, trying direct REST PATCH:', updateErr);
+            if (updateErr.message?.includes('JWT') || (updateErr as any).code === 'PGRST301') {
+              try { await supabase.auth.signOut(); } catch {}
+            }
+            // 2. Direct REST PATCH fallback with static anon key
+            const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+              body: JSON.stringify(dbPayload),
+            });
+            if (patchRes !== null) {
               updateConfirmed = true;
             } else {
-              const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dbPayload),
-              });
-              if (patchRes !== null) updateConfirmed = true;
+              // 3. Upsert fallback
+              const { error: upsertErr } = await supabase.from('courses').upsert({ id: courseId, ...dbPayload }, { onConflict: 'id' });
+              if (!upsertErr) updateConfirmed = true;
             }
           }
         } else {
@@ -823,7 +835,7 @@ export const AdminApi = {
         if (isValidUUID(courseId)) {
           const patchRes = await fetchDirectRest(`courses?id=eq.${courseId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
             body: JSON.stringify(dbPayload),
           });
           if (patchRes !== null) updateConfirmed = true;

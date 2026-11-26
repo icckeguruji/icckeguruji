@@ -31,9 +31,11 @@ import {
   CreditCard,
   BookOpen,
   Bot,
+  Download,
 } from 'lucide-react-native';
 import { DirectorAiModal } from '../../src/components/DirectorAiModal';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
+import { useAppUpdateStore } from '../../src/services/appUpdateService';
 
 const thumbMap: Record<string, any> = {
   'c0000000-0000-0000-0000-000000000010': require('../../assets/thumbnails/batch-b3-class10.jpg'),
@@ -58,6 +60,7 @@ export default function StudentHomeScreen() {
   const { user } = useAuthStore();
   const theme = useAppTheme();
   const isDark = theme.isDark;
+  const { hasUpdate, latestVersion, titleHi } = useAppUpdateStore();
 
   const isAdmin =
     user?.role === 'admin' ||
@@ -150,6 +153,44 @@ export default function StudentHomeScreen() {
           />
         }
       >
+        {/* App Update Available Notification Bar */}
+        {hasUpdate && (
+          <TouchableOpacity
+            style={[
+              styles.updateBanner,
+              {
+                backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF',
+                borderColor: isDark ? '#3730A3' : '#C7D2FE',
+              },
+            ]}
+            onPress={() => useAppUpdateStore.setState({ dismissed: false })}
+            activeOpacity={0.85}
+          >
+            <View style={styles.updateBannerLeft}>
+              <View style={styles.updateIconCircle}>
+                <Download size={18} color="#4F46E5" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.updateBadgeRow}>
+                  <Text style={styles.updateBadgeText}>NEW UPDATE</Text>
+                  <Text style={[styles.updateVersionText, { color: isDark ? '#A5B4FC' : '#4338CA' }]}>
+                    v{latestVersion}
+                  </Text>
+                </View>
+                <Text
+                  style={[styles.updateTitleText, { color: isDark ? '#FFFFFF' : '#1E1B4B' }]}
+                  numberOfLines={1}
+                >
+                  {titleHi || 'नया वर्जन उपलब्ध है — अभी अपडेट करें'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.updateActionBtn}>
+              <Text style={styles.updateActionBtnText}>अपडेट</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Live Class Highlight Banner */}
         <View style={styles.liveCard}>
           <View style={styles.liveBadgeRow}>
@@ -811,5 +852,63 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  updateBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 14,
+    gap: 10,
+  },
+  updateBannerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  updateIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E0E7FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  updateBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  updateBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#4F46E5',
+    backgroundColor: '#E0E7FF',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  updateVersionText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  updateTitleText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  updateActionBtn: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  updateActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

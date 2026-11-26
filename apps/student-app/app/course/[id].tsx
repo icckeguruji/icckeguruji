@@ -499,7 +499,7 @@ export default function CourseDetailsScreen() {
           {activeLevel === 'subjects' && (
             <View>
               <View style={styles.sectionHeaderRow}>
-                <View>
+                <View style={styles.sectionHeaderLeft}>
                   <Text style={[styles.sectionHeading, { color: theme.text }]}>Course Subjects</Text>
                   <Text style={[styles.sectionSubHeading, { color: theme.textSecondary }]}>
                     Tap a subject to explore sub-subjects and chapters
@@ -596,7 +596,7 @@ export default function CourseDetailsScreen() {
           {activeLevel === 'sub_subjects' && selectedSubject && (
             <View>
               <View style={styles.sectionHeaderRow}>
-                <View>
+                <View style={styles.sectionHeaderLeft}>
                   <Text style={[styles.sectionHeading, { color: theme.text }]}>
                     {selectedSubject.name} Disciplines
                   </Text>
@@ -642,7 +642,7 @@ export default function CourseDetailsScreen() {
           {activeLevel === 'chapters' && selectedSubject && (
             <View>
               <View style={styles.sectionHeaderRow}>
-                <View>
+                <View style={styles.sectionHeaderLeft}>
                   <Text style={[styles.sectionHeading, { color: theme.text }]}>
                     {selectedSubSubject ? selectedSubSubject.name : selectedSubject.name} Chapters
                   </Text>
@@ -1254,7 +1254,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
     marginBottom: 14,
+    width: '100%',
+  },
+  sectionHeaderLeft: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    paddingRight: 8,
   },
   sectionHeading: {
     fontSize: 16,
@@ -1265,32 +1273,39 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     marginTop: 2,
+    lineHeight: 15,
   },
   addActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
     gap: 4,
     backgroundColor: '#2563EB',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     borderRadius: 8,
   },
   addActionButtonRed: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
     gap: 4,
     backgroundColor: '#DC2626',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     borderRadius: 8,
   },
   addActionButtonGreen: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
     gap: 4,
     backgroundColor: '#059669',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     borderRadius: 8,
   },
   addActionButtonText: {
