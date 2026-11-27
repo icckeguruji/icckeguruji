@@ -16,7 +16,7 @@ import { Course, LiveClass, StudyMaterial, UserProfile } from '@icc/shared-types
 // Direct Supabase REST fetcher with static anon key — guarantees zero-cache live parity and bypasses expired sessions
 async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3500);
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
   try {
     const url = endpoint.startsWith('http') ? endpoint : `${LIVE_SUPABASE_URL}/rest/v1/${endpoint}`;
     const headers: Record<string, string> = {
@@ -31,7 +31,10 @@ async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): 
     });
     clearTimeout(timeoutId);
     if (!res.ok) return null;
-    return (await res.json()) as T;
+    if (res.status === 204) return {} as T;
+    const text = await res.text();
+    if (!text || text.trim() === '') return {} as T;
+    return JSON.parse(text) as T;
   } catch {
     clearTimeout(timeoutId);
     return null;
@@ -1193,6 +1196,40 @@ class AcademicRepository {
     this.notify();
   }
 
+  async updateSubject(id: string, updates: Partial<AcademicSubject>): Promise<AcademicSubject> {
+    await this.ensureLoaded();
+    const payload: any = {
+      name: updates.name,
+      name_hi: updates.name_hi || updates.name,
+    };
+    if (updates.display_order !== undefined) payload.display_order = updates.display_order;
+
+    let isSaved = false;
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('subjects').update(payload).eq('id', id);
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('Supabase updateSubject error:', e);
+      }
+      if (!isSaved) {
+        const direct = await fetchDirectRest(`subjects?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify(payload),
+        });
+        if (direct) isSaved = true;
+      }
+    }
+
+    this.subjects = this.subjects.map((s) => (s.id === id ? { ...s, ...payload } : s));
+    await this.persist('icc_academic_subjects', this.subjects);
+    this.notify();
+    const updated = this.subjects.find((s) => s.id === id);
+    if (!updated) throw new Error('Subject not found');
+    return updated;
+  }
+
   // --- SUB-SUBJECTS ---
   async addSubSubject(subjectId: string, sub: { name: string; name_hi: string }): Promise<SubSubject> {
     await this.ensureLoaded();
@@ -1361,6 +1398,42 @@ class AcademicRepository {
     this.chapters = this.chapters.filter((c) => c.id !== id);
     await this.persist('icc_academic_chapters', this.chapters);
     this.notify();
+  }
+
+  async updateChapter(id: string, updates: Partial<AcademicChapter>): Promise<AcademicChapter> {
+    await this.ensureLoaded();
+    const payload: any = {
+      title: updates.title,
+      title_hi: updates.title_hi || updates.title,
+    };
+    if (updates.chapter_number !== undefined) payload.chapter_number = updates.chapter_number;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.description_hi !== undefined) payload.description_hi = updates.description_hi;
+
+    let isSaved = false;
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('chapters').update(payload).eq('id', id);
+        if (!error) isSaved = true;
+      } catch (e) {
+        console.warn('Supabase updateChapter error:', e);
+      }
+      if (!isSaved) {
+        const direct = await fetchDirectRest(`chapters?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify(payload),
+        });
+        if (direct) isSaved = true;
+      }
+    }
+
+    this.chapters = this.chapters.map((c) => (c.id === id ? { ...c, ...payload } : c));
+    await this.persist('icc_academic_chapters', this.chapters);
+    this.notify();
+    const updated = this.chapters.find((c) => c.id === id);
+    if (!updated) throw new Error('Chapter not found');
+    return updated;
   }
 
   // --- CHAPTER CONTENT: RECORDED VIDEOS ---
@@ -1853,25 +1926,92 @@ class AcademicRepository {
   // --- DIRECTOR CONTROLS: STUDENTS ---
   async getStudents(): Promise<UserProfile[]> {
     await this.ensureLoaded();
-    return [...this.students];
+    try {
+      const remote = await fetchDirectRest<UserProfile[]>('profiles?select=*&order=created_at.desc');
+      if (Array.isArray(remote) && remote.length > 0) {
+        this.students = remote;
+        this.persist('icc_students', this.students).catch(() => {});
+      }
+    } catch (e) {
+      console.warn('getStudents fetchDirectRest fallback:', e);
+    }
+    return this.students.filter(
+      (s) => s.username !== 'badesir' && s.email !== 'icckeguruji@gmail.com' && (s as any).role !== 'admin'
+    );
   }
 
   async toggleStudentStatus(studentId: string): Promise<UserProfile[]> {
     await this.ensureLoaded();
+    const current = this.students.find((s) => s.id === studentId);
+    const nextStatus = current ? !current.is_active : true;
+    const updates = { is_active: nextStatus, updated_at: new Date().toISOString() };
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update(updates).eq('id', studentId);
+      } catch (e) {
+        console.warn('toggleStudentStatus supabase err:', e);
+      }
+      try {
+        await fetchDirectRest(`profiles?id=eq.${studentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+      } catch (e) {}
+    }
+
     this.students = this.students.map((s) =>
-      s.id === studentId ? { ...s, is_active: !s.is_active, updated_at: new Date().toISOString() } : s
+      s.id === studentId ? { ...s, ...updates } : s
     );
     await this.persist('icc_students', this.students);
-    return [...this.students];
+    return this.getStudents();
   }
 
   async updateStudent(studentId: string, updates: Partial<UserProfile>): Promise<UserProfile[]> {
     await this.ensureLoaded();
+    const payload = { ...updates, updated_at: new Date().toISOString() };
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').update(payload).eq('id', studentId);
+      } catch (e) {
+        console.warn('updateStudent supabase err:', e);
+      }
+      try {
+        await fetchDirectRest(`profiles?id=eq.${studentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (e) {}
+    }
+
     this.students = this.students.map((s) =>
-      s.id === studentId ? { ...s, ...updates, updated_at: new Date().toISOString() } : s
+      s.id === studentId ? { ...s, ...payload } : s
     );
     await this.persist('icc_students', this.students);
-    return [...this.students];
+    return this.getStudents();
+  }
+
+  async deleteStudent(studentId: string): Promise<UserProfile[]> {
+    await this.ensureLoaded();
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('profiles').delete().eq('id', studentId);
+      } catch (e) {
+        console.warn('deleteStudent supabase err:', e);
+      }
+      try {
+        await fetchDirectRest(`profiles?id=eq.${studentId}`, {
+          method: 'DELETE',
+        });
+      } catch (e) {}
+    }
+
+    this.students = this.students.filter((s) => s.id !== studentId);
+    await this.persist('icc_students', this.students);
+    return this.getStudents();
   }
 
   // --- DIRECTOR CONTROLS: TEACHERS (FULL CLOUD TWO-WAY SYNC) ---

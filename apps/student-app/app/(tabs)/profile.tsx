@@ -122,6 +122,16 @@ export default function StudentProfileScreen() {
   const [payments, setPayments] = useState<any[]>([]);
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
+  const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<UserProfile | null>(null);
+  const [editStudentForm, setEditStudentForm] = useState({
+    full_name: '',
+    username: '',
+    mobile_number: '',
+    email: '',
+    district: '',
+    school_name: '',
+  });
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
@@ -282,6 +292,65 @@ export default function StudentProfileScreen() {
     } catch (err: any) {
       Alert.alert('Database Error', err?.message || 'Failed to update student status in database.');
     }
+  };
+
+  const openEditStudentModal = (student: UserProfile) => {
+    setEditingStudent(student);
+    setEditStudentForm({
+      full_name: student.full_name,
+      username: student.username,
+      mobile_number: student.mobile_number,
+      email: student.email,
+      district: student.district || 'Godda',
+      school_name: student.school_name || '',
+    });
+    setIsEditStudentModalOpen(true);
+  };
+
+  const handleUpdateStudent = async () => {
+    if (!editingStudent || !editStudentForm.full_name.trim()) {
+      Alert.alert('Required', 'Please enter student full name');
+      return;
+    }
+    try {
+      const updatedList = await academicService.updateStudent(editingStudent.id, {
+        full_name: editStudentForm.full_name.trim(),
+        username: editStudentForm.username.trim(),
+        mobile_number: editStudentForm.mobile_number.trim(),
+        email: editStudentForm.email.trim(),
+        district: editStudentForm.district.trim(),
+        school_name: editStudentForm.school_name.trim(),
+      });
+      setStudents(updatedList);
+      setIsEditStudentModalOpen(false);
+      setEditingStudent(null);
+      Alert.alert('Success', 'Student profile updated in cloud database!');
+    } catch (e: any) {
+      Alert.alert('Database Error', e?.message || 'Failed to update student');
+    }
+  };
+
+  const handleDeleteStudent = (student: UserProfile) => {
+    Alert.alert(
+      'Delete Student / विद्यार्थी को हटाएं',
+      `Are you sure you want to delete "${student.full_name}" (@${student.username}) from the database?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const updatedList = await academicService.deleteStudent(student.id);
+              setStudents(updatedList);
+              Alert.alert('Deleted', `Student "${student.full_name}" deleted from database.`);
+            } catch (e: any) {
+              Alert.alert('Database Error', e?.message || 'Failed to delete student');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSendParentWhatsApp = (student: UserProfile, type: 'attendance' | 'test') => {
@@ -1934,11 +2003,19 @@ export default function StudentProfileScreen() {
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.waTestBtn}
-                        onPress={() => handleSendParentWhatsApp(student, 'test')}
+                        style={[styles.callBtn, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderColor: '#3B82F6', borderWidth: 1 }]}
+                        onPress={() => openEditStudentModal(student)}
                       >
-                        <Sparkles size={13} color="#D97706" />
-                        <Text style={styles.waTestBtnText}>Test Report</Text>
+                        <Edit3 size={13} color="#2563EB" />
+                        <Text style={[styles.callBtnText, { color: '#2563EB' }]}>Edit</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.callBtn, { backgroundColor: isDark ? '#2D1515' : '#FEF2F2', borderColor: '#EF4444', borderWidth: 1 }]}
+                        onPress={() => handleDeleteStudent(student)}
+                      >
+                        <Trash2 size={13} color="#EF4444" />
+                        <Text style={[styles.callBtnText, { color: '#EF4444' }]}>Delete</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1951,6 +2028,115 @@ export default function StudentProfileScreen() {
                 onPress={() => setIsStudentModalOpen(false)}
               >
                 <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* EDIT STUDENT MODAL */}
+      <Modal
+        visible={isEditStudentModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsEditStudentModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.modalHeader, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Edit3 size={20} color="#2563EB" />
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Edit Student Details</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsEditStudentModalOpen(false)}>
+                <X size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, marginBottom: 4 }}>Full Name *</Text>
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }]}
+                  placeholderTextColor={theme.textMuted}
+                  placeholder="Student Full Name"
+                  value={editStudentForm.full_name}
+                  onChangeText={(t) => setEditStudentForm({ ...editStudentForm, full_name: t })}
+                />
+              </View>
+
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, marginBottom: 4 }}>Username *</Text>
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }]}
+                  placeholderTextColor={theme.textMuted}
+                  placeholder="Username"
+                  autoCapitalize="none"
+                  value={editStudentForm.username}
+                  onChangeText={(t) => setEditStudentForm({ ...editStudentForm, username: t.toLowerCase() })}
+                />
+              </View>
+
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, marginBottom: 4 }}>Mobile Number *</Text>
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }]}
+                  placeholderTextColor={theme.textMuted}
+                  placeholder="10-digit Mobile Number"
+                  keyboardType="phone-pad"
+                  value={editStudentForm.mobile_number}
+                  onChangeText={(t) => setEditStudentForm({ ...editStudentForm, mobile_number: t })}
+                />
+              </View>
+
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, marginBottom: 4 }}>Email Address</Text>
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }]}
+                  placeholderTextColor={theme.textMuted}
+                  placeholder="Email"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={editStudentForm.email}
+                  onChangeText={(t) => setEditStudentForm({ ...editStudentForm, email: t })}
+                />
+              </View>
+
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, marginBottom: 4 }}>District / Location</Text>
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }]}
+                  placeholderTextColor={theme.textMuted}
+                  placeholder="e.g. Godda / Mahagama"
+                  value={editStudentForm.district}
+                  onChangeText={(t) => setEditStudentForm({ ...editStudentForm, district: t })}
+                />
+              </View>
+
+              <View>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text, marginBottom: 4 }}>School / College Name</Text>
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, borderWidth: 1 }]}
+                  placeholderTextColor={theme.textMuted}
+                  placeholder="e.g. High School Mahagama"
+                  value={editStudentForm.school_name}
+                  onChangeText={(t) => setEditStudentForm({ ...editStudentForm, school_name: t })}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={[styles.modalFooter, { backgroundColor: isDark ? '#000000' : '#F8FAFC', borderTopColor: isDark ? '#27272A' : '#E2E8F0', flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }]}>
+              <TouchableOpacity
+                style={[styles.cancelBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9', borderColor: isDark ? '#27272A' : '#CBD5E1', borderWidth: isDark ? 1 : 0 }]}
+                onPress={() => setIsEditStudentModalOpen(false)}
+              >
+                <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }]}
+                onPress={handleUpdateStudent}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           </View>

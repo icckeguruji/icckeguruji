@@ -2,7 +2,7 @@
   "expo": {
     "name": "IDEAL COACHING CENTRE",
     "slug": "ideal-coaching-centre",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "idealcoaching",
@@ -23,7 +23,7 @@
       },
       "package": "com.idealcoaching.app",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",

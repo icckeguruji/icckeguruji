@@ -105,8 +105,11 @@ export default function CourseDetailsScreen() {
 
   // Admin Modals
   const [modalType, setModalType] = useState<
-    'none' | 'add_subject' | 'add_sub_subject' | 'add_chapter' | 'add_lecture' | 'schedule_live' | 'upload_notes'
+    'none' | 'add_subject' | 'add_sub_subject' | 'add_chapter' | 'add_lecture' | 'schedule_live' | 'upload_notes' | 'edit_subject' | 'edit_chapter'
   >('none');
+
+  const [editingSubject, setEditingSubject] = useState<AcademicSubject | null>(null);
+  const [editingChapter, setEditingChapter] = useState<AcademicChapter | null>(null);
 
   // Form Fields
   const [formTitle, setFormTitle] = useState('');
@@ -205,6 +208,36 @@ export default function CourseDetailsScreen() {
     ]);
   };
 
+  const openEditSubject = (sub: AcademicSubject) => {
+    setEditingSubject(sub);
+    setFormTitle(sub.name);
+    setFormTitleHi(sub.name_hi || sub.name);
+    setModalType('edit_subject');
+  };
+
+  const handleUpdateSubject = async () => {
+    if (!editingSubject || !formTitle.trim()) {
+      Alert.alert('Required', 'Please enter subject name');
+      return;
+    }
+    try {
+      const updated = await academicService.updateSubject(editingSubject.id, {
+        name: formTitle.trim(),
+        name_hi: formTitleHi.trim() || formTitle.trim(),
+      });
+      setSubjects((prev) => prev.map((s) => (s.id === editingSubject.id ? { ...s, ...updated } : s)));
+      if (selectedSubject?.id === editingSubject.id) {
+        setSelectedSubject((prev) => (prev ? { ...prev, ...updated } : prev));
+      }
+      setModalType('none');
+      setEditingSubject(null);
+      resetForm();
+      Alert.alert('Success', 'Subject updated and saved in cloud database!');
+    } catch (e: any) {
+      Alert.alert('Database Error', e?.message || 'Failed to update subject');
+    }
+  };
+
   const handleCreateSubSubject = async () => {
     if (!selectedSubject || !formTitle.trim()) {
       Alert.alert('Required', 'Please enter sub-subject name');
@@ -258,6 +291,38 @@ export default function CourseDetailsScreen() {
         },
       },
     ]);
+  };
+
+  const openEditChapter = (chap: AcademicChapter) => {
+    setEditingChapter(chap);
+    setFormTitle(chap.title);
+    setFormTitleHi(chap.title_hi || chap.title);
+    setFormDesc(chap.description || '');
+    setModalType('edit_chapter');
+  };
+
+  const handleUpdateChapter = async () => {
+    if (!editingChapter || !formTitle.trim()) {
+      Alert.alert('Required', 'Please enter chapter title');
+      return;
+    }
+    try {
+      const updated = await academicService.updateChapter(editingChapter.id, {
+        title: formTitle.trim(),
+        title_hi: formTitleHi.trim() || formTitle.trim(),
+        description: formDesc.trim(),
+      });
+      setChapters((prev) => prev.map((c) => (c.id === editingChapter.id ? { ...c, ...updated } : c)));
+      if (selectedChapter?.id === editingChapter.id) {
+        setSelectedChapter((prev) => (prev ? { ...prev, ...updated } : prev));
+      }
+      setModalType('none');
+      setEditingChapter(null);
+      resetForm();
+      Alert.alert('Success', 'Chapter updated and saved in cloud database!');
+    } catch (e: any) {
+      Alert.alert('Database Error', e?.message || 'Failed to update chapter');
+    }
   };
 
   const handleAddVideoLecture = async () => {
@@ -511,8 +576,8 @@ export default function CourseDetailsScreen() {
                     style={styles.addActionButton}
                     onPress={() => setModalType('add_subject')}
                   >
-                    <Plus size={16} color="#FFFFFF" />
-                    <Text style={styles.addActionButtonText}>Add Subject</Text>
+                    <Plus size={15} color="#FFFFFF" />
+                    <Text style={styles.addActionButtonText}>+ Add</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -572,15 +637,26 @@ export default function CourseDetailsScreen() {
 
                       <View style={styles.subjectActionRight}>
                         {isAdmin ? (
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSubject(sub.id);
-                            }}
-                            style={styles.trashSmallBtn}
-                          >
-                            <Trash2 size={15} color="#EF4444" />
-                          </TouchableOpacity>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                openEditSubject(sub);
+                              }}
+                              style={[styles.trashSmallBtn, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}
+                            >
+                              <Edit3 size={14} color="#2563EB" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSubject(sub.id);
+                              }}
+                              style={styles.trashSmallBtn}
+                            >
+                              <Trash2 size={14} color="#EF4444" />
+                            </TouchableOpacity>
+                          </View>
                         ) : (
                           <ChevronRight size={18} color={theme.textMuted} />
                         )}
@@ -610,8 +686,8 @@ export default function CourseDetailsScreen() {
                     style={styles.addActionButton}
                     onPress={() => setModalType('add_sub_subject')}
                   >
-                    <Plus size={16} color="#FFFFFF" />
-                    <Text style={styles.addActionButtonText}>Add Sub-Subject</Text>
+                    <Plus size={15} color="#FFFFFF" />
+                    <Text style={styles.addActionButtonText}>+ Add</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -656,8 +732,8 @@ export default function CourseDetailsScreen() {
                     style={styles.addActionButton}
                     onPress={() => setModalType('add_chapter')}
                   >
-                    <Plus size={16} color="#FFFFFF" />
-                    <Text style={styles.addActionButtonText}>Add Chapter</Text>
+                    <Plus size={15} color="#FFFFFF" />
+                    <Text style={styles.addActionButtonText}>+ Add</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -727,11 +803,22 @@ export default function CourseDetailsScreen() {
                           <TouchableOpacity
                             onPress={(e) => {
                               e.stopPropagation();
+                              openEditChapter(chap);
+                            }}
+                            style={[styles.trashSmallBtn, { backgroundColor: isDark ? '#1E293B' : '#ECFDF5' }]}
+                          >
+                            <Edit3 size={14} color="#059669" />
+                          </TouchableOpacity>
+                        )}
+                        {isAdmin && (
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
                               handleDeleteChapter(chap.id);
                             }}
                             style={styles.trashSmallBtn}
                           >
-                            <Trash2 size={15} color="#EF4444" />
+                            <Trash2 size={14} color="#EF4444" />
                           </TouchableOpacity>
                         )}
                         <ChevronRight size={18} color={theme.textMuted} />
@@ -1169,6 +1256,80 @@ export default function CourseDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 7. Edit Subject Modal */}
+      <Modal visible={modalType === 'edit_subject'} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Edit Subject</Text>
+              <TouchableOpacity onPress={() => { setModalType('none'); setEditingSubject(null); }}>
+                <X size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Subject Name in English (e.g. Mathematics)"
+              value={formTitle}
+              onChangeText={setFormTitle}
+            />
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Subject Name in Hindi (उदा. गणित)"
+              value={formTitleHi}
+              onChangeText={setFormTitleHi}
+            />
+
+            <TouchableOpacity style={styles.submitBtn} onPress={handleUpdateSubject}>
+              <Text style={styles.submitBtnText}>Save Changes</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 8. Edit Chapter Modal */}
+      <Modal visible={modalType === 'edit_chapter'} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalHeading, { color: theme.text }]}>Edit Chapter</Text>
+              <TouchableOpacity onPress={() => { setModalType('none'); setEditingChapter(null); }}>
+                <X size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Chapter Title (e.g. Real Numbers)"
+              value={formTitle}
+              onChangeText={setFormTitle}
+            />
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Chapter Title in Hindi (उदा. वास्तविक संख्याएँ)"
+              value={formTitleHi}
+              onChangeText={setFormTitleHi}
+            />
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text, height: 70 }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Key concepts or syllabus description..."
+              multiline
+              value={formDesc}
+              onChangeText={setFormDesc}
+            />
+
+            <TouchableOpacity style={styles.submitBtn} onPress={handleUpdateChapter}>
+              <Text style={styles.submitBtnText}>Save Changes</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1256,13 +1417,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 14,
-    width: '100%',
   },
   sectionHeaderLeft: {
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
-    paddingRight: 8,
+    paddingRight: 6,
   },
   sectionHeading: {
     fontSize: 16,

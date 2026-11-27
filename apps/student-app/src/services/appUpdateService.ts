@@ -6,8 +6,8 @@ import Constants from 'expo-constants';
 import { create } from 'zustand';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.1';
-export const CURRENT_VERSION_CODE = Constants.expoConfig?.android?.versionCode || 2;
+export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.2';
+export const CURRENT_VERSION_CODE = Constants.expoConfig?.android?.versionCode || 3;
 
 const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/icckeguruji/icckeguruji/releases/latest';
 const DEFAULT_APK_FALLBACK_URL = 'https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk';
@@ -442,9 +442,10 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       const contentUri = await FileSystem.getContentUriAsync(downloadedFilePath);
 
       // Launch native Android Intent for package installation
+      // flags: FLAG_GRANT_READ_URI_PERMISSION (1) | FLAG_ACTIVITY_NEW_TASK (268435456) = 268435457
       await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
         data: contentUri,
-        flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+        flags: 268435457,
         type: 'application/vnd.android.package-archive',
       });
     } catch (err) {
@@ -452,7 +453,7 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       // Fallback
       Alert.alert(
         'Install Update / ऐप इंस्टॉल करें',
-        'डाउनलोड पूरा हो चुका है! कृपया नीचे "Install Now" दबाकर ऐप को इंस्टॉल करें।',
+        'डाउनलोड पूरा हो चुका है! कृपया नीचे "Install Now" दबाकर ऐप को इंस्टॉल करें। (यदि फोन परमिशन मांगे तो "Allow from this source" चालू करें)',
         [
           {
             text: 'Install Now (अभी इंस्टॉल करें)',
@@ -461,7 +462,7 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
                 const cUri = await FileSystem.getContentUriAsync(downloadedFilePath);
                 await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
                   data: cUri,
-                  flags: 1,
+                  flags: 268435457,
                   type: 'application/vnd.android.package-archive',
                 });
               } catch {

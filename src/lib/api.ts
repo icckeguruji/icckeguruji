@@ -478,6 +478,24 @@ export const AdminApi = {
   // 2. Student Management (CRUD)
   getStudents: async (query?: string, board?: string) => {
     if (isSupabaseConfigured) {
+      // 1. Direct REST first (zero-cache, avoids expired session issues)
+      try {
+        let endpoint = 'profiles?select=*&order=created_at.desc';
+        if (board) endpoint += `&board_code=eq.${board}`;
+        const directData = await fetchDirectRest<UserProfile[]>(endpoint);
+        if (Array.isArray(directData) && directData.length > 0) {
+          const cleanStudents = directData.filter(
+            (s) => s.username !== 'badesir' && s.email !== 'icckeguruji@gmail.com' && s.role !== 'admin'
+          );
+          localStudents = cleanStudents;
+          savePersistentState(STORAGE_KEYS.STUDENTS, cleanStudents);
+          return cleanStudents;
+        }
+      } catch (e) {
+        console.warn('getStudents direct REST note:', e);
+      }
+
+      // 2. Supabase client fallback
       try {
         let req = supabase.from('profiles').select('*');
         if (board) req = req.eq('board_code', board);
@@ -488,8 +506,11 @@ export const AdminApi = {
         }
         const { data, error } = await req.order('created_at', { ascending: false });
         if (!error && Array.isArray(data)) {
-          localStudents = data as UserProfile[];
-          savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+          const cleanStudents = (data as UserProfile[]).filter(
+            (s) => s.username !== 'badesir' && s.email !== 'icckeguruji@gmail.com' && (s as any).role !== 'admin'
+          );
+          localStudents = cleanStudents;
+          savePersistentState(STORAGE_KEYS.STUDENTS, cleanStudents);
           return localStudents;
         }
       } catch (e) {
@@ -498,7 +519,9 @@ export const AdminApi = {
     }
 
     localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, []);
-    let filtered = [...localStudents];
+    let filtered = [...localStudents].filter(
+      (s) => s.username !== 'badesir' && s.email !== 'icckeguruji@gmail.com' && (s as any).role !== 'admin'
+    );
     if (board) filtered = filtered.filter((s) => s.board_code === board);
     if (query) {
       const q = query.toLowerCase();
@@ -996,6 +1019,44 @@ export const AdminApi = {
     return true;
   },
 
+  updateCourseSubject: async (
+    courseId: string,
+    subjectId: string,
+    updates: { name: string; name_hi?: string; display_order?: number }
+  ) => {
+    const payload: any = {
+      name: updates.name,
+      name_hi: updates.name_hi || updates.name,
+    };
+    if (updates.display_order !== undefined) payload.display_order = updates.display_order;
+
+    if (isSupabaseConfigured) {
+      let updateConfirmed = false;
+      try {
+        const { error } = await supabase.from('subjects').update(payload).eq('id', subjectId);
+        if (!error) updateConfirmed = true;
+      } catch (e) {
+        console.warn('updateCourseSubject supabase error:', e);
+      }
+      if (!updateConfirmed) {
+        const patchRes = await fetchDirectRest(`subjects?id=eq.${subjectId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify(payload),
+        });
+        if (patchRes !== null) updateConfirmed = true;
+      }
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update subject in cloud database.');
+      }
+    }
+    const key = `icc_course_subs_${courseId}`;
+    const current = getPersistentState<any[]>(key, []);
+    const updatedList = current.map((s) => (s.id === subjectId ? { ...s, ...payload } : s));
+    savePersistentState(key, updatedList);
+    return { id: subjectId, course_id: courseId, ...payload };
+  },
+
   // 3.5 Sub-Subjects / Units Management (Dynamic Hierarchy)
   getSubSubjects: async (subjectId: string) => {
     const key = `icc_sub_subjects_${subjectId}`;
@@ -1128,6 +1189,52 @@ export const AdminApi = {
     const current = getPersistentState<any[]>(key, []);
     savePersistentState(key, current.filter((c) => c.id !== chapterId));
     return true;
+  },
+
+  updateSubjectChapter: async (
+    subjectId: string,
+    chapterId: string,
+    updates: {
+      title: string;
+      title_hi?: string;
+      chapter_number?: number;
+      description?: string;
+      description_hi?: string;
+    }
+  ) => {
+    const payload: any = {
+      title: updates.title,
+      title_hi: updates.title_hi || updates.title,
+    };
+    if (updates.chapter_number !== undefined) payload.chapter_number = updates.chapter_number;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.description_hi !== undefined) payload.description_hi = updates.description_hi;
+
+    if (isSupabaseConfigured) {
+      let updateConfirmed = false;
+      try {
+        const { error } = await supabase.from('chapters').update(payload).eq('id', chapterId);
+        if (!error) updateConfirmed = true;
+      } catch (e) {
+        console.warn('updateSubjectChapter supabase error:', e);
+      }
+      if (!updateConfirmed) {
+        const patchRes = await fetchDirectRest(`chapters?id=eq.${chapterId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify(payload),
+        });
+        if (patchRes !== null) updateConfirmed = true;
+      }
+      if (!updateConfirmed) {
+        throw new Error('Database Error: Failed to update chapter in cloud database.');
+      }
+    }
+    const key = `icc_subj_chaps_${subjectId}`;
+    const current = getPersistentState<any[]>(key, []);
+    const updatedList = current.map((c) => (c.id === chapterId ? { ...c, ...payload } : c));
+    savePersistentState(key, updatedList);
+    return { id: chapterId, subject_id: subjectId, ...payload };
   },
 
   // Chapter Content Lookups

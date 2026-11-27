@@ -108,13 +108,19 @@ export default function DirectorLoginPage() {
           idLower === '9771350910' ||
           idLower === '+919771350910' ||
           idLower === 'icckeguruji@gmail.com' ||
-          idLower.includes('admin') ||
-          idLower.includes('bade');
+          idLower === 'badesir' ||
+          idLower === 'admin';
 
-        if (isDirector || trimmedPw.length >= 4) {
+        const isDirectorPassword =
+          trimmedPw === 'badesir' ||
+          trimmedPw === '9771350910' ||
+          trimmedPw === 'Badesir@123' ||
+          trimmedPw === 'admin123';
+
+        if (isDirector && isDirectorPassword) {
           setAuthCookies();
         } else {
-          setErrorMsg('Invalid credentials. Please enter valid Director credentials.');
+          setErrorMsg('अमान्य विवरण (Invalid Credentials)। कृपया सही डायरेक्टर आईडी एवं पासवर्ड दर्ज करें।');
           setLoading(false);
           return;
         }

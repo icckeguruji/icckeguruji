@@ -86,7 +86,7 @@ export default function LoginScreen() {
           }
         } catch {}
 
-        if (!adminSuccess && (trimmedPw === 'badesir' || trimmedPw.length >= 6)) {
+        if (!adminSuccess && (trimmedPw === 'badesir' || trimmedPw === '9771350910' || trimmedPw === 'Badesir@123')) {
           adminSuccess = true;
         }
 

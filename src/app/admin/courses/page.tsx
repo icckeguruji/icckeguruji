@@ -115,6 +115,15 @@ export default function CoursesPage() {
     description_hi: '',
   });
 
+  // Edit Subject & Edit Chapter Modal States
+  const [editingSubject, setEditingSubject] = useState<CourseSubject | null>(null);
+  const [isEditSubjectModalOpen, setIsEditSubjectModalOpen] = useState(false);
+  const [editSubjectForm, setEditSubjectForm] = useState({ name: '', name_hi: '' });
+
+  const [editingChapter, setEditingChapter] = useState<SubjectChapter | null>(null);
+  const [isEditChapterModalOpen, setIsEditChapterModalOpen] = useState(false);
+  const [editChapterForm, setEditChapterForm] = useState({ title: '', title_hi: '', chapter_number: 1, description: '' });
+
   const [editThumbnailUrl, setEditThumbnailUrl] = useState('');
   const [editFormData, setEditFormData] = useState({
     title: '',
@@ -485,6 +494,54 @@ export default function CoursesPage() {
     }
   };
 
+  const openEditSubjectModal = (sub: CourseSubject) => {
+    setEditingSubject(sub);
+    setEditSubjectForm({
+      name: sub.name,
+      name_hi: sub.name_hi || sub.name,
+    });
+    setIsEditSubjectModalOpen(true);
+  };
+
+  const handleUpdateSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!curriculumCourse || !editingSubject || !editSubjectForm.name.trim()) return;
+
+    try {
+      await AdminApi.updateCourseSubject(curriculumCourse.id, editingSubject.id, {
+        name: editSubjectForm.name.trim(),
+        name_hi: editSubjectForm.name_hi.trim() || editSubjectForm.name.trim(),
+      });
+      setCourseSubjects((prev) =>
+        prev.map((s) =>
+          s.id === editingSubject.id
+            ? {
+                ...s,
+                name: editSubjectForm.name.trim(),
+                name_hi: editSubjectForm.name_hi.trim() || editSubjectForm.name.trim(),
+              }
+            : s
+        )
+      );
+      if (selectedSubject?.id === editingSubject.id) {
+        setSelectedSubject((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: editSubjectForm.name.trim(),
+                name_hi: editSubjectForm.name_hi.trim() || editSubjectForm.name.trim(),
+              }
+            : prev
+        );
+      }
+      setIsEditSubjectModalOpen(false);
+      setEditingSubject(null);
+      alert('Success: Subject updated and saved in cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to update subject.'));
+    }
+  };
+
   const handleSelectSubject = async (sub: CourseSubject) => {
     setSelectedSubject(sub);
     setSelectedSubSubject(null);
@@ -566,6 +623,62 @@ export default function CoursesPage() {
       alert('Success: Chapter deleted from database.');
     } catch (err: any) {
       alert('Database Error: ' + (err?.message || 'Failed to delete chapter from database.'));
+    }
+  };
+
+  const openEditChapterModal = (chap: SubjectChapter) => {
+    setEditingChapter(chap);
+    setEditChapterForm({
+      title: chap.title,
+      title_hi: chap.title_hi || chap.title,
+      chapter_number: chap.chapter_number || 1,
+      description: chap.description || '',
+    });
+    setIsEditChapterModalOpen(true);
+  };
+
+  const handleUpdateChapter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSubject || !editingChapter || !editChapterForm.title.trim()) return;
+
+    try {
+      await AdminApi.updateSubjectChapter(selectedSubject.id, editingChapter.id, {
+        title: editChapterForm.title.trim(),
+        title_hi: editChapterForm.title_hi.trim() || editChapterForm.title.trim(),
+        chapter_number: Number(editChapterForm.chapter_number) || 1,
+        description: editChapterForm.description.trim(),
+      });
+      setSubjectChapters((prev) =>
+        prev.map((c) =>
+          c.id === editingChapter.id
+            ? {
+                ...c,
+                title: editChapterForm.title.trim(),
+                title_hi: editChapterForm.title_hi.trim() || editChapterForm.title.trim(),
+                chapter_number: Number(editChapterForm.chapter_number) || 1,
+                description: editChapterForm.description.trim(),
+              }
+            : c
+        )
+      );
+      if (activeChapterContent?.id === editingChapter.id) {
+        setActiveChapterContent((prev) =>
+          prev
+            ? {
+                ...prev,
+                title: editChapterForm.title.trim(),
+                title_hi: editChapterForm.title_hi.trim() || editChapterForm.title.trim(),
+                chapter_number: Number(editChapterForm.chapter_number) || 1,
+                description: editChapterForm.description.trim(),
+              }
+            : prev
+        );
+      }
+      setIsEditChapterModalOpen(false);
+      setEditingChapter(null);
+      alert('Success: Chapter updated and saved in cloud database!');
+    } catch (err: any) {
+      alert('Database Error: ' + (err?.message || 'Failed to update chapter.'));
     }
   };
 
@@ -1289,6 +1402,18 @@ export default function CoursesPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  openEditSubjectModal(sub);
+                                }}
+                                title="Edit Subject"
+                                className={`p-1 rounded hover:bg-indigo-500 hover:text-white transition ${
+                                  isSelected ? 'text-indigo-200' : 'text-slate-400'
+                                }`}
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   handleDeleteSubject(sub);
                                 }}
                                 title="Delete Subject"
@@ -1497,6 +1622,18 @@ export default function CoursesPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      openEditChapterModal(chap);
+                                    }}
+                                    title="Edit Chapter"
+                                    className={`p-1 rounded hover:bg-emerald-500 hover:text-white transition ${
+                                      isInspecting ? 'text-emerald-200' : 'text-slate-400'
+                                    }`}
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       handleDeleteChapter(chap);
                                     }}
                                     title="Delete Chapter"
@@ -1664,6 +1801,160 @@ export default function CoursesPage() {
                   Done
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Subject Modal */}
+        {isEditSubjectModalOpen && editingSubject && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-indigo-600" />
+                  Edit Subject
+                </h3>
+                <button
+                  onClick={() => setIsEditSubjectModalOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateSubject} className="space-y-4 pt-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Subject Name (English) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editSubjectForm.name}
+                    onChange={(e) => setEditSubjectForm({ ...editSubjectForm, name: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="e.g. Mathematics"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Subject Name (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={editSubjectForm.name_hi}
+                    onChange={(e) => setEditSubjectForm({ ...editSubjectForm, name_hi: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="e.g. गणित"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditSubjectModalOpen(false)}
+                    className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Chapter Modal */}
+        {isEditChapterModalOpen && editingChapter && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-emerald-600" />
+                  Edit Chapter
+                </h3>
+                <button
+                  onClick={() => setIsEditChapterModalOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateChapter} className="space-y-4 pt-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Chapter Title (English) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editChapterForm.title}
+                    onChange={(e) => setEditChapterForm({ ...editChapterForm, title: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    placeholder="e.g. Real Numbers"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Chapter Title (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={editChapterForm.title_hi}
+                    onChange={(e) => setEditChapterForm({ ...editChapterForm, title_hi: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    placeholder="e.g. वास्तविक संख्याएँ"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Chapter Number
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={editChapterForm.chapter_number}
+                      onChange={(e) => setEditChapterForm({ ...editChapterForm, chapter_number: parseInt(e.target.value) || 1 })}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Description (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={editChapterForm.description}
+                      onChange={(e) => setEditChapterForm({ ...editChapterForm, description: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      placeholder="Brief notes"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditChapterModalOpen(false)}
+                    className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
