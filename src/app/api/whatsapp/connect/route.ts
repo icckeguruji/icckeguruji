@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRequest } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
 const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'https://icc-whatsapp-miss-zoya.onrender.com';
 
 export async function POST(req: NextRequest) {
+  if (!isAdminRequest(req)) {
+    return NextResponse.json({ success: false, error: 'Unauthorized: Admin login required.' }, { status: 401 });
+  }
   try {
     let body: any = {};
     try {

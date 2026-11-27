@@ -66,6 +66,7 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
     { href: '/admin/students', icon: Users, label: 'Students' },
     { href: '/admin/payments', icon: CreditCard, label: 'Payments & UTR' },
     { href: '/admin/notifications', icon: Bell, label: 'Notifications' },
+    { href: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp (Miss Zoya)' },
     { href: '/admin/teachers', icon: UserCheck, label: 'Teachers' },
     { href: '/admin/settings', icon: Settings, label: 'App Update & Settings' },
   ];
