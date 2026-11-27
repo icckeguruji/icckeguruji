@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: icc-whatsapp-miss-zoya
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: apps/whatsapp-service
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SUPABASE_URL
+        value: https://gshjxcoyfrskxnpdqooy.supabase.co
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

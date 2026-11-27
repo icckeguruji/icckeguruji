@@ -14,6 +14,15 @@ app.use(cors());
 app.use(express.json());
 
 // 1. Health & Status
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    bot: 'Miss Zoya',
+    service: 'IDEAL COACHING CENTRE - WhatsApp AI Assistant Service',
+    whatsappStatus: whatsAppManager.state.status,
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -123,8 +132,8 @@ app.get('/conversations', async (req, res) => {
   }
 });
 
-// Start Express Listener
-app.listen(PORT, () => {
-  console.log(`[WhatsApp Service] 🚀 WhatsApp AI Assistant Supervisor listening on port ${PORT}`);
+// Start Express Listener (0.0.0.0 required for Render)
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`[WhatsApp Service] 🚀 Miss Zoya WhatsApp AI Supervisor listening on 0.0.0.0:${PORT}`);
   console.log(`[WhatsApp Service] Director: BADE SIR | IDEAL COACHING CENTRE (BSEB & JAC)`);
 });
