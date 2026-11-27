@@ -55,18 +55,21 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // If no auth token and no admin role cookie, redirect to login
-  if (!accessToken && iccRole !== 'admin') {
+  // Require a valid access token AND admin role cookie
+  if (!accessToken || iccRole !== 'admin') {
     const loginUrl = new URL('/login', req.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (accessToken && accessToken.includes('.')) {
+  if (accessToken.includes('.')) {
     const payload = decodeJwtPayload(accessToken);
-    if (payload?.exp && payload.exp * 1000 < Date.now()) {
+    if (!payload || (payload.exp && payload.exp * 1000 < Date.now())) {
       const loginUrl = new URL('/login', req.url);
       return NextResponse.redirect(loginUrl);
     }
+  } else if (!accessToken.startsWith('icc-admin-session-')) {
+    const loginUrl = new URL('/login', req.url);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

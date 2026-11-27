@@ -57,6 +57,7 @@ export default function RootLayout() {
   useEffect(() => {
     initLocalDatabase();
     useAuthStore.getState().initAuthStore();
+    ScreenCapture.preventScreenCaptureAsync().catch(() => {});
   }, []);
 
   return (

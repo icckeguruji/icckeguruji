@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomInt } from 'crypto';
 
 /**
- * IDEAL COACHING CENTRE — SECURE IN-MEMORY / DB OTP ENGINE
- * Handles generation, delivery, and verification of 6-digit OTPs
- * for Director & Student Password Resets & Notifications.
+ * IDEAL COACHING CENTRE — HARDENED OTP ENGINE
+ * Cryptographic 6-digit OTP generation, brute-force lockout, and send cooldown.
  */
 
 interface OtpRecord {
   email: string;
   otp: string;
   expiresAt: number;
+  lastSentAt: number;
+  attempts: number;
   verified: boolean;
   type: string;
 }
 
-// Global in-memory cache surviving serverless warm re-invocations
 const otpCache = new Map<string, OtpRecord>();
 
-// Clean up expired OTPs periodically
 function cleanupExpired() {
   const now = Date.now();
   otpCache.forEach((record, key) => {
@@ -54,14 +54,24 @@ export async function POST(req: NextRequest) {
 
     // 1. ACTION: SEND OTP
     if (action === 'send') {
-      // Generate secure 6-digit OTP
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      const existing = otpCache.get(targetEmail);
+      if (existing && Date.now() - existing.lastSentAt < 30_000) {
+        return NextResponse.json(
+          { success: false, error: 'कृपया नया ओटीपी भेजने से पहले 30 सेकंड प्रतीक्षा करें।' },
+          { status: 429 }
+        );
+      }
+
+      // Generate cryptographically secure 6-digit OTP
+      const generatedOtp = randomInt(100000, 1000000).toString();
       const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes validity
 
       otpCache.set(targetEmail, {
         email: targetEmail,
         otp: generatedOtp,
         expiresAt,
+        lastSentAt: Date.now(),
+        attempts: 0,
         verified: false,
         type,
       });
@@ -135,8 +145,7 @@ export async function POST(req: NextRequest) {
         success: true,
         message: `ओटीपी सफलतापूर्वक भेजा गया: ${targetEmail}`,
         email: targetEmail,
-        // In simulation/dev mode, return otp so user is never locked out
-        otp: generatedOtp,
+        delivered: emailDelivered,
         expiresInSeconds: 600,
       });
     }
@@ -159,8 +168,17 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      if (record.attempts >= 5) {
+        otpCache.delete(targetEmail);
+        return NextResponse.json(
+          { success: false, error: 'बहुत अधिक गलत प्रयास। सुरक्षा के लिए ओटीपी रद्द कर दिया गया है, कृपया नया ओटीपी भेजें।' },
+          { status: 429 }
+        );
+      }
+
       const inputOtp = String(otp || '').trim();
-      if (record.otp !== inputOtp && inputOtp !== '123456') {
+      if (record.otp !== inputOtp) {
+        record.attempts += 1;
         return NextResponse.json(
           { success: false, error: 'गलत ओटीपी (Incorrect OTP)। कृपया सही 6-अंकों का कोड दर्ज करें।' },
           { status: 400 }
@@ -180,21 +198,34 @@ export async function POST(req: NextRequest) {
       const record = otpCache.get(targetEmail);
       const inputOtp = String(otp || '').trim();
 
-      const isOtpValid =
-        (record && record.otp === inputOtp && Date.now() <= record.expiresAt) ||
-        inputOtp === '123456';
-
-      if (!isOtpValid) {
+      if (!record || Date.now() > record.expiresAt) {
+        otpCache.delete(targetEmail);
         return NextResponse.json(
           { success: false, error: 'अमान्य अथवा समाप्त ओटीपी। कृपया नया ओटीपी प्राप्त करें।' },
           { status: 400 }
         );
       }
 
-      const trimmedNewPw = String(newPassword || '').trim();
-      if (!trimmedNewPw || trimmedNewPw.length < 4) {
+      if (record.attempts >= 5) {
+        otpCache.delete(targetEmail);
         return NextResponse.json(
-          { success: false, error: 'नया पासवर्ड कम से कम 4 अक्षरों का होना चाहिए।' },
+          { success: false, error: 'बहुत अधिक गलत प्रयास। कृपया नया ओटीपी प्राप्त करें।' },
+          { status: 429 }
+        );
+      }
+
+      if (record.otp !== inputOtp) {
+        record.attempts += 1;
+        return NextResponse.json(
+          { success: false, error: 'गलत ओटीपी (Incorrect OTP)। कृपया सही 6-अंकों का कोड दर्ज करें।' },
+          { status: 400 }
+        );
+      }
+
+      const trimmedNewPw = String(newPassword || '').trim();
+      if (!trimmedNewPw || trimmedNewPw.length < 6) {
+        return NextResponse.json(
+          { success: false, error: 'नया पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।' },
           { status: 400 }
         );
       }
@@ -205,7 +236,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'पासवर्ड सफलतापूर्वक बदल दिया गया है! अब आप लॉगिन कर सकते हैं।',
-        newPassword: trimmedNewPw,
         email: targetEmail,
       });
     }

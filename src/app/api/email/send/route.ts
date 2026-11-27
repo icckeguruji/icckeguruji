@@ -44,6 +44,14 @@ export async function POST(req: NextRequest) {
       process.env.APPS_SCRIPT_URL ||
       process.env.NEXT_PUBLIC_APPS_SCRIPT_URL;
 
+    const escHtml = (s: string) =>
+      String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const safeSubject = String(subject || 'IDEAL COACHING CENTRE Notification').replace(/[\r\n]/g, ' ');
+
     // Standardized branded HTML wrapper if raw text passed
     const brandedHtml =
       htmlBody ||
@@ -55,8 +63,8 @@ export async function POST(req: NextRequest) {
           <p style="color: #64748b; font-size: 11px; margin: 2px 0 0 0;">Sarotiya, Mahagama, Godda (JH) 814165 • BSEB & JAC</p>
         </div>
         <div style="color: #334155; font-size: 14px; line-height: 1.6;">
-          <h2 style="color: #0f172a; font-size: 16px; margin: 0 0 12px 0;">${subject}</h2>
-          <div style="white-space: pre-wrap;">${plainTextBody || ''}</div>
+          <h2 style="color: #0f172a; font-size: 16px; margin: 0 0 12px 0;">${escHtml(safeSubject)}</h2>
+          <div style="white-space: pre-wrap;">${escHtml(plainTextBody || '')}</div>
         </div>
         <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 11px;">
           <p style="margin: 0;">IDEAL COACHING CENTRE • Helpline WhatsApp: +91 9771350910</p>
