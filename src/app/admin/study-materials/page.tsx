@@ -27,6 +27,7 @@ export default function StudyMaterialsPage() {
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [subSubjects, setSubSubjects] = useState<any[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -44,6 +45,7 @@ export default function StudyMaterialsPage() {
     board_id: 'b0000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
     subject_id: '',
+    sub_subject_id: '',
     chapter_id: '',
     material_type: 'chapter_notes' as const,
     file_name: 'notes.pdf',
@@ -61,30 +63,34 @@ export default function StudyMaterialsPage() {
   const loadSubjectsForCourse = async (courseId: string) => {
     if (!courseId) {
       setSubjects([]);
+      setSubSubjects([]);
       setChapters([]);
       return;
     }
     const subs = await AdminApi.getCourseSubjects(courseId);
     setSubjects(subs || []);
     if (subs && subs.length > 0) {
-      setFormData((prev) => ({ ...prev, subject_id: subs[0].id }));
-      const chaps = await AdminApi.getSubjectChapters(subs[0].id);
-      setChapters(chaps || []);
-      setFormData((prev) => ({ ...prev, chapter_id: chaps?.[0]?.id || '' }));
+      setFormData((prev) => ({ ...prev, subject_id: subs[0].id, sub_subject_id: '' }));
+      await loadChaptersForSubject(subs[0].id);
     } else {
+      setSubSubjects([]);
       setChapters([]);
-      setFormData((prev) => ({ ...prev, subject_id: '', chapter_id: '' }));
+      setFormData((prev) => ({ ...prev, subject_id: '', sub_subject_id: '', chapter_id: '' }));
     }
   };
 
-  const loadChaptersForSubject = async (subjectId: string) => {
+  const loadChaptersForSubject = async (subjectId: string, subSubjectId?: string) => {
     if (!subjectId) {
+      setSubSubjects([]);
       setChapters([]);
       return;
     }
-    const chaps = await AdminApi.getSubjectChapters(subjectId);
+    const subSubs = subSubjectId === undefined ? await AdminApi.getSubSubjects(subjectId) : subSubjects;
+    if (subSubjectId === undefined) setSubSubjects(subSubs || []);
+    const activeSubSubId = subSubjectId !== undefined ? subSubjectId : (subSubs?.[0]?.id || '');
+    const chaps = await AdminApi.getSubjectChapters(subjectId, activeSubSubId || undefined);
     setChapters(chaps || []);
-    setFormData((prev) => ({ ...prev, chapter_id: chaps?.[0]?.id || '' }));
+    setFormData((prev) => ({ ...prev, sub_subject_id: activeSubSubId, chapter_id: chaps?.[0]?.id || '' }));
   };
 
   const loadMaterials = () => {
@@ -446,7 +452,7 @@ export default function StudyMaterialsPage() {
                     <select
                       value={formData.subject_id}
                       onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, subject_id: e.target.value }));
+                        setFormData((prev) => ({ ...prev, subject_id: e.target.value, sub_subject_id: '' }));
                         loadChaptersForSubject(e.target.value);
                       }}
                       className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
@@ -460,6 +466,21 @@ export default function StudyMaterialsPage() {
                       )}
                     </select>
                   </div>
+                  {subSubjects.length > 0 && (
+                    <div>
+                      <label className="block font-semibold text-purple-700 mb-1">Sub-Subject / Unit</label>
+                      <select
+                        value={formData.sub_subject_id}
+                        onChange={(e) => loadChaptersForSubject(formData.subject_id, e.target.value)}
+                        className="w-full px-2.5 py-2 border border-purple-300 rounded-lg bg-white"
+                      >
+                        <option value="">All Units</option>
+                        {subSubjects.map((ss) => (
+                          <option key={ss.id} value={ss.id}>{ss.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Chapter</label>
                     <select

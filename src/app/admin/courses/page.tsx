@@ -1452,7 +1452,7 @@ export default function CoursesPage() {
                         <input
                           type="text"
                           required
-                          placeholder="Sub-Subject (e.g. Physics)"
+                          placeholder="Sub-Subject (e.g. Physics, History)"
                           value={newSubSubjectName}
                           onChange={(e) => setNewSubSubjectName(e.target.value)}
                           className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:outline-none"
@@ -1460,7 +1460,7 @@ export default function CoursesPage() {
                         <div className="flex space-x-1.5">
                           <input
                             type="text"
-                            placeholder="Alternative Label (Optional)"
+                            placeholder="Hindi Label (e.g. भौतिकी)"
                             value={newSubSubjectNameHi}
                             onChange={(e) => setNewSubSubjectNameHi(e.target.value)}
                             className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:outline-none"
@@ -1473,6 +1473,49 @@ export default function CoursesPage() {
                             <span>Add</span>
                           </button>
                         </div>
+                        {subSubjects.length === 0 && (
+                          <div className="pt-1.5 flex flex-wrap gap-1.5">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!selectedSubject) return;
+                                const presets = [
+                                  { name: 'Physics', name_hi: 'भौतिक विज्ञान' },
+                                  { name: 'Chemistry', name_hi: 'रसायन विज्ञान' },
+                                  { name: 'Biology', name_hi: 'जीव विज्ञान' },
+                                ];
+                                const added = [];
+                                for (const p of presets) {
+                                  added.push(await AdminApi.createSubSubject(selectedSubject.id, p));
+                                }
+                                setSubSubjects(added);
+                              }}
+                              className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded text-[10px] font-semibold transition"
+                            >
+                              + Science (Phy, Chem, Bio)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!selectedSubject) return;
+                                const presets = [
+                                  { name: 'History', name_hi: 'इतिहास' },
+                                  { name: 'Geography', name_hi: 'भूगोल' },
+                                  { name: 'Civics / Pol. Science', name_hi: 'नागरिक शास्त्र' },
+                                  { name: 'Economics', name_hi: 'अर्थशास्त्र' },
+                                ];
+                                const added = [];
+                                for (const p of presets) {
+                                  added.push(await AdminApi.createSubSubject(selectedSubject.id, p));
+                                }
+                                setSubSubjects(added);
+                              }}
+                              className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-[10px] font-semibold transition"
+                            >
+                              + SST/SSC (Hist, Geo, Civics, Eco)
+                            </button>
+                          </div>
+                        )}
                       </form>
 
                       {/* Sub-Subject Items */}

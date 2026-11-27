@@ -1110,27 +1110,42 @@ class AcademicRepository {
     // ✅ ALWAYS fetch fresh from Supabase when courseId is provided (live data)
     if (courseId && isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase
-          .from('subjects')
-          .select('*')
-          .eq('course_id', courseId)
-          .order('display_order', { ascending: true });
+        const [{ data, error }, psMapRes] = await Promise.all([
+          supabase
+            .from('subjects')
+            .select('*')
+            .eq('course_id', courseId)
+            .order('display_order', { ascending: true }),
+          fetchDirectRest<any[]>(`platform_settings?key=eq.icc_sub_subjects_map&select=value`),
+        ]);
+        const subSubjectsMap: Record<string, SubSubject[]> =
+          Array.isArray(psMapRes) && psMapRes[0]?.value && typeof psMapRes[0].value === 'object'
+            ? psMapRes[0].value
+            : {};
         if (!error && Array.isArray(data)) {
           const mapped: AcademicSubject[] = data
             .filter((d: any) => !this.isDeleted(d.id))
-            .map((d: any) => ({
-              id: d.id,
-              course_id: d.course_id,
-              class_id: d.class_id,
-              class_name: d.class_name || '',
-              name: d.name,
-              name_hi: d.name_hi || d.name,
-              code: d.code || '',
-              icon_name: d.icon_name || 'book-open',
-              has_sub_subjects: Boolean(d.has_sub_subjects),
-              sub_subjects: d.sub_subjects || [],
-              display_order: d.display_order || 0,
-            }));
+            .map((d: any) => {
+              const cloudSubSubs =
+                Array.isArray(d.sub_subjects) && d.sub_subjects.length > 0
+                  ? d.sub_subjects
+                  : Array.isArray(subSubjectsMap[d.id])
+                  ? subSubjectsMap[d.id]
+                  : [];
+              return {
+                id: d.id,
+                course_id: d.course_id,
+                class_id: d.class_id,
+                class_name: d.class_name || '',
+                name: d.name,
+                name_hi: d.name_hi || d.name,
+                code: d.code || '',
+                icon_name: d.icon_name || 'book-open',
+                has_sub_subjects: Boolean(d.has_sub_subjects || cloudSubSubs.length > 0),
+                sub_subjects: cloudSubSubs,
+                display_order: d.display_order || 0,
+              };
+            });
           // Update local cache for this courseId
           this.subjects = [
             ...this.subjects.filter((s) => s.course_id !== courseId),
@@ -1318,6 +1333,27 @@ class AcademicRepository {
     targetSubject.has_sub_subjects = true;
 
     await this.persist('icc_academic_subjects', this.subjects);
+
+    if (isSupabaseConfigured) {
+      try {
+        await fetchDirectRest(`subjects?id=eq.${subjectId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify({ has_sub_subjects: true, sub_subjects: targetSubject.sub_subjects }),
+        });
+      } catch {}
+      try {
+        const ps = await fetchDirectRest<any[]>(`platform_settings?key=eq.icc_sub_subjects_map&select=value`);
+        const existingMap = (Array.isArray(ps) && ps[0]?.value && typeof ps[0].value === 'object') ? ps[0].value : {};
+        const nextMap = { ...existingMap, [subjectId]: targetSubject.sub_subjects };
+        await supabase.from('platform_settings').upsert({
+          key: 'icc_sub_subjects_map',
+          value: nextMap,
+          updated_at: new Date().toISOString(),
+        });
+      } catch {}
+    }
+
     return newSubSub;
   }
 

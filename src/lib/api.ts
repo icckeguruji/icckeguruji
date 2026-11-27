@@ -1148,30 +1148,100 @@ export const AdminApi = {
     return { id: subjectId, course_id: courseId, ...payload };
   },
 
-  // 3.5 Sub-Subjects / Units Management (Dynamic Hierarchy)
+  // 3.5 Sub-Subjects / Units Management (Dynamic Cloud-Synced Hierarchy)
   getSubSubjects: async (subjectId: string) => {
     const key = `icc_sub_subjects_${subjectId}`;
+    if (isSupabaseConfigured) {
+      // 1. Try reading sub_subjects column on subjects table
+      try {
+        const direct = await fetchDirectRest<any[]>(`subjects?id=eq.${subjectId}&select=id,sub_subjects,has_sub_subjects`);
+        if (Array.isArray(direct) && direct[0] && Array.isArray(direct[0].sub_subjects)) {
+          savePersistentState(key, direct[0].sub_subjects);
+          return direct[0].sub_subjects;
+        }
+      } catch {}
+      // 2. Fallback: read from platform_settings icc_sub_subjects_map
+      try {
+        const ps = await fetchDirectRest<any[]>(`platform_settings?key=eq.icc_sub_subjects_map&select=value`);
+        if (Array.isArray(ps) && ps[0]?.value && typeof ps[0].value === 'object') {
+          const mapList = ps[0].value[subjectId];
+          if (Array.isArray(mapList)) {
+            savePersistentState(key, mapList);
+            return mapList;
+          }
+        }
+      } catch {}
+    }
     return getPersistentState<any[]>(key, []);
   },
 
   createSubSubject: async (subjectId: string, sub: { name: string; name_hi?: string }) => {
-    const key = `icc_sub_subjects_${subjectId}`;
-    const current = getPersistentState<any[]>(key, []);
+    const current = await AdminApi.getSubSubjects(subjectId);
     const newSubSub = {
-      id: `subsub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUUID(),
       subject_id: subjectId,
       name: sub.name,
       name_hi: sub.name_hi || sub.name,
       display_order: current.length + 1,
     };
-    savePersistentState(key, [...current, newSubSub]);
+    const updated = [...current, newSubSub];
+    const key = `icc_sub_subjects_${subjectId}`;
+    savePersistentState(key, updated);
+
+    if (isSupabaseConfigured) {
+      // 1. Persist to subjects.sub_subjects if column exists
+      let savedToSubjectCol = false;
+      try {
+        const res = await fetchDirectRest(`subjects?id=eq.${subjectId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify({ has_sub_subjects: true, sub_subjects: updated }),
+        });
+        if (res !== null) savedToSubjectCol = true;
+      } catch {}
+
+      // 2. Also sync to platform_settings map so Student App & Web always stay in sync even before SQL migration
+      try {
+        const ps = await fetchDirectRest<any[]>(`platform_settings?key=eq.icc_sub_subjects_map&select=value`);
+        const existingMap = (Array.isArray(ps) && ps[0]?.value && typeof ps[0].value === 'object') ? ps[0].value : {};
+        const nextMap = { ...existingMap, [subjectId]: updated };
+        await supabase.from('platform_settings').upsert({
+          key: 'icc_sub_subjects_map',
+          value: nextMap,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        if (!savedToSubjectCol) console.warn('createSubSubject cloud sync warning:', e);
+      }
+    }
     return newSubSub;
   },
 
   deleteSubSubject: async (subjectId: string, subSubId: string) => {
+    const current = await AdminApi.getSubSubjects(subjectId);
+    const updated = current.filter((s: any) => s.id !== subSubId);
     const key = `icc_sub_subjects_${subjectId}`;
-    const current = getPersistentState<any[]>(key, []);
-    savePersistentState(key, current.filter((s) => s.id !== subSubId));
+    savePersistentState(key, updated);
+
+    if (isSupabaseConfigured) {
+      try {
+        await fetchDirectRest(`subjects?id=eq.${subjectId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify({ has_sub_subjects: updated.length > 0, sub_subjects: updated }),
+        });
+      } catch {}
+      try {
+        const ps = await fetchDirectRest<any[]>(`platform_settings?key=eq.icc_sub_subjects_map&select=value`);
+        const existingMap = (Array.isArray(ps) && ps[0]?.value && typeof ps[0].value === 'object') ? ps[0].value : {};
+        const nextMap = { ...existingMap, [subjectId]: updated };
+        await supabase.from('platform_settings').upsert({
+          key: 'icc_sub_subjects_map',
+          value: nextMap,
+          updated_at: new Date().toISOString(),
+        });
+      } catch {}
+    }
     return true;
   },
 
