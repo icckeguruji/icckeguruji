@@ -22,14 +22,15 @@ export async function POST(req: NextRequest) {
     }
 
     let pushTokens: string[] = [];
+    let studentEmails: string[] = [];
     let insertedCount = 0;
 
     if (isSupabaseConfigured) {
       try {
-        // 1. Fetch matching student profiles to extract push tokens
+        // 1. Fetch matching student profiles to extract push tokens & emails
         let query = supabase
           .from('profiles')
-          .select('id, push_token, board_code, class_id')
+          .select('id, push_token, email, board_code, class_id')
           .eq('is_active', true);
 
         if (studentId) {
@@ -46,6 +47,9 @@ export async function POST(req: NextRequest) {
           pushTokens = students
             .map((s) => s.push_token)
             .filter((tok): tok is string => Boolean(tok && tok.length > 10));
+          studentEmails = students
+            .map((s) => s.email)
+            .filter((em): em is string => Boolean(em && em.includes('@') && em !== 'student@example.com'));
 
           // 2. Insert notification records for students in Supabase
           const notificationsToInsert = students.map((s) => ({
@@ -104,11 +108,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 4. Dispatch Email Notifications via Apps Script / Email Engine to Students & Admin
+    const uniqueEmails = Array.from(new Set([...studentEmails, 'icckeguruji@gmail.com']));
+    const origin = req.nextUrl.origin || 'https://icconline.vercel.app';
+    Promise.allSettled(
+      uniqueEmails.slice(0, 50).map((emailAddr) =>
+        fetch(`${origin}/api/email/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: emailAddr,
+            subject: `📢 [ICC] ${title.trim()}`,
+            body: `${message.trim()}\n\nTarget: ${targetBoard} / ${targetClass}\n— IDEAL COACHING CENTRE (Director: BADE SIR)`,
+            type,
+          }),
+        })
+      )
+    ).catch(() => {});
+
     return NextResponse.json({
       success: true,
-      message: 'Push notification successfully broadcasted!',
+      message: 'Push & Email notification successfully broadcasted!',
       deliveredCount: insertedCount || 1,
       expoPushedCount: pushTokens.length,
+      emailTargetedCount: uniqueEmails.length,
       expoDeliverySuccess,
       timestamp: new Date().toISOString(),
     });

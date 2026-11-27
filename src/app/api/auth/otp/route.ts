@@ -20,11 +20,11 @@ const otpCache = new Map<string, OtpRecord>();
 // Clean up expired OTPs periodically
 function cleanupExpired() {
   const now = Date.now();
-  for (const [key, record] of otpCache.entries()) {
+  otpCache.forEach((record, key) => {
     if (record.expiresAt < now) {
       otpCache.delete(key);
     }
-  }
+  });
 }
 
 export async function POST(req: NextRequest) {

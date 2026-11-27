@@ -221,6 +221,28 @@ export default function ManualUpiPaymentScreen() {
         enrolled_at: new Date().toISOString(),
       });
 
+      // 5. Dispatch email notifications to Admin & Student via Apps Script engine
+      const apiOrigin = 'https://icconline.vercel.app';
+      fetch(`${apiOrigin}/api/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'icckeguruji@gmail.com',
+          subject: `💰 [ICC] New Enrollment Payment: ${cleanName} — ${courseTitle}`,
+          body: `New UPI Payment Request Submitted!\n\nStudent: ${cleanName}\nMobile: ${cleanMobile}\nEmail: ${cleanEmail}\nCourse: ${courseTitle}\nAmount: ₹${payableAmount}\n12-Digit UTR: ${cleanUtr}\n\nOpen ICC Admin Dashboard -> Payments to verify and activate.`,
+        }),
+      }).catch(() => {});
+
+      fetch(`${apiOrigin}/api/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: cleanEmail,
+          subject: `📩 [ICC] Payment Request Received — ${courseTitle}`,
+          body: `Dear ${cleanName},\n\nWe have received your enrollment payment submission for ${courseTitle} (₹${payableAmount}).\nUTR Reference: ${cleanUtr}\n\nDirector BADE SIR will verify your UTR and activate your course shortly. Helpline: +91 9771350910`,
+        }),
+      }).catch(() => {});
+
       setSubmittedStatus('success');
     } catch {
       // Offline fallback success simulation

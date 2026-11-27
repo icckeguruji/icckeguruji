@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
-import { AdminApi, getResolvedThumbnailUrl } from '@/lib/api';
+import { AdminApi, getResolvedThumbnailUrl, RecordedLectureItem } from '@/lib/api';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { Course } from '@icc/shared-types';
+import { Course, LiveClass, StudyMaterial } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import {
   Plus,

@@ -15,44 +15,107 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { translations, maskEmail } from '@icc/shared-utils';
 import { supabase } from '../../src/lib/supabase';
 
+const API_BASE = 'https://icconline.vercel.app';
+
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { language } = useAuthStore();
   const t = translations[language];
 
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState<'request' | 'verify' | 'success'>('request');
+  const [identifier, setIdentifier] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [resolvedEmail, setResolvedEmail] = useState('');
+  const [backupOtpNotice, setBackupOtpNotice] = useState('');
 
-  const handleSendReset = async () => {
+  const handleSendOtp = async () => {
     setErrorMsg('');
-    setSuccessMsg('');
-    const trimmed = email.trim().toLowerCase();
+    setBackupOtpNotice('');
+    const trimmed = identifier.trim().toLowerCase();
 
-    if (!trimmed || !trimmed.includes('@')) {
-      setErrorMsg('Please enter a valid email address');
+    if (!trimmed) {
+      setErrorMsg('Please enter your registered Email or Mobile Number');
       return;
     }
 
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-        redirectTo: 'idealcoaching://reset-password',
+      const res = await fetch(`${API_BASE}/api/auth/otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send',
+          identifier: trimmed,
+          email: trimmed.includes('@') ? trimmed : undefined,
+          type: 'password_reset',
+        }),
       });
-
-      if (error) {
-        setErrorMsg(
-          'Failed to send reset link. Please verify your email and try again.'
-        );
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        // Fallback to Supabase resetPasswordForEmail if direct email was entered
+        if (trimmed.includes('@')) {
+          const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+            redirectTo: 'idealcoaching://reset-password',
+          });
+          if (!error) {
+            setResolvedEmail(trimmed);
+            setStep('success');
+            setLoading(false);
+            return;
+          }
+        }
+        setErrorMsg(data.error || 'Failed to send 6-digit OTP. Please check your email/mobile.');
         setLoading(false);
         return;
       }
 
-      setSuccessMsg(trimmed);
+      setResolvedEmail(data.email || trimmed);
+      if (data.otp) {
+        setBackupOtpNotice(`Backup OTP Code: ${data.otp}`);
+      }
+      setStep('verify');
     } catch (err: any) {
-      setErrorMsg(err.message || 'An error occurred. Please try again later.');
+      setErrorMsg(err.message || 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAndReset = async () => {
+    setErrorMsg('');
+    if (otpCode.trim().length !== 6) {
+      setErrorMsg('Please enter the 6-digit OTP sent to your email.');
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setErrorMsg('New password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reset_password',
+          email: resolvedEmail || identifier.trim(),
+          otp: otpCode.trim(),
+          newPassword: newPassword.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.error || 'Invalid or expired OTP. Please try again.');
+        setLoading(false);
+        return;
+      }
+      setStep('success');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to reset password.');
     } finally {
       setLoading(false);
     }
@@ -69,10 +132,14 @@ export default function ForgotPasswordScreen() {
             <Text style={styles.backBtnText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>
-            Reset Password
+            Reset Password (OTP)
           </Text>
           <Text style={styles.subtitle}>
-            A password reset link will be sent to your email
+            {step === 'request'
+              ? 'A 6-digit verification OTP will be sent to your registered email'
+              : step === 'verify'
+              ? `Enter the 6-digit OTP sent to ${maskEmail(resolvedEmail || identifier)}`
+              : 'Password updated successfully'}
           </Text>
         </View>
 
@@ -82,13 +149,19 @@ export default function ForgotPasswordScreen() {
           </View>
         ) : null}
 
-        {successMsg ? (
+        {backupOtpNotice ? (
+          <View style={[styles.errorBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <Text style={[styles.errorText, { color: '#1D4ED8' }]}>{backupOtpNotice}</Text>
+          </View>
+        ) : null}
+
+        {step === 'success' ? (
           <View style={styles.successBox}>
             <Text style={styles.successTitle}>
-              ✅ Reset Link Sent!
+              ✅ Password Reset Complete!
             </Text>
             <Text style={styles.successText}>
-              {`A password reset link has been sent to ${maskEmail(successMsg)}. Please check your inbox and spam folder.`}
+              {`Your password for ${maskEmail(resolvedEmail || identifier)} has been updated. You can now log in with your new password.`}
             </Text>
             <TouchableOpacity
               style={styles.backToLoginBtn}
@@ -99,16 +172,51 @@ export default function ForgotPasswordScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        ) : step === 'verify' ? (
+          <View style={styles.form}>
+            <Text style={styles.label}>6-Digit Email OTP</Text>
+            <TextInput
+              style={styles.input}
+              value={otpCode}
+              onChangeText={setOtpCode}
+              placeholder="Enter 6-digit OTP"
+              placeholderTextColor="#94A3B8"
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+
+            <Text style={styles.label}>New Password</Text>
+            <TextInput
+              style={styles.input}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Minimum 6 characters"
+              placeholderTextColor="#94A3B8"
+              secureTextEntry
+            />
+
+            <TouchableOpacity
+              style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+              onPress={handleVerifyAndReset}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.submitBtnText}>Verify OTP & Reset Password</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.form}>
             <Text style={styles.label}>
-              Email Address
+              Email Address or Mobile Number
             </Text>
             <TextInput
               style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email address"
+              value={identifier}
+              onChangeText={setIdentifier}
+              placeholder="Enter your email or mobile number"
               placeholderTextColor="#94A3B8"
               autoCapitalize="none"
               autoCorrect={false}
@@ -117,21 +225,21 @@ export default function ForgotPasswordScreen() {
 
             <TouchableOpacity
               style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-              onPress={handleSendReset}
+              onPress={handleSendOtp}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitBtnText}>
-                  Send Reset Link
+                  Send 6-Digit OTP
                 </Text>
               )}
             </TouchableOpacity>
           </View>
         )}
 
-        {!successMsg && (
+        {step !== 'success' && (
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Remember your password?{' '}

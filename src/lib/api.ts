@@ -580,6 +580,29 @@ export const AdminApi = {
         if (!error && data) {
           localStudents = [data as UserProfile, ...localStudents];
           savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+          // ✅ Email notifications: student + admin
+          try {
+            if (payload.email && payload.email.includes('@') && payload.email !== 'student@example.com') {
+              fetch('/api/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: payload.email,
+                  subject: `🎓 Welcome to IDEAL COACHING CENTRE — Account Created!`,
+                  body: `Dear ${payload.full_name},\n\nYour student account has been created at IDEAL COACHING CENTRE (Director: BADE SIR).\nUsername: ${payload.username}\nBoard: ${payload.board_code}\n\nDownload the ICC Student App to access live classes, recorded lectures & handwritten PDF notes!`,
+                }),
+              }).catch(() => {});
+            }
+            fetch('/api/email/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: 'icckeguruji@gmail.com',
+                subject: `[ICC Admin] New Student Added: ${payload.full_name}`,
+                body: `Student: ${payload.full_name}\nMobile: ${payload.mobile_number}\nEmail: ${payload.email}\nBoard: ${payload.board_code}\nDistrict: ${payload.district}`,
+              }),
+            }).catch(() => {});
+          } catch {}
           return data as UserProfile;
         }
       } catch (e) {
@@ -2093,9 +2116,23 @@ export const AdminApi = {
       savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
     }
 
+    // ✅ Email notifications: student + admin
+    try {
+      const studentEmail = (payment as any)?.student?.email || '';
+      const studentName = (payment as any)?.student?.full_name || 'Student';
+      const courseName = (payment as any)?.course?.title || (payment as any)?.course_name || 'ICC Course';
+      const amount = (payment as any)?.amount ? '₹' + (payment as any).amount : '';
+      const studentHtml = `<div style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:14px;background:#fff'><div style='text-align:center;border-bottom:2px solid #2563eb;padding-bottom:14px;margin-bottom:18px'><h1 style='color:#1e3a8a;margin:0;font-size:20px;font-weight:800'>IDEAL COACHING CENTRE</h1><p style='color:#b45309;font-weight:700;margin:4px 0 0;font-size:12px'>Director: BADE SIR</p></div><h2 style='color:#059669'>✅ Enrollment Confirmed!</h2><p style='color:#334155;font-size:14px;line-height:1.6'>Dear <strong>${studentName}</strong>,<br/><br/>Your payment of <strong>${amount}</strong> for <strong>${courseName}</strong> has been verified and approved by Director BADE SIR.<br/><br/>Your course access is now <strong style='color:#059669'>ACTIVE</strong>. Open the ICC Student App and login!</p><p style='color:#94a3b8;font-size:11px;text-align:center;margin-top:20px'>ICC Online • Helpline: +91 9771350910</p></div>`;
+      const adminHtml = `<div style='font-family:sans-serif;padding:20px'><h1 style='color:#1e3a8a'>ICC Admin: Payment Approved ✅</h1><p><b>Student:</b> ${studentName} (${studentEmail})<br/><b>Course:</b> ${courseName}<br/><b>Amount:</b> ${amount}<br/><b>Payment ID:</b> ${paymentId}<br/><b>Remarks:</b> ${remarks}<br/><b>Time:</b> ${new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})}</p></div>`;
+      if (studentEmail && studentEmail.includes('@')) {
+        fetch('/api/email/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ to: studentEmail, subject: '✅ [ICC] Enrollment Confirmed — ' + courseName, htmlBody: studentHtml }) }).catch(()=>{});
+      }
+      fetch('/api/email/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ to: 'icckeguruji@gmail.com', subject: '[ICC Admin] Payment Approved: ' + studentName + ' — ' + courseName, htmlBody: adminHtml }) }).catch(()=>{});
+    } catch {}
+
     return {
       success: true,
-      message: 'Payment approved! Student account activated.',
+      message: 'Payment approved! Student account activated & email notification sent.',
     };
   },
 
@@ -2138,6 +2175,33 @@ export const AdminApi = {
       localStudents = localStudents.filter((s) => s.id !== targetStudentId);
       savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
     }
+
+    // ✅ Email notifications: student + admin
+    try {
+      const studentEmail = (payment as any)?.student?.email || '';
+      const studentName = (payment as any)?.student?.full_name || 'Student';
+      const courseName = (payment as any)?.course?.title || (payment as any)?.course_name || 'ICC Course';
+      if (studentEmail && studentEmail.includes('@')) {
+        fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: studentEmail,
+            subject: `⚠️ [ICC] Payment Verification Update — ${courseName}`,
+            body: `Dear ${studentName},\n\nYour payment submission for ${courseName} could not be verified.\nReason: ${remarks}\n\nPlease contact Director BADE SIR on WhatsApp (+91 9771350910) or re-submit with a valid 12-digit UTR.`,
+          }),
+        }).catch(() => {});
+      }
+      fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: 'icckeguruji@gmail.com',
+          subject: `[ICC Admin] Payment Rejected: ${studentName} — ${courseName}`,
+          body: `Student: ${studentName} (${studentEmail})\nCourse: ${courseName}\nPayment ID: ${paymentId}\nRemarks: ${remarks}`,
+        }),
+      }).catch(() => {});
+    } catch {}
 
     return {
       success: true,
