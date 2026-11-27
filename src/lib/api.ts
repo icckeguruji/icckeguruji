@@ -2156,18 +2156,36 @@ export const AdminApi = {
       savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
     }
 
-    // ✅ Email notifications: student + admin
+    // ✅ Email + In-App/Push notifications: student (with Login ID & App Download Link) + admin
     try {
       const studentEmail = (payment as any)?.student?.email || '';
       const studentName = (payment as any)?.student?.full_name || 'Student';
+      const studentUsername = (payment as any)?.student?.username || '';
+      const studentMobile = (payment as any)?.student?.mobile_number || '';
       const courseName = (payment as any)?.course?.title || (payment as any)?.course_name || 'ICC Course';
       const amount = (payment as any)?.amount ? '₹' + (payment as any).amount : '';
-      const studentHtml = `<div style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:14px;background:#fff'><div style='text-align:center;border-bottom:2px solid #2563eb;padding-bottom:14px;margin-bottom:18px'><h1 style='color:#1e3a8a;margin:0;font-size:20px;font-weight:800'>IDEAL COACHING CENTRE</h1><p style='color:#b45309;font-weight:700;margin:4px 0 0;font-size:12px'>Director: BADE SIR</p></div><h2 style='color:#059669'>✅ Enrollment Confirmed!</h2><p style='color:#334155;font-size:14px;line-height:1.6'>Dear <strong>${studentName}</strong>,<br/><br/>Your payment of <strong>${amount}</strong> for <strong>${courseName}</strong> has been verified and approved by Director BADE SIR.<br/><br/>Your course access is now <strong style='color:#059669'>ACTIVE</strong>. Open the ICC Student App and login!</p><p style='color:#94a3b8;font-size:11px;text-align:center;margin-top:20px'>ICC Online • Helpline: +91 9771350910</p></div>`;
+      const appDownloadWeb = 'https://icconline.vercel.app/download-app';
+      const appDownloadApk = 'https://icconline.vercel.app/api/download-apk';
+
+      const studentHtml = `<div style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:14px;background:#fff'><div style='text-align:center;border-bottom:2px solid #2563eb;padding-bottom:14px;margin-bottom:18px'><h1 style='color:#1e3a8a;margin:0;font-size:20px;font-weight:800'>IDEAL COACHING CENTRE</h1><p style='color:#b45309;font-weight:700;margin:4px 0 0;font-size:12px'>Director: BADE SIR • Mahagama, Godda</p></div><h2 style='color:#059669'>✅ Enrollment Approved & Login ID Activated!</h2><p style='color:#334155;font-size:14px;line-height:1.6'>Dear <strong>${studentName}</strong>,<br/><br/>Your payment of <strong>${amount}</strong> for <strong>${courseName}</strong> has been verified and approved by Director BADE SIR. Your course access is now <strong style='color:#059669'>ACTIVE</strong>!</p><div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:14px 0'><p style='margin:0;font-size:13px;color:#065f46'><strong>Your Login ID:</strong> ${studentEmail || studentMobile || studentUsername}</p>${studentMobile ? `<p style='margin:4px 0 0;font-size:13px;color:#065f46'><strong>Mobile:</strong> ${studentMobile}</p>` : ''}${studentUsername ? `<p style='margin:4px 0 0;font-size:13px;color:#065f46'><strong>Username:</strong> ${studentUsername}</p>` : ''}</div><div style='text-align:center;margin:18px 0'><a href='${appDownloadWeb}' style='display:inline-block;background:#2563eb;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;font-size:14px'>📲 Download ICC Android App</a><p style='margin:8px 0 0;font-size:12px;color:#64748b'>Direct APK: <a href='${appDownloadApk}'>${appDownloadApk}</a></p></div><p style='color:#94a3b8;font-size:11px;text-align:center;margin-top:20px'>ICC Online • Helpline: +91 9771350910</p></div>`;
       const adminHtml = `<div style='font-family:sans-serif;padding:20px'><h1 style='color:#1e3a8a'>ICC Admin: Payment Approved ✅</h1><p><b>Student:</b> ${studentName} (${studentEmail})<br/><b>Course:</b> ${courseName}<br/><b>Amount:</b> ${amount}<br/><b>Payment ID:</b> ${paymentId}<br/><b>Remarks:</b> ${remarks}<br/><b>Time:</b> ${new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'})}</p></div>`;
       if (studentEmail && studentEmail.includes('@')) {
-        fetch('/api/email/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ to: studentEmail, subject: '✅ [ICC] Enrollment Confirmed — ' + courseName, htmlBody: studentHtml }) }).catch(()=>{});
+        fetch('/api/email/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ to: studentEmail, subject: '✅ [ICC] Approved! Login ID & App Download Link — ' + courseName, htmlBody: studentHtml }) }).catch(()=>{});
       }
       fetch('/api/email/send', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ to: 'icckeguruji@gmail.com', subject: '[ICC Admin] Payment Approved: ' + studentName + ' — ' + courseName, htmlBody: adminHtml }) }).catch(()=>{});
+      if (targetStudentId) {
+        fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentId: targetStudentId,
+            title: `✅ Enrollment Approved: ${courseName}`,
+            message: `Your Login ID (${studentEmail || studentMobile}) is active! Download App: ${appDownloadWeb}`,
+            type: 'approval',
+            link: '/(tabs)/courses',
+          }),
+        }).catch(() => {});
+      }
     } catch {}
 
     return {
@@ -2191,6 +2209,21 @@ export const AdminApi = {
           p_admin_remarks: remarks,
         });
 
+        // Remove rejected pending enrollment for this course
+        if (targetStudentId && payment?.course_id) {
+          await supabase
+            .from('enrollments')
+            .delete()
+            .eq('student_id', targetStudentId)
+            .eq('course_id', payment.course_id)
+            .eq('status', 'pending');
+        }
+
+        // Delete the rejected payment record so student can cleanly re-enroll
+        await supabase.from('payments').delete().eq('id', paymentId);
+
+        // If student was a NEW unapproved registration (is_active === false), purge their profile too
+        // If student already had an active ID (is_active === true), keep their active account intact!
         if (targetStudentId) {
           try {
             await supabase.from('profiles').delete().eq('id', targetStudentId).eq('is_active', false);
@@ -2199,19 +2232,10 @@ export const AdminApi = {
       } catch {}
     }
 
-    localPayments = localPayments.map((p) =>
-      p.id === paymentId
-        ? {
-            ...p,
-            status: 'rejected',
-            admin_remarks: remarks,
-            reviewed_at: new Date().toISOString(),
-          }
-        : p
-    );
+    localPayments = localPayments.filter((p) => p.id !== paymentId);
     savePersistentState(STORAGE_KEYS.PAYMENTS, localPayments);
 
-    if (targetStudentId) {
+    if (targetStudentId && !(payment as any)?.student?.is_active) {
       localStudents = localStudents.filter((s) => s.id !== targetStudentId);
       savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
     }

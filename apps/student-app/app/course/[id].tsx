@@ -88,29 +88,40 @@ export default function CourseDetailsScreen() {
 
   // Enrollment states
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
   const [showEnrollGate, setShowEnrollGate] = useState(false);
 
   useEffect(() => {
     const checkEnrollment = async () => {
       if (isAdmin || currentCourse?.is_free) {
         setIsEnrolled(true);
+        setIsPendingApproval(false);
         return;
       }
       if (!user) {
         setIsEnrolled(false);
+        setIsPendingApproval(false);
         return;
       }
       try {
         const pays = await academicService.getPayments();
+        const targetCourseId = currentCourse?.id || id;
         const hasApproved = pays.some(
           (p: any) =>
-            p.course_id === (currentCourse?.id || id) &&
+            p.course_id === targetCourseId &&
             (p.student_id === user.id || p.user_id === user.id) &&
             p.status === 'approved'
         );
+        const hasPending = pays.some(
+          (p: any) =>
+            (p.student_id === user.id || p.user_id === user.id) &&
+            p.status === 'pending'
+        );
         setIsEnrolled(hasApproved);
+        setIsPendingApproval(!hasApproved && hasPending);
       } catch {
         setIsEnrolled(false);
+        setIsPendingApproval(false);
       }
     };
     checkEnrollment();
@@ -594,23 +605,27 @@ export default function CourseDetailsScreen() {
           </View>
         )}
 
-        {/* Guest / Non-enrolled Access Notice */}
+        {/* Guest / Non-enrolled / Pending Access Notice */}
         {!isEnrolled && !isAdmin && !course.is_free && (
           <View style={[styles.guestEnrollBanner, { backgroundColor: isDark ? '#1E293B' : '#FEF3C7', borderColor: '#F59E0B' }]}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <Text style={[styles.guestEnrollBannerTitle, { color: isDark ? '#FCD34D' : '#92400E' }]}>
-                🔒 Course Enrollment Required
+                {isPendingApproval ? '⏳ Approval Pending' : '🔒 Course Enrollment Required'}
               </Text>
               <Text style={[styles.guestEnrollBannerSub, { color: isDark ? '#CBD5E1' : '#78350F' }]}>
-                Enroll to access all video lectures, handwritten notes, and live classes.
+                {isPendingApproval
+                  ? 'Your payment UTR is under verification by Director BADE SIR. You cannot re-enroll until it is approved or rejected.'
+                  : 'Enroll to access all video lectures, handwritten notes, and live classes.'}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.guestEnrollBannerBtn}
-              onPress={() => router.push(`/payment/${course.id}`)}
-            >
-              <Text style={styles.guestEnrollBannerBtnText}>Enroll</Text>
-            </TouchableOpacity>
+            {!isPendingApproval && (
+              <TouchableOpacity
+                style={styles.guestEnrollBannerBtn}
+                onPress={() => router.push(`/payment/${course.id}`)}
+              >
+                <Text style={styles.guestEnrollBannerBtnText}>Enroll</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 

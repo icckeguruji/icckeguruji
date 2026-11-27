@@ -112,39 +112,42 @@ export default function ManualUpiPaymentScreen() {
   };
 
   const handleSubmitPayment = async () => {
-    const cleanName = fullName.trim();
-    const cleanUsername = username.trim().toLowerCase() || cleanName.toLowerCase().replace(/\s+/g, '_');
-    const cleanMobile = mobileNumber.replace(/\D/g, '');
-    const cleanEmail = email.trim().toLowerCase();
+    const isExistingActiveUser = Boolean(user && user.id && user.is_active);
+    const cleanName = (fullName || user?.full_name || '').trim();
+    const cleanUsername = (username || user?.username || '').trim().toLowerCase() || cleanName.toLowerCase().replace(/\s+/g, '_');
+    const cleanMobile = (mobileNumber || user?.mobile_number || '').replace(/\D/g, '');
+    const cleanEmail = (email || user?.email || '').trim().toLowerCase();
     const cleanUtr = upiRefNumber.trim().toUpperCase();
 
-    if (!cleanName || cleanName.length < 3) {
-      Alert.alert('Required Field', 'Please enter your full legal name (minimum 3 characters).');
-      return;
-    }
-    if (cleanMobile.length !== 10) {
-      Alert.alert('Invalid Mobile', 'Please enter a valid 10-digit WhatsApp/mobile number.');
-      return;
-    }
-    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
-      return;
-    }
-    if (!dob) {
-      Alert.alert('Date of Birth Required', 'Please enter your Date of Birth.');
-      return;
-    }
-    if (password.length > 0 && password.length < 6) {
-      Alert.alert('Password Too Short', 'Password must be at least 6 characters long.');
-      return;
-    }
-    if (password.length > 0 && password !== confirmPassword) {
-      Alert.alert('Password Mismatch', 'Passwords do not match. Please re-enter confirm password.');
-      return;
-    }
-    if (!acceptTerms) {
-      Alert.alert('Terms Agreement', 'Please accept the Terms and Conditions to proceed.');
-      return;
+    if (!isExistingActiveUser) {
+      if (!cleanName || cleanName.length < 3) {
+        Alert.alert('Required Field', 'Please enter your full legal name (minimum 3 characters).');
+        return;
+      }
+      if (cleanMobile.length !== 10) {
+        Alert.alert('Invalid Mobile', 'Please enter a valid 10-digit WhatsApp/mobile number.');
+        return;
+      }
+      if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        return;
+      }
+      if (!dob) {
+        Alert.alert('Date of Birth Required', 'Please enter your Date of Birth.');
+        return;
+      }
+      if (password.length > 0 && password.length < 6) {
+        Alert.alert('Password Too Short', 'Password must be at least 6 characters long.');
+        return;
+      }
+      if (password.length > 0 && password !== confirmPassword) {
+        Alert.alert('Password Mismatch', 'Passwords do not match. Please re-enter confirm password.');
+        return;
+      }
+      if (!acceptTerms) {
+        Alert.alert('Terms Agreement', 'Please accept the Terms and Conditions to proceed.');
+        return;
+      }
     }
     if (cleanUtr.length < 8) {
       Alert.alert('Invalid UTR', 'Please enter the 12-digit UPI UTR transaction reference number from your payment app.');
@@ -154,45 +157,48 @@ export default function ManualUpiPaymentScreen() {
     setSubmitting(true);
 
     try {
-      // 1. Verify if an approved account already exists
-      const { data: existingActive } = await supabase
-        .from('profiles')
-        .select('id, is_active')
-        .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanMobile}`)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (existingActive) {
-        Alert.alert(
-          'Account Exists',
-          'An active student account already exists with this Mobile Number or Email. Please log in directly.'
-        );
-        setSubmitting(false);
-        return;
-      }
-
-      // Purge any old rejected unapproved entries
-      try {
-        await supabase
-          .from('profiles')
-          .delete()
-          .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanMobile}`)
-          .eq('is_active', false);
-      } catch {}
-
-      // 2. Insert pending student record with valid UUID & exact Supabase schema columns
       const makeUuid = () =>
         'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
           const r = (Math.random() * 16) | 0;
           return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
         });
       const isUuid = (v?: string) => Boolean(v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v));
-      const classNumMatch = (className || '').match(/\d+/);
-      const classNum = classNumMatch ? classNumMatch[0].padStart(2, '0') : '10';
-      const resolvedClassId = `c0000000-0000-0000-0000-0000000000${classNum}`;
 
-      let studentId = isUuid(user?.id) ? user!.id : '';
+      let studentId = isExistingActiveUser && isUuid(user?.id) ? user!.id : '';
+
+      // 1. Check existing profile & pending approval guard
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, is_active')
+        .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanMobile}`)
+        .maybeSingle();
+
+      if (existingProfile) {
+        const { data: pendingPays } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('student_id', existingProfile.id)
+          .eq('status', 'pending');
+
+        if (pendingPays && pendingPays.length > 0) {
+          Alert.alert(
+            'Approval Pending',
+            'Your previous enrollment request is still pending verification by Director BADE SIR. You cannot submit another request until it is approved or rejected.'
+          );
+          setSubmitting(false);
+          return;
+        }
+        if (existingProfile.is_active) {
+          studentId = existingProfile.id;
+        }
+      }
+
+      // 2. Only create Auth + Profile if this is a NEW student (NOT an existing active student!)
       if (!studentId) {
+        const classNumMatch = (className || '').match(/\d+/);
+        const classNum = classNumMatch ? classNumMatch[0].padStart(2, '0') : '10';
+        const resolvedClassId = `c0000000-0000-0000-0000-0000000000${classNum}`;
+
         try {
           const ephemeral = createClient(LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY, {
             auth: { persistSession: false, autoRefreshToken: false },
@@ -206,24 +212,24 @@ export default function ManualUpiPaymentScreen() {
             studentId = authData.user.id;
           }
         } catch {}
-      }
-      if (!studentId) studentId = makeUuid();
+        if (!studentId) studentId = makeUuid();
 
-      const { error: profErr } = await supabase.from('profiles').upsert({
-        id: studentId,
-        full_name: cleanName,
-        username: cleanUsername,
-        mobile_number: cleanMobile,
-        email: cleanEmail,
-        board_code: boardCode,
-        class_id: resolvedClassId,
-        district: district,
-        school_name: schoolName || 'General',
-        preferred_language: 'hi',
-        is_active: false, // Requires Admin approval
-        updated_at: new Date().toISOString(),
-      });
-      if (profErr) console.warn('profiles upsert warning:', profErr.message);
+        const { error: profErr } = await supabase.from('profiles').upsert({
+          id: studentId,
+          full_name: cleanName,
+          username: cleanUsername,
+          mobile_number: cleanMobile,
+          email: cleanEmail,
+          board_code: boardCode,
+          class_id: resolvedClassId,
+          district: district,
+          school_name: schoolName || 'General',
+          preferred_language: 'hi',
+          is_active: false, // Requires Admin approval
+          updated_at: new Date().toISOString(),
+        });
+        if (profErr) console.warn('profiles upsert warning:', profErr.message);
+      }
 
       // 3. Insert pending payment record (exact Supabase schema: upi_ref_number)
       const paymentId = makeUuid();
@@ -353,7 +359,21 @@ export default function ManualUpiPaymentScreen() {
               </View>
             </View>
 
-            {/* Step 1: Student Information Form */}
+            {/* Step 1: Existing Active Student Card OR New Student Registration Form */}
+            {user && user.id && user.is_active ? (
+              <View style={[styles.sectionCard, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#065F46' }}>
+                      ✅ Enrolling with Existing Student ID
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#047857', marginTop: 3 }}>
+                      {user.full_name} • {user.mobile_number} ({user.email})
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : (
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                 <View style={styles.stepBadge}>
@@ -551,6 +571,7 @@ export default function ManualUpiPaymentScreen() {
                 </View>
               </View>
             </View>
+            )}
 
             {/* Step 2: UPI Payment Details (No external dynamic QR) */}
             <View style={styles.sectionCard}>

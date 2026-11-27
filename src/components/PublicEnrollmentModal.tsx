@@ -20,7 +20,17 @@ import {
   GraduationCap,
   ShieldCheck,
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured, LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY } from '@/lib/supabase';
+
+const makeUuid = () =>
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+
+const isValidUuid = (v?: string) =>
+  Boolean(v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v));
 
 interface PublicEnrollmentModalProps {
   course: Course | null;
@@ -40,6 +50,18 @@ export function PublicEnrollmentModal({
   const payeeName = 'IDEAL COACHING CENTRE';
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${payableAmount}&cu=INR&tn=ICC+Enrollment+${encodeURIComponent(course.title.slice(0, 30))}`;
 
+  // Mode: 'new' (New Student) vs 'existing' (Already Enrolled Student buying 2nd course)
+  const [enrollMode, setEnrollMode] = useState<'new' | 'existing'>('new');
+  const [lookupIdentifier, setLookupIdentifier] = useState('');
+  const [existingStudent, setExistingStudent] = useState<{
+    id: string;
+    full_name: string;
+    email: string;
+    mobile_number: string;
+    username: string;
+  } | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+
   // Form State
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -51,7 +73,7 @@ export function PublicEnrollmentModal({
   const [schoolName, setSchoolName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(true);
   const [utr, setUtr] = useState('');
 
   const [copied, setCopied] = useState(false);
@@ -73,15 +95,148 @@ export function PublicEnrollmentModal({
     }
   };
 
+  const handleLookupExisting = async () => {
+    setErrorMsg('');
+    const clean = lookupIdentifier.trim().toLowerCase();
+    const digits = clean.replace(/\D/g, '');
+    if (!clean) {
+      setErrorMsg('Please enter your registered Mobile Number or Email.');
+      return;
+    }
+    setLookupLoading(true);
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, mobile_number, username, is_active')
+        .or(`email.eq.${clean},mobile_number.eq.${digits || clean},username.eq.${clean}`)
+        .maybeSingle();
+
+      if (!profile) {
+        setErrorMsg('No existing student account found. Please use New Student Registration.');
+        setLookupLoading(false);
+        return;
+      }
+
+      // Check if they have any pending payment right now
+      const { data: pendingPays } = await supabase
+        .from('payments')
+        .select('id, course_id, status')
+        .eq('student_id', profile.id)
+        .eq('status', 'pending');
+
+      if (pendingPays && pendingPays.length > 0) {
+        setErrorMsg('⏳ Approval Pending: You already have a payment pending verification by Director BADE SIR. You cannot submit a new enrollment until it is approved or rejected.');
+        setLookupLoading(false);
+        return;
+      }
+
+      // Check if already approved for THIS course
+      const { data: approvedThis } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('student_id', profile.id)
+        .eq('course_id', course.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+
+      if (approvedThis) {
+        setErrorMsg('✅ You are already enrolled in this course! Open the ICC Student App and log in with your ID.');
+        setLookupLoading(false);
+        return;
+      }
+
+      if (!profile.is_active) {
+        setErrorMsg('⏳ Your previous registration is still pending approval.');
+        setLookupLoading(false);
+        return;
+      }
+
+      setExistingStudent(profile);
+      setFullName(profile.full_name);
+      setEmail(profile.email);
+      setMobileNumber(profile.mobile_number);
+      setUsername(profile.username);
+    } catch {
+      setErrorMsg('Unable to verify account right now. Please try again.');
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
+    const cleanUtr = utr.trim().toUpperCase();
+    if (cleanUtr.length < 8) {
+      setErrorMsg('Please enter a valid 12-digit UPI UTR / Transaction Reference number.');
+      return;
+    }
+
+    // EXISTING ACTIVE STUDENT FLOW (2nd+ Course — Payment Only, NO new ID!)
+    if (enrollMode === 'existing') {
+      if (!existingStudent) {
+        setErrorMsg('Please verify your existing Mobile Number or Email first.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const payId = makeUuid();
+        const { error: payErr } = await supabase.from('payments').insert({
+          id: payId,
+          student_id: existingStudent.id,
+          course_id: isValidUuid(course.id) ? course.id : null,
+          amount: payableAmount,
+          upi_ref_number: cleanUtr,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        if (payErr) throw payErr;
+
+        await supabase.from('enrollments').insert({
+          id: makeUuid(),
+          student_id: existingStudent.id,
+          course_id: isValidUuid(course.id) ? course.id : null,
+          status: 'pending',
+          enrolled_at: new Date().toISOString(),
+        });
+
+        // Notify Admin & Student
+        fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: 'icckeguruji@gmail.com',
+            subject: `💰 [ICC] New Course Payment (Existing Student): ${existingStudent.full_name} — ${course.title}`,
+            body: `Existing Student buying another course:\n\nStudent: ${existingStudent.full_name} (${existingStudent.username})\nMobile: ${existingStudent.mobile_number}\nEmail: ${existingStudent.email}\nCourse: ${course.title}\nAmount: ₹${payableAmount}\nUTR: ${cleanUtr}\n\nOpen Admin Dashboard -> Payments to Approve or Reject.`,
+          }),
+        }).catch(() => {});
+
+        fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: existingStudent.email,
+            subject: `📩 [ICC] Payment Submitted — ${course.title}`,
+            body: `Dear ${existingStudent.full_name},\n\nYour payment of ₹${payableAmount} (UTR: ${cleanUtr}) for ${course.title} has been submitted.\nOnce approved by Director BADE SIR, this course will unlock on your existing login ID (${existingStudent.email} / ${existingStudent.mobile_number}).`,
+          }),
+        }).catch(() => {});
+
+        setSubmitted(true);
+      } catch (err: any) {
+        setErrorMsg(err?.message || 'Failed to submit payment. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // NEW STUDENT REGISTRATION FLOW
     const cleanName = fullName.trim();
     const cleanUsername = username.trim().toLowerCase();
     const cleanMobile = mobileNumber.replace(/\D/g, '');
     const cleanEmail = email.trim().toLowerCase();
-    const cleanUtr = utr.trim().toUpperCase();
 
     if (!cleanName || cleanName.length < 3) {
       setErrorMsg('Please enter your full legal name (minimum 3 characters).');
@@ -99,10 +254,6 @@ export function PublicEnrollmentModal({
       setErrorMsg('Please enter a valid email address.');
       return;
     }
-    if (!dob) {
-      setErrorMsg('Please select your Date of Birth.');
-      return;
-    }
     if (password.length < 6) {
       setErrorMsg('Password must be at least 6 characters long.');
       return;
@@ -115,96 +266,126 @@ export function PublicEnrollmentModal({
       setErrorMsg('You must agree to the Terms and Conditions to proceed.');
       return;
     }
-    if (cleanUtr.length < 8) {
-      setErrorMsg('Please enter a valid 12-digit UPI UTR / Transaction Reference number.');
-      return;
-    }
 
     setLoading(true);
 
     try {
       if (isSupabaseConfigured) {
-        // 1. Check if an approved active account already exists
-        let existingActive = null;
-        try {
-          const res = await supabase
-            .from('profiles')
-            .select('id, is_active')
-            .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanMobile},username.eq.${cleanUsername}`)
-            .eq('is_active', true)
-            .maybeSingle();
-          if (res.data) existingActive = res.data;
-        } catch {}
+        // 1. Check if profile already exists for this Email, Mobile, or Username
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id, is_active, full_name, email, mobile_number, username')
+          .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanMobile},username.eq.${cleanUsername}`)
+          .maybeSingle();
 
-        if (existingActive) {
-          setErrorMsg(
-            'An approved student ID already exists for this Email, Mobile, or Username. Please sign in directly in the student app.'
-          );
-          setLoading(false);
-          return;
+        if (existingProfile) {
+          // Check if they have a pending payment right now
+          const { data: pendingPays } = await supabase
+            .from('payments')
+            .select('id')
+            .eq('student_id', existingProfile.id)
+            .eq('status', 'pending');
+
+          if (pendingPays && pendingPays.length > 0) {
+            setErrorMsg(
+              '⏳ Approval Pending: Your previous enrollment request is still pending verification by Director BADE SIR. You cannot re-enroll until it is approved or rejected.'
+            );
+            setLoading(false);
+            return;
+          }
+
+          if (existingProfile.is_active) {
+            setEnrollMode('existing');
+            setExistingStudent(existingProfile);
+            setErrorMsg(
+              'You already have an active Student ID! Switched to Existing Student mode — no need to re-enter details, just confirm your UTR below.'
+            );
+            setLoading(false);
+            return;
+          }
         }
 
-        // If a rejected or old unapproved application existed, purge it so the student can re-enroll cleanly
+        // 2. Create Auth user + pending profile (is_active: false until Admin approves)
+        let studentId = '';
         try {
-          await supabase
-            .from('profiles')
-            .delete()
-            .or(`email.eq.${cleanEmail},mobile_number.eq.${cleanMobile}`)
-            .eq('is_active', false);
+          const ephemeral = createClient(LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const { data: authData } = await ephemeral.auth.signUp({
+            email: cleanEmail,
+            password,
+            options: { data: { full_name: cleanName, username: cleanUsername } },
+          });
+          if (authData?.user?.id) studentId = authData.user.id;
         } catch {}
+        if (!studentId) studentId = makeUuid();
 
-        // 2. Create pending student record (is_active: false until admin approves)
-        const studentId = `std-${Date.now()}`;
-        const studentRecord = {
+        const classNumMatch = (className || '').match(/\d+/);
+        const classNum = classNumMatch ? classNumMatch[0].padStart(2, '0') : '10';
+        const resolvedClassId = `c0000000-0000-0000-0000-0000000000${classNum}`;
+
+        await supabase.from('profiles').upsert({
           id: studentId,
           username: cleanUsername,
           full_name: cleanName,
           mobile_number: cleanMobile,
           email: cleanEmail,
-          dob: dob,
           board_code: 'BSEB',
-          class_id: className,
+          class_id: resolvedClassId,
           district: district,
           school_name: schoolName || 'General',
+          preferred_language: 'hi',
           is_active: false, // Requires Admin approval
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        };
-
-        try {
-          await supabase.from('profiles').insert(studentRecord);
-        } catch {}
+        });
 
         // 3. Record pending payment for Admin review
-        await supabase.from('payments').insert({
-          id: `pay-${Date.now()}`,
+        const { error: payErr } = await supabase.from('payments').insert({
+          id: makeUuid(),
           student_id: studentId,
-          course_id: course.id,
+          course_id: isValidUuid(course.id) ? course.id : null,
           amount: payableAmount,
-          utr_number: cleanUtr,
+          upi_ref_number: cleanUtr,
           status: 'pending',
-          student_name: cleanName,
-          student_phone: cleanMobile,
-          student_email: cleanEmail,
-          course_title: course.title,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
+        if (payErr) throw payErr;
 
         // 4. Record pending enrollment
         await supabase.from('enrollments').insert({
-          id: `enr-${Date.now()}`,
+          id: makeUuid(),
           student_id: studentId,
-          course_id: course.id,
+          course_id: isValidUuid(course.id) ? course.id : null,
           status: 'pending',
           enrolled_at: new Date().toISOString(),
         });
+
+        // 5. Notify Admin & Student via Email + Push
+        fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: 'icckeguruji@gmail.com',
+            subject: `💰 [ICC] New Enrollment Request: ${cleanName} — ${course.title}`,
+            body: `New Student Enrollment & Payment Received!\n\nName: ${cleanName}\nUsername: ${cleanUsername}\nMobile: ${cleanMobile}\nEmail: ${cleanEmail}\nCourse: ${course.title}\nAmount: ₹${payableAmount}\n12-Digit UTR: ${cleanUtr}\n\nOpen ICC Admin Dashboard -> Payments to Approve or Reject.`,
+          }),
+        }).catch(() => {});
+
+        fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: cleanEmail,
+            subject: `📩 [ICC] Enrollment Request Received — ${course.title}`,
+            body: `Dear ${cleanName},\n\nThank you for enrolling in ${course.title} (₹${payableAmount}).\nYour UTR (${cleanUtr}) has been sent to Director BADE SIR for verification.\n\nOnce approved, you will receive your Login ID confirmation and the ICC Android App download link.`,
+          }),
+        }).catch(() => {});
       }
 
       setSubmitted(true);
-    } catch {
-      // Offline / fallback simulated submission
-      setSubmitted(true);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Unable to submit enrollment. Please check your details and try again.');
     } finally {
       setLoading(false);
     }
@@ -295,7 +476,73 @@ export function PublicEnrollmentModal({
               </div>
             )}
 
-            {/* Step 1: Student Registration Information */}
+            {/* Mode Switcher: New Student vs Existing Active Student (2nd Course) */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setEnrollMode('new');
+                  setExistingStudent(null);
+                  setErrorMsg('');
+                }}
+                className={`py-2 px-3 rounded-lg font-bold text-xs transition ${
+                  enrollMode === 'new' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
+                }`}
+              >
+                New Student Registration
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEnrollMode('existing');
+                  setErrorMsg('');
+                }}
+                className={`py-2 px-3 rounded-lg font-bold text-xs transition ${
+                  enrollMode === 'existing' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
+                }`}
+              >
+                Already Enrolled? (Add Course)
+              </button>
+            </div>
+
+            {enrollMode === 'existing' ? (
+              <div className="space-y-3 p-4 rounded-2xl bg-blue-50/70 border border-blue-200">
+                <div className="font-extrabold text-slate-900 text-xs uppercase tracking-wide">
+                  1. Verify Your Existing Student ID (No Re-Registration Needed)
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter Registered Mobile Number or Email"
+                    value={lookupIdentifier}
+                    onChange={(e) => setLookupIdentifier(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleLookupExisting}
+                    disabled={lookupLoading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs whitespace-nowrap"
+                  >
+                    {lookupLoading ? 'Checking...' : 'Verify ID'}
+                  </button>
+                </div>
+                {existingStudent && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-xs">✅ Verified: {existingStudent.full_name}</div>
+                      <div className="text-[11px] text-emerald-700">
+                        {existingStudent.mobile_number} • {existingStudent.email}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                      Same Login ID
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+            /* Step 1: Student Registration Information */
             <div className="space-y-3">
               <div className="flex items-center space-x-2 pb-1 border-b border-slate-100">
                 <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[10px]">
@@ -480,6 +727,7 @@ export function PublicEnrollmentModal({
                 </div>
               </div>
             </div>
+            )}
 
             {/* Step 2: Official Dynamic UPI QR Payment */}
             <div className="space-y-3 pt-1">
