@@ -21,6 +21,7 @@ import {
   RecordedLecture,
 } from '../../src/services/academicService';
 import { LiveClass, StudyMaterial } from '@icc/shared-types';
+import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
 import {
@@ -34,6 +35,7 @@ import {
   Calendar,
   Clock,
   Sparkles,
+  Lock,
   ExternalLink,
   Layers,
   X,
@@ -64,6 +66,8 @@ export default function ChapterContentScreen() {
   const [recordedLectures, setRecordedLectures] = useState<RecordedLecture[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(true);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
   // Admin Modals
   const [modalType, setModalType] = useState<'none' | 'schedule_live' | 'add_video' | 'upload_notes'>('none');
@@ -88,6 +92,48 @@ export default function ChapterContentScreen() {
         foundChap = allChaps.find((c) => c.id === id);
       }
       setChapter(foundChap || null);
+
+      const resolvedCourseId = courseId || foundChap?.course_id || '';
+      if (!isAdmin && resolvedCourseId) {
+        const courseObj = await academicService.getCourseById(resolvedCourseId);
+        if (courseObj?.is_free) {
+          setIsEnrolled(true);
+          setIsPendingApproval(false);
+        } else if (!user?.id) {
+          setIsEnrolled(false);
+          setIsPendingApproval(false);
+        } else {
+          const pays = await academicService.getPayments();
+          let approved = pays.some(
+            (p: any) =>
+              p.course_id === resolvedCourseId &&
+              (p.student_id === user.id || p.user_id === user.id) &&
+              p.status === 'approved'
+          );
+          let pending = pays.some(
+            (p: any) =>
+              (p.student_id === user.id || p.user_id === user.id) &&
+              p.status === 'pending'
+          );
+          if (!approved && isSupabaseConfigured) {
+            try {
+              const { data: enr } = await supabase
+                .from('enrollments')
+                .select('status')
+                .eq('student_id', user.id)
+                .eq('course_id', resolvedCourseId);
+              if (Array.isArray(enr)) {
+                if (enr.some((e: any) => e.status === 'active')) approved = true;
+                if (enr.some((e: any) => e.status === 'pending')) pending = true;
+              }
+            } catch {}
+          }
+          setIsEnrolled(approved);
+          setIsPendingApproval(!approved && pending);
+        }
+      } else {
+        setIsEnrolled(true);
+      }
 
       // Load content items
       const [lives, vids, mats] = await Promise.all([
@@ -304,6 +350,46 @@ export default function ChapterContentScreen() {
         </View>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#2563EB" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isEnrolled && !isAdmin) {
+    const resolvedCourseId = courseId || chapter?.course_id || '';
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
+        <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={[styles.backButton, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}
+          >
+            <ArrowLeft size={20} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
+            {chapter?.title || 'Course Locked'}
+          </Text>
+        </View>
+        <View style={[styles.centered, { padding: 24 }]}>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <Lock size={30} color="#DC2626" />
+          </View>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: theme.text, textAlign: 'center', marginBottom: 8 }}>
+            {isPendingApproval ? '⏳ Approval Pending' : '🔒 अध्याय लॉक है (Course Locked)'}
+          </Text>
+          <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 20 }}>
+            {isPendingApproval
+              ? 'आपका भुगतान (UTR) अभी डायरेक्टर BADE SIR द्वारा सत्यापन (verification) के अधीन है। स्वीकृत होते ही यह अध्याय अनलॉक हो जाएगा।'
+              : 'इस अध्याय के वीडियो लेक्चर्स, लाइव क्लास और PDF नोट्स देखने के लिए कृपया पहले इस कोर्स में Enroll करें।'}
+          </Text>
+          {!isPendingApproval && resolvedCourseId ? (
+            <TouchableOpacity
+              style={{ backgroundColor: '#2563EB', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 12 }}
+              onPress={() => router.push(`/payment/${resolvedCourseId}` as any)}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Enroll Now (अभी प्रवेश लें)</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </SafeAreaView>
     );

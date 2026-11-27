@@ -31,6 +31,8 @@ export default function PublicCoursesPage() {
   const [classFilter, setClassFilter] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+  const [pendingCourseIds, setPendingCourseIds] = useState<Set<string>>(new Set());
 
   // Syllabus Modal State
   const [syllabusCourse, setSyllabusCourse] = useState<Course | null>(null);
@@ -39,11 +41,35 @@ export default function PublicCoursesPage() {
 
   const { lang, t } = useLanguage();
 
-  const loadCourses = () => {
+  const loadCourses = async () => {
     AdminApi.getCourses().then((data) => {
       setCourses(data || []);
       setLoading(false);
     });
+    if (isSupabaseConfigured) {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const uid = authData?.user?.id;
+        if (uid) {
+          const [{ data: pays }, { data: enrs }] = await Promise.all([
+            supabase.from('payments').select('course_id, status').eq('student_id', uid),
+            supabase.from('enrollments').select('course_id, status').eq('student_id', uid),
+          ]);
+          const appSet = new Set<string>();
+          const pendSet = new Set<string>();
+          (pays || []).forEach((p: any) => {
+            if (p.status === 'approved' && p.course_id) appSet.add(p.course_id);
+            if (p.status === 'pending' && p.course_id) pendSet.add(p.course_id);
+          });
+          (enrs || []).forEach((e: any) => {
+            if (e.status === 'active' && e.course_id) appSet.add(e.course_id);
+            if (e.status === 'pending' && e.course_id) pendSet.add(e.course_id);
+          });
+          setEnrolledCourseIds(appSet);
+          setPendingCourseIds(pendSet);
+        }
+      } catch {}
+    }
   };
 
   useEffect(() => {
@@ -263,16 +289,29 @@ export default function PublicCoursesPage() {
                       <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                     </button>
 
-                    {/* Action 2: Enroll Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleEnrollClick(course)}
-                      className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 transition active:scale-98"
-                    >
-                      <GraduationCap className="w-4 h-4" />
-                      <span>{t('कोर्स में प्रवेश लें (Enroll Now)', 'Enroll in Course')}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                    {/* Action 2: Enroll / Enrolled / Pending Button */}
+                    {enrolledCourseIds.has(course.id) ? (
+                      <a
+                        href="/download-app"
+                        className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition"
+                      >
+                        <span>✅ {t('नामांकित (Enrolled) — ऐप में पढ़ें', 'Enrolled — Open in App')}</span>
+                      </a>
+                    ) : pendingCourseIds.has(course.id) ? (
+                      <div className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-amber-100 text-amber-800 border border-amber-300 font-extrabold text-xs">
+                        <span>⏳ {t('स्वीकृति लंबित (Approval Pending)', 'Approval Pending')}</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleEnrollClick(course)}
+                        className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 transition active:scale-98"
+                      >
+                        <GraduationCap className="w-4 h-4" />
+                        <span>{t('कोर्स में प्रवेश लें (Enroll Now)', 'Enroll in Course')}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -372,18 +411,31 @@ export default function PublicCoursesPage() {
               <span className="text-xs text-slate-600 font-semibold">
                 {syllabusCourse.is_free ? t('निःशुल्क बैच', 'Free Batch') : formatINR(syllabusCourse.discount_price || syllabusCourse.price)}
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const target = syllabusCourse;
-                  setSyllabusCourse(null);
-                  handleEnrollClick(target);
-                }}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center space-x-2"
-              >
-                <GraduationCap className="w-4 h-4" />
-                <span>{t('कोर्स में प्रवेश लें', 'Enroll in Course')}</span>
-              </button>
+              {enrolledCourseIds.has(syllabusCourse.id) ? (
+                <a
+                  href="/download-app"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition"
+                >
+                  ✅ {t('नामांकित (ऐप खोलें)', 'Enrolled (Open App)')}
+                </a>
+              ) : pendingCourseIds.has(syllabusCourse.id) ? (
+                <span className="px-5 py-2.5 rounded-xl bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs">
+                  ⏳ {t('स्वीकृति लंबित', 'Approval Pending')}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = syllabusCourse;
+                    setSyllabusCourse(null);
+                    handleEnrollClick(target);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center space-x-2"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span>{t('कोर्स में प्रवेश लें', 'Enroll in Course')}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

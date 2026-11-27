@@ -19,6 +19,7 @@ import { formatINR } from '@icc/shared-utils';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import { academicService, getResolvedThumbnailUrl, allInitialCourses } from '../../src/services/academicService';
+import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
 import { aiService } from '../../src/services/aiService';
 import { DateTimePickerModal } from '../../src/components/DateTimePickerModal';
 import { Course } from '@icc/shared-types';
@@ -90,6 +91,8 @@ export default function StudentCoursesScreen() {
     user?.username === 'badesir';
 
   const [courses, setCourses] = useState<Course[]>([]);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+  const [pendingCourseIds, setPendingCourseIds] = useState<Set<string>>(new Set());
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeClassFilter, setActiveClassFilter] = useState('ALL');
 
@@ -115,14 +118,44 @@ export default function StudentCoursesScreen() {
 
   const loadLocalCourses = useCallback(async () => {
     try {
-      const data = await academicService.getCourses();
+      const [data, pays] = await Promise.all([
+        academicService.getCourses(),
+        user?.id ? academicService.getPayments() : Promise.resolve([]),
+      ]);
       if (Array.isArray(data)) {
         setCourses(data);
+      }
+      if (user?.id) {
+        const approvedSet = new Set<string>();
+        const pendingSet = new Set<string>();
+        (pays || []).forEach((p: any) => {
+          if (p.student_id === user.id || p.user_id === user.id) {
+            if (p.status === 'approved' && p.course_id) approvedSet.add(p.course_id);
+            if (p.status === 'pending' && p.course_id) pendingSet.add(p.course_id);
+          }
+        });
+        if (isSupabaseConfigured) {
+          try {
+            const { data: enr } = await supabase
+              .from('enrollments')
+              .select('course_id, status')
+              .eq('student_id', user.id);
+            (enr || []).forEach((e: any) => {
+              if (e.status === 'active' && e.course_id) approvedSet.add(e.course_id);
+              if (e.status === 'pending' && e.course_id) pendingSet.add(e.course_id);
+            });
+          } catch {}
+        }
+        setEnrolledCourseIds(approvedSet);
+        setPendingCourseIds(pendingSet);
+      } else {
+        setEnrolledCourseIds(new Set());
+        setPendingCourseIds(new Set());
       }
     } catch {
       // Keep current
     }
-  }, []);
+  }, [user?.id]);
 
   const handleRefreshCourses = useCallback(async () => {
     setIsSyncing(true);
@@ -523,15 +556,36 @@ export default function StudentCoursesScreen() {
                       onPress={() => router.push(`/course/${course.id}`)}
                     >
                       <BookOpen size={14} color="#2563EB" />
-                      <Text style={styles.viewCourseBtnText} numberOfLines={1}>View Course</Text>
+                      <Text style={styles.viewCourseBtnText} numberOfLines={1}>
+                        {isAdmin || course.is_free || enrolledCourseIds.has(course.id) ? 'Open Course' : 'View Subjects'}
+                      </Text>
                     </TouchableOpacity>
 
-                    {course.is_free ? (
+                    {isAdmin || enrolledCourseIds.has(course.id) ? (
+                      <TouchableOpacity
+                        style={styles.freeBtn}
+                        onPress={() => router.push(`/course/${course.id}`)}
+                      >
+                        <Text style={styles.freeBtnText}>✅ Enrolled</Text>
+                      </TouchableOpacity>
+                    ) : course.is_free ? (
                       <TouchableOpacity
                         style={styles.freeBtn}
                         onPress={() => router.push(`/course/${course.id}`)}
                       >
                         <Text style={styles.freeBtnText}>Free Access</Text>
+                      </TouchableOpacity>
+                    ) : pendingCourseIds.has(course.id) ? (
+                      <TouchableOpacity
+                        style={[styles.payBtn, { backgroundColor: '#D97706' }]}
+                        onPress={() =>
+                          Alert.alert(
+                            'Approval Pending',
+                            'Your enrollment payment is under verification by Director BADE SIR. Access will unlock automatically once approved.'
+                          )
+                        }
+                      >
+                        <Text style={styles.payBtnText}>⏳ Pending</Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity

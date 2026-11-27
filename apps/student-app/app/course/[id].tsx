@@ -25,6 +25,7 @@ import {
   RecordedLecture,
 } from '../../src/services/academicService';
 import { Course, LiveClass, StudyMaterial } from '@icc/shared-types';
+import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
@@ -106,17 +107,30 @@ export default function CourseDetailsScreen() {
       try {
         const pays = await academicService.getPayments();
         const targetCourseId = currentCourse?.id || id;
-        const hasApproved = pays.some(
+        let hasApproved = pays.some(
           (p: any) =>
             p.course_id === targetCourseId &&
             (p.student_id === user.id || p.user_id === user.id) &&
             p.status === 'approved'
         );
-        const hasPending = pays.some(
+        let hasPending = pays.some(
           (p: any) =>
             (p.student_id === user.id || p.user_id === user.id) &&
             p.status === 'pending'
         );
+        if (!hasApproved && isSupabaseConfigured && targetCourseId) {
+          try {
+            const { data: enr } = await supabase
+              .from('enrollments')
+              .select('course_id, status')
+              .eq('student_id', user.id)
+              .eq('course_id', targetCourseId);
+            if (Array.isArray(enr)) {
+              if (enr.some((e: any) => e.status === 'active')) hasApproved = true;
+              if (enr.some((e: any) => e.status === 'pending')) hasPending = true;
+            }
+          } catch {}
+        }
         setIsEnrolled(hasApproved);
         setIsPendingApproval(!hasApproved && hasPending);
       } catch {
@@ -183,6 +197,17 @@ export default function CourseDetailsScreen() {
   };
 
   const handleSelectSubject = async (sub: AcademicSubject) => {
+    if (!isAdmin && !currentCourse?.is_free && !isEnrolled) {
+      if (isPendingApproval) {
+        Alert.alert(
+          '⏳ Approval Pending',
+          'आपका भुगतान (UTR) अभी डायरेक्टर BADE SIR द्वारा सत्यापन (verification) के अधीन है। स्वीकृत होते ही सभी विषय अनलॉक हो जाएंगे।'
+        );
+        return;
+      }
+      setShowEnrollGate(true);
+      return;
+    }
     setSelectedSubject(sub);
     if (sub.has_sub_subjects && sub.sub_subjects && sub.sub_subjects.length > 0) {
       setActiveLevel('sub_subjects');
@@ -195,6 +220,10 @@ export default function CourseDetailsScreen() {
   };
 
   const handleSelectSubSubject = async (subSub: SubSubject) => {
+    if (!isAdmin && !currentCourse?.is_free && !isEnrolled) {
+      setShowEnrollGate(true);
+      return;
+    }
     if (!selectedSubject) return;
     setSelectedSubSubject(subSub);
     const chaps = await academicService.getChapters(selectedSubject.id, subSub.id);
@@ -726,6 +755,11 @@ export default function CourseDetailsScreen() {
                             >
                               <Trash2 size={14} color="#EF4444" />
                             </TouchableOpacity>
+                          </View>
+                        ) : !isEnrolled && !course.is_free ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: isDark ? '#2E1E05' : '#FEF2F2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: '#FCA5A5' }}>
+                            <Lock size={13} color="#DC2626" />
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: '#DC2626' }}>Locked</Text>
                           </View>
                         ) : (
                           <ChevronRight size={18} color={theme.textMuted} />
@@ -1431,10 +1465,10 @@ export default function CourseDetailsScreen() {
               <Lock size={26} color="#2563EB" />
             </View>
             <Text style={[styles.modalHeading, { color: theme.text, textAlign: 'center', marginBottom: 6, fontSize: 16 }]}>
-              नामांकन आवश्यक (Enrollment Required)
+              🔒 कोर्स लॉक है (Course Locked)
             </Text>
             <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center', lineHeight: 18, marginBottom: 18 }}>
-              इस अध्याय के रिकॉर्डेड वीडियो लेक्चर्स, लाइव क्लास एवं हस्तलिखित पीडीएफ नोट्स प्राप्त करने के लिए कृपया कोर्स में प्रवेश लें।
+              आपने अभी तक इस कोर्स में नामांकन (Enroll) नहीं किया है। सभी विषयों, रिकॉर्डेड वीडियो लेक्चर्स, लाइव क्लास एवं हस्तलिखित पीडीएफ नोट्स को अनलॉक करने के लिए नीचे Enroll Now दबाएं।
             </Text>
 
             <TouchableOpacity
