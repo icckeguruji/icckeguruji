@@ -313,6 +313,135 @@ HCF (135, 225) = 45 होगा।
       });
     }
 
+    // -------------------------------------------------------------
+    // ACTION 4: AI QUIZ GENERATOR FROM COURSE / PDF / STUDY MATERIALS
+    // -------------------------------------------------------------
+    if (action === 'generate_quiz') {
+      const {
+        courseTitle = 'Board Exam Course',
+        className = 'Class 10',
+        subjectName = 'Science',
+        language = 'hi',
+        count = 5,
+        chaptersContext = [],
+        materialsContext = [],
+        excludeQuestions = [],
+      } = payload || {};
+
+      const isUrdu = String(subjectName).toLowerCase().includes('urdu') || language === 'ur';
+      const targetLangLabel = isUrdu ? 'Urdu (اردو script ONLY)' : 'Hindi (Devanagari script / हिंदी ONLY)';
+
+      // Attempt to fetch lightweight text snippets from public study material URLs if readable text/markdown
+      let extractedMaterialSnippets = '';
+      if (Array.isArray(materialsContext) && materialsContext.length > 0) {
+        const snippetList: string[] = [];
+        for (const mat of materialsContext.slice(0, 6)) {
+          const title = mat?.title || '';
+          const desc = mat?.description || '';
+          const url = mat?.file_path || '';
+          let extra = '';
+          if (typeof url === 'string' && url.startsWith('http') && !url.toLowerCase().endsWith('.pdf')) {
+            try {
+              const r = await fetch(url, { signal: AbortSignal.timeout(2500) });
+              if (r.ok && (r.headers.get('content-type') || '').includes('text')) {
+                extra = (await r.text()).slice(0, 600);
+              }
+            } catch {}
+          }
+          snippetList.push(`- ${title}${desc ? `: ${desc}` : ''}${extra ? ` | Content: ${extra}` : ''}`);
+        }
+        extractedMaterialSnippets = snippetList.join('\n');
+      }
+
+      const chaptersStr = Array.isArray(chaptersContext) && chaptersContext.length > 0
+        ? chaptersContext.map((c: any) => `${c.chapter_number || ''}. ${c.title || ''}${c.description ? ` (${c.description})` : ''}`).join('\n')
+        : 'Standard board syllabus chapters';
+
+      const excludeStr = Array.isArray(excludeQuestions) && excludeQuestions.length > 0
+        ? excludeQuestions.slice(-30).join('\n- ')
+        : 'None';
+
+      const quizPrompt = `Generate exactly ${count} unique multiple-choice quiz questions for a student of IDEAL COACHING CENTRE.
+Course: ${courseTitle} (${className})
+Subject: ${subjectName}
+Target Question Language: ${targetLangLabel}
+
+Available Chapters:
+${chaptersStr}
+
+Available Study Materials & PDF Notes Topics:
+${extractedMaterialSnippets || 'Standard NCERT/BSEB/JAC notes for this subject'}
+
+CRITICAL RULES:
+1. Every question, all 4 options, and the explanation MUST be written strictly in ${targetLangLabel}.
+2. Questions MUST be strictly relevant to ${className} ${subjectName} and the listed chapters/study materials.
+3. NEVER repeat or paraphrase any of these already-mastered questions:
+- ${excludeStr}
+4. Return ONLY a valid JSON array (no markdown fences, no extra prose) of objects with exact keys:
+[
+  {
+    "question": "...",
+    "options": ["...", "...", "...", "..."],
+    "correctIndex": 0,
+    "explanation": "...",
+    "chapter": "..."
+  }
+]`;
+
+      if (isApiKeyValid) {
+        try {
+          const aiResponse = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: primaryModel,
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are an expert BSEB/JAC board exam question setter. Output ONLY a valid JSON array of ${count} MCQs strictly in ${targetLangLabel}.`,
+                },
+                { role: 'user', content: quizPrompt },
+              ],
+              temperature: 0.4,
+              max_tokens: 2200,
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const data = await aiResponse.json();
+            let raw = data.choices?.[0]?.message?.content || '';
+            raw = raw.replace(/```json|```/gi, '').trim();
+            const firstBracket = raw.indexOf('[');
+            const lastBracket = raw.lastIndexOf(']');
+            if (firstBracket !== -1 && lastBracket !== -1) {
+              raw = raw.slice(firstBracket, lastBracket + 1);
+            }
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return NextResponse.json({
+                success: true,
+                questions: parsed,
+                live: true,
+                language: isUrdu ? 'ur' : 'hi',
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('AI quiz generation fallback:', err);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        questions: [],
+        live: false,
+        language: isUrdu ? 'ur' : 'hi',
+      });
+    }
+
     return NextResponse.json(
       { success: false, error: 'Unknown action requested' },
       { status: 400 }

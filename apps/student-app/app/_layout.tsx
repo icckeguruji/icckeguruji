@@ -47,6 +47,9 @@ export default function RootLayout() {
   const syncDarkMode = useAuthStore((state) => state.syncDarkMode);
   const systemScheme = useColorScheme();
 
+  const effectiveDark =
+    themeMode === 'dark' || (themeMode === 'auto' && systemScheme === 'dark') || isDarkMode;
+
   useEffect(() => {
     syncDarkMode(systemScheme === 'dark');
   }, [systemScheme, themeMode]);
@@ -59,18 +62,18 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <PaperProvider theme={isDarkMode ? customDarkTheme : customLightTheme}>
+        <PaperProvider theme={effectiveDark ? customDarkTheme : customLightTheme}>
           <StatusBar
-            style={isDarkMode ? 'light' : 'dark'}
+            style={effectiveDark ? 'light' : 'dark'}
             translucent={false}
-            backgroundColor={isDarkMode ? '#000000' : '#FFFFFF'}
+            backgroundColor={effectiveDark ? '#09090B' : '#FFFFFF'}
           />
           <Stack
             screenOptions={{
               headerShown: false,
               animation: 'slide_from_right',
               contentStyle: {
-                backgroundColor: isDarkMode ? '#000000' : '#F8FAFC',
+                backgroundColor: effectiveDark ? '#09090B' : '#F8FAFC',
               },
             }}
           >
@@ -88,7 +91,8 @@ export default function RootLayout() {
               options={{
                 headerShown: true,
                 title: 'UPI Payment',
-                headerTintColor: '#0F172A',
+                headerTintColor: effectiveDark ? '#F8FAFC' : '#0F172A',
+                headerStyle: { backgroundColor: effectiveDark ? '#09090B' : '#FFFFFF' },
               }}
             />
             <Stack.Screen

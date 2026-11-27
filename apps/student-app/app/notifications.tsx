@@ -24,6 +24,7 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 import { useAuthStore } from '../src/store/useAuthStore';
+import { useAppTheme } from '../src/hooks/useAppTheme';
 import {
   useNotificationStore,
   NotificationItem,
@@ -31,6 +32,8 @@ import {
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
   const { user, selectedBoard } = useAuthStore();
   const {
     notifications,
@@ -122,20 +125,20 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top']}>
       {/* Top App Bar */}
-      <View style={styles.appBar}>
+      <View style={[styles.appBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
         <View style={styles.appBarLeft}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: theme.inputBg }]}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <ArrowLeft size={22} color="#0F172A" />
+            <ArrowLeft size={22} color={theme.text} />
           </TouchableOpacity>
           <View>
-            <Text style={styles.appBarTitle}>Notifications & Alerts</Text>
-            <Text style={styles.appBarSubtitle}>
+            <Text style={[styles.appBarTitle, { color: theme.text }]}>Notifications & Alerts</Text>
+            <Text style={[styles.appBarSubtitle, { color: theme.textSecondary }]}>
               {unreadCount > 0 ? `${unreadCount} unread update(s)` : 'All caught up!'}
             </Text>
           </View>
@@ -154,12 +157,12 @@ export default function NotificationsScreen() {
       </View>
 
       {/* Category Filter Chips */}
-      <View style={styles.filterBar}>
+      <View style={[styles.filterBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.headerBorder }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           {[
             { id: 'all', label: `All (${notifications.length})` },
             { id: 'live', label: '🔴 Live Classes' },
-            { id: 'test', label: '📝 Tests' },
+            { id: 'test', label: '📝 Quiz' },
             { id: 'notes', label: '📚 Notes' },
             { id: 'announcement', label: '📢 Notices' },
           ].map((tab) => {
@@ -167,11 +170,14 @@ export default function NotificationsScreen() {
             return (
               <TouchableOpacity
                 key={tab.id}
-                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                style={[
+                  styles.filterChip,
+                  { backgroundColor: isActive ? theme.primary : theme.inputBg, borderColor: isActive ? theme.primary : theme.border },
+                ]}
                 onPress={() => setActiveFilter(tab.id)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                <Text style={[styles.filterChipText, { color: isActive ? '#FFFFFF' : theme.textSecondary }]}>
                   {tab.label}
                 </Text>
               </TouchableOpacity>
@@ -189,14 +195,14 @@ export default function NotificationsScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {filteredNotifications.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIconCircle}>
-              <Bell size={36} color="#94A3B8" />
+          <View style={[styles.emptyCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: theme.inputBg }]}>
+              <Bell size={36} color={theme.textMuted} />
             </View>
-            <Text style={styles.emptyTitle}>No Notifications Here</Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No Notifications Here</Text>
+            <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
               {activeFilter === 'all'
-                ? "You're all caught up! When Bade Sir schedules a live class or test, it will appear here instantly."
+                ? "You're all caught up! When Bade Sir schedules a live class or quiz, it will appear here instantly."
                 : 'No alerts match this filter. Try checking the "All" tab.'}
             </Text>
           </View>
@@ -204,7 +210,11 @@ export default function NotificationsScreen() {
           filteredNotifications.map((item) => (
             <TouchableOpacity
               key={item.id}
-              style={[styles.notificationCard, !item.is_read && styles.unreadCard]}
+              style={[
+                styles.notificationCard,
+                { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder },
+                !item.is_read && { borderColor: theme.primary, backgroundColor: isDark ? 'rgba(59,130,246,0.12)' : '#EFF6FF' },
+              ]}
               onPress={() => handleNotificationPress(item)}
               activeOpacity={0.75}
             >

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { useAuthStore } from '../../src/store/useAuthStore';
-import { translations } from '@icc/shared-utils';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Home, BookOpen, Radio, FileText, CheckSquare, User } from 'lucide-react-native';
 
 export default function TabsLayout() {
-  const { language, isDarkMode } = useAuthStore();
-  const t = translations[language] || translations.en;
+  const theme = useAppTheme();
+  const isDark = theme.isDark;
+  const activeBg = isDark ? 'rgba(59, 130, 246, 0.18)' : '#EFF6FF';
+  const liveActiveBg = isDark ? 'rgba(239, 68, 68, 0.18)' : '#FEF2F2';
 
   return (
     <Tabs
@@ -15,22 +16,22 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarStyle: {
-          backgroundColor: isDarkMode ? '#000000' : '#FFFFFF',
-          borderTopColor: isDarkMode ? '#27272A' : '#E2E8F0',
+          backgroundColor: theme.tabBarBg,
+          borderTopColor: theme.tabBarBorder,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 84 : 64,
+          height: Platform.OS === 'ios' ? 84 : 66,
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 8,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: isDark ? 0.4 : 0.06,
           shadowRadius: 6,
         },
-        tabBarActiveTintColor: '#2563EB',
-        tabBarInactiveTintColor: '#64748B',
+        tabBarActiveTintColor: isDark ? '#60A5FA' : '#2563EB',
+        tabBarInactiveTintColor: isDark ? '#94A3B8' : '#64748B',
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10.5,
           fontWeight: '700',
           marginTop: 2,
         },
@@ -41,8 +42,8 @@ export default function TabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconWrapper, focused && styles.iconActive]}>
-              <Home size={20} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <View style={[styles.iconWrapper, focused && { backgroundColor: activeBg }]}>
+              <Home size={19} color={color} strokeWidth={focused ? 2.5 : 2} />
             </View>
           ),
         }}
@@ -52,8 +53,8 @@ export default function TabsLayout() {
         options={{
           title: 'Courses',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconWrapper, focused && styles.iconActive]}>
-              <BookOpen size={20} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <View style={[styles.iconWrapper, focused && { backgroundColor: activeBg }]}>
+              <BookOpen size={19} color={color} strokeWidth={focused ? 2.5 : 2} />
             </View>
           ),
         }}
@@ -63,8 +64,8 @@ export default function TabsLayout() {
         options={{
           title: 'Live',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconWrapper, focused && styles.iconActive]}>
-              <Radio size={20} color={focused ? '#DC2626' : color} strokeWidth={focused ? 2.5 : 2} />
+            <View style={[styles.iconWrapper, focused && { backgroundColor: liveActiveBg }]}>
+              <Radio size={19} color={focused ? (isDark ? '#F87171' : '#DC2626') : color} strokeWidth={focused ? 2.5 : 2} />
             </View>
           ),
         }}
@@ -74,8 +75,8 @@ export default function TabsLayout() {
         options={{
           title: 'Notes',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconWrapper, focused && styles.iconActive]}>
-              <FileText size={20} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <View style={[styles.iconWrapper, focused && { backgroundColor: activeBg }]}>
+              <FileText size={19} color={color} strokeWidth={focused ? 2.5 : 2} />
             </View>
           ),
         }}
@@ -83,7 +84,12 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="tests"
         options={{
-          href: null,
+          title: 'Quiz',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrapper, focused && { backgroundColor: activeBg }]}>
+              <CheckSquare size={19} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
@@ -91,8 +97,8 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconWrapper, focused && styles.iconActive]}>
-              <User size={20} color={color} strokeWidth={focused ? 2.5 : 2} />
+            <View style={[styles.iconWrapper, focused && { backgroundColor: activeBg }]}>
+              <User size={19} color={color} strokeWidth={focused ? 2.5 : 2} />
             </View>
           ),
         }}
@@ -105,11 +111,8 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 36,
-    height: 28,
-    borderRadius: 14,
-  },
-  iconActive: {
-    backgroundColor: '#EFF6FF',
+    width: 34,
+    height: 26,
+    borderRadius: 13,
   },
 });

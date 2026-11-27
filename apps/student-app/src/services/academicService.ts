@@ -1668,6 +1668,18 @@ class AcademicRepository {
             this.liveClasses = [...this.liveClasses.filter((l) => (l as any).chapter_id !== chapterId), ...active];
           }
           this.persist('icc_live_classes', this.liveClasses).catch(() => {});
+
+          // Auto-promote any Live/Scheduled class whose end time has passed -> Recorded Lecture
+          const now = Date.now();
+          for (const item of active) {
+            if ((item.status === 'live' || item.status === 'scheduled') && item.scheduled_at && item.youtube_video_id) {
+              const endMs = new Date(item.scheduled_at).getTime() + (item.duration_minutes || 60) * 60000;
+              if (now > endMs) {
+                this.updateLiveClassStatus(item.id, 'completed').catch(() => {});
+              }
+            }
+          }
+
           return active;
         }
       } catch (e) {

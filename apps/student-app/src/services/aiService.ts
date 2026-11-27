@@ -327,80 +327,182 @@ class AIService {
   // -------------------------------------------------------------
 
   /**
-   * Generates a unique 30-second quiz for a student
-   * Filters out already answered question IDs
+   * Generates a unique 30-second quiz for a student scoped to their Course & Subject.
+   * Reads Study Materials (PDFs/notes) & Chapters via AI.
+   * Urdu subject -> Urdu questions; All other subjects -> Hindi questions.
+   * Never repeats questions that the student already answered CORRECTLY.
+   * Wrong or unanswered/timed-out questions CAN repeat.
    */
   async getLiveQuizQuestions(
     studentId: string,
     subjectFilter?: string,
     chapterFilter?: string,
-    language: 'hi' | 'ur' | 'en' = 'hi',
-    count: number = 5
+    language?: 'hi' | 'ur' | 'en',
+    count: number = 5,
+    courseContext?: {
+      courseId?: string;
+      courseTitle?: string;
+      className?: string;
+      chapters?: Array<{ chapter_number?: number; title: string; description?: string }>;
+      materials?: Array<{ title: string; description?: string; file_path?: string }>;
+    }
   ): Promise<AIQuizQuestion[]> {
-    // 1. Retrieve list of already answered question IDs by this student
-    const answeredIds = await this.getAnsweredQuestionIds(studentId);
+    const isUrdu =
+      language === 'ur' ||
+      (subjectFilter ? subjectFilter.toLowerCase().includes('urdu') : false);
+    const targetLang: 'hi' | 'ur' = isUrdu ? 'ur' : 'hi';
 
-    // 2. Filter pool by subject, language, and non-answered questions
+    // 1. Retrieve ONLY correctly-answered (mastered) question IDs & texts
+    const { ids: masteredIds, texts: masteredTexts } = await this.getMasteredQuestions(studentId);
+    const normalizeText = (t: string) => t.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    // 2. Try live AI generation from Course, Subject, Chapters & Study Materials (PDFs)
+    const generated: AIQuizQuestion[] = [];
+    try {
+      const res = await fetch('https://icconline.vercel.app/api/ai/grok', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_quiz',
+          payload: {
+            courseTitle: courseContext?.courseTitle || 'Board Exam Course',
+            className: courseContext?.className || 'Class 10',
+            subjectName: subjectFilter && subjectFilter !== 'ALL' ? subjectFilter : 'Science & General',
+            language: targetLang,
+            count,
+            chaptersContext: courseContext?.chapters || [],
+            materialsContext: courseContext?.materials || [],
+            excludeQuestions: Array.from(masteredTexts),
+          },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data?.questions)) {
+          for (const item of data.questions) {
+            if (!item?.question || !Array.isArray(item?.options) || item.options.length < 4) continue;
+            const norm = normalizeText(item.question);
+            if (masteredTexts.has(norm)) continue;
+            const qId = `ai-${targetLang}-${norm.slice(0, 32).replace(/[^a-z0-9\u0900-\u097f\u0600-\u06ff]/gi, '')}-${Math.abs(
+              norm.split('').reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0)
+            )}`;
+            if (masteredIds.has(qId)) continue;
+            generated.push({
+              id: qId,
+              question: item.question,
+              options: item.options.slice(0, 4),
+              correctIndex: typeof item.correctIndex === 'number' ? item.correctIndex : 0,
+              explanation: item.explanation || '',
+              subject: subjectFilter || 'General',
+              chapter: item.chapter || chapterFilter || 'Syllabus',
+              language: targetLang,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Live AI quiz fetch fallback:', e);
+    }
+
+    if (generated.length >= count) {
+      return generated.slice(0, count);
+    }
+
+    // 3. Fallback / Top-up from curriculum pool matching subject & language, excluding mastered
+    const subjectLower = (subjectFilter || '').toLowerCase();
     let pool = CURRICULUM_QUESTIONS_POOL.filter((q) => {
-      if (answeredIds.has(q.id)) return false;
-      if (language === 'ur' && q.language !== 'ur') return false;
-      if (language !== 'ur' && q.language === 'ur') return false;
-      if (subjectFilter && subjectFilter !== 'ALL' && q.subject.toLowerCase() !== subjectFilter.toLowerCase()) {
+      if (masteredIds.has(q.id) || masteredTexts.has(normalizeText(q.question))) return false;
+      if (targetLang === 'ur' && q.language !== 'ur') return false;
+      if (targetLang !== 'ur' && q.language === 'ur') return false;
+      if (
+        subjectFilter &&
+        subjectFilter !== 'ALL' &&
+        !q.subject.toLowerCase().includes(subjectLower) &&
+        !subjectLower.includes(q.subject.toLowerCase())
+      ) {
         return false;
       }
       return true;
     });
 
-    // If student has answered all available questions in this filter, recycle pool
+    // If all subject-specific questions in local pool are mastered, broaden to same language non-mastered
     if (pool.length === 0) {
       pool = CURRICULUM_QUESTIONS_POOL.filter((q) => {
-        if (language === 'ur') return q.language === 'ur';
-        return q.language !== 'ur';
+        if (masteredIds.has(q.id) || masteredTexts.has(normalizeText(q.question))) return false;
+        return targetLang === 'ur' ? q.language === 'ur' : q.language !== 'ur';
       });
     }
 
-    // Shuffle and pick requested count
     const shuffled = [...pool].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+    const combined = [...generated, ...shuffled];
+    return combined.slice(0, count);
   }
 
   /**
-   * Retrieves answered question IDs for a student from local store & Supabase
+   * Retrieves ONLY correctly-answered (mastered) question IDs & texts from local + Supabase
    */
-  private async getAnsweredQuestionIds(studentId: string): Promise<Set<string>> {
-    const set = new Set<string>();
+  async getMasteredQuestions(studentId: string): Promise<{ ids: Set<string>; texts: Set<string>; points: number; badges: string[] }> {
+    const ids = new Set<string>();
+    const texts = new Set<string>();
+    let points = 0;
+    let badges: string[] = [];
+
     try {
+      const key = `quiz_mastered_v2_${studentId}`;
+      let raw: string | null = null;
       if (Platform.OS !== 'web') {
-        const stored = await SecureStore.getItemAsync(`quiz_answered_${studentId}`);
-        if (stored) {
-          const arr: string[] = JSON.parse(stored);
-          arr.forEach((id) => set.add(id));
-        }
+        raw = await SecureStore.getItemAsync(key);
       } else if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem(`quiz_answered_${studentId}`);
-        if (stored) {
-          const arr: string[] = JSON.parse(stored);
-          arr.forEach((id) => set.add(id));
-        }
+        raw = localStorage.getItem(key);
+      }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed?.ids)) parsed.ids.forEach((id: string) => ids.add(id));
+        if (Array.isArray(parsed?.texts)) parsed.texts.forEach((t: string) => texts.add(t));
+        if (typeof parsed?.points === 'number') points = parsed.points;
+        if (Array.isArray(parsed?.badges)) badges = parsed.badges;
       }
 
-      // Check Supabase if configured
-      if (isSupabaseConfigured) {
-        const { data } = await supabase
-          .from('student_quiz_history')
-          .select('question_id')
-          .eq('student_id', studentId);
-        if (data) {
-          data.forEach((row: any) => set.add(row.question_id));
-        }
+      if (isSupabaseConfigured && studentId && studentId !== 'guest-student') {
+        // Primary: student_quiz_history (ONLY where is_correct = true!)
+        try {
+          const { data, error } = await supabase
+            .from('student_quiz_history')
+            .select('question_id, question_text')
+            .eq('student_id', studentId)
+            .eq('is_correct', true);
+          if (!error && Array.isArray(data)) {
+            data.forEach((row: any) => {
+              if (row.question_id) ids.add(row.question_id);
+              if (row.question_text) texts.add(String(row.question_text).trim().toLowerCase());
+            });
+          }
+        } catch {}
+
+        // Guaranteed Live Cloud Sync via platform_settings
+        try {
+          const { data: psData } = await supabase
+            .from('platform_settings')
+            .select('value')
+            .eq('key', `quiz_mastered_${studentId}`)
+            .maybeSingle();
+          const val: any = psData?.value;
+          if (val) {
+            if (Array.isArray(val.ids)) val.ids.forEach((id: string) => ids.add(id));
+            if (Array.isArray(val.texts)) val.texts.forEach((t: string) => texts.add(t));
+            if (typeof val.points === 'number' && val.points > points) points = val.points;
+            if (Array.isArray(val.badges) && val.badges.length > badges.length) badges = val.badges;
+          }
+        } catch {}
       }
     } catch {}
-    return set;
+    return { ids, texts, points, badges };
   }
 
   /**
    * Submits a quiz answer: +10 on Correct, -5 on Wrong / Timeout
-   * Atomic point and badge calculator
+   * ONLY marks question as mastered if isCorrect === true!
+   * Wrong or unanswered questions remain eligible to repeat.
    */
   async submitAnswer(
     studentId: string,
@@ -409,22 +511,19 @@ class AIService {
     subject?: string,
     chapter?: string,
     currentPoints: number = 0,
-    currentBadges: string[] = []
+    currentBadges: string[] = [],
+    questionText?: string
   ): Promise<QuizSubmissionResult> {
     const pointsDelta = isCorrect ? 10 : -5;
     const newTotalPoints = Math.max(0, currentPoints + pointsDelta);
 
-    // Save answered question ID to local cache so it never repeats
-    try {
-      const answeredSet = await this.getAnsweredQuestionIds(studentId);
-      answeredSet.add(questionId);
-      const arr = Array.from(answeredSet);
-      if (Platform.OS !== 'web') {
-        await SecureStore.setItemAsync(`quiz_answered_${studentId}`, JSON.stringify(arr));
-      } else if (typeof window !== 'undefined') {
-        localStorage.setItem(`quiz_answered_${studentId}`, JSON.stringify(arr));
+    const { ids: masteredIds, texts: masteredTexts } = await this.getMasteredQuestions(studentId);
+    if (isCorrect) {
+      masteredIds.add(questionId);
+      if (questionText) {
+        masteredTexts.add(questionText.trim().toLowerCase().replace(/\s+/g, ' '));
       }
-    } catch {}
+    }
 
     // Calculate badges
     let newlyUnlockedBadge: string | undefined = undefined;
@@ -440,21 +539,48 @@ class AIService {
       newlyUnlockedBadge = 'Bronze Scholar';
     }
 
-    // Sync with Supabase
-    try {
-      if (isSupabaseConfigured) {
-        await supabase.from('student_quiz_history').insert({
-          student_id: studentId,
-          question_id: questionId,
-          subject_id: subject,
-          chapter_id: chapter,
-          is_correct: isCorrect,
-          points_earned: pointsDelta,
-        });
+    const updatedBadges = newlyUnlockedBadge
+      ? [...currentBadges, newlyUnlockedBadge]
+      : currentBadges;
 
-        const updatedBadges = newlyUnlockedBadge
-          ? [...currentBadges, newlyUnlockedBadge]
-          : currentBadges;
+    const snapshot = {
+      ids: Array.from(masteredIds),
+      texts: Array.from(masteredTexts),
+      points: newTotalPoints,
+      badges: updatedBadges,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Persist locally
+    try {
+      const key = `quiz_mastered_v2_${studentId}`;
+      if (Platform.OS !== 'web') {
+        await SecureStore.setItemAsync(key, JSON.stringify(snapshot));
+      } else if (typeof window !== 'undefined') {
+        localStorage.setItem(key, JSON.stringify(snapshot));
+      }
+    } catch {}
+
+    // Sync LIVE with Supabase
+    try {
+      if (isSupabaseConfigured && studentId && studentId !== 'guest-student') {
+        await supabase.from('platform_settings').upsert(
+          { key: `quiz_mastered_${studentId}`, value: snapshot },
+          { onConflict: 'key' }
+        );
+
+        await supabase
+          .from('student_quiz_history')
+          .insert({
+            student_id: studentId,
+            question_id: questionId,
+            question_text: questionText || null,
+            subject_id: subject,
+            chapter_id: chapter,
+            is_correct: isCorrect,
+            points_earned: pointsDelta,
+          })
+          .then(() => {}, () => {});
 
         await supabase
           .from('profiles')
@@ -463,7 +589,8 @@ class AIService {
             badges: updatedBadges,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', studentId);
+          .eq('id', studentId)
+          .then(() => {}, () => {});
       }
     } catch (e) {
       console.warn('Supabase quiz sync warning:', e);

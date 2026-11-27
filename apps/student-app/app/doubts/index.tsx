@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { askGrokGuruji } from '../../src/services/grokAi';
 import {
@@ -44,6 +45,7 @@ interface AiChatEntry {
 
 export default function StudentDoubtsScreen() {
   const { user, selectedBoard } = useAuthStore();
+  const theme = useAppTheme();
 
   const [activeTab, setActiveTab] = useState<'ai' | 'faculty'>('ai');
 
@@ -147,12 +149,12 @@ export default function StudentDoubtsScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Branded Header */}
       <CoachingHeader />
 
       {/* Tab Switcher */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'ai' && styles.tabBtnActive]}
           onPress={() => setActiveTab('ai')}
