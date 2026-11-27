@@ -18,7 +18,8 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { formatINR } from '@icc/shared-utils';
 import { Course } from '@icc/shared-types';
 import { academicService } from '../../src/services/academicService';
-import { supabase } from '../../src/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { supabase, LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY } from '../../src/lib/supabase';
 import {
   CheckCircle2,
   ShieldCheck,
@@ -179,44 +180,74 @@ export default function ManualUpiPaymentScreen() {
           .eq('is_active', false);
       } catch {}
 
-      // 2. Insert pending student record
-      const studentId = user?.id || `std-${Date.now()}`;
-      await supabase.from('profiles').upsert({
+      // 2. Insert pending student record with valid UUID & exact Supabase schema columns
+      const makeUuid = () =>
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        });
+      const isUuid = (v?: string) => Boolean(v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v));
+      const classNumMatch = (className || '').match(/\d+/);
+      const classNum = classNumMatch ? classNumMatch[0].padStart(2, '0') : '10';
+      const resolvedClassId = `c0000000-0000-0000-0000-0000000000${classNum}`;
+
+      let studentId = isUuid(user?.id) ? user!.id : '';
+      if (!studentId) {
+        try {
+          const ephemeral = createClient(LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const { data: authData } = await ephemeral.auth.signUp({
+            email: cleanEmail,
+            password: password || `Icc@${cleanMobile.slice(-6)}`,
+            options: { data: { full_name: cleanName, username: cleanUsername } },
+          });
+          if (authData?.user?.id) {
+            studentId = authData.user.id;
+          }
+        } catch {}
+      }
+      if (!studentId) studentId = makeUuid();
+
+      const { error: profErr } = await supabase.from('profiles').upsert({
         id: studentId,
         full_name: cleanName,
         username: cleanUsername,
         mobile_number: cleanMobile,
         email: cleanEmail,
-        dob: dob,
         board_code: boardCode,
-        class_id: className,
+        class_id: resolvedClassId,
         district: district,
         school_name: schoolName || 'General',
+        preferred_language: 'hi',
         is_active: false, // Requires Admin approval
         updated_at: new Date().toISOString(),
       });
+      if (profErr) console.warn('profiles upsert warning:', profErr.message);
 
-      // 3. Insert pending payment record
-      await supabase.from('payments').insert({
-        id: `pay-${Date.now()}`,
+      // 3. Insert pending payment record (exact Supabase schema: upi_ref_number)
+      const paymentId = makeUuid();
+      const { error: payErr } = await supabase.from('payments').insert({
+        id: paymentId,
         student_id: studentId,
-        course_id: courseId,
+        course_id: isUuid(courseId) ? courseId : null,
         amount: payableAmount,
-        utr_number: cleanUtr,
+        upi_ref_number: cleanUtr,
         status: 'pending',
-        student_name: cleanName,
-        student_phone: cleanMobile,
-        student_email: cleanEmail,
-        course_title: courseTitle,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
+      if (payErr) {
+        Alert.alert('Database Error', `Unable to record payment in cloud database: ${payErr.message}`);
+        setSubmitting(false);
+        return;
+      }
 
       // 4. Insert pending enrollment
       await supabase.from('enrollments').insert({
-        id: `enr-${Date.now()}`,
+        id: makeUuid(),
         student_id: studentId,
-        course_id: courseId,
+        course_id: isUuid(courseId) ? courseId : null,
         status: 'pending',
         enrolled_at: new Date().toISOString(),
       });

@@ -1346,20 +1346,19 @@ class AcademicRepository {
     // ✅ ALWAYS fetch fresh from Supabase first (live database = single source of truth)
     if (isSupabaseConfigured) {
       try {
-        let q = supabase
+        const { data, error } = await supabase
           .from('chapters')
           .select('*')
           .eq('subject_id', subjectId)
           .order('chapter_number', { ascending: true });
-        if (subSubjectId) q = q.eq('sub_subject_id', subSubjectId);
-        const { data, error } = await q;
         if (!error && Array.isArray(data)) {
           const mapped: AcademicChapter[] = data
             .filter((d: any) => !this.isDeleted(d.id))
+            .filter((d: any) => !subSubjectId || d.description?.includes(`sub_subject:${subSubjectId}`))
             .map((d: any) => ({
               id: d.id,
               subject_id: d.subject_id,
-              sub_subject_id: d.sub_subject_id,
+              sub_subject_id: subSubjectId,
               course_id: d.course_id,
               class_name: d.class_name,
               chapter_number: d.chapter_number || 1,
@@ -1524,6 +1523,23 @@ class AcademicRepository {
   // --- CHAPTER CONTENT: RECORDED VIDEOS ---
   async getRecordedLectures(chapterId: string): Promise<RecordedLecture[]> {
     await this.ensureLoaded();
+    if (isSupabaseConfigured && isValidUUID(chapterId)) {
+      try {
+        const { data, error } = await supabase
+          .from('recorded_lectures')
+          .select('*')
+          .eq('chapter_id', chapterId)
+          .order('lecture_order', { ascending: true });
+        if (!error && Array.isArray(data)) {
+          const active = data.filter((l: any) => !this.isDeleted(l.id));
+          this.lectures = [...this.lectures.filter((l) => l.chapter_id !== chapterId), ...active];
+          this.persist('icc_recorded_lectures', this.lectures).catch(() => {});
+          return active;
+        }
+      } catch (e) {
+        console.warn('getRecordedLectures Supabase fetch error:', e);
+      }
+    }
     return this.lectures.filter((l) => !this.isDeleted(l.id) && l.chapter_id === chapterId);
   }
 
@@ -1639,6 +1655,25 @@ class AcademicRepository {
   // --- CHAPTER CONTENT: LIVE CLASSES ---
   async getLiveClasses(chapterId?: string): Promise<LiveClass[]> {
     await this.ensureLoaded();
+    if (isSupabaseConfigured) {
+      try {
+        let q = supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false });
+        if (chapterId && isValidUUID(chapterId)) q = q.eq('chapter_id', chapterId);
+        const { data, error } = await q;
+        if (!error && Array.isArray(data)) {
+          const active = data.filter((l: any) => !this.isDeleted(l.id));
+          if (!chapterId) {
+            this.liveClasses = active;
+          } else {
+            this.liveClasses = [...this.liveClasses.filter((l) => (l as any).chapter_id !== chapterId), ...active];
+          }
+          this.persist('icc_live_classes', this.liveClasses).catch(() => {});
+          return active;
+        }
+      } catch (e) {
+        console.warn('getLiveClasses Supabase fetch error:', e);
+      }
+    }
     const list = this.liveClasses.filter((l) => !this.isDeleted(l.id));
     if (chapterId) {
       return list.filter((l) => (l as any).chapter_id === chapterId);
@@ -1816,6 +1851,25 @@ class AcademicRepository {
   // --- CHAPTER CONTENT: STUDY MATERIALS PDF ---
   async getStudyMaterials(chapterId?: string): Promise<StudyMaterial[]> {
     await this.ensureLoaded();
+    if (isSupabaseConfigured) {
+      try {
+        let q = supabase.from('study_materials').select('*').order('created_at', { ascending: false });
+        if (chapterId && isValidUUID(chapterId)) q = q.eq('chapter_id', chapterId);
+        const { data, error } = await q;
+        if (!error && Array.isArray(data)) {
+          const active = data.filter((m: any) => !this.isDeleted(m.id));
+          if (!chapterId) {
+            this.materials = active;
+          } else {
+            this.materials = [...this.materials.filter((m) => m.chapter_id !== chapterId), ...active];
+          }
+          this.persist('icc_study_materials', this.materials).catch(() => {});
+          return active;
+        }
+      } catch (e) {
+        console.warn('getStudyMaterials Supabase fetch error:', e);
+      }
+    }
     const list = this.materials.filter((m) => !this.isDeleted(m.id));
     if (chapterId) {
       return list.filter((m) => m.chapter_id === chapterId);

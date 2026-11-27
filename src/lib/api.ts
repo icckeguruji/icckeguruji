@@ -3,6 +3,7 @@
 // Direct cloud sync + permanent browser localStorage cache
 // Guarantees changes (Add, Edit, Delete) NEVER revert back on refresh or reload!
 
+import { createClient } from '@supabase/supabase-js';
 import {
   supabase,
   isSupabaseConfigured,
@@ -560,7 +561,13 @@ export const AdminApi = {
 
   createStudent: async (studentData: Partial<UserProfile>) => {
     localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
-    const payload = {
+    const makeUuid = () =>
+      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+      });
+    const payload: any = {
+      id: studentData.id && isValidUUID(studentData.id) ? studentData.id : makeUuid(),
       username: studentData.username || `student_${Date.now().toString().slice(-4)}`,
       full_name: studentData.full_name || 'New Student',
       mobile_number: studentData.mobile_number || '9999999999',
@@ -568,15 +575,37 @@ export const AdminApi = {
       board_code: (studentData.board_code as any) || 'BSEB',
       district: studentData.district || 'Godda',
       school_name: studentData.school_name || 'Government High School',
-      guardian_name: studentData.guardian_name || '',
-      guardian_phone: studentData.guardian_phone || '',
       preferred_language: 'en',
-      is_active: true,
+      is_active: studentData.is_active !== undefined ? studentData.is_active : true,
     };
+    if (studentData.class_id && isValidUUID(studentData.class_id)) {
+      payload.class_id = studentData.class_id;
+    }
 
     if (isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase.from('profiles').insert(payload).select().single();
+        // Ensure auth.users row exists so profiles_id_fkey never fails
+        if (!studentData.id || !isValidUUID(studentData.id)) {
+          try {
+            const ephemeral = createClient(LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false },
+            });
+            const signUpEmail =
+              payload.email && payload.email.includes('@') && payload.email !== 'student@example.com'
+                ? payload.email
+                : `${payload.username}@iccstudent.local`;
+            const { data: authData } = await ephemeral.auth.signUp({
+              email: signUpEmail,
+              password: `Icc@${(payload.mobile_number || '123456').slice(-6)}`,
+              options: { data: { full_name: payload.full_name, username: payload.username } },
+            });
+            if (authData?.user?.id) {
+              payload.id = authData.user.id;
+            }
+          } catch {}
+        }
+
+        const { data, error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select().single();
         if (!error && data) {
           localStudents = [data as UserProfile, ...localStudents];
           savePersistentState(STORAGE_KEYS.STUDENTS, localStudents);
@@ -626,10 +655,21 @@ export const AdminApi = {
 
   updateStudent: async (studentId: string, updates: Partial<UserProfile>) => {
     localStudents = getPersistentState(STORAGE_KEYS.STUDENTS, localStudents);
+    const dbUpdates: any = { updated_at: new Date().toISOString() };
+    const allowedCols = [
+      'username', 'full_name', 'mobile_number', 'email', 'board_code',
+      'class_id', 'district', 'school_name', 'preferred_language', 'avatar_url', 'is_active',
+    ];
+    for (const col of allowedCols) {
+      if ((updates as any)[col] !== undefined) {
+        if (col === 'class_id' && !isValidUUID((updates as any)[col])) continue;
+        dbUpdates[col] = (updates as any)[col];
+      }
+    }
     if (isSupabaseConfigured) {
       let updateConfirmed = false;
       try {
-        const { error } = await supabase.from('profiles').update(updates).eq('id', studentId);
+        const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', studentId);
         if (!error) updateConfirmed = true;
       } catch (e) {
         console.error('updateStudent Supabase error:', e);
@@ -638,7 +678,7 @@ export const AdminApi = {
         const direct = await fetchDirectRest(`profiles?id=eq.${studentId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
+          body: JSON.stringify(dbUpdates),
         });
         if (direct !== null) updateConfirmed = true;
       }
