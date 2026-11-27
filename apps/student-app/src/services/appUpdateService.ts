@@ -167,7 +167,7 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       console.log('App update endpoint lookup note:', e);
     }
 
-    // 2. Secondary: Check Supabase platform_settings if configured
+    // 2. Secondary: Check Supabase platform_settings ONLY if it has a higher version_code
     if (isSupabaseConfigured) {
       try {
         const { data: remoteData } = await supabase
@@ -178,13 +178,17 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
 
         if (remoteData?.value && typeof remoteData.value === 'object') {
           const val = remoteData.value;
-          if (val.latest_version) {
+          const remoteCode = Number(val.version_code) || 0;
+          if (
+            val.latest_version &&
+            (remoteCode > versionCode || isNewerVersion(val.latest_version, latestVersion))
+          ) {
             latestVersion = val.latest_version;
-            versionCode = val.version_code || versionCode;
+            versionCode = remoteCode || versionCode;
             apkUrl = val.apk_download_url || apkUrl;
             titleHi = val.title_hi || titleHi;
-            if (Array.isArray(val.changelog_en)) changelogEn = val.changelog_en;
-            if (Array.isArray(val.changelog_hi)) changelogHi = val.changelog_hi;
+            if (Array.isArray(val.changelog_en) && val.changelog_en.length > 0) changelogEn = val.changelog_en;
+            if (Array.isArray(val.changelog_hi) && val.changelog_hi.length > 0) changelogHi = val.changelog_hi;
             isMandatory = Boolean(val.is_mandatory);
           }
         }

@@ -222,34 +222,6 @@ export default function StudentHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Continue Watching / Resume Bar */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Continue Watching
-          </Text>
-          <TouchableOpacity
-            style={[styles.resumeCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
-            onPress={() => router.push('/(tabs)/courses')}
-            activeOpacity={0.8}
-          >
-            <View style={styles.resumeThumb}>
-              <Play size={20} color="#2563EB" fill="#2563EB" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.resumeTitle, { color: theme.text }]} numberOfLines={1}>
-                Syllabus & Video Lectures
-              </Text>
-              <Text style={[styles.resumeSub, { color: theme.textSecondary }]}>
-                BSEB & JAC Board Curriculum
-              </Text>
-              <View style={[styles.progressBarBg, { backgroundColor: isDark ? '#27272A' : '#E2E8F0' }]}>
-                <View style={[styles.progressBarFill, { width: '80%' }]} />
-              </View>
-            </View>
-            <ChevronRight size={18} color={theme.textMuted} />
-          </TouchableOpacity>
-        </View>
-
         {/* Quick Service Grid with Lucide Icons */}
         <View style={styles.gridRow}>
           <TouchableOpacity
@@ -273,7 +245,19 @@ export default function StudentHomeScreen() {
               <FileText size={20} color="#2563EB" />
             </View>
             <Text style={[styles.gridText, { color: theme.text }]}>Notes</Text>
-            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>Secure View</Text>
+            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>PDF Notes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.gridItem, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
+            onPress={() => router.push('/(tabs)/tests')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconBox, { backgroundColor: isDark ? '#26134D' : '#F5F3FF' }]}>
+              <CheckSquare size={20} color="#7C3AED" />
+            </View>
+            <Text style={[styles.gridText, { color: theme.text }]}>AI Quiz</Text>
+            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>30s Practice</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -285,19 +269,7 @@ export default function StudentHomeScreen() {
               <MessageSquareQuote size={20} color="#D97706" />
             </View>
             <Text style={[styles.gridText, { color: theme.text }]}>Doubts</Text>
-            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>Ask Faculty</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.gridItem, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
-            onPress={() => router.push('/assignments')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { backgroundColor: isDark ? '#26134D' : '#F5F3FF' }]}>
-              <ClipboardList size={20} color="#7C3AED" />
-            </View>
-            <Text style={[styles.gridText, { color: theme.text }]}>Homework</Text>
-            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>Daily Tasks</Text>
+            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>AI & Faculty</Text>
           </TouchableOpacity>
         </View>
 

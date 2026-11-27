@@ -16,28 +16,28 @@ export interface AppUpdateConfig {
 }
 
 const defaultAppUpdate: AppUpdateConfig = {
-  latest_version: '1.0.2',
-  version_code: 3,
+  latest_version: '1.0.3',
+  version_code: 4,
   min_required_version: '1.0.0',
   is_mandatory: false,
   apk_download_url: 'https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk',
-  apk_size_mb: 20.4,
-  release_date: '2026-11-26',
-  title_en: 'Official Update Available (v1.0.2)',
-  title_hi: 'नया आधिकारिक अपडेट उपलब्ध है (v1.0.2)',
+  apk_size_mb: 21.2,
+  release_date: '2026-11-27',
+  title_en: 'Major Update Available (v1.0.3)',
+  title_hi: 'नया आधिकारिक अपडेट उपलब्ध है (v1.0.3)',
   changelog_en: [
-    'Fixed Add Chapter & Subject button layout on all mobile screens',
-    'Real-time Video and Handwritten Notes counters on Subject & Chapter cards',
-    'Hindi Title option for Subjects, Disciplines, and Chapters',
-    'Background auto-download with notification bar progress and auto-install',
-    'AMOLED pure black theme optimizations for battery saving'
+    '100% True Dark Mode across all screens & bottom navigation bar',
+    'AI Smart Quiz restored: Course & PDF-based questions (Hindi & Urdu)',
+    'Automatic Live-to-Recorded YouTube video promotion after class ends',
+    'Fixed Guest Browse Courses & Enrollment Gate + 6-Digit Email OTP Reset',
+    'Live Supabase sync for Courses, Subjects, Chapters, Notes & Students'
   ],
   changelog_hi: [
-    'मोबाइल स्क्रीन पर अध्याय एवं विषय जोड़ने वाले बटन का लेआउट ठीक किया गया',
-    'विषय और अध्याय के बाहर वीडियो और हस्तलिखित नोट्स की वास्तविक संख्या',
-    'विषय और अध्याय में हिंदी नाम (Title in Hindi) दर्ज करने की सुविधा',
-    'बैकग्राउंड ऑटो-डाउनलोड, नोटिफिकेशन बार में प्रोग्रेस एवं स्वतः इंस्टॉलेशन',
-    'AMOLED प्योर ब्लैक डार्क मोड और बैटरी बचत में सुधार'
+    'पूरी ऐप और बॉटम नेविगेशन बार में 100% क्लियर डार्क मोड',
+    'AI स्मार्ट क्विज़ वापस जोड़ा गया (कोर्स व PDF आधारित प्रश्न — हिंदी व उर्दू में)',
+    'लाइव क्लास समाप्त होने पर YouTube वीडियो स्वतः रिकॉर्डेड सेक्शन में जुड़ेगा',
+    'गेस्ट कोर्स ब्राउज़, एनरोलमेंट गेट एवं 6-अंकों का ईमेल OTP पासवर्ड रीसेट',
+    'कोर्स, विषय, अध्याय, नोट्स और विद्यार्थियों का लाइव डेटाबेस सिंक'
   ],
 };
 

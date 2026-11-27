@@ -59,18 +59,15 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
 
   const navItems = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/admin/students', icon: Users, label: 'Students' },
-    { href: '/admin/academics', icon: GraduationCap, label: 'Classes & Subjects' },
-    { href: '/admin/courses', icon: BookOpen, label: 'Courses' },
+    { href: '/admin/courses', icon: BookOpen, label: 'Courses & Syllabus' },
     { href: '/admin/live-classes', icon: Video, label: 'Live Classes' },
     { href: '/admin/recorded-lectures', icon: PlaySquare, label: 'Recorded Videos' },
     { href: '/admin/study-materials', icon: FileText, label: 'Notes & PDFs' },
+    { href: '/admin/students', icon: Users, label: 'Students' },
     { href: '/admin/payments', icon: CreditCard, label: 'Payments & UTR' },
-    { href: '/admin/notifications', icon: Bell, label: 'Push Notifications' },
-    { href: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp AI Bot' },
+    { href: '/admin/notifications', icon: Bell, label: 'Notifications' },
     { href: '/admin/teachers', icon: UserCheck, label: 'Teachers' },
-    { href: '/admin/reports', icon: BarChart3, label: 'Reports' },
-    { href: '/admin/settings', icon: Settings, label: 'Settings' },
+    { href: '/admin/settings', icon: Settings, label: 'App Update & Settings' },
   ];
 
   const sidebarContent = (
