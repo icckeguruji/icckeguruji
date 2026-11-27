@@ -147,9 +147,19 @@ export function PublicFooter() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
-        <p>
-          &copy; {new Date().getFullYear()} IDEAL COACHING CENTRE. All rights reserved. Directed by BADE SIR.
-        </p>
+        <div className="text-center md:text-left space-y-1">
+          <p>
+            &copy; {new Date().getFullYear()} IDEAL COACHING CENTRE. All rights reserved. Directed by BADE SIR.
+          </p>
+          <p className="text-[11px] text-slate-500">
+            Developed &amp; Designed by{' '}
+            <span className="text-slate-400 font-medium">Muzaffar Iqbal Ishaati</span>
+            {' • '}
+            <a href="tel:+919934215013" className="hover:text-slate-300 transition">
+              9934215013
+            </a>
+          </p>
+        </div>
         <div className="flex space-x-6 text-xs">
           <Link href="/privacy" className="hover:text-slate-300 transition">
             Privacy Policy

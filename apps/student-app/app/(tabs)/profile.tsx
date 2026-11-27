@@ -1402,6 +1402,17 @@ export default function StudentProfileScreen() {
             Sign Out
           </Text>
         </TouchableOpacity>
+
+        <View style={{ alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 }}>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: '600', textAlign: 'center' }}>
+            Developed &amp; Designed by Muzaffar Iqbal Ishaati
+          </Text>
+          <TouchableOpacity onPress={() => Linking.openURL('tel:+919934215013')} activeOpacity={0.7}>
+            <Text style={{ fontSize: 11, color: theme.textSecondary, marginTop: 2, fontWeight: '600' }}>
+              📞 9934215013
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* 1. EDIT PROFILE DETAILS MODAL */}

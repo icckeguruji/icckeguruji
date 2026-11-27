@@ -160,6 +160,12 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
             <span>Logout</span>
           </button>
         </div>
+        <div className="pt-2 border-t border-slate-800/70 text-[10px] text-slate-500 leading-tight">
+          <p className="truncate">Dev &amp; Design: Muzaffar Iqbal Ishaati</p>
+          <a href="tel:+919934215013" className="hover:text-slate-300 transition">
+            📞 9934215013
+          </a>
+        </div>
       </div>
     </aside>
   );
