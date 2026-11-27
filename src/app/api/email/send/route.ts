@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
       try {
         const scriptRes = await fetch(scriptUrl, {
           method: 'POST',
+          redirect: 'follow',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -81,11 +82,25 @@ export async function POST(req: NextRequest) {
           }),
         });
 
-        const scriptJson = await scriptRes.json().catch(() => ({ status: 'delivered' }));
+        const rawText = await scriptRes.text();
+        if (rawText.includes('<!DOCTYPE html') || rawText.includes('You need access')) {
+          return NextResponse.json({
+            success: false,
+            delivered: false,
+            provider: 'google-apps-script',
+            error: 'Apps Script Web App access is restricted. In script.google.com -> Deploy -> Manage deployments -> Edit -> Who has access: select "Anyone".',
+            recipient: to,
+          });
+        }
+
+        let scriptJson: any = { status: 'delivered' };
+        try {
+          scriptJson = JSON.parse(rawText);
+        } catch {}
 
         return NextResponse.json({
-          success: true,
-          delivered: true,
+          success: scriptJson?.success !== false,
+          delivered: scriptJson?.success !== false,
           provider: 'google-apps-script',
           response: scriptJson,
           recipient: to,
