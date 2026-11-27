@@ -838,7 +838,22 @@ class AcademicRepository {
 
   async getCourseById(id: string): Promise<Course | undefined> {
     await this.ensureLoaded();
-    const found = this.courses.find((c) => c.id === id);
+    let found = this.courses.find((c) => c.id === id);
+
+    // If not in local cache, try fetching from Supabase
+    if (!found && isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.from('courses').select('*').eq('id', id).maybeSingle();
+        if (!error && data) {
+          found = { ...data, thumbnail_url: getResolvedThumbnailUrl(data.thumbnail_url) } as Course;
+          this.courses = [...this.courses.filter((c) => c.id !== id), found];
+          this.persist('icc_courses', this.courses).catch(() => {});
+        }
+      } catch (e) {
+        console.warn('getCourseById Supabase fetch error:', e);
+      }
+    }
+
     if (!found || this.deletedIds.has(found.id)) return undefined;
 
     const cClass = (found.class_name || this.getClassNameFromCourse(found) || '').toLowerCase();
@@ -1075,7 +1090,6 @@ class AcademicRepository {
   // --- SUBJECTS (Course Scoped or Class Scoped) ---
   async getSubjects(courseId?: string, className?: string): Promise<AcademicSubject[]> {
     await this.ensureLoaded();
-    let list = this.subjects.filter((s) => !this.isDeleted(s.id));
 
     const computeSubjectCounts = (s: AcademicSubject): AcademicSubject => {
       const subjectChapterIds = new Set(
@@ -1098,6 +1112,45 @@ class AcademicRepository {
         material_count: matCount,
       };
     };
+
+    // ✅ ALWAYS fetch fresh from Supabase when courseId is provided (live data)
+    if (courseId && isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .select('*')
+          .eq('course_id', courseId)
+          .order('display_order', { ascending: true });
+        if (!error && Array.isArray(data)) {
+          const mapped: AcademicSubject[] = data
+            .filter((d: any) => !this.isDeleted(d.id))
+            .map((d: any) => ({
+              id: d.id,
+              course_id: d.course_id,
+              class_id: d.class_id,
+              class_name: d.class_name || '',
+              name: d.name,
+              name_hi: d.name_hi || d.name,
+              code: d.code || '',
+              icon_name: d.icon_name || 'book-open',
+              has_sub_subjects: Boolean(d.has_sub_subjects),
+              sub_subjects: d.sub_subjects || [],
+              display_order: d.display_order || 0,
+            }));
+          // Update local cache for this courseId
+          this.subjects = [
+            ...this.subjects.filter((s) => s.course_id !== courseId),
+            ...mapped,
+          ];
+          this.persist('icc_academic_subjects', this.subjects).catch(() => {});
+          return mapped.map(computeSubjectCounts);
+        }
+      } catch (e) {
+        console.warn('getSubjects Supabase fetch error:', e);
+      }
+    }
+
+    let list = this.subjects.filter((s) => !this.isDeleted(s.id));
 
     // When courseId is provided, return ONLY subjects explicitly belonging to this course
     // Zero auto-injection: Admin manually creates subjects for each course.
@@ -1290,14 +1343,7 @@ class AcademicRepository {
       };
     };
 
-    const local = this.chapters.filter((ch) => {
-      if (this.isDeleted(ch.id)) return false;
-      if (ch.subject_id !== subjectId) return false;
-      if (subSubjectId) return ch.sub_subject_id === subSubjectId;
-      return true;
-    });
-    if (local.length > 0) return local.map(computeChapterCounts);
-
+    // ✅ ALWAYS fetch fresh from Supabase first (live database = single source of truth)
     if (isSupabaseConfigured) {
       try {
         let q = supabase
@@ -1307,26 +1353,43 @@ class AcademicRepository {
           .order('chapter_number', { ascending: true });
         if (subSubjectId) q = q.eq('sub_subject_id', subSubjectId);
         const { data, error } = await q;
-        if (!error && Array.isArray(data) && data.length > 0) {
-          const mapped: AcademicChapter[] = data.map((d: any) => ({
-            id: d.id,
-            subject_id: d.subject_id,
-            sub_subject_id: d.sub_subject_id,
-            chapter_number: d.chapter_number || 1,
-            title: d.title,
-            title_hi: d.title_hi || d.title,
-            description: d.description || '',
-            live_count: 0,
-            lecture_count: 0,
-            material_count: 0,
-          }));
-          this.chapters = [...this.chapters.filter((c) => c.subject_id !== subjectId), ...mapped];
+        if (!error && Array.isArray(data)) {
+          const mapped: AcademicChapter[] = data
+            .filter((d: any) => !this.isDeleted(d.id))
+            .map((d: any) => ({
+              id: d.id,
+              subject_id: d.subject_id,
+              sub_subject_id: d.sub_subject_id,
+              course_id: d.course_id,
+              class_name: d.class_name,
+              chapter_number: d.chapter_number || 1,
+              title: d.title,
+              title_hi: d.title_hi || d.title,
+              description: d.description || '',
+              live_count: 0,
+              lecture_count: 0,
+              material_count: 0,
+            }));
+          // Update local cache for this subject
+          this.chapters = [
+            ...this.chapters.filter((c) => c.subject_id !== subjectId),
+            ...mapped,
+          ];
+          this.persist('icc_academic_chapters', this.chapters).catch(() => {});
           return mapped.map(computeChapterCounts);
         }
       } catch (e) {
         console.warn('getChapters Supabase fetch error:', e);
       }
     }
+
+    // Fallback: local cache
+    const local = this.chapters.filter((ch) => {
+      if (this.isDeleted(ch.id)) return false;
+      if (ch.subject_id !== subjectId) return false;
+      if (subSubjectId) return ch.sub_subject_id === subSubjectId;
+      return true;
+    });
     return local.map(computeChapterCounts);
   }
 
