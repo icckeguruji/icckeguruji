@@ -302,6 +302,23 @@ export default function LiveClassesPage() {
                       <Calendar className="w-3.5 h-3.5 mr-1 text-slate-400" />
                       {formatIST(cls.scheduled_at)}
                     </p>
+                    {cls.youtube_video_id && (
+                      <div className="mt-3 relative rounded-xl overflow-hidden bg-slate-900 aspect-video border border-slate-200">
+                        <img
+                          src={`https://img.youtube.com/vi/${cls.youtube_video_id}/hqdefault.jpg`}
+                          alt={cls.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/thumbnails/batch-b3-class10.jpg';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end p-2.5">
+                          <span className="text-[10px] font-bold text-white bg-black/60 px-2 py-0.5 rounded">
+                            YT: {cls.youtube_video_id}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">

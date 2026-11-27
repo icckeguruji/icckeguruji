@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -487,9 +488,17 @@ export default function ChapterContentScreen() {
                     style={styles.lectureMainTouch}
                     onPress={() => router.push(`/lecture/${lec.id}` as any)}
                   >
-                    <View style={[styles.lectureOrderBadge, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
-                      <Text style={[styles.lectureOrderText, { color: theme.textSecondary }]}>{index + 1}</Text>
-                    </View>
+                    {lec.youtube_video_id ? (
+                      <Image
+                        source={{ uri: `https://img.youtube.com/vi/${lec.youtube_video_id}/hqdefault.jpg` }}
+                        style={styles.lectureThumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.lectureOrderBadge, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+                        <Text style={[styles.lectureOrderText, { color: theme.textSecondary }]}>{index + 1}</Text>
+                      </View>
+                    )}
                     <View style={styles.lectureInfo}>
                       <Text style={[styles.lectureTitle, { color: theme.text }]} numberOfLines={2}>
                         {lec.title}
@@ -1077,6 +1086,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  lectureThumb: {
+    width: 72,
+    height: 46,
+    borderRadius: 8,
+    backgroundColor: '#0F172A',
   },
   lectureOrderText: {
     fontSize: 12,

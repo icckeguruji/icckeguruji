@@ -132,10 +132,6 @@ export default function ManualUpiPaymentScreen() {
         Alert.alert('Invalid Email', 'Please enter a valid email address.');
         return;
       }
-      if (!dob) {
-        Alert.alert('Date of Birth Required', 'Please enter your Date of Birth.');
-        return;
-      }
       if (password.length > 0 && password.length < 6) {
         Alert.alert('Password Too Short', 'Password must be at least 6 characters long.');
         return;

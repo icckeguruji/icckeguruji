@@ -10,6 +10,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import YoutubePlayer from 'react-native-youtube-iframe';
@@ -554,6 +555,16 @@ export default function StudentLiveScreen() {
                 <Text style={styles.title} numberOfLines={2}>
                   {item.title}
                 </Text>
+
+                {item.youtube_video_id ? (
+                  <View style={styles.cardThumbWrap}>
+                    <Image
+                      source={{ uri: `https://img.youtube.com/vi/${item.youtube_video_id}/hqdefault.jpg` }}
+                      style={styles.cardThumb}
+                      resizeMode="cover"
+                    />
+                  </View>
+                ) : null}
 
                 <View style={styles.metaRow}>
                   <Text style={styles.timeText}>🕒 {formatIST(item.scheduled_at)}</Text>
@@ -1147,6 +1158,19 @@ const styles = StyleSheet.create({
   liveCardSelected: {
     borderColor: '#2563EB',
     backgroundColor: '#F0F9FF',
+  },
+  cardThumbWrap: {
+    width: '100%',
+    height: 150,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  cardThumb: {
+    width: '100%',
+    height: '100%',
   },
   cardTopRow: {
     flexDirection: 'row',

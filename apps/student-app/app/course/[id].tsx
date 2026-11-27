@@ -972,6 +972,15 @@ export default function CourseDetailsScreen() {
                         </View>
                         <Text style={[styles.liveCardTitle, { color: theme.text }]}>{item.title}</Text>
                         <Text style={[styles.liveCardDesc, { color: theme.textSecondary }]}>{item.description}</Text>
+                        {item.youtube_video_id ? (
+                          <View style={{ width: '100%', height: 140, borderRadius: 10, overflow: 'hidden', marginBottom: 10, backgroundColor: '#0F172A' }}>
+                            <Image
+                              source={{ uri: `https://img.youtube.com/vi/${item.youtube_video_id}/hqdefault.jpg` }}
+                              style={{ width: '100%', height: '100%' }}
+                              resizeMode="cover"
+                            />
+                          </View>
+                        ) : null}
 
                         <TouchableOpacity
                           style={styles.joinLiveBtn}
@@ -1016,9 +1025,17 @@ export default function CourseDetailsScreen() {
                         onPress={() => router.push(`/lecture/${lec.id}`)}
                         activeOpacity={0.7}
                       >
-                        <View style={styles.playIconBox}>
-                          <Play size={16} color="#2563EB" />
-                        </View>
+                        {lec.youtube_video_id ? (
+                          <Image
+                            source={{ uri: `https://img.youtube.com/vi/${lec.youtube_video_id}/hqdefault.jpg` }}
+                            style={{ width: 72, height: 46, borderRadius: 8, backgroundColor: '#0F172A' }}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View style={styles.playIconBox}>
+                            <Play size={16} color="#2563EB" />
+                          </View>
+                        )}
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.lectureTitle, { color: theme.text }]}>{lec.title}</Text>
                           <Text style={[styles.lectureMeta, { color: theme.textSecondary }]}>

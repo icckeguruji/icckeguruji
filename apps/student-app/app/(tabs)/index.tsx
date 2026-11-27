@@ -209,6 +209,15 @@ export default function StudentHomeScreen() {
           <Text style={styles.liveTeacher}>
             By: BADE SIR & Expert Faculty
           </Text>
+          {activeLive?.youtube_video_id ? (
+            <View style={{ width: '100%', height: 120, borderRadius: 10, overflow: 'hidden', marginBottom: 10, backgroundColor: '#0F172A' }}>
+              <Image
+                source={{ uri: `https://img.youtube.com/vi/${activeLive.youtube_video_id}/hqdefault.jpg` }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={styles.joinLiveBtn}
