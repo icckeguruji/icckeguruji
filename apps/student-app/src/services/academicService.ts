@@ -1169,12 +1169,12 @@ class AcademicRepository {
 
     if (className) {
       const targetClass = className.trim().toLowerCase();
-      // Extract target number: e.g. "Class 8" -> "8"
       const numMatch = targetClass.match(/\d+/);
       const targetNum = numMatch ? numMatch[0] : '';
 
-      list = list.filter((s) => {
-        const sClass = (s.class_name || '').toLowerCase();
+      const matched = list.filter((s) => {
+        const parentCourse = this.courses.find((c) => c.id === s.course_id);
+        const sClass = (s.class_name || (parentCourse as any)?.class_name || parentCourse?.title || '').toLowerCase();
         if (sClass && sClass === targetClass) return true;
         if (targetNum) {
           const sNumMatch = sClass.match(/\d+/) || (s.code || '').match(/\d+/);
@@ -1184,7 +1184,7 @@ class AcademicRepository {
         }
         return false;
       });
-      return list.map(computeSubjectCounts);
+      return (matched.length > 0 ? matched : list).map(computeSubjectCounts);
     }
 
     return list.map(computeSubjectCounts);
@@ -1577,8 +1577,12 @@ class AcademicRepository {
     await this.ensureLoaded();
     const lecId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
 
+    const subjectCourseId = data.subject_id
+      ? this.subjects.find((s) => s.id === data.subject_id)?.course_id
+      : undefined;
     const validCourseId =
       (data.course_id && isValidUUID(data.course_id) ? data.course_id : null) ||
+      (subjectCourseId && isValidUUID(subjectCourseId) ? subjectCourseId : null) ||
       this.courses[0]?.id ||
       'ae78ea58-19aa-4ed4-86c8-336bd42c45ef';
 
@@ -1683,27 +1687,37 @@ class AcademicRepository {
   }
 
   // --- CHAPTER CONTENT: LIVE CLASSES ---
-  async getLiveClasses(chapterId?: string): Promise<LiveClass[]> {
+  async getLiveClasses(chapterId?: string, courseId?: string): Promise<LiveClass[]> {
     await this.ensureLoaded();
     if (isSupabaseConfigured) {
       try {
         let q = supabase.from('live_classes').select('*').order('scheduled_at', { ascending: false });
-        if (chapterId && isValidUUID(chapterId)) q = q.eq('chapter_id', chapterId);
+        if (chapterId && isValidUUID(chapterId)) {
+          if (courseId && isValidUUID(courseId)) {
+            q = q.or(`chapter_id.eq.${chapterId},and(course_id.eq.${courseId},chapter_id.is.null)`);
+          } else {
+            q = q.eq('chapter_id', chapterId);
+          }
+        }
         const { data, error } = await q;
         if (!error && Array.isArray(data)) {
           const active = data.filter((l: any) => !this.isDeleted(l.id));
           if (!chapterId) {
             this.liveClasses = active;
           } else {
-            this.liveClasses = [...this.liveClasses.filter((l) => (l as any).chapter_id !== chapterId), ...active];
+            const ids = new Set(active.map((a: any) => a.id));
+            this.liveClasses = [
+              ...active,
+              ...this.liveClasses.filter((l) => !ids.has(l.id) && (l as any).chapter_id !== chapterId),
+            ];
           }
           this.persist('icc_live_classes', this.liveClasses).catch(() => {});
 
-          // Auto-promote any Live/Scheduled class whose end time has passed -> Recorded Lecture
+          // Auto-promote only after generous 3-hour grace past end time so live classes never vanish mid-session
           const now = Date.now();
           for (const item of active) {
             if ((item.status === 'live' || item.status === 'scheduled') && item.scheduled_at && item.youtube_video_id) {
-              const endMs = new Date(item.scheduled_at).getTime() + (item.duration_minutes || 60) * 60000;
+              const endMs = new Date(item.scheduled_at).getTime() + (item.duration_minutes || 60) * 60000 + 180 * 60000;
               if (now > endMs) {
                 this.updateLiveClassStatus(item.id, 'completed').catch(() => {});
               }
@@ -1718,7 +1732,11 @@ class AcademicRepository {
     }
     const list = this.liveClasses.filter((l) => !this.isDeleted(l.id));
     if (chapterId) {
-      return list.filter((l) => (l as any).chapter_id === chapterId);
+      return list.filter(
+        (l) =>
+          (l as any).chapter_id === chapterId ||
+          (courseId && l.course_id === courseId && !(l as any).chapter_id && l.status === 'live')
+      );
     }
     return list;
   }
@@ -1727,8 +1745,12 @@ class AcademicRepository {
     await this.ensureLoaded();
     const liveId = data.id && isValidUUID(data.id) ? data.id : generateUUID();
 
+    const subjectCourseId = data.subject_id
+      ? this.subjects.find((s) => s.id === data.subject_id)?.course_id
+      : undefined;
     const validCourseId =
       (data.course_id && isValidUUID(data.course_id) ? data.course_id : null) ||
+      (subjectCourseId && isValidUUID(subjectCourseId) ? subjectCourseId : null) ||
       this.courses[0]?.id ||
       'ae78ea58-19aa-4ed4-86c8-336bd42c45ef';
 

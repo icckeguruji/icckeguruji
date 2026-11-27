@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,24 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { academicService } from '../../src/services/academicService';
+import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { ArrowLeft, Bookmark, FileText, MessageSquareQuote, ShieldCheck, PlayCircle } from 'lucide-react-native';
+
+interface PlayableItem {
+  id: string;
+  videoId: string;
+  title: string;
+  duration: string;
+  subject: string;
+  description: string;
+}
 
 export default function RecordedLectureScreen() {
   const router = useRouter();
@@ -20,37 +32,82 @@ export default function RecordedLectureScreen() {
 
   const [playing, setPlaying] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [playlist, setPlaylist] = useState<PlayableItem[]>([]);
   const [activeLectureIdx, setActiveLectureIdx] = useState(0);
 
-  // Unlisted curated video ID
-  const playlist = [
-    {
-      id: '1',
-      videoId: 'dQw4w9WgXcQ',
-      title: 'Lec 01: Introduction to Chemical Reactions & Types (NCERT Masterclass)',
-      duration: '45 mins',
-      subject: 'Science · Class 10',
-      description: 'Detailed concept of physical vs chemical changes, identifying reactants and products, and balancing foundational equations.',
-    },
-    {
-      id: '2',
-      videoId: 'dQw4w9WgXcQ',
-      title: 'Lec 02: Balancing Chemical Equations (Hit & Trial Method)',
-      duration: '52 mins',
-      subject: 'Science · Class 10',
-      description: 'Step-by-step techniques to balance complex equations with conservation of mass.',
-    },
-    {
-      id: '3',
-      videoId: 'dQw4w9WgXcQ',
-      title: 'Lec 03: Combination, Decomposition & Displacement Reactions',
-      duration: '48 mins',
-      subject: 'Science · Class 10',
-      description: 'Deep dive into reaction types with live lab experiment observations.',
-    },
-  ];
+  useEffect(() => {
+    const loadVideo = async () => {
+      setLoading(true);
+      try {
+        await academicService.ensureLoaded();
+        const allLives = await academicService.getLiveClasses();
+        let foundLive = allLives.find((l) => l.id === id);
+        let foundLec = academicService.lectures.find((l) => l.id === id);
 
-  const currentLecture = playlist[activeLectureIdx] || playlist[0];
+        if (!foundLive && !foundLec && isSupabaseConfigured && id) {
+          const [{ data: liveRow }, { data: lecRow }] = await Promise.all([
+            supabase.from('live_classes').select('*').eq('id', id).maybeSingle(),
+            supabase.from('recorded_lectures').select('*').eq('id', id).maybeSingle(),
+          ]);
+          if (liveRow) foundLive = liveRow as any;
+          if (lecRow) foundLec = lecRow as any;
+        }
+
+        const primary = foundLive || foundLec;
+        if (primary) {
+          const primaryItem: PlayableItem = {
+            id: primary.id,
+            videoId: primary.youtube_video_id || 'jfKfPfyJRdk',
+            title: primary.title,
+            duration: foundLive
+              ? `${foundLive.duration_minutes || 60} mins`
+              : `${Math.round(((foundLec as any)?.duration_seconds || 2700) / 60)} mins`,
+            subject: foundLive ? 'Live Masterclass • ICC' : 'Recorded Lecture • ICC',
+            description: primary.description || 'IDEAL COACHING CENTRE • Director BADE SIR',
+          };
+          const chapterId = (primary as any).chapter_id;
+          const siblings: PlayableItem[] = chapterId
+            ? academicService.lectures
+                .filter((l) => l.chapter_id === chapterId && l.id !== primary.id)
+                .map((l) => ({
+                  id: l.id,
+                  videoId: l.youtube_video_id || 'jfKfPfyJRdk',
+                  title: l.title,
+                  duration: `${Math.round((l.duration_seconds || 2700) / 60)} mins`,
+                  subject: 'Chapter Lecture • ICC',
+                  description: l.description || '',
+                }))
+            : [];
+          setPlaylist([primaryItem, ...siblings]);
+          setActiveLectureIdx(0);
+          setPlaying(true);
+        }
+      } catch (e) {
+        console.warn('Lecture load error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadVideo();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]} edges={['top', 'left', 'right']}>
+        <ActivityIndicator size="large" color="#2563EB" />
+      </SafeAreaView>
+    );
+  }
+
+  const currentLecture = playlist[activeLectureIdx] || {
+    id: id || '0',
+    videoId: 'jfKfPfyJRdk',
+    title: 'ICC Lecture Session',
+    duration: '45 mins',
+    subject: 'IDEAL COACHING CENTRE',
+    description: 'Video is loading or unavailable.',
+  };
   const studentWatermark = `${user?.full_name || 'ICC Student'} • +91 ${user?.mobile_number || '9876543210'} • ICC PROTECTED STREAM`;
 
   return (

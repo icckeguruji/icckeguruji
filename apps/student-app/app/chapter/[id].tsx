@@ -13,7 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import {
   academicService,
@@ -135,9 +135,9 @@ export default function ChapterContentScreen() {
         setIsEnrolled(true);
       }
 
-      // Load content items
+      // Load content items (include both chapter-linked & course-wide live classes)
       const [lives, vids, mats] = await Promise.all([
-        academicService.getLiveClasses(id),
+        academicService.getLiveClasses(id, resolvedCourseId || undefined),
         academicService.getRecordedLectures(id),
         academicService.getStudyMaterials(id),
       ]);
@@ -158,6 +158,12 @@ export default function ChapterContentScreen() {
     });
     return () => unsub();
   }, [loadContent]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadContent();
+    }, [loadContent])
+  );
 
   // Clean form
   const resetForm = () => {
@@ -192,10 +198,13 @@ export default function ChapterContentScreen() {
     setSubmitting(true);
     try {
       const vidId = cleanYouTubeId(formVideoId) || 'jfKfPfyJRdk';
+      const resolvedCourseId = courseId || chapter?.course_id || '';
+      const courseObj = resolvedCourseId ? await academicService.getCourseById(resolvedCourseId) : null;
       await academicService.scheduleLiveClass({
-        course_id: courseId || chapter?.course_id,
+        course_id: resolvedCourseId || undefined,
         chapter_id: id,
         subject_id: subjectId || chapter?.subject_id,
+        class_name: courseObj?.class_name || chapter?.class_name || 'Class 10',
         title: formTitle.trim(),
         title_hi: formTitleHi.trim() || formTitle.trim(),
         description: formDesc.trim(),

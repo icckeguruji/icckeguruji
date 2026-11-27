@@ -13,6 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import {
   Radio,
@@ -177,6 +178,12 @@ export default function StudentLiveScreen() {
     return () => unsubscribe();
   }, [loadLocalData]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadLocalData();
+    }, [loadLocalData])
+  );
+
   // Load chapters when subject or sub-subject changes
   const loadChaptersForSubject = async (sub: AcademicSubject, subSub: SubSubject | null) => {
     const chaps = await academicService.getChapters(sub.id, subSub?.id);
@@ -280,6 +287,7 @@ export default function StudentLiveScreen() {
 
     try {
       const newLive = await academicService.scheduleLiveClass({
+        course_id: selectedSubject?.course_id,
         title: titleToUse,
         title_hi: liveForm.title_hi.trim() || titleToUse,
         description: `${selectedClass} • ${subName} • ${chapName}`,
