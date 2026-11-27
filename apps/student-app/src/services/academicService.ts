@@ -22,12 +22,15 @@ async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): 
     const headers: Record<string, string> = {
       apikey: LIVE_SUPABASE_ANON_KEY,
       Authorization: `Bearer ${LIVE_SUPABASE_ANON_KEY}`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
       ...(options.headers as Record<string, string> || {}),
     };
     const res = await fetch(url, {
       ...options,
       headers,
       signal: controller.signal,
+      cache: 'no-store',
     });
     clearTimeout(timeoutId);
     if (!res.ok) return null;
@@ -533,22 +536,13 @@ class AcademicRepository {
 
         const hasListChanged = (newList: any[], currentList: any[]): boolean => {
           if (newList.length !== currentList.length) return true;
-          for (let i = 0; i < newList.length; i++) {
-            const a = newList[i];
-            const b = currentList[i];
-            if (a.id !== b.id) return true;
-            if (a.updated_at && b.updated_at && a.updated_at !== b.updated_at) return true;
-            if (a.status && b.status && a.status !== b.status) return true;
-            if (a.title && b.title && a.title !== b.title) return true;
-            if (a.name && b.name && a.name !== b.name) return true;
-          }
-          return false;
+          return JSON.stringify(newList) !== JSON.stringify(currentList);
         };
 
         let hasChanged = false;
 
-        // 1. Courses: Authoritative from Supabase
-        if (Array.isArray(remoteCourses) && remoteCourses.length > 0) {
+        // 1. Courses: Authoritative from Supabase (even if empty [])
+        if (Array.isArray(remoteCourses)) {
           const mappedCourses = remoteCourses
             .filter((remote) => !this.isDeleted(remote.id))
             .map((remote) => ({
@@ -592,8 +586,8 @@ class AcademicRepository {
           }
         }
 
-        // 5. Subjects: Authoritative from Supabase
-        if (Array.isArray(remoteSubs) && remoteSubs.length > 0) {
+        // 5. Subjects: Authoritative from Supabase (even if empty [])
+        if (Array.isArray(remoteSubs)) {
           const activeSubs = remoteSubs.filter((s) => !this.isDeleted(s.id));
           if (hasListChanged(activeSubs, this.subjects)) {
             this.subjects = activeSubs;
@@ -602,8 +596,8 @@ class AcademicRepository {
           }
         }
 
-        // 6. Chapters: Authoritative from Supabase
-        if (Array.isArray(remoteChaps) && remoteChaps.length > 0) {
+        // 6. Chapters: Authoritative from Supabase (even if empty [])
+        if (Array.isArray(remoteChaps)) {
           const activeChaps = remoteChaps.filter((c) => !this.isDeleted(c.id));
           if (hasListChanged(activeChaps, this.chapters)) {
             this.chapters = activeChaps;
@@ -2079,7 +2073,7 @@ class AcademicRepository {
     await this.ensureLoaded();
     try {
       const remote = await fetchDirectRest<UserProfile[]>('profiles?select=*&order=created_at.desc');
-      if (Array.isArray(remote) && remote.length > 0) {
+      if (Array.isArray(remote)) {
         this.students = remote;
         this.persist('icc_students', this.students).catch(() => {});
       }

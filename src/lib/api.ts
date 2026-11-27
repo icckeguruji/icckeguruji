@@ -352,6 +352,8 @@ async function fetchDirectRest<T>(endpoint: string, options: RequestInit = {}): 
     const headers: Record<string, string> = {
       apikey: LIVE_SUPABASE_ANON_KEY,
       Authorization: `Bearer ${LIVE_SUPABASE_ANON_KEY}`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
       ...(options.headers as Record<string, string> || {}),
     };
     const res = await fetch(url, {
@@ -506,7 +508,7 @@ export const AdminApi = {
         let endpoint = 'profiles?select=*&order=created_at.desc';
         if (board) endpoint += `&board_code=eq.${board}`;
         const directData = await fetchDirectRest<UserProfile[]>(endpoint);
-        if (Array.isArray(directData) && directData.length > 0) {
+        if (Array.isArray(directData)) {
           const cleanStudents = directData.filter(
             (s) => s.username !== 'badesir' && s.email !== 'icckeguruji@gmail.com' && s.role !== 'admin'
           );
@@ -751,7 +753,7 @@ export const AdminApi = {
     if (isSupabaseConfigured) {
       // 1. Primary: Direct Supabase REST API (Guaranteed anon key + no-store cache + instant < 100ms)
       const directData = await fetchDirectRest<any[]>('courses?select=*&order=created_at.desc');
-      if (Array.isArray(directData) && directData.length > 0) {
+      if (Array.isArray(directData)) {
         const resolved: Course[] = directData.map((item) => ({
           ...(item as Course),
           thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
@@ -770,7 +772,7 @@ export const AdminApi = {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           const resolved: Course[] = data.map((item) => ({
             ...(item as Course),
             thumbnail_url: getResolvedThumbnailUrl(item.thumbnail_url),
@@ -1016,23 +1018,27 @@ export const AdminApi = {
 
   // 4. Course Subjects & Chapters (Manual Curriculum Management)
   getCourseSubjects: async (courseId: string) => {
+    const key = `icc_course_subs_${courseId}`;
     if (isSupabaseConfigured) {
+      const direct = await fetchDirectRest<any[]>(`subjects?course_id=eq.${courseId}&order=display_order.asc`);
+      if (Array.isArray(direct)) {
+        savePersistentState(key, direct);
+        return direct;
+      }
       try {
         const { data, error } = await supabase
           .from('subjects')
           .select('*')
           .eq('course_id', courseId)
           .order('display_order', { ascending: true });
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
+          savePersistentState(key, data);
           return data;
         }
       } catch (e) {
         console.warn('getCourseSubjects error:', e);
       }
-      const direct = await fetchDirectRest<any[]>(`subjects?course_id=eq.${courseId}&order=display_order.asc`);
-      if (Array.isArray(direct) && direct.length > 0) return direct;
     }
-    const key = `icc_course_subs_${courseId}`;
     return getPersistentState<any[]>(key, []);
   },
 
@@ -1171,28 +1177,32 @@ export const AdminApi = {
 
   getSubjectChapters: async (subjectId: string, subSubjectId?: string) => {
     let list: any[] = [];
+    let fetchedFromCloud = false;
+    const key = `icc_subj_chaps_${subjectId}`;
     if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('chapters')
-          .select('*')
-          .eq('subject_id', subjectId)
-          .order('chapter_number', { ascending: true });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          list = data;
-        }
-      } catch (e) {
-        console.warn('getSubjectChapters error:', e);
-      }
-      if (list.length === 0) {
-        const direct = await fetchDirectRest<any[]>(`chapters?subject_id=eq.${subjectId}&order=chapter_number.asc`);
-        if (Array.isArray(direct) && direct.length > 0) {
-          list = direct;
+      const direct = await fetchDirectRest<any[]>(`chapters?subject_id=eq.${subjectId}&order=chapter_number.asc`);
+      if (Array.isArray(direct)) {
+        list = direct;
+        fetchedFromCloud = true;
+        savePersistentState(key, direct);
+      } else {
+        try {
+          const { data, error } = await supabase
+            .from('chapters')
+            .select('*')
+            .eq('subject_id', subjectId)
+            .order('chapter_number', { ascending: true });
+          if (!error && Array.isArray(data)) {
+            list = data;
+            fetchedFromCloud = true;
+            savePersistentState(key, data);
+          }
+        } catch (e) {
+          console.warn('getSubjectChapters error:', e);
         }
       }
     }
-    if (list.length === 0) {
-      const key = `icc_subj_chaps_${subjectId}`;
+    if (!fetchedFromCloud) {
       list = getPersistentState<any[]>(key, []);
     }
     if (subSubjectId) {
