@@ -13,6 +13,9 @@ const GITHUB_LATEST_RELEASE_URL = 'https://api.github.com/repos/icckeguruji/icck
 const DEFAULT_APK_FALLBACK_URL = 'https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk';
 const CDN_MIRROR_PREFIX = 'https://ghproxy.net/';
 const API_UPDATE_ENDPOINT = 'https://icconline.vercel.app/api/app-update';
+const UPDATE_AVAIL_NOTIF_ID = 'icc-app-update-available';
+const UPDATE_DOWNLOAD_NOTIF_ID = 'icc-app-update-download';
+const UPDATE_PROGRESS_CHANNEL_ID = 'icc-app-update-progress';
 
 export interface UpdateInfo {
   hasUpdate: boolean;
@@ -237,10 +240,11 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       ...(forceShow ? { dismissed: false } : {}),
     });
 
-    // If update found, post high-priority alert in notification bar
+    // If update found, post high-priority alert in notification bar (single unified notification)
     if (hasUpdate && Platform.OS === 'android') {
       try {
         await Notifications.scheduleNotificationAsync({
+          identifier: UPDATE_AVAIL_NOTIF_ID,
           content: {
             title: '🚀 IDEAL COACHING CENTRE App Update Available!',
             body: `New Version v${latestVersion} is ready to download. Tap to update with latest video & notes features.`,
@@ -282,9 +286,16 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       return;
     }
 
-    // Request notification permission on Android
+    // Request notification permission & ensure silent progress channel on Android
     try {
       await Notifications.requestPermissionsAsync();
+      await Notifications.setNotificationChannelAsync(UPDATE_PROGRESS_CHANNEL_ID, {
+        name: 'App Update Download Progress',
+        importance: Notifications.AndroidImportance.LOW,
+        sound: null,
+        enableVibrate: false,
+        showBadge: false,
+      });
     } catch {}
 
     set({ isDownloading: true, downloadProgress: 0, error: null, isReadyToInstall: false });
@@ -300,13 +311,71 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       }
     } catch {}
 
-    try {
-      let lastNotifPercent = -1;
-      const startTime = Date.now();
-      let lastBytes = 0;
-      let lastTime = startTime;
-      let downloadSpeedMBps = '0.0';
+    let lastNotifTime = 0;
+    let lastNotifPercent = -1;
+    const startTime = Date.now();
+    let lastBytes = 0;
+    let lastTime = startTime;
+    let downloadSpeedMBps = '0.0';
 
+    const handleDownloadProgress = async (progress: FileSystem.DownloadProgressData) => {
+      const total = progress.totalBytesExpectedToWrite || 21400000;
+      const written = progress.totalBytesWritten;
+      const percent = Math.min(100, Math.round((written / total) * 100));
+
+      const now = Date.now();
+      const timeDelta = (now - lastTime) / 1000;
+      if (timeDelta >= 1) {
+        const bytesDelta = written - lastBytes;
+        downloadSpeedMBps = (bytesDelta / timeDelta / (1024 * 1024)).toFixed(1);
+        lastTime = now;
+        lastBytes = written;
+      }
+
+      set({
+        downloadProgress: percent,
+        downloadedBytes: written,
+        totalBytes: total,
+      });
+
+      // Update the SAME single Android notification in-place (every ~800ms or 5% step, no duplicate alerts)
+      if ((percent !== lastNotifPercent && (now - lastNotifTime >= 800 || percent - lastNotifPercent >= 5)) || percent === 100) {
+        lastNotifTime = now;
+        lastNotifPercent = percent;
+        try {
+          await Notifications.scheduleNotificationAsync({
+            identifier: UPDATE_DOWNLOAD_NOTIF_ID,
+            content: {
+              title: `📲 Downloading ICC v${latestVersion} (${percent}%) • ${downloadSpeedMBps} MB/s`,
+              body: `${(written / 1024 / 1024).toFixed(1)} MB / ${(total / 1024 / 1024).toFixed(1)} MB`,
+              sticky: percent < 100,
+              sound: false,
+              priority: Notifications.AndroidNotificationPriority.LOW,
+            },
+            trigger: { channelId: UPDATE_PROGRESS_CHANNEL_ID } as any,
+          });
+        } catch {}
+      }
+    };
+
+    const notifyDownloadComplete = async (fileUri: string) => {
+      try {
+        await Notifications.scheduleNotificationAsync({
+          identifier: UPDATE_DOWNLOAD_NOTIF_ID,
+          content: {
+            title: `✅ ICC v${latestVersion} Download Complete!`,
+            body: 'Update downloaded. Tap to install now.',
+            sticky: false,
+            sound: true,
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+            data: { type: 'install_apk', fileUri },
+          },
+          trigger: null,
+        });
+      } catch {}
+    };
+
+    try {
       const downloadResumable = FileSystem.createDownloadResumable(
         apkUrl,
         targetFile,
@@ -317,42 +386,7 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
           },
           cache: false,
         },
-        async (progress) => {
-          const total = progress.totalBytesExpectedToWrite || 21400000;
-          const written = progress.totalBytesWritten;
-          const percent = Math.min(100, Math.round((written / total) * 100));
-
-          const now = Date.now();
-          const timeDelta = (now - lastTime) / 1000;
-          if (timeDelta >= 1) {
-            const bytesDelta = written - lastBytes;
-            downloadSpeedMBps = (bytesDelta / timeDelta / (1024 * 1024)).toFixed(1);
-            lastTime = now;
-            lastBytes = written;
-          }
-
-          set({
-            downloadProgress: percent,
-            downloadedBytes: written,
-            totalBytes: total,
-          });
-
-          // Update Android notification bar progress every 10%
-          if (percent - lastNotifPercent >= 10 || percent === 100) {
-            lastNotifPercent = percent;
-            try {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `📲 Downloading ICC Update (${percent}%) • ${downloadSpeedMBps} MB/s`,
-                  body: `${(written / 1024 / 1024).toFixed(1)} MB of ${(total / 1024 / 1024).toFixed(1)} MB downloaded`,
-                  sticky: percent < 100,
-                  sound: false,
-                },
-                trigger: null,
-              });
-            } catch {}
-          }
-        }
+        handleDownloadProgress
       );
 
       const result = await downloadResumable.downloadAsync();
@@ -365,18 +399,7 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
           isReadyToInstall: true,
         });
 
-        // Notify user in notification bar
-        try {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: '✅ Download Complete!',
-              body: 'IDEAL COACHING CENTRE update downloaded. Tap to install now.',
-              sound: true,
-              data: { type: 'install_apk', fileUri: result.uri },
-            },
-            trigger: null,
-          });
-        } catch {}
+        await notifyDownloadComplete(result.uri);
 
         // Auto launch native Android Package Installer immediately
         await get().installDownloadedApk();
@@ -387,6 +410,9 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       console.warn('Primary download attempt error, attempting CDN mirror fallback:', primaryErr);
 
       try {
+        lastNotifPercent = -1;
+        lastBytes = 0;
+        lastTime = Date.now();
         const mirrorUrl = `${CDN_MIRROR_PREFIX}${apkUrl}`;
         const mirrorResumable = FileSystem.createDownloadResumable(
           mirrorUrl,
@@ -394,7 +420,8 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
           {
             headers: { 'Accept-Encoding': 'identity' },
             cache: false,
-          }
+          },
+          handleDownloadProgress
         );
         const mirrorResult = await mirrorResumable.downloadAsync();
         if (mirrorResult && mirrorResult.uri) {
@@ -404,6 +431,7 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
             downloadedFilePath: mirrorResult.uri,
             isReadyToInstall: true,
           });
+          await notifyDownloadComplete(mirrorResult.uri);
           await get().installDownloadedApk();
           return;
         }
