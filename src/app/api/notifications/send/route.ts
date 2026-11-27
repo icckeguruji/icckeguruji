@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
     ).catch(() => {});
 
     // 5. Dispatch WhatsApp Notifications via Miss Zoya Baileys Service (if connected)
-    const waUrl = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:5001';
+    const waUrl = process.env.WHATSAPP_SERVICE_URL || 'https://icc-whatsapp-miss-zoya.onrender.com';
     if (studentPhones.length > 0) {
       const waText = `🌸 *IDEAL COACHING CENTRE (Miss Zoya)*\n\n*${title.trim()}*\n${message.trim()}`;
       Promise.allSettled(

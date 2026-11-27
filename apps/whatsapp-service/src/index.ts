@@ -133,7 +133,12 @@ app.get('/conversations', async (req, res) => {
 });
 
 // Start Express Listener (0.0.0.0 required for Render)
-app.listen(Number(PORT), '0.0.0.0', () => {
+app.listen(Number(PORT), '0.0.0.0', async () => {
   console.log(`[WhatsApp Service] 🚀 Miss Zoya WhatsApp AI Supervisor listening on 0.0.0.0:${PORT}`);
   console.log(`[WhatsApp Service] Director: BADE SIR | IDEAL COACHING CENTRE (BSEB & JAC)`);
+  const hasSavedSession = await whatsAppManager.restoreSessionFromSupabase();
+  if (hasSavedSession) {
+    console.log('[WhatsApp Service] 🔄 Auto-reconnecting saved WhatsApp session from Supabase...');
+    whatsAppManager.startConnection().catch((e) => console.warn('Auto-reconnect error:', e));
+  }
 });

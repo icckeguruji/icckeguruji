@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:5001';
+const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'https://icc-whatsapp-miss-zoya.onrender.com';
 
 export async function GET() {
   // 1. Try local/remote Baileys microservice first

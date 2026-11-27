@@ -32,6 +32,8 @@ class WhatsAppClientManager {
   private isConnecting: boolean = false;
   private processedMessageIds = new Set<string>();
   private sessionDir: string;
+  private syncTimer: NodeJS.Timeout | null = null;
+  private sessionRestored = false;
 
   public state: WhatsAppServiceState = {
     status: 'DISCONNECTED',
@@ -54,6 +56,68 @@ class WhatsAppClientManager {
     if (!fs.existsSync(this.sessionDir)) {
       fs.mkdirSync(this.sessionDir, { recursive: true });
     }
+  }
+
+  public async restoreSessionFromSupabase(): Promise<boolean> {
+    if (this.sessionRestored) {
+      const existing = fs.readdirSync(this.sessionDir);
+      if (existing.includes('creds.json')) return true;
+    }
+    this.sessionRestored = true;
+    try {
+      const { data } = await supabase
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'whatsapp_baileys_auth_session')
+        .maybeSingle();
+
+      if (data?.value && typeof data.value === 'object') {
+        const files = data.value as Record<string, string>;
+        const keys = Object.keys(files);
+        if (keys.length > 0 && files['creds.json']) {
+          for (const [fileName, content] of Object.entries(files)) {
+            if (!fileName.includes('/') && !fileName.includes('..')) {
+              fs.writeFileSync(path.join(this.sessionDir, fileName), content, 'utf8');
+            }
+          }
+          console.log(`[WhatsApp Service] ✅ Restored ${keys.length} Baileys auth files from Supabase (persistent across deploys).`);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('[WhatsApp Service] Session restore warning:', e);
+    }
+    return false;
+  }
+
+  private scheduleSessionBackupToSupabase() {
+    if (this.syncTimer) clearTimeout(this.syncTimer);
+    this.syncTimer = setTimeout(async () => {
+      try {
+        if (!fs.existsSync(this.sessionDir)) return;
+        const files = fs.readdirSync(this.sessionDir);
+        if (!files.includes('creds.json')) return;
+        const bundle: Record<string, string> = {};
+        for (const f of files) {
+          if (f.endsWith('.json')) {
+            bundle[f] = fs.readFileSync(path.join(this.sessionDir, f), 'utf8');
+          }
+        }
+        await supabase.from('platform_settings').upsert({
+          key: 'whatsapp_baileys_auth_session',
+          value: bundle,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('[WhatsApp Service] Session backup warning:', e);
+      }
+    }, 1500);
+  }
+
+  public async clearSupabaseSession() {
+    try {
+      await supabase.from('platform_settings').delete().eq('key', 'whatsapp_baileys_auth_session');
+    } catch {}
   }
 
   public async updateSupabaseStatus() {
@@ -107,6 +171,7 @@ class WhatsAppClientManager {
     await this.updateSupabaseStatus();
 
     try {
+      await this.restoreSessionFromSupabase();
       const { state, saveCreds } = await useMultiFileAuthState(this.sessionDir);
 
       this.socket = makeWASocket({
@@ -176,6 +241,7 @@ class WhatsAppClientManager {
           }
 
           console.log(`[WhatsApp Service] ✅ WhatsApp Connected! Account: ${this.state.connectedPhone} (${this.state.connectedName})`);
+          this.scheduleSessionBackupToSupabase();
           await this.updateSupabaseStatus();
         }
 
@@ -192,6 +258,7 @@ class WhatsAppClientManager {
             this.state.connectedName = null;
             this.state.qrCodeDataUrl = null;
             this.clearSession();
+            await this.clearSupabaseSession();
             await this.updateSupabaseStatus();
           } else {
             this.state.status = 'DISCONNECTED';
@@ -202,8 +269,11 @@ class WhatsAppClientManager {
         }
       });
 
-      // 2. Save Credentials on Update
-      this.socket.ev.on('creds.update', saveCreds);
+      // 2. Save Credentials on Update & Sync to Supabase
+      this.socket.ev.on('creds.update', async () => {
+        await saveCreds();
+        this.scheduleSessionBackupToSupabase();
+      });
 
       // 3. Process Incoming Messages
       this.socket.ev.on('messages.upsert', async ({ messages, type }) => {
@@ -297,6 +367,7 @@ class WhatsAppClientManager {
     this.state.connectedName = null;
     this.state.qrCodeDataUrl = null;
     this.clearSession();
+    await this.clearSupabaseSession();
     await this.updateSupabaseStatus();
   }
 

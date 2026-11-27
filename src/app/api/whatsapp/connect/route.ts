@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:5001';
+const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'https://icc-whatsapp-miss-zoya.onrender.com';
 
 export async function POST(req: NextRequest) {
   try {
