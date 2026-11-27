@@ -1,12 +1,31 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, MapPin, Phone, Mail } from 'lucide-react';
+import { ShieldCheck, MapPin, Phone, Mail, Lock } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
+import { AdminApi } from '@/lib/api';
 
 export function PublicFooter() {
   const { t } = useLanguage();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const syncAuth = () => {
+      setIsLoggedIn(AdminApi.isAdminLoggedIn());
+    };
+    syncAuth();
+
+    window.addEventListener('icc_auth_changed', syncAuth);
+    window.addEventListener('storage', syncAuth);
+    window.addEventListener('focus', syncAuth);
+
+    return () => {
+      window.removeEventListener('icc_auth_changed', syncAuth);
+      window.removeEventListener('storage', syncAuth);
+      window.removeEventListener('focus', syncAuth);
+    };
+  }, []);
 
   return (
     <footer className="bg-slate-900 text-slate-300 pt-16 pb-12 border-t border-slate-800">
@@ -64,9 +83,17 @@ export function PublicFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/login" className="hover:text-amber-400 transition font-semibold">
-                {t('डायरेक्टर पोर्टल लॉगिन', 'Director Portal Login')}
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/admin" className="hover:text-emerald-300 text-emerald-400 transition font-bold flex items-center space-x-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{t('डायरेक्टर डैशबोर्ड', 'Director Dashboard')}</span>
+                </Link>
+              ) : (
+                <Link href="/login" className="hover:text-amber-400 text-amber-300 transition font-semibold flex items-center space-x-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{t('डायरेक्टर पोर्टल लॉगिन', 'Director Portal Login')}</span>
+                </Link>
+              )}
             </li>
           </ul>
         </div>

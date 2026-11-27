@@ -805,112 +805,136 @@ export default function StudentProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* User Card with Photo / Avatar Uploader */}
-        <View style={[styles.userCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
-          <TouchableOpacity
-            style={styles.avatarContainer}
-            onPress={() => setIsPhotoModalOpen(true)}
-            activeOpacity={0.8}
-          >
-            {user?.avatar_url ? (
-              <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarText}>
-                  {user?.full_name ? user.full_name[0].toUpperCase() : 'S'}
-                </Text>
+        {/* Guest vs Logged In User Card */}
+        {!user ? (
+          <View style={[styles.userCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder, flexDirection: 'column', alignItems: 'center', padding: 22 }]}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: isDark ? '#1E293B' : '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <User size={32} color="#2563EB" />
+            </View>
+            <Text style={[styles.userName, { color: theme.text, fontSize: 17, marginBottom: 4, textAlign: 'center' }]}>
+              Guest Learner (अतिथि शिक्षार्थी)
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.textSecondary, textAlign: 'center', marginBottom: 16, maxWidth: 300, lineHeight: 16 }}>
+              You are browsing as Guest. Log in to access your enrolled live classes, video lectures, and personalized test reports.
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: '#2563EB', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, width: '100%', alignItems: 'center' }}
+              onPress={() => router.push('/(auth)/login')}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>
+                Log In / Register (लॉगिन करें)
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={[styles.userCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={() => setIsPhotoModalOpen(true)}
+              activeOpacity={0.8}
+            >
+              {user?.avatar_url ? (
+                <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarText}>
+                    {user?.full_name ? user.full_name[0].toUpperCase() : 'S'}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.cameraBadge}>
+                <Camera size={14} color="#FFFFFF" />
               </View>
-            )}
-            <View style={styles.cameraBadge}>
-              <Camera size={14} color="#FFFFFF" />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
 
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.userName, { color: theme.text }]}>{user?.full_name || 'ICC Student'}</Text>
-              <TouchableOpacity
-                style={styles.editPill}
-                onPress={openEditModal}
-              >
-                <Edit3 size={12} color="#2563EB" />
-                <Text style={styles.editPillText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.userSub}>@{user?.username || 'student'}</Text>
-            <View style={styles.contactRow}>
-              <Phone size={12} color="#64748B" />
-              <Text style={[styles.userContact, { color: theme.textSecondary }]}>+91 {user?.mobile_number || '9771350910'}</Text>
-            </View>
-            <View style={styles.contactRow}>
-              <Mail size={12} color="#64748B" />
-              <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{user?.email || 'student@idealcoaching.in'}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.userName, { color: theme.text }]}>{user.full_name}</Text>
+                <TouchableOpacity
+                  style={styles.editPill}
+                  onPress={openEditModal}
+                >
+                  <Edit3 size={12} color="#2563EB" />
+                  <Text style={styles.editPillText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.userSub}>@{user.username || 'student'}</Text>
+              <View style={styles.contactRow}>
+                <Phone size={12} color="#64748B" />
+                <Text style={[styles.userContact, { color: theme.textSecondary }]}>+91 {user.mobile_number || '9771350910'}</Text>
+              </View>
+              <View style={styles.contactRow}>
+                <Mail size={12} color="#64748B" />
+                <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{user.email || 'student@idealcoaching.in'}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Academic Details & Quiz Performance Summary Card */}
-        <View style={[styles.academicCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
-          <View style={styles.academicRow}>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Quiz Points</Text>
-              <Text style={[styles.academicValue, { color: '#2563EB', fontWeight: '800' }]}>
-                {user?.quiz_points || 0} PTS
-              </Text>
+        {user && (
+          <View style={[styles.academicCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
+            <View style={styles.academicRow}>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>Quiz Points</Text>
+                <Text style={[styles.academicValue, { color: '#2563EB', fontWeight: '800' }]}>
+                  {user?.quiz_points || 0} PTS
+                </Text>
+              </View>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>Rank Badge</Text>
+                <Text style={[styles.academicValue, { color: '#D97706', fontWeight: '800' }]}>
+                  {currentBadge}
+                </Text>
+              </View>
             </View>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Rank Badge</Text>
-              <Text style={[styles.academicValue, { color: '#D97706', fontWeight: '800' }]}>
-                {currentBadge}
-              </Text>
+
+            <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
+
+            <View style={styles.academicRow}>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>Enrolled Class</Text>
+                <Text style={[styles.academicValue, { color: theme.text }]}>{selectedClass || 'Class 10'}</Text>
+              </View>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>Status</Text>
+                <Text style={[styles.academicValue, { color: '#059669' }]}>Active Student</Text>
+              </View>
+            </View>
+
+            <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
+
+            <View style={styles.academicRow}>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>School / College</Text>
+                <Text style={[styles.academicValue, { color: theme.text }]} numberOfLines={1}>
+                  {user?.school_name || 'IDEAL COACHING CENTRE'}
+                </Text>
+              </View>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>District</Text>
+                <Text style={[styles.academicValue, { color: theme.text }]}>{user?.district || 'Godda'}</Text>
+              </View>
+            </View>
+
+            <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
+
+            <View style={styles.academicRow}>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>Guardian / Parent</Text>
+                <Text style={[styles.academicValue, { color: theme.text }]} numberOfLines={1}>
+                  {user?.guardian_name || 'Shri Manoj Kumar'}
+                </Text>
+              </View>
+              <View style={styles.academicCol}>
+                <Text style={styles.academicLabel}>Guardian Phone</Text>
+                <Text style={[styles.academicValue, { color: theme.text }]}>
+                  {user?.guardian_phone ? `+91 ${user.guardian_phone}` : '+91 9876500001'}
+                </Text>
+              </View>
             </View>
           </View>
-
-          <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
-
-          <View style={styles.academicRow}>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Enrolled Class</Text>
-              <Text style={[styles.academicValue, { color: theme.text }]}>{selectedClass || 'Class 10'}</Text>
-            </View>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Status</Text>
-              <Text style={[styles.academicValue, { color: '#059669' }]}>Active Student</Text>
-            </View>
-          </View>
-
-          <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
-
-          <View style={styles.academicRow}>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>School / College</Text>
-              <Text style={[styles.academicValue, { color: theme.text }]} numberOfLines={1}>
-                {user?.school_name || 'Patna Collegiate High School'}
-              </Text>
-            </View>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>District</Text>
-              <Text style={[styles.academicValue, { color: theme.text }]}>{user?.district || 'Patna'}</Text>
-            </View>
-          </View>
-
-          <View style={[styles.academicDivider, { backgroundColor: theme.cardBorder }]} />
-
-          <View style={styles.academicRow}>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Guardian / Parent</Text>
-              <Text style={[styles.academicValue, { color: theme.text }]} numberOfLines={1}>
-                {user?.guardian_name || 'Shri Manoj Kumar'}
-              </Text>
-            </View>
-            <View style={styles.academicCol}>
-              <Text style={styles.academicLabel}>Guardian Phone</Text>
-              <Text style={[styles.academicValue, { color: theme.text }]}>
-                {user?.guardian_phone ? `+91 ${user.guardian_phone}` : '+91 9876500001'}
-              </Text>
-            </View>
-          </View>
-        </View>
+        )}
 
         {/* AI Speed Quiz Badges Showcase */}
         <View style={styles.section}>

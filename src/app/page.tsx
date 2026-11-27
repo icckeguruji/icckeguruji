@@ -16,7 +16,8 @@ import {
   MessageCircle,
   BookOpen,
 } from 'lucide-react';
-import { AdminApi } from '@/lib/api';
+import { AdminApi, getResolvedThumbnailUrl } from '@/lib/api';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
 import { useLanguage } from '@/components/LanguageContext';
@@ -27,11 +28,44 @@ export default function PublicHomePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
 
-  useEffect(() => {
+  const loadCourses = () => {
     AdminApi.getCourses().then((data) => {
       setCourses(data || []);
       setLoadingCourses(false);
     });
+  };
+
+  useEffect(() => {
+    loadCourses();
+
+    let channels: any[] = [];
+    if (isSupabaseConfigured) {
+      const tables = ['courses', 'subjects', 'chapters'];
+      tables.forEach((table) => {
+        const ch = supabase
+          .channel(`home-sync-${table}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+            loadCourses();
+          })
+          .subscribe();
+        channels.push(ch);
+      });
+    }
+
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadCourses();
+      }
+    }, 4000);
+
+    const handleFocus = () => loadCourses();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      channels.forEach((ch) => supabase.removeChannel(ch));
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const stats = [
@@ -309,12 +343,13 @@ export default function PublicHomePage() {
                 className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
               >
                 <div className="h-44 bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                  <Image
-                    src={c.thumbnail_url || '/logo.png'}
+                  <img
+                    src={getResolvedThumbnailUrl(c.thumbnail_url, c.title)}
                     alt={c.title}
-                    width={400}
-                    height={176}
                     className="w-full h-full object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/logo.png';
+                    }}
                   />
                   <div className="absolute top-3 left-3 flex space-x-2">
                     <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900/80 text-white">

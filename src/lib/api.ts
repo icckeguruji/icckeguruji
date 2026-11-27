@@ -19,15 +19,37 @@ import {
   ClassItem,
 } from '@icc/shared-types';
 
-export function getResolvedThumbnailUrl(url?: string): string {
-  if (!url || typeof url !== 'string') return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
-  const clean = url.trim();
-  if (clean.startsWith('file://')) {
-    return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+export function getResolvedThumbnailUrl(url?: string, titleOrClass?: string): string {
+  const clean = (url || '').trim();
+  const context = (titleOrClass || '').toLowerCase();
+
+  // Pick high-resolution default by class / title context
+  let defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+  if (context.includes('12') || context.includes('target') || context.includes('inter')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b4-class9.jpg';
+  } else if (context.includes('11') || context.includes('science')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b1-class8.jpg';
+  } else if (context.includes('9')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b4-class9.jpg';
+  } else if (context.includes('7') || context.includes('8') || context.includes('foundation')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b2-class7.jpg';
   }
+
+  if (!clean || clean.length < 5) return defaultThumb;
+  if (clean.startsWith('file://')) return defaultThumb;
+
+  // Corrupted base64 guard (protect against corrupt base64 all-zero strings)
+  if (clean.startsWith('data:image')) {
+    if (clean.length > 50000 || clean.includes('AAAAAAAAAAAAAAAAAAAA')) {
+      return defaultThumb;
+    }
+    return clean;
+  }
+
   if (clean.startsWith('/')) {
     return `https://icconline.vercel.app${clean}`;
   }
+
   return clean;
 }
 
@@ -1114,6 +1136,26 @@ export const AdminApi = {
       list = list.filter((ch) => ch.sub_subject_id === subSubjectId || ch.description?.includes(`sub_subject:${subSubjectId}`));
     }
     return list;
+  },
+
+  getCourseCurriculumWithCounts: async (courseId: string) => {
+    try {
+      const subjects = await AdminApi.getCourseSubjects(courseId);
+      const curriculum = await Promise.all(
+        subjects.map(async (subj: any) => {
+          const chapters = await AdminApi.getSubjectChapters(subj.id);
+          return {
+            ...subj,
+            chapters: chapters || [],
+            chapterCount: chapters ? chapters.length : 0,
+          };
+        })
+      );
+      return curriculum;
+    } catch (e) {
+      console.warn('getCourseCurriculumWithCounts error:', e);
+      return [];
+    }
   },
 
   createSubjectChapter: async (
@@ -2208,6 +2250,20 @@ export const AdminApi = {
     return { success: true, message: 'Password updated successfully!' };
   },
 
+  isAdminLoggedIn: (): boolean => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const cookies = document.cookie || '';
+      const hasCookie = cookies.includes('icc-role=admin') || cookies.includes('sb-access-token=');
+      const hasLocalFlag =
+        localStorage.getItem('icc_admin_logged_in') === 'true' ||
+        localStorage.getItem('icc_user_role') === 'admin';
+      return Boolean(hasCookie || hasLocalFlag);
+    } catch {
+      return false;
+    }
+  },
+
   logout: async () => {
     if (isSupabaseConfigured) {
       try {
@@ -2215,8 +2271,15 @@ export const AdminApi = {
       } catch {}
     }
     if (typeof document !== 'undefined') {
-      document.cookie = 'sb-access-token=; path=/; max-age=0';
-      document.cookie = 'icc-role=; path=/; max-age=0';
+      document.cookie = 'sb-access-token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'icc-role=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('icc_admin_logged_in');
+        localStorage.removeItem('icc_user_role');
+        window.dispatchEvent(new Event('icc_auth_changed'));
+      } catch {}
     }
   },
 

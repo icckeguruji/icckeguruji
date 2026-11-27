@@ -54,15 +54,37 @@ export function generateUUID(): string {
   });
 }
 
-export function getResolvedThumbnailUrl(url?: string): string {
-  if (!url || typeof url !== 'string') return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
-  const clean = url.trim();
-  if (clean.startsWith('file://')) {
-    return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+export function getResolvedThumbnailUrl(url?: string, titleOrClass?: string): string {
+  const clean = (url || '').trim();
+  const context = (titleOrClass || '').toLowerCase();
+
+  // Pick high-resolution default by class / title context
+  let defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+  if (context.includes('12') || context.includes('target') || context.includes('inter')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b4-class9.jpg';
+  } else if (context.includes('11') || context.includes('science')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b1-class8.jpg';
+  } else if (context.includes('9')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b4-class9.jpg';
+  } else if (context.includes('7') || context.includes('8') || context.includes('foundation')) {
+    defaultThumb = 'https://icconline.vercel.app/thumbnails/batch-b2-class7.jpg';
   }
+
+  if (!clean || clean.length < 5) return defaultThumb;
+  if (clean.startsWith('file://')) return defaultThumb;
+
+  // Corrupted base64 guard (protect against corrupt base64 all-zero strings)
+  if (clean.startsWith('data:image')) {
+    if (clean.length > 50000 || clean.includes('AAAAAAAAAAAAAAAAAAAA')) {
+      return defaultThumb;
+    }
+    return clean;
+  }
+
   if (clean.startsWith('/')) {
     return `https://icconline.vercel.app${clean}`;
   }
+
   return clean;
 }
 

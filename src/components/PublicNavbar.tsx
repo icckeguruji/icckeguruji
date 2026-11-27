@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Smartphone, Menu, X, Lock, ShieldCheck } from 'lucide-react';
+import { Smartphone, Menu, X, Lock, ShieldCheck, LogOut } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { supabase } from '@/lib/supabase';
+import { AdminApi } from '@/lib/api';
 
 export function PublicNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,14 +13,41 @@ export function PublicNavbar() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
+    const syncAuth = () => {
+      const loggedIn = AdminApi.isAdminLoggedIn();
+      if (loggedIn) {
+        setIsLoggedIn(true);
+        return;
+      }
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setIsLoggedIn(Boolean(session) || AdminApi.isAdminLoggedIn());
+      });
+    };
+
+    syncAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
+      setIsLoggedIn(Boolean(session) || AdminApi.isAdminLoggedIn());
     });
-    return () => subscription.unsubscribe();
+
+    const handleAuthEvent = () => syncAuth();
+    window.addEventListener('icc_auth_changed', handleAuthEvent);
+    window.addEventListener('storage', handleAuthEvent);
+    window.addEventListener('focus', handleAuthEvent);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('icc_auth_changed', handleAuthEvent);
+      window.removeEventListener('storage', handleAuthEvent);
+      window.removeEventListener('focus', handleAuthEvent);
+    };
   }, []);
+
+  const handleLogout = async () => {
+    await AdminApi.logout();
+    setIsLoggedIn(false);
+    window.location.href = '/';
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
@@ -72,22 +100,34 @@ export function PublicNavbar() {
             <span>Download App</span>
           </Link>
 
-          <Link
-            href={isLoggedIn ? '/admin' : '/login'}
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md border border-slate-700 transition"
-          >
-            {isLoggedIn ? (
-              <>
+          {isLoggedIn ? (
+            <div className="flex items-center space-x-2">
+              <Link
+                href="/admin"
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md border border-slate-700 transition"
+              >
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 <span>Admin Dashboard</span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-4 h-4 text-amber-400" />
-                <span>Admin Login</span>
-              </>
-            )}
-          </Link>
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                title="Logout"
+                className="flex items-center space-x-1 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Logout</span>
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md border border-slate-700 transition"
+            >
+              <Lock className="w-4 h-4 text-amber-400" />
+              <span>Admin Login</span>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Hamburger */}
@@ -149,23 +189,38 @@ export function PublicNavbar() {
               <span>Download App</span>
             </Link>
 
-            <Link
-              href={isLoggedIn ? '/admin' : '/login'}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs border border-slate-800 shadow-sm"
-            >
-              {isLoggedIn ? (
-                <>
+            {isLoggedIn ? (
+              <div className="space-y-2">
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs border border-slate-800 shadow-sm"
+                >
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <span>Admin Dashboard</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4 text-amber-400" />
-                  <span>Admin Login</span>
-                </>
-              )}
-            </Link>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs border border-rose-200 shadow-sm"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs border border-slate-800 shadow-sm"
+              >
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>Admin Login</span>
+              </Link>
+            )}
           </div>
         </div>
       )}

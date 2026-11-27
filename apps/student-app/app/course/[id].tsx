@@ -47,6 +47,7 @@ import {
   Layers,
   X,
   Share2,
+  Lock,
 } from 'lucide-react-native';
 
 const thumbMap: Record<string, any> = {
@@ -84,6 +85,36 @@ export default function CourseDetailsScreen() {
 
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const course = currentCourse;
+
+  // Enrollment states
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [showEnrollGate, setShowEnrollGate] = useState(false);
+
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      if (isAdmin || currentCourse?.is_free) {
+        setIsEnrolled(true);
+        return;
+      }
+      if (!user) {
+        setIsEnrolled(false);
+        return;
+      }
+      try {
+        const pays = await academicService.getPayments();
+        const hasApproved = pays.some(
+          (p: any) =>
+            p.course_id === (currentCourse?.id || id) &&
+            (p.student_id === user.id || p.user_id === user.id) &&
+            p.status === 'approved'
+        );
+        setIsEnrolled(hasApproved);
+      } catch {
+        setIsEnrolled(false);
+      }
+    };
+    checkEnrollment();
+  }, [user, currentCourse, id, isAdmin]);
 
   // Hierarchy Navigation States:
   // 'subjects' -> 'sub_subjects' (if applicable) -> 'chapters' -> 'chapter_content'
@@ -161,6 +192,10 @@ export default function CourseDetailsScreen() {
   };
 
   const handleSelectChapter = async (chap: AcademicChapter) => {
+    if (!isAdmin && !currentCourse?.is_free && !isEnrolled) {
+      setShowEnrollGate(true);
+      return;
+    }
     setSelectedChapter(chap);
     router.push({
       pathname: '/chapter/[id]',
@@ -556,6 +591,26 @@ export default function CourseDetailsScreen() {
                 {course.is_free ? t.freeBatch : formatINR(course.discount_price || course.price)}
               </Text>
             </View>
+          </View>
+        )}
+
+        {/* Guest / Non-enrolled Access Notice */}
+        {!isEnrolled && !isAdmin && !course.is_free && (
+          <View style={[styles.guestEnrollBanner, { backgroundColor: isDark ? '#1E293B' : '#FEF3C7', borderColor: '#F59E0B' }]}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={[styles.guestEnrollBannerTitle, { color: isDark ? '#FCD34D' : '#92400E' }]}>
+                🔒 Course Enrollment Required
+              </Text>
+              <Text style={[styles.guestEnrollBannerSub, { color: isDark ? '#CBD5E1' : '#78350F' }]}>
+                Enroll to access all video lectures, handwritten notes, and live classes.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.guestEnrollBannerBtn}
+              onPress={() => router.push(`/payment/${course.id}`)}
+            >
+              <Text style={styles.guestEnrollBannerBtnText}>Enroll</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1330,6 +1385,61 @@ export default function CourseDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ENROLLMENT REQUIRED GATE MODAL */}
+      <Modal
+        visible={showEnrollGate}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEnrollGate(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#121212' : '#FFFFFF', borderColor: isDark ? '#27272A' : '#E2E8F0', borderWidth: isDark ? 1 : 0, maxWidth: 360 }]}>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 12 }}>
+              <Lock size={26} color="#2563EB" />
+            </View>
+            <Text style={[styles.modalHeading, { color: theme.text, textAlign: 'center', marginBottom: 6, fontSize: 16 }]}>
+              नामांकन आवश्यक (Enrollment Required)
+            </Text>
+            <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center', lineHeight: 18, marginBottom: 18 }}>
+              इस अध्याय के रिकॉर्डेड वीडियो लेक्चर्स, लाइव क्लास एवं हस्तलिखित पीडीएफ नोट्स प्राप्त करने के लिए कृपया कोर्स में प्रवेश लें।
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.submitBtn, { marginBottom: 10 }]}
+              onPress={() => {
+                setShowEnrollGate(false);
+                router.push(`/payment/${course?.id || id}`);
+              }}
+            >
+              <Text style={styles.submitBtnText}>
+                कोर्स में प्रवेश लें ({course?.is_free ? 'निःशुल्क' : formatINR(course?.discount_price || course?.price || 999)})
+              </Text>
+            </TouchableOpacity>
+
+            {!user && (
+              <TouchableOpacity
+                style={{ paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8, backgroundColor: isDark ? '#27272A' : '#F1F5F9' }}
+                onPress={() => {
+                  setShowEnrollGate(false);
+                  router.push('/(auth)/login');
+                }}
+              >
+                <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13 }}>
+                  पहले से नामांकित हैं? लॉगिन करें
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={{ paddingVertical: 10, alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => setShowEnrollGate(false)}
+            >
+              <Text style={{ color: theme.textSecondary, fontWeight: '600', fontSize: 13 }}>रद्द करें (Cancel)</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1415,14 +1525,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 14,
   },
   sectionHeaderLeft: {
     flex: 1,
-    flexShrink: 1,
+    marginRight: 10,
     minWidth: 0,
-    paddingRight: 6,
   },
   sectionHeading: {
     fontSize: 16,
@@ -1440,9 +1548,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    gap: 4,
+    minWidth: 76,
     backgroundColor: '#2563EB',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
   },
@@ -1451,9 +1559,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    gap: 4,
+    minWidth: 76,
     backgroundColor: '#DC2626',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
   },
@@ -1462,16 +1570,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    gap: 4,
+    minWidth: 76,
     backgroundColor: '#059669',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
   },
   addActionButtonText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
+    marginLeft: 3,
+  },
+  guestEnrollBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  guestEnrollBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  guestEnrollBannerSub: {
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  guestEnrollBannerBtn: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexShrink: 0,
+  },
+  guestEnrollBannerBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
   subjectsGrid: {
     gap: 10,

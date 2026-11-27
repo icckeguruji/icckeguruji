@@ -44,6 +44,7 @@ import {
   Moon,
   Smartphone,
   Trash2,
+  Lock,
 } from 'lucide-react-native';
 import { useAuthStore, ThemeMode } from '../store/useAuthStore';
 import { useNotificationStore } from '../services/notificationService';
@@ -217,22 +218,29 @@ export function CoachingHeader({
         >
           <View style={{ flex: 1 }}>
             <Text style={[styles.welcomeText, { color: theme.textSecondary }]}>
-              Welcome back,
+              {user ? 'Welcome back,' : 'Welcome to ICC,'}
             </Text>
             <Text
               style={[styles.studentName, { color: theme.text }]}
               numberOfLines={1}
             >
-              {user?.full_name || 'Student'}
+              {user?.full_name || 'Guest Student'}
             </Text>
           </View>
 
           <View style={styles.pillGroup}>
-            {!isAdmin && (
+            {!user ? (
+              <TouchableOpacity
+                style={{ backgroundColor: '#2563EB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+                onPress={() => router.push('/(auth)/login')}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>Login</Text>
+              </TouchableOpacity>
+            ) : !isAdmin ? (
               <View style={styles.boardPill}>
                 <Text style={styles.boardPillText}>🏆 {user?.quiz_points || 0} PTS</Text>
               </View>
-            )}
+            ) : null}
             <View
               style={[
                 styles.classPill,
@@ -335,9 +343,9 @@ export function CoachingHeader({
                 ]}
               >
                 <View style={styles.userCardTop}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarLetter}>
-                      {(user?.full_name || 'U').charAt(0).toUpperCase()}
+                  <View style={[styles.avatarCircle, !user && { backgroundColor: '#EFF6FF' }]}>
+                    <Text style={[styles.avatarLetter, !user && { color: '#2563EB' }]}>
+                      {user ? (user.full_name || 'U').charAt(0).toUpperCase() : 'G'}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -345,13 +353,13 @@ export function CoachingHeader({
                       style={[styles.userName, { color: theme.text }]}
                       numberOfLines={1}
                     >
-                      {user?.full_name || 'Student'}
+                      {user?.full_name || 'Guest Learner (अतिथि)'}
                     </Text>
                     <Text
                       style={[styles.userPhone, { color: theme.textSecondary }]}
                       numberOfLines={1}
                     >
-                      {user?.mobile_number || user?.email || 'Student Account'}
+                      {user ? (user.mobile_number || user.email) : 'Not Logged In • Browse Mode'}
                     </Text>
                   </View>
                 </View>
@@ -827,18 +835,35 @@ export function CoachingHeader({
                 <ExternalLink size={16} color="#16A34A" />
               </TouchableOpacity>
 
-              {/* Logout Button */}
-              <TouchableOpacity
-                style={[
-                  styles.logoutBtn,
-                  { backgroundColor: isDark ? '#200A0A' : '#FEE2E2' },
-                ]}
-                onPress={handleLogout}
-                activeOpacity={0.8}
-              >
-                <LogOut size={18} color="#EF4444" />
-                <Text style={styles.logoutBtnText}>Log Out from Account</Text>
-              </TouchableOpacity>
+              {/* Logout / Login Button */}
+              {!user ? (
+                <TouchableOpacity
+                  style={[
+                    styles.logoutBtn,
+                    { backgroundColor: '#2563EB' },
+                  ]}
+                  onPress={() => {
+                    setIsDrawerOpen(false);
+                    router.push('/(auth)/login');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Lock size={18} color="#FFFFFF" />
+                  <Text style={[styles.logoutBtnText, { color: '#FFFFFF' }]}>Log In / Register (लॉगिन करें)</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.logoutBtn,
+                    { backgroundColor: isDark ? '#200A0A' : '#FEE2E2' },
+                  ]}
+                  onPress={handleLogout}
+                  activeOpacity={0.8}
+                >
+                  <LogOut size={18} color="#EF4444" />
+                  <Text style={styles.logoutBtnText}>Log Out from Account</Text>
+                </TouchableOpacity>
+              )}
 
               <View
                 style={[

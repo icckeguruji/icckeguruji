@@ -80,9 +80,7 @@ export default function RootLayout() {
             <Stack.Screen
               name="course/[id]"
               options={{
-                headerShown: true,
-                title: 'Course Details',
-                headerTintColor: '#0F172A',
+                headerShown: false,
               }}
             />
             <Stack.Screen
