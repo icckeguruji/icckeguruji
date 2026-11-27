@@ -93,7 +93,7 @@ async function askMissZoyaLLM(
   const endpoint = isGroq
     ? 'https://api.groq.com/openai/v1/chat/completions'
     : 'https://api.x.ai/v1/chat/completions';
-  const model = isGroq ? 'llama-3.3-70b-versatile' : 'grok-beta';
+  const model = isGroq ? 'openai/gpt-oss-120b' : 'grok-beta';
 
   const history = conversationMemory.get(senderJid) || [];
   const langInstruction =

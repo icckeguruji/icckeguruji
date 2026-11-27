@@ -2,6 +2,9 @@
   "name": "@icc/whatsapp-service",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "description": "IDEAL COACHING CENTRE - WhatsApp AI Assistant Service with Baileys Web Integration",
   "main": "dist/index.js",
   "scripts": {
