@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:5001';
+
 export async function POST() {
   try {
-    const res = await fetch('http://localhost:5001/disconnect', {
+    const res = await fetch(`${WA_URL}/disconnect`, {
       method: 'POST',
       cache: 'no-store',
     });

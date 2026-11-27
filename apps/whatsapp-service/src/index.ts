@@ -26,11 +26,29 @@ app.get('/status', (req, res) => {
   res.json(whatsAppManager.state);
 });
 
-// 2. Connect & Disconnect Actions
+// 2. Connect & Disconnect Actions (Supports QR Code OR Phone Number Pairing Code)
 app.post('/connect', async (req, res) => {
   try {
-    await whatsAppManager.startConnection();
-    res.json({ success: true, message: 'WhatsApp connection initiated', state: whatsAppManager.state });
+    const { phoneNumber } = req.body || {};
+    await whatsAppManager.startConnection(phoneNumber);
+    res.json({ success: true, message: phoneNumber ? 'Pairing code initiated' : 'WhatsApp QR connection initiated', state: whatsAppManager.state });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2b. Send WhatsApp Notification from Admin Dashboard / Student App
+app.post('/send-message', async (req, res) => {
+  try {
+    const { phone, message } = req.body || {};
+    if (!phone || !message) {
+      return res.status(400).json({ success: false, error: 'phone and message are required' });
+    }
+    const result = await whatsAppManager.sendWhatsAppMessage(phone, message);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json({ success: true, message: 'WhatsApp notification sent!' });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

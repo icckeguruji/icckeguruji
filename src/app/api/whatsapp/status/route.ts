@@ -3,12 +3,14 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:5001';
+
 export async function GET() {
-  // 1. Try local microservice first
+  // 1. Try local/remote Baileys microservice first
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch('http://localhost:5001/status', {
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`${WA_URL}/status`, {
       signal: controller.signal,
       cache: 'no-store',
     });

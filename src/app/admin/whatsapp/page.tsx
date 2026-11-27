@@ -23,9 +23,11 @@ import {
 } from 'lucide-react';
 
 interface WhatsAppStatus {
-  status: 'DISCONNECTED' | 'SCAN_QR' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
+  status: 'DISCONNECTED' | 'SCAN_QR' | 'PAIRING_CODE' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
   qrCodeDataUrl: string | null;
   qrExpiresAt: string | null;
+  pairingCode?: string | null;
+  pairingPhone?: string | null;
   connectedPhone: string | null;
   connectedName: string | null;
   lastConnectedAt: string | null;
@@ -55,6 +57,14 @@ export default function WhatsAppAdminPage() {
 
   const [loading, setLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [linkMode, setLinkMode] = useState<'qr' | 'phone'>('qr');
+  const [pairPhoneInput, setPairPhoneInput] = useState('919771350910');
+  const [copiedPairCode, setCopiedPairCode] = useState(false);
+
+  // Direct WhatsApp Notification Sender
+  const [testPhone, setTestPhone] = useState('');
+  const [testMessage, setTestMessage] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
 
   // Account Linking Token Generator
   const [tokenLoading, setTokenLoading] = useState(false);
@@ -75,8 +85,11 @@ export default function WhatsAppAdminPage() {
 
   useEffect(() => {
     fetchStatus();
-    // Poll every 3s only during QR scan / connecting, and 30s when connected or idle. Pauses when tab is hidden.
-    const pollInterval = status.status === 'SCAN_QR' || status.status === 'CONNECTING' ? 3000 : 30000;
+    // Poll every 3s only during QR scan / pairing code / connecting, and 30s when connected or idle. Pauses when tab is hidden.
+    const pollInterval =
+      status.status === 'SCAN_QR' || status.status === 'PAIRING_CODE' || status.status === 'CONNECTING'
+        ? 3000
+        : 30000;
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
       fetchStatus();
@@ -84,15 +97,25 @@ export default function WhatsAppAdminPage() {
     return () => clearInterval(interval);
   }, [status.status]);
 
-  // Handle Connect
-  const handleConnect = async () => {
+  // Handle Connect (QR Code OR Phone Number Pairing Code)
+  const handleConnect = async (phoneNumber?: string) => {
     setLoading(true);
     setActionMsg(null);
     try {
-      const res = await fetch('/api/whatsapp/connect', { method: 'POST' });
+      const res = await fetch('/api/whatsapp/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(phoneNumber ? { phoneNumber } : {}),
+      });
       const data = await res.json();
       if (data.success) {
-        setActionMsg({ type: 'success', text: 'WhatsApp connection initiated! Please scan the QR code below.' });
+        setActionMsg({
+          type: 'success',
+          text: phoneNumber
+            ? 'Pairing code requested! Wait 2-3 seconds for your 8-digit code below.'
+            : 'WhatsApp connection initiated! Please scan the QR code below.',
+        });
+        setTimeout(fetchStatus, 1800);
         fetchStatus();
       } else {
         setActionMsg({ type: 'error', text: data.error || 'Failed to start WhatsApp service.' });
@@ -101,6 +124,30 @@ export default function WhatsAppAdminPage() {
       setActionMsg({ type: 'error', text: 'Failed to communicate with WhatsApp backend service.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendDirectMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testPhone.trim() || !testMessage.trim()) return;
+    setSendingMsg(true);
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: testPhone.trim(), message: testMessage.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMsg({ type: 'success', text: `WhatsApp message sent to ${testPhone}!` });
+        setTestMessage('');
+      } else {
+        setActionMsg({ type: 'error', text: data.error || 'Failed to send WhatsApp message.' });
+      }
+    } catch {
+      setActionMsg({ type: 'error', text: 'WhatsApp service unreachable.' });
+    } finally {
+      setSendingMsg(false);
     }
   };
 
@@ -169,10 +216,10 @@ export default function WhatsAppAdminPage() {
   return (
     <div className="flex-1 pb-16">
       <AdminHeader
-        titleHi="व्हाट्सएप AI असिस्टेंट (Baileys Web Rail)"
-        titleEn="WhatsApp AI Assistant"
-        subtitleHi="QR कोड स्कैन कर संस्थान का आधिकारिक व्हाट्सएप बॉट सक्रिय करें"
-        subtitleEn="QR-based linked-device integration for automated student, teacher & public AI support"
+        titleHi="Miss Zoya — व्हाट्सएप AI असिस्टेंट (Baileys)"
+        titleEn="Miss Zoya — WhatsApp AI Bot"
+        subtitleHi="QR कोड स्कैन या फ़ोन नंबर पेयरिंग कोड से एडमिन व्हाट्सएप कनेक्ट करें"
+        subtitleEn="Connect via QR Scan or 8-Digit Phone Pairing Code for Miss Zoya AI & student notifications"
       />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -372,13 +419,76 @@ export default function WhatsAppAdminPage() {
                     Disconnect WhatsApp
                   </button>
                   <button
-                    onClick={handleConnect}
+                    onClick={() => handleConnect()}
                     disabled={loading}
                     className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition"
                   >
                     Reconnect Session
                   </button>
                 </div>
+
+                {/* Direct WhatsApp Notification / Test Sender */}
+                <form onSubmit={handleSendDirectMessage} className="mt-4 pt-4 border-t border-emerald-200 space-y-2">
+                  <label className="text-[11px] font-bold text-emerald-900 block">
+                    Send Direct WhatsApp Notification (via Miss Zoya / Connected Number)
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      placeholder="Student Phone (e.g. 9800000001)"
+                      value={testPhone}
+                      onChange={(e) => setTestPhone(e.target.value)}
+                      className="sm:w-48 px-3 py-2 text-xs border border-emerald-300 rounded-xl bg-white"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Message (e.g. Live Class starting in 10 mins!)"
+                      value={testMessage}
+                      onChange={(e) => setTestMessage(e.target.value)}
+                      className="flex-1 px-3 py-2 text-xs border border-emerald-300 rounded-xl bg-white"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={sendingMsg}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{sendingMsg ? 'Sending...' : 'Send'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : status.status === 'PAIRING_CODE' && status.pairingCode ? (
+              /* 8-Digit Phone Pairing Code View */
+              <div className="p-6 bg-indigo-50/70 rounded-2xl border border-indigo-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-black text-indigo-950">
+                    Link with Phone Number (+{status.pairingPhone})
+                  </h4>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(status.pairingCode || '');
+                      setCopiedPairCode(true);
+                      setTimeout(() => setCopiedPairCode(false), 2000);
+                    }}
+                    className="px-3 py-1 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-indigo-700 flex items-center gap-1"
+                  >
+                    {copiedPairCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedPairCode ? 'Copied' : 'Copy Code'}</span>
+                  </button>
+                </div>
+                <div className="bg-white border-2 border-indigo-500 rounded-2xl py-5 px-4 text-center shadow-sm">
+                  <span className="text-3xl sm:text-4xl font-black tracking-[0.25em] text-indigo-700 font-mono">
+                    {status.pairingCode}
+                  </span>
+                </div>
+                <ol className="list-decimal pl-5 space-y-1 text-xs text-indigo-900">
+                  <li>Open WhatsApp on your phone → <strong>Linked Devices</strong> → <strong>Link a Device</strong>.</li>
+                  <li>Tap <strong>&quot;Link with phone number instead&quot;</strong> at the bottom.</li>
+                  <li>Enter the 8-digit code shown above. Page will auto-switch to <strong>Connected</strong>!</li>
+                </ol>
               </div>
             ) : status.status === 'SCAN_QR' && status.qrCodeDataUrl ? (
               /* QR Code Scan View */
@@ -411,27 +521,72 @@ export default function WhatsAppAdminPage() {
                 </div>
               </div>
             ) : (
-              /* Disconnected Prompt */
-              <div className="text-center py-10 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300 space-y-4">
+              /* Disconnected Prompt with Dual Mode: QR Code OR Phone Number Pairing */
+              <div className="text-center py-8 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300 space-y-5">
                 <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
                   <Smartphone className="w-8 h-8" />
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-base font-bold text-slate-800">
-                    No WhatsApp Account Linked
+                    Connect Admin WhatsApp & Activate Miss Zoya Bot
                   </h4>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Connect an official phone number to activate instant automated AI replies for BSEB & JAC syllabus, admission enquiries, and student support.
+                    Link your WhatsApp via <strong>QR Code</strong> or <strong>8-Digit Phone Number Code</strong> so Miss Zoya can reply in Hindi/Hinglish/English and send student notifications.
                   </p>
                 </div>
-                <button
-                  onClick={handleConnect}
-                  disabled={loading}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-md transition inline-flex items-center space-x-2"
-                >
-                  <QrCode className="w-4 h-4" />
-                  <span>{loading ? 'Initializing Baileys...' : 'Connect WhatsApp & Generate QR'}</span>
-                </button>
+
+                {/* Mode Switcher */}
+                <div className="inline-flex rounded-xl bg-white p-1 border border-slate-200 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setLinkMode('qr')}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+                      linkMode === 'qr' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Scan QR Code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLinkMode('phone')}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+                      linkMode === 'phone' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Link with Phone Number
+                  </button>
+                </div>
+
+                {linkMode === 'qr' ? (
+                  <div>
+                    <button
+                      onClick={() => handleConnect()}
+                      disabled={loading}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-md transition inline-flex items-center space-x-2"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>{loading ? 'Initializing Baileys...' : 'Connect WhatsApp & Generate QR'}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="max-w-sm mx-auto space-y-2">
+                    <input
+                      type="text"
+                      value={pairPhoneInput}
+                      onChange={(e) => setPairPhoneInput(e.target.value)}
+                      placeholder="Country code + number (e.g. 919771350910)"
+                      className="w-full px-3.5 py-2.5 text-xs border border-indigo-300 rounded-xl bg-white text-center font-mono font-bold"
+                    />
+                    <button
+                      onClick={() => handleConnect(pairPhoneInput)}
+                      disabled={loading || pairPhoneInput.replace(/\D/g, '').length < 10}
+                      className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-md transition inline-flex items-center justify-center space-x-2"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      <span>{loading ? 'Generating Code...' : 'Get 8-Digit Pairing Code'}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

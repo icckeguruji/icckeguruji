@@ -23,14 +23,15 @@ export async function POST(req: NextRequest) {
 
     let pushTokens: string[] = [];
     let studentEmails: string[] = [];
+    let studentPhones: string[] = [];
     let insertedCount = 0;
 
     if (isSupabaseConfigured) {
       try {
-        // 1. Fetch matching student profiles to extract push tokens & emails
+        // 1. Fetch matching student profiles to extract push tokens, emails & mobile numbers
         let query = supabase
           .from('profiles')
-          .select('id, push_token, email, board_code, class_id')
+          .select('id, push_token, email, mobile_number, board_code, class_id')
           .eq('is_active', true);
 
         if (studentId) {
@@ -50,6 +51,9 @@ export async function POST(req: NextRequest) {
           studentEmails = students
             .map((s) => s.email)
             .filter((em): em is string => Boolean(em && em.includes('@') && em !== 'student@example.com'));
+          studentPhones = students
+            .map((s: any) => s.mobile_number)
+            .filter((ph): ph is string => Boolean(ph && ph.replace(/\D/g, '').length >= 10));
 
           // 2. Insert notification records for students in Supabase
           const notificationsToInsert = students.map((s) => ({
@@ -126,12 +130,28 @@ export async function POST(req: NextRequest) {
       )
     ).catch(() => {});
 
+    // 5. Dispatch WhatsApp Notifications via Miss Zoya Baileys Service (if connected)
+    const waUrl = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:5001';
+    if (studentPhones.length > 0) {
+      const waText = `🌸 *IDEAL COACHING CENTRE (Miss Zoya)*\n\n*${title.trim()}*\n${message.trim()}`;
+      Promise.allSettled(
+        Array.from(new Set(studentPhones)).slice(0, 25).map((phone) =>
+          fetch(`${waUrl}/send-message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, message: waText }),
+          })
+        )
+      ).catch(() => {});
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Push & Email notification successfully broadcasted!',
+      message: 'Push, Email & WhatsApp notification successfully broadcasted!',
       deliveredCount: insertedCount || 1,
       expoPushedCount: pushTokens.length,
       emailTargetedCount: uniqueEmails.length,
+      whatsappTargetedCount: studentPhones.length,
       expoDeliverySuccess,
       timestamp: new Date().toISOString(),
     });

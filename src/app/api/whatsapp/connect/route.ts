@@ -1,13 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+const WA_URL = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:5001';
+
+export async function POST(req: NextRequest) {
   try {
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {}
+
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
-    const res = await fetch('http://localhost:5001/connect', {
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(`${WA_URL}/connect`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
       signal: controller.signal,
       cache: 'no-store',
     });
@@ -18,10 +27,10 @@ export async function POST() {
       return NextResponse.json(data);
     }
     return NextResponse.json({ success: false, error: 'Failed to initiate WhatsApp connection' }, { status: 500 });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({
       success: false,
-      error: 'WhatsApp Background Service is not running on port 5001. Please run "npm run dev:whatsapp" or start the node service.',
+      error: 'WhatsApp Baileys Service is not running. Start it with "npm run dev:whatsapp" (or set WHATSAPP_SERVICE_URL).',
     });
   }
 }

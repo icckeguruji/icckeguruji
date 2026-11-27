@@ -12,9 +12,11 @@ import { resolveSenderIdentity, verifyAndLinkToken } from './accountLinker.js';
 import { processAiMessage } from './aiEngine.js';
 
 export interface WhatsAppServiceState {
-  status: 'DISCONNECTED' | 'SCAN_QR' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
+  status: 'DISCONNECTED' | 'SCAN_QR' | 'PAIRING_CODE' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
   qrCodeDataUrl: string | null;
   qrExpiresAt: string | null;
+  pairingCode: string | null;
+  pairingPhone: string | null;
   connectedPhone: string | null;
   connectedName: string | null;
   lastConnectedAt: string | null;
@@ -35,6 +37,8 @@ class WhatsAppClientManager {
     status: 'DISCONNECTED',
     qrCodeDataUrl: null,
     qrExpiresAt: null,
+    pairingCode: null,
+    pairingPhone: null,
     connectedPhone: null,
     connectedName: null,
     lastConnectedAt: null,
@@ -75,13 +79,30 @@ class WhatsAppClientManager {
     }
   }
 
-  public async startConnection(): Promise<void> {
-    if (this.isConnecting || this.state.status === 'CONNECTED') {
+  public async startConnection(phoneNumber?: string): Promise<void> {
+    if (this.state.status === 'CONNECTED') {
       return;
+    }
+
+    // If switching to phone pairing mode, reset any in-progress unlinked socket
+    const cleanPhone = phoneNumber ? phoneNumber.replace(/\D/g, '') : '';
+    const formattedPhone =
+      cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+    if (this.isConnecting && !formattedPhone) {
+      return;
+    }
+    if (formattedPhone && this.socket) {
+      try { this.socket.end(undefined); } catch {}
+      this.socket = null;
+      this.clearSession();
     }
 
     this.isConnecting = true;
     this.state.status = 'CONNECTING';
+    this.state.qrCodeDataUrl = null;
+    this.state.pairingCode = null;
+    this.state.pairingPhone = formattedPhone || null;
     this.state.errorMessage = null;
     await this.updateSupabaseStatus();
 
@@ -90,17 +111,37 @@ class WhatsAppClientManager {
 
       this.socket = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
+        printQRInTerminal: !formattedPhone,
         logger: pino({ level: 'silent' }) as any,
         browser: ['IDEAL COACHING CENTRE', 'Chrome', '124.0.0'],
         defaultQueryTimeoutMs: 60000,
       });
 
+      if (formattedPhone && !state.creds.registered) {
+        setTimeout(async () => {
+          try {
+            if (!this.socket || this.state.status === 'CONNECTED') return;
+            const rawCode = await this.socket.requestPairingCode(formattedPhone);
+            const prettyCode = rawCode.length === 8 ? `${rawCode.slice(0, 4)}-${rawCode.slice(4)}` : rawCode;
+            this.state.status = 'PAIRING_CODE';
+            this.state.pairingCode = prettyCode;
+            this.state.qrCodeDataUrl = null;
+            this.state.qrExpiresAt = new Date(Date.now() + 120000).toISOString();
+            console.log(`[WhatsApp Service] Pairing Code generated for +${formattedPhone}: ${prettyCode}`);
+            await this.updateSupabaseStatus();
+          } catch (pairErr: any) {
+            console.error('[WhatsApp Service] Pairing code error:', pairErr);
+            this.state.errorMessage = pairErr?.message || 'Failed to generate pairing code';
+            await this.updateSupabaseStatus();
+          }
+        }, 1800);
+      }
+
       // 1. Connection Updates
       this.socket.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
+        if (qr && !this.state.pairingPhone) {
           try {
             const qrDataUrl = await QRCode.toDataURL(qr, { margin: 2, scale: 6 });
             this.state.status = 'SCAN_QR';
@@ -123,6 +164,8 @@ class WhatsAppClientManager {
           this.state.status = 'CONNECTED';
           this.state.qrCodeDataUrl = null;
           this.state.qrExpiresAt = null;
+          this.state.pairingCode = null;
+          this.state.pairingPhone = null;
           this.state.errorMessage = null;
           this.state.lastConnectedAt = new Date().toISOString();
 
@@ -221,11 +264,12 @@ class WhatsAppClientManager {
         const linkRes = await verifyAndLinkToken(senderJid, text, pushName);
         reply = linkRes.message;
       } else {
-        // 3. Process via AI & Database Tools
+        // 3. Process via Miss Zoya AI & Live Database Tools
         reply = await processAiMessage({
           senderJid,
           senderText: text,
           identity,
+          pushName,
         });
       }
 
@@ -254,6 +298,24 @@ class WhatsAppClientManager {
     this.state.qrCodeDataUrl = null;
     this.clearSession();
     await this.updateSupabaseStatus();
+  }
+
+  public async sendWhatsAppMessage(phone: string, text: string): Promise<{ success: boolean; error?: string }> {
+    if (!this.socket || this.state.status !== 'CONNECTED') {
+      return { success: false, error: 'WhatsApp is not connected right now.' };
+    }
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10) {
+      return { success: false, error: 'Invalid phone number.' };
+    }
+    const normalized = digits.length === 10 ? `91${digits}` : digits;
+    const jid = `${normalized}@s.whatsapp.net`;
+    try {
+      await this.socket.sendMessage(jid, { text });
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to send WhatsApp message' };
+    }
   }
 
   public toggleBot(enabled: boolean) {
