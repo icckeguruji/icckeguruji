@@ -5,7 +5,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi } from '@/lib/api';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { LiveClass } from '@icc/shared-types';
+import { LiveClass, Course } from '@icc/shared-types';
 import { extractYouTubeVideoId, formatIST } from '@icc/shared-utils';
 import {
   Video,
@@ -23,11 +23,18 @@ import {
 export default function LiveClassesPage() {
   const { lang, t } = useLanguage();
   const [classes, setClasses] = useState<LiveClass[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<LiveClass | null>(null);
 
   const [formData, setFormData] = useState({
+    course_id: '',
+    subject_id: '',
+    chapter_id: '',
+    class_name: '',
     title: '',
     title_hi: '',
     youtube_video_id: '',
@@ -45,12 +52,52 @@ export default function LiveClassesPage() {
     status: 'scheduled' as 'scheduled' | 'live' | 'completed' | 'cancelled',
   });
 
+  const loadSubjectsForCourse = async (courseId: string) => {
+    if (!courseId) {
+      setSubjects([]);
+      setChapters([]);
+      return;
+    }
+    const subs = await AdminApi.getCourseSubjects(courseId);
+    setSubjects(subs || []);
+    if (subs && subs.length > 0) {
+      setFormData((prev) => ({ ...prev, subject_id: subs[0].id }));
+      const chaps = await AdminApi.getSubjectChapters(subs[0].id);
+      setChapters(chaps || []);
+      setFormData((prev) => ({ ...prev, chapter_id: chaps?.[0]?.id || '' }));
+    } else {
+      setChapters([]);
+      setFormData((prev) => ({ ...prev, subject_id: '', chapter_id: '' }));
+    }
+  };
+
+  const loadChaptersForSubject = async (subjectId: string) => {
+    if (!subjectId) {
+      setChapters([]);
+      return;
+    }
+    const chaps = await AdminApi.getSubjectChapters(subjectId);
+    setChapters(chaps || []);
+    setFormData((prev) => ({ ...prev, chapter_id: chaps?.[0]?.id || '' }));
+  };
+
   const loadClasses = () => {
     AdminApi.getLiveClasses().then((data) => setClasses(data));
   };
 
   useEffect(() => {
     loadClasses();
+    AdminApi.getCourses().then((cList) => {
+      setCourses(cList || []);
+      if (cList && cList.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          course_id: cList[0].id,
+          class_name: cList[0].class_name || '',
+        }));
+        loadSubjectsForCourse(cList[0].id);
+      }
+    });
 
     if (isSupabaseConfigured) {
       const channel = supabase
@@ -71,24 +118,29 @@ export default function LiveClassesPage() {
     const vidId = extractYouTubeVideoId(formData.youtube_video_id);
     try {
       const created = await AdminApi.createLiveClass({
+        course_id: formData.course_id || undefined,
+        subject_id: formData.subject_id || undefined,
+        chapter_id: formData.chapter_id || undefined,
+        class_name: formData.class_name || undefined,
         title: formData.title,
         title_hi: formData.title_hi || formData.title,
         youtube_video_id: vidId,
         scheduled_at: new Date(formData.scheduled_at).toISOString(),
         duration_minutes: Number(formData.duration_minutes),
         status: formData.status || 'scheduled',
-      });
+      } as any);
       setClasses((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
       setIsModalOpen(false);
-      setFormData({
+      setFormData((prev) => ({
+        ...prev,
         title: '',
         title_hi: '',
         youtube_video_id: '',
         scheduled_at: new Date(Date.now() + 3600000 * 2).toISOString().slice(0, 16),
         duration_minutes: 60,
         status: 'scheduled',
-      });
-      alert('Success: Live class scheduled and saved to cloud database!');
+      }));
+      alert('Success: Live class scheduled and mapped to Class -> Course -> Subject -> Chapter!');
     } catch (err: any) {
       alert('Database Error: ' + (err?.message || 'Failed to schedule live class in database.'));
     }
@@ -317,6 +369,69 @@ export default function LiveClassesPage() {
               </div>
 
               <form onSubmit={handleCreate} className="space-y-4 pt-4 text-xs">
+                {/* Class / Course -> Subject -> Chapter Cascading Selectors */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Course &amp; Class</label>
+                    <select
+                      value={formData.course_id}
+                      onChange={(e) => {
+                        const c = courses.find((item) => item.id === e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          course_id: e.target.value,
+                          class_name: c?.class_name || '',
+                        }));
+                        loadSubjectsForCourse(e.target.value);
+                      }}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title} {c.class_name ? `(${c.class_name})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Subject</label>
+                    <select
+                      value={formData.subject_id}
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, subject_id: e.target.value }));
+                        loadChaptersForSubject(e.target.value);
+                      }}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {subjects.length === 0 ? (
+                        <option value="">No subjects</option>
+                      ) : (
+                        subjects.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Chapter</label>
+                    <select
+                      value={formData.chapter_id}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, chapter_id: e.target.value }))}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {chapters.length === 0 ? (
+                        <option value="">All / General</option>
+                      ) : (
+                        chapters.map((ch) => (
+                          <option key={ch.id} value={ch.id}>
+                            Ch {ch.chapter_number}: {ch.title}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
                     {t('क्लास का शीर्षक (English)', 'Class Title (English)')}

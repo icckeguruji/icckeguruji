@@ -5,7 +5,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi } from '@/lib/api';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { StudyMaterial, SubjectItem, ClassItem } from '@icc/shared-types';
+import { StudyMaterial, Course } from '@icc/shared-types';
 import { formatBytes } from '@icc/shared-utils';
 import {
   UploadCloud,
@@ -25,6 +25,9 @@ import {
 export default function StudyMaterialsPage() {
   const { lang, t } = useLanguage();
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -35,13 +38,16 @@ export default function StudyMaterialsPage() {
   const [fileSizeBytes, setFileSizeBytes] = useState<number>(2150000);
 
   const [formData, setFormData] = useState({
+    course_id: '',
     title: '',
     title_hi: '',
     board_id: 'b0000000-0000-0000-0000-000000000001',
     class_id: 'c0000000-0000-0000-0000-000000000010',
-    subject_id: 'sub00000-0000-0000-0000-000000000002',
+    subject_id: '',
+    chapter_id: '',
     material_type: 'chapter_notes' as const,
     file_name: 'notes.pdf',
+    file_url: '',
     is_free: false,
   });
 
@@ -52,12 +58,52 @@ export default function StudyMaterialsPage() {
     is_free: false,
   });
 
+  const loadSubjectsForCourse = async (courseId: string) => {
+    if (!courseId) {
+      setSubjects([]);
+      setChapters([]);
+      return;
+    }
+    const subs = await AdminApi.getCourseSubjects(courseId);
+    setSubjects(subs || []);
+    if (subs && subs.length > 0) {
+      setFormData((prev) => ({ ...prev, subject_id: subs[0].id }));
+      const chaps = await AdminApi.getSubjectChapters(subs[0].id);
+      setChapters(chaps || []);
+      setFormData((prev) => ({ ...prev, chapter_id: chaps?.[0]?.id || '' }));
+    } else {
+      setChapters([]);
+      setFormData((prev) => ({ ...prev, subject_id: '', chapter_id: '' }));
+    }
+  };
+
+  const loadChaptersForSubject = async (subjectId: string) => {
+    if (!subjectId) {
+      setChapters([]);
+      return;
+    }
+    const chaps = await AdminApi.getSubjectChapters(subjectId);
+    setChapters(chaps || []);
+    setFormData((prev) => ({ ...prev, chapter_id: chaps?.[0]?.id || '' }));
+  };
+
   const loadMaterials = () => {
     AdminApi.getStudyMaterials().then((data) => setMaterials(data));
   };
 
   useEffect(() => {
     loadMaterials();
+    AdminApi.getCourses().then((cList) => {
+      setCourses(cList || []);
+      if (cList && cList.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          course_id: cList[0].id,
+          class_id: cList[0].class_id || prev.class_id,
+        }));
+        loadSubjectsForCourse(cList[0].id);
+      }
+    });
 
     if (isSupabaseConfigured) {
       const channel = supabase
@@ -91,14 +137,33 @@ export default function StudyMaterialsPage() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let resolvedFilePath = formData.file_url.trim() || `bseb/notes/${formData.file_name}`;
+
+      // Try uploading physical PDF to Supabase Storage if a local file was selected
+      if (selectedFile && isSupabaseConfigured) {
+        try {
+          const safePath = `${formData.course_id || 'general'}/${Date.now()}_${selectedFile.name.replace(/\s+/g, '_')}`;
+          const { error: upErr } = await supabase.storage
+            .from('study-materials')
+            .upload(safePath, selectedFile, { contentType: 'application/pdf', upsert: true });
+          if (!upErr) {
+            const { data: pubUrl } = supabase.storage.from('study-materials').getPublicUrl(safePath);
+            if (pubUrl?.publicUrl) {
+              resolvedFilePath = pubUrl.publicUrl;
+            }
+          }
+        } catch {}
+      }
+
       const created = await AdminApi.uploadStudyMaterial({
         title: formData.title || formData.file_name,
         title_hi: formData.title_hi || formData.title || formData.file_name,
         board_id: formData.board_id,
         class_id: formData.class_id,
-        subject_id: formData.subject_id,
+        subject_id: formData.subject_id || undefined,
+        chapter_id: formData.chapter_id || undefined,
         material_type: formData.material_type,
-        file_path: `bseb/class10/science/${formData.file_name}`,
+        file_path: resolvedFilePath,
         file_size_bytes: fileSizeBytes,
         is_free: formData.is_free,
       });
@@ -106,17 +171,15 @@ export default function StudyMaterialsPage() {
       setIsUploadOpen(false);
       setSelectedFile(null);
       setFileSizeBytes(2150000);
-      setFormData({
+      setFormData((prev) => ({
+        ...prev,
         title: '',
         title_hi: '',
-        board_id: 'b0000000-0000-0000-0000-000000000001',
-        class_id: 'c0000000-0000-0000-0000-000000000010',
-        subject_id: 'sub00000-0000-0000-0000-000000000002',
-        material_type: 'chapter_notes',
         file_name: 'notes.pdf',
+        file_url: '',
         is_free: false,
-      });
-      alert('Success: Study material uploaded and saved to cloud database!');
+      }));
+      alert('Success: PDF Notes uploaded and mapped to Class -> Course -> Subject -> Chapter!');
     } catch (err: any) {
       alert('Database Error: ' + (err?.message || 'Failed to upload study material to database.'));
     }
@@ -354,28 +417,80 @@ export default function StudyMaterialsPage() {
                   />
                 </div>
 
+                {/* Cascading Course (Class) -> Subject -> Chapter */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Course &amp; Class</label>
+                    <select
+                      value={formData.course_id}
+                      onChange={(e) => {
+                        const c = courses.find((item) => item.id === e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          course_id: e.target.value,
+                          class_id: c?.class_id || prev.class_id,
+                        }));
+                        loadSubjectsForCourse(e.target.value);
+                      }}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title} {c.class_name ? `(${c.class_name})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Subject</label>
+                    <select
+                      value={formData.subject_id}
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, subject_id: e.target.value }));
+                        loadChaptersForSubject(e.target.value);
+                      }}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {subjects.length === 0 ? (
+                        <option value="">No subjects</option>
+                      ) : (
+                        subjects.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Chapter</label>
+                    <select
+                      value={formData.chapter_id}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, chapter_id: e.target.value }))}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {chapters.length === 0 ? (
+                        <option value="">General</option>
+                      ) : (
+                        chapters.map((ch) => (
+                          <option key={ch.id} value={ch.id}>
+                            Ch {ch.chapter_number}: {ch.title}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    {t('कक्षा (Class)', 'Class')}
+                    {t('सीधा PDF लिंक (Optional Google Drive / PDF URL)', 'Direct PDF URL (Optional)')}
                   </label>
-                  <select
-                    value={formData.class_id}
-                    onChange={(e) => setFormData({ ...formData, class_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    <option value="c0000000-0000-0000-0000-000000000010">कक्षा 10 (Class 10)</option>
-                    <option value="c0000000-0000-0000-0000-000000000009">कक्षा 9 (Class 9)</option>
-                    <option value="c0000000-0000-0000-0000-000000000008">कक्षा 8 (Class 8)</option>
-                    <option value="c0000000-0000-0000-0000-000000000007">कक्षा 7 (Class 7)</option>
-                    <option value="c0000000-0000-0000-0000-000000000006">कक्षा 6 (Class 6)</option>
-                    <option value="c0000000-0000-0000-0000-000000000005">कक्षा 5 (Class 5)</option>
-                    <option value="c0000000-0000-0000-0000-000000000004">कक्षा 4 (Class 4)</option>
-                    <option value="c0000000-0000-0000-0000-000000000003">कक्षा 3 (Class 3)</option>
-                    <option value="c0000000-0000-0000-0000-000000000002">कक्षा 2 (Class 2)</option>
-                    <option value="c0000000-0000-0000-0000-000000000001">कक्षा 1 (Class 1)</option>
-                    <option value="c0000000-0000-0000-0000-000000000011">कक्षा 11 (Class 11)</option>
-                    <option value="c0000000-0000-0000-0000-000000000012">कक्षा 12 (Class 12)</option>
-                  </select>
+                  <input
+                    type="url"
+                    value={formData.file_url}
+                    onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
+                    placeholder="https://drive.google.com/file/d/... or https://.../notes.pdf"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
