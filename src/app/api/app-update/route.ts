@@ -67,7 +67,7 @@ export async function GET() {
   const config = await getUpdateConfig();
   return NextResponse.json(config, {
     headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
       'Access-Control-Allow-Origin': '*',
     },
   });

@@ -38,32 +38,27 @@ export default function PublicHomePage() {
   useEffect(() => {
     loadCourses();
 
-    let channels: any[] = [];
+    let channel: any = null;
     if (isSupabaseConfigured) {
-      const tables = ['courses', 'subjects', 'chapters'];
-      tables.forEach((table) => {
-        const ch = supabase
-          .channel(`home-sync-${table}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-            loadCourses();
-          })
-          .subscribe();
-        channels.push(ch);
-      });
+      channel = supabase
+        .channel('home-live-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, loadCourses)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, loadCourses)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chapters' }, loadCourses)
+        .subscribe();
     }
 
-    const pollInterval = setInterval(() => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    let lastFetch = Date.now();
+    const handleFocus = () => {
+      if (Date.now() - lastFetch > 20000) {
+        lastFetch = Date.now();
         loadCourses();
       }
-    }, 4000);
-
-    const handleFocus = () => loadCourses();
+    };
     window.addEventListener('focus', handleFocus);
 
     return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch));
-      clearInterval(pollInterval);
+      if (channel) supabase.removeChannel(channel);
       window.removeEventListener('focus', handleFocus);
     };
   }, []);

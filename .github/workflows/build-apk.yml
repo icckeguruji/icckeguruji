@@ -33,6 +33,25 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Auto-Bump App Version & Extract Changelog
+        id: ver
+        run: |
+          RUN_NUM=${{ github.run_number }}
+          VER_CODE=$((3 + RUN_NUM))
+          VER_NAME="1.0.$((2 + RUN_NUM))"
+          echo "version_code=$VER_CODE" >> $GITHUB_OUTPUT
+          echo "version_name=$VER_NAME" >> $GITHUB_OUTPUT
+          node -e "
+            const fs = require('fs');
+            const p = 'apps/student-app/app.json';
+            const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+            j.expo.version = '$VER_NAME';
+            j.expo.android.versionCode = $VER_CODE;
+            fs.writeFileSync(p, JSON.stringify(j, null, 2));
+          "
+          git log -5 --pretty=format:"%s" > /tmp/changelog.txt
+          cat /tmp/changelog.txt
+
       - name: Generate Android Native Project (Expo Prebuild)
         run: |
           cd apps/student-app
@@ -107,22 +126,50 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.1
-          name: "IDEAL COACHING CENTRE App v1.0.1 (Superfast ~20 MB)"
+          tag_name: v${{ steps.ver.outputs.version_name }}
+          name: "IDEAL COACHING CENTRE App v${{ steps.ver.outputs.version_name }}"
           body: |
             ### 📱 IDEAL COACHING CENTRE — Student & Director Android App
-            Official Release v1.0.1 (BSEB & JAC Board Curriculum)
-            
-            ⚡ **What's New in v1.0.1 (High-Speed & Ultra-Lightweight Edition)**:
-            - 🚀 **Superfast Download Size (~20 MB)**: Reduced by over 68% (from 63 MB) with native 64-bit ARM64 optimization & Deflate bytecode compression. Downloads in ~3 seconds on Jio/Airtel 4G/5G in Bihar & Jharkhand.
-            - ⚡ **Dual-Rail High-Speed CDN Mirror**: Direct 1-click download with regional CDN Edge acceleration.
-            - 👑 **Mobile Director Console**: Embedded `/admin` console for Director BADE SIR.
-            - 📁 **Device Storage & Camera Uploads**: Direct camera & gallery photo uploads for course thumbnails and PDF study notes.
-            - 📲 **In-App Auto Update**: Background download speed meter (`MB/s`) and automatic 1-tap package installer.
-            - 🔒 **Encrypted Offline Study Mode**: Offline video lectures & formula cheat sheets.
-            - 💬 **WhatsApp Parent Alerts**: 1-click attendance and test report cards dispatch.
-            
+            Official Release v${{ steps.ver.outputs.version_name }} (Build ${{ steps.ver.outputs.version_code }})
+
+            **What's New:**
+            - Latest improvements, dark mode, AI Quiz, live classes & performance upgrades.
             - Download `ideal-coaching-release.apk` below and install on any Android phone (Android 7.0+).
           files: dist/ideal-coaching-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-Publish Version & Changelog to Live App Update API
+        if: startsWith(github.ref, 'refs/heads/main')
+        run: |
+          node -e '
+            const fs = require("fs");
+            const lines = fs.readFileSync("/tmp/changelog.txt", "utf8").split("\n").map(s => s.trim()).filter(Boolean);
+            const verName = "${{ steps.ver.outputs.version_name }}";
+            const verCode = Number("${{ steps.ver.outputs.version_code }}");
+            const apkUrl = "https://github.com/${{ github.repository }}/releases/download/v" + verName + "/ideal-coaching-release.apk";
+            const payload = {
+              key: "app_update_config",
+              value: {
+                latest_version: verName,
+                version_code: verCode,
+                min_required_version: "1.0.0",
+                is_mandatory: false,
+                apk_download_url: apkUrl,
+                apk_size_mb: 21.0,
+                release_date: new Date().toISOString().split("T")[0],
+                title_en: "New Update Available (v" + verName + ")",
+                title_hi: "नया आधिकारिक अपडेट उपलब्ध है (v" + verName + ")",
+                changelog_en: lines.length ? lines : ["Performance improvements and bug fixes"],
+                changelog_hi: lines.length ? lines : ["बेहतर परफॉर्मेंस एवं बग फिक्स"]
+              },
+              updated_at: new Date().toISOString()
+            };
+            const url = "https://gshjxcoyfrskxnpdqooy.supabase.co/rest/v1/platform_settings?on_conflict=key";
+            const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzaGp4Y295ZnJza3hucGRxb295Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1NDE4MzEsImV4cCI6MjExMDExNzgzMX0.LUFOdUFv30uWvf1SdCoHo8vaewxquRq3JRRNrxHL-8g";
+            fetch(url, {
+              method: "POST",
+              headers: { apikey: key, Authorization: "Bearer " + key, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+              body: JSON.stringify(payload)
+            }).then(r => console.log("App update published:", r.status)).catch(console.error);
+          '

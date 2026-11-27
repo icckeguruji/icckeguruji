@@ -49,41 +49,32 @@ export default function PublicCoursesPage() {
   useEffect(() => {
     loadCourses();
 
-    let channels: any[] = [];
+    let channel: any = null;
     if (isSupabaseConfigured) {
-      // Listen to courses, subjects, chapters, and materials for 100% live updates
-      const tables = ['courses', 'subjects', 'chapters', 'recorded_lectures', 'study_materials'];
-      tables.forEach((table) => {
-        const ch = supabase
-          .channel(`public-sync-${table}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-            loadCourses();
-          })
-          .subscribe();
-        channels.push(ch);
-      });
+      // Single multiplexed Realtime channel (saves 80% Supabase connections on free tier)
+      channel = supabase
+        .channel('public-courses-live-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, loadCourses)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, loadCourses)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chapters' }, loadCourses)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'recorded_lectures' }, loadCourses)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'study_materials' }, loadCourses)
+        .subscribe();
     }
 
-    // Auto sync when tab is active
-    const pollInterval = setInterval(() => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        loadCourses();
-      }
-    }, 4000);
-
-    const handleFocus = () => loadCourses();
+    let lastFetch = Date.now();
     const handleVisibility = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && Date.now() - lastFetch > 20000) {
+        lastFetch = Date.now();
         loadCourses();
       }
     };
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener('focus', handleVisibility);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch));
-      clearInterval(pollInterval);
-      window.removeEventListener('focus', handleFocus);
+      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleVisibility);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
