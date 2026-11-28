@@ -501,11 +501,10 @@ export function CoachingHeader({
                         { color: isDark ? '#FBBF24' : '#92400E' },
                       ]}
                     >
-                      Quick Management
+                      All Director & Admin tools are in Profile
                     </Text>
                   </View>
 
-                  {/* 🤖 Director AI Copilot */}
                   <TouchableOpacity
                     style={[
                       styles.menuItem,
@@ -515,196 +514,18 @@ export function CoachingHeader({
                         marginVertical: 4,
                       },
                     ]}
-                    onPress={() => handleOpenDirectorModal('ai_copilot')}
+                    onPress={() => handleNavigate('/(tabs)/profile')}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#2563EB' }]}>
-                      <Bot size={18} color="#FFFFFF" />
+                      <LayoutDashboard size={18} color="#FFFFFF" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.menuItemText, { color: '#3B82F6', fontWeight: '800' }]}>
-                        ICC AI Assistant
+                        Open Admin Command Center
                       </Text>
-                      <Text style={styles.menuItemSubText}>Voice/text autonomous actions</Text>
+                      <Text style={styles.menuItemSubText}>Manage students, courses, live classes, payments & WhatsApp</Text>
                     </View>
                     <ChevronRight size={16} color="#3B82F6" />
-                  </TouchableOpacity>
-
-                  {/* 1. Dashboard */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#EEF2FF' }]}>
-                      <LayoutDashboard size={18} color="#4F46E5" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Dashboard</Text>
-                      <Text style={styles.menuItemSubText}>Overview, active metrics & live stats</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 2. Students */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('student')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
-                      <Users size={18} color="#2563EB" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Students</Text>
-                      <Text style={styles.menuItemSubText}>Student directory, profiles & WhatsApp</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 3. Courses & Curriculum */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)/courses')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FAF5FF' }]}>
-                      <BookOpen size={18} color="#9333EA" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Courses & Batches</Text>
-                      <Text style={styles.menuItemSubText}>Curriculum hierarchy, chapters & lectures</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 4. Live Classes */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('live_classes')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF2F2' }]}>
-                      <Video size={18} color="#DC2626" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Live Classes</Text>
-                      <Text style={styles.menuItemSubText}>Broadcast YouTube Live sessions</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 5. Notes & PDFs */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('study_materials')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
-                      <FileText size={18} color="#059669" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Notes & PDFs</Text>
-                      <Text style={styles.menuItemSubText}>Upload & manage handwritten formula notes</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 6. Payments & UTR */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('payment')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF3C7' }]}>
-                      <CreditCard size={18} color="#D97706" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Payments & UTR</Text>
-                      <Text style={styles.menuItemSubText}>Verify UPI payments & unlock courses</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 7. Push Notifications */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('broadcast')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#FDF4FF' }]}>
-                      <Megaphone size={18} color="#A855F7" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Push Notifications</Text>
-                      <Text style={styles.menuItemSubText}>Send instant broadcast announcements</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 8. WhatsApp AI Bot */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('whatsapp_bot')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#ECFDF5' }]}>
-                      <MessageCircle size={18} color="#10B981" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>WhatsApp AI Bot</Text>
-                      <Text style={styles.menuItemSubText}>Active 24/7 automated assistant</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 9. Teachers */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={async () => {
-                      setIsDrawerOpen(false);
-                      try {
-                        const faculty = await academicService.getTeachers();
-                        if (faculty.length === 0) {
-                          Alert.alert('Faculty Directory', 'Director: BADE SIR (Mathematics & Physics)\nPrimary instructor.');
-                        } else {
-                          const list = faculty.map(t => `• ${t.full_name} (${t.subjects}) - +91 ${t.mobile || '9771350910'}`).join('\n');
-                          Alert.alert('ICC Faculty Directory', `Active Teachers (${faculty.length}):\n\n${list}`);
-                        }
-                      } catch {
-                        Alert.alert('Faculty Directory', 'Director: BADE SIR (Mathematics & Physics)');
-                      }
-                    }}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#F1F5F9' }]}>
-                      <UserCheck size={18} color="#475569" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Teachers</Text>
-                      <Text style={styles.menuItemSubText}>Faculty profiles & contact details</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 10. Reports */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('quota_reports')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
-                      <BarChart3 size={18} color="#2563EB" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Reports</Text>
-                      <Text style={styles.menuItemSubText}>Academic analytics & collection summaries</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-
-                  {/* 13. Settings */}
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => handleNavigate('/(tabs)/profile')}
-                  >
-                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
-                      <Settings size={18} color={theme.textSecondary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: theme.text }]}>Settings</Text>
-                      <Text style={styles.menuItemSubText}>Institute profile, security & preferences</Text>
-                    </View>
-                    <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
                   {/* Sync Latest Data */}
