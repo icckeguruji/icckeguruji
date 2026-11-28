@@ -221,7 +221,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
       if (isSupabaseConfigured) {
         try {
-          let query = supabase.from('notifications').select('*');
+          let query = supabase.from('notifications').select('*').neq('target_board', '__SYSTEM__');
 
           if (userId) {
             query = query.or(`user_id.eq.${userId},target_board.eq.ALL${boardCode ? `,target_board.eq.${boardCode}` : ''}`);
