@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import { CleanVideoPlayer } from '../../src/components/CleanVideoPlayer';
 import {
   Radio,
   Calendar,
@@ -386,33 +386,11 @@ export default function StudentLiveScreen() {
       {selectedStream && (
         <View style={styles.playerWrapper}>
           <View style={styles.playerContainer}>
-            {Platform.OS === 'web' ? (
-              <iframe
-                width="100%"
-                height="210"
-                src={`https://www.youtube-nocookie.com/embed/${selectedStream.youtube_video_id}?autoplay=1&rel=0&modestbranding=1&controls=1`}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                style={{ border: 'none' }}
-              />
-            ) : (
-              <YoutubePlayer
-                height={210}
-                play={playing}
-                videoId={selectedStream.youtube_video_id}
-                initialPlayerParams={{
-                  preventFullScreen: false,
-                  controls: true,
-                  rel: false,
-                }}
-                onChangeState={(state) => {
-                  if (state === 'ended') setPlaying(false);
-                }}
-              />
-            )}
-
-            {/* Anti-Escape Overlay: Covers YouTube Top Bar & Share Button */}
-            <View style={styles.antiEscapeTopBar} pointerEvents="auto" />
+            <CleanVideoPlayer
+              videoId={selectedStream.youtube_video_id}
+              height={210}
+              autoplay={playing}
+            />
 
             {/* Dynamic Anti-Piracy Watermark Overlay */}
             <View style={styles.watermarkContainer} pointerEvents="none">

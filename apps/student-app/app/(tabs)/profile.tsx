@@ -98,6 +98,7 @@ export default function StudentProfileScreen() {
 
   // Modals state
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
@@ -244,7 +245,7 @@ export default function StudentProfileScreen() {
           text: 'Approve & Unlock',
           style: 'default',
           onPress: async () => {
-            try {
+    try {
               const updated = await academicService.approvePayment(payId, user?.id);
               setPayments(updated);
               Alert.alert('Success', `Payment confirmed & saved to database for ${studentName}.`);
@@ -267,7 +268,7 @@ export default function StudentProfileScreen() {
           text: 'Reject',
           style: 'destructive',
           onPress: async () => {
-            try {
+    try {
               const updated = await academicService.rejectPayment(payId, user?.id);
               setPayments(updated);
               Alert.alert('Success', `Payment rejection saved to database for ${studentName}.`);
@@ -340,7 +341,7 @@ export default function StudentProfileScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            try {
+    try {
               const updatedList = await academicService.deleteStudent(student.id);
               setStudents(updatedList);
               Alert.alert('Deleted', `Student "${student.full_name}" deleted from database.`);
@@ -432,7 +433,7 @@ export default function StudentProfileScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          try {
+    try {
             await academicService.deleteLiveClass(id);
             await loadDirectorData();
             Alert.alert('Success', 'Live class deleted successfully from database.');
@@ -471,7 +472,7 @@ export default function StudentProfileScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          try {
+    try {
             await academicService.deleteStudyMaterial(id);
             await loadDirectorData();
             Alert.alert('Success', 'Study material deleted successfully from database.');
@@ -552,8 +553,9 @@ export default function StudentProfileScreen() {
       return;
     }
 
+    setSavingProfile(true);
     try {
-      // Attempt live Supabase profile sync with standard columns
+      // Save directly to live Supabase database first — fail loudly if DB rejects
       if (user?.id) {
         const standardProfilePayload: any = {
           full_name: fullName.trim(),
@@ -561,16 +563,23 @@ export default function StudentProfileScreen() {
           email: email.trim(),
           district: district.trim(),
           school_name: schoolName.trim(),
+          updated_at: new Date().toISOString(),
         };
 
-        const { error: profErr } = await supabase.from('profiles').update(standardProfilePayload).eq('id', user.id);
+        const isLegacyAdminId = user.id.startsWith('adm00000');
+        let query = supabase.from('profiles').update(standardProfilePayload);
+        query = isLegacyAdminId ? query.eq('email', user.email || 'icckeguruji@gmail.com') : query.eq('id', user.id);
+
+        const { data: updatedRow, error: profErr } = await query.select().maybeSingle();
         if (profErr) {
-          console.warn('profiles table update notice:', profErr.message);
-          await supabase.from('users').update(standardProfilePayload).eq('id', user.id);
+          throw new Error(profErr.message || 'Failed to save profile to cloud database.');
+        }
+        if (!updatedRow) {
+          throw new Error('Profile record not found in cloud database. Please log out and log in again.');
         }
 
-        // Store guardian and extended details in Auth metadata to avoid schema mismatch
-        try {
+        // Store guardian and extended details in Auth metadata if signed into Supabase Auth
+    try {
           await supabase.auth.updateUser({
             data: {
               full_name: fullName.trim(),
@@ -581,26 +590,29 @@ export default function StudentProfileScreen() {
               selected_class: selectedClassForm,
             },
           });
-        } catch (authErr) {
-          console.warn('auth metadata update notice:', authErr);
-        }
-      }
+        } catch {}
 
-      updateProfile({
-        full_name: fullName.trim(),
-        mobile_number: mobileNumber.trim(),
-        email: email.trim(),
-        guardian_name: guardianName.trim(),
-        guardian_phone: guardianPhone.trim(),
-        school_name: schoolName.trim(),
-        district: district.trim(),
-      });
+        updateProfile({
+          id: updatedRow.id,
+          full_name: updatedRow.full_name || fullName.trim(),
+          mobile_number: updatedRow.mobile_number || mobileNumber.trim(),
+          email: updatedRow.email || email.trim(),
+          guardian_name: guardianName.trim(),
+          guardian_phone: guardianPhone.trim(),
+          school_name: updatedRow.school_name || schoolName.trim(),
+          district: updatedRow.district || district.trim(),
+        });
+      } else {
+        throw new Error('No active user session found. Please log in first.');
+      }
       setClass(selectedClassForm);
 
       setIsEditProfileOpen(false);
-      Alert.alert('Success', 'Profile details saved to cloud database successfully!');
+      Alert.alert('Success', 'Profile details saved to cloud database!');
     } catch (err: any) {
-      Alert.alert('Database Error', err?.message || 'Failed to save profile to database.');
+      Alert.alert('Database Error', err?.message || 'Failed to save profile to database. Please check your internet connection.');
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -672,7 +684,7 @@ export default function StudentProfileScreen() {
         return;
       }
       let pickedDataUri: string | null = null;
-      try {
+    try {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
@@ -725,7 +737,7 @@ export default function StudentProfileScreen() {
         return;
       }
       let pickedDataUri: string | null = null;
-      try {
+    try {
         const result = await ImagePicker.launchCameraAsync({
           allowsEditing: true,
           aspect: [1, 1],
@@ -1550,10 +1562,11 @@ export default function StudentProfileScreen() {
                 <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.saveBtn}
+                style={[styles.saveBtn, savingProfile && { opacity: 0.65 }]}
+                disabled={savingProfile}
                 onPress={handleSaveProfile}
               >
-                <Text style={styles.saveBtnText}>Save Changes</Text>
+                <Text style={styles.saveBtnText}>{savingProfile ? 'Saving...' : 'Save Changes'}</Text>
               </TouchableOpacity>
             </View>
           </View>

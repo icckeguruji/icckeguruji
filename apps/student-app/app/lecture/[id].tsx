@@ -14,6 +14,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { academicService } from '../../src/services/academicService';
 import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
 import YoutubePlayer from 'react-native-youtube-iframe';
+import { CleanVideoPlayer } from '../../src/components/CleanVideoPlayer';
 import { ArrowLeft, Bookmark, FileText, MessageSquareQuote, ShieldCheck, PlayCircle } from 'lucide-react-native';
 
 interface PlayableItem {
@@ -128,35 +129,9 @@ export default function RecordedLectureScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* YouTube Secure In-App Player */}
+      {/* Clean In-App Player (No Share, No YouTube Branding, With Quality Selector) */}
       <View style={styles.playerContainer}>
-        {Platform.OS === 'web' ? (
-          <iframe
-            width="100%"
-            height="220"
-            src={`https://www.youtube-nocookie.com/embed/${currentLecture.videoId}?autoplay=0&rel=0&modestbranding=1&controls=1`}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            style={{ border: 'none' }}
-          />
-        ) : (
-          <YoutubePlayer
-            height={220}
-            play={playing}
-            videoId={currentLecture.videoId}
-            initialPlayerParams={{
-              preventFullScreen: false,
-              controls: true,
-              rel: false,
-            }}
-            onChangeState={(state) => {
-              if (state === 'ended') setPlaying(false);
-            }}
-          />
-        )}
-
-        {/* Anti-Escape Overlay: Blocks tapping on YouTube header / share / logo to avoid copying link or jumping out */}
-        <View style={styles.antiEscapeTopBar} pointerEvents="auto" />
+        <CleanVideoPlayer videoId={currentLecture.videoId} height={220} autoplay={playing} />
 
         {/* Dynamic Anti-Piracy Watermark Overlay */}
         <View style={styles.watermarkContainer} pointerEvents="none">

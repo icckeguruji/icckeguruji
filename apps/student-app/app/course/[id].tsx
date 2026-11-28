@@ -1159,7 +1159,7 @@ export default function CourseDetailsScreen() {
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholderTextColor={theme.textMuted}
-              placeholder="Subject Name in Hindi / विषय का नाम हिंदी में (उदा. विज्ञान)"
+              placeholder="Title in Hindi (Optional)"
               value={formTitleHi}
               onChangeText={setFormTitleHi}
             />
@@ -1192,7 +1192,7 @@ export default function CourseDetailsScreen() {
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholderTextColor={theme.textMuted}
-              placeholder="Discipline in Hindi (उदा. रसायन विज्ञान, भौतिक विज्ञान)"
+              placeholder="Title in Hindi (Optional)"
               value={formTitleHi}
               onChangeText={setFormTitleHi}
             />
@@ -1225,7 +1225,7 @@ export default function CourseDetailsScreen() {
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholderTextColor={theme.textMuted}
-              placeholder="Chapter Title in Hindi / अध्याय का नाम हिंदी में (उदा. रासायनिक अभिक्रियाएँ)"
+              placeholder="Title in Hindi (Optional)"
               value={formTitleHi}
               onChangeText={setFormTitleHi}
             />
@@ -1399,7 +1399,7 @@ export default function CourseDetailsScreen() {
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholderTextColor={theme.textMuted}
-              placeholder="Subject Name in Hindi (उदा. गणित)"
+              placeholder="Title in Hindi (Optional)"
               value={formTitleHi}
               onChangeText={setFormTitleHi}
             />
@@ -1432,7 +1432,7 @@ export default function CourseDetailsScreen() {
             <TextInput
               style={[styles.modalInput, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
               placeholderTextColor={theme.textMuted}
-              placeholder="Chapter Title in Hindi (उदा. वास्तविक संख्याएँ)"
+              placeholder="Title in Hindi (Optional)"
               value={formTitleHi}
               onChangeText={setFormTitleHi}
             />

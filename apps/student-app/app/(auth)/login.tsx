@@ -124,7 +124,25 @@ export default function LoginScreen() {
             localStorage.setItem('icc_remember_me', rememberMe ? 'true' : 'false');
           }
 
-          setUser(defaultAdminUser);
+          // Fetch latest live profile from Supabase so saved name/mobile/avatar never revert
+          let resolvedAdmin = { ...defaultAdminUser };
+          try {
+            const { data: liveProf } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('email', 'icckeguruji@gmail.com')
+              .maybeSingle();
+            if (liveProf) {
+              resolvedAdmin = {
+                ...resolvedAdmin,
+                ...(liveProf as any),
+                role: 'admin',
+                is_active: true,
+              };
+            }
+          } catch {}
+
+          setUser(resolvedAdmin);
           router.replace('/(tabs)');
           return;
         } else {

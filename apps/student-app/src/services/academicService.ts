@@ -797,8 +797,22 @@ class AcademicRepository {
   // --- COURSES ---
   async getCourses(forceLive = false): Promise<Course[]> {
     await this.ensureLoaded();
-    if (forceLive && isSupabaseConfigured) {
+    if ((forceLive || this.courses.length === 0) && isSupabaseConfigured) {
       await this.syncFromCloud();
+      if (this.courses.length === 0) {
+        try {
+          const { data, error } = await supabase
+            .from('courses')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            this.courses = data
+              .filter((r: any) => !this.isDeleted(r.id))
+              .map((r: any) => ({ ...r, thumbnail_url: getResolvedThumbnailUrl(r.thumbnail_url) }));
+            this.persist('icc_courses', this.courses).catch(() => {});
+          }
+        } catch {}
+      }
     }
     const active = this.courses.filter((c) => !this.isDeleted(c.id));
     return active.map((c) => {

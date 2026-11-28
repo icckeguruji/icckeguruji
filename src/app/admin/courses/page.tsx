@@ -1335,7 +1335,7 @@ export default function CoursesPage() {
                     <div className="flex space-x-1.5">
                       <input
                         type="text"
-                        placeholder="Subject Title in Hindi / विषय का नाम हिंदी में (उदा. विज्ञान)"
+                        placeholder="Title in Hindi (Optional)"
                         value={newSubjectNameHi}
                         onChange={(e) => setNewSubjectNameHi(e.target.value)}
                         className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none"
@@ -1597,7 +1597,7 @@ export default function CoursesPage() {
                         <div className="flex space-x-1.5">
                           <input
                             type="text"
-                            placeholder="Chapter Title in Hindi / अध्याय का नाम हिंदी में (उदा. वास्तविक संख्याएँ)"
+                            placeholder="Title in Hindi (Optional)"
                             value={newChapterTitleHi}
                             onChange={(e) => setNewChapterTitleHi(e.target.value)}
                             className="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:outline-none"
