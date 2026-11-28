@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   Image,
+  Dimensions,
 } from 'react-native';
+
+const LIVE_CARD_WIDTH = Dimensions.get('window').width - 36;
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -209,50 +212,65 @@ export default function StudentHomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Live Class Highlight Banners (All student-enrolled & upcoming live sessions) */}
+        {/* Live Class Horizontal Slider (One spot, swipeable one after another) */}
         {displayLiveList.length > 0 ? (
-          displayLiveList.map((liveItem) => (
-            <View key={liveItem.id} style={styles.liveCard}>
-              <View style={styles.liveBadgeRow}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveBadgeText}>
-                  {liveItem.status === 'live' ? 'STREAMING NOW' : 'NEXT LIVE CLASS'}
-                </Text>
-                <View style={styles.drmBadge}>
-                  <ShieldCheck size={11} color="#34D399" />
-                  <Text style={styles.drmBadgeText}>Secure In-App</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            pagingEnabled
+            decelerationRate="fast"
+            snapToInterval={LIVE_CARD_WIDTH + 12}
+            snapToAlignment="start"
+            contentContainerStyle={{ gap: 12, paddingRight: 4 }}
+          >
+            {displayLiveList.map((liveItem, idx) => (
+              <View key={liveItem.id} style={[styles.liveCard, { width: LIVE_CARD_WIDTH }]}>
+                <View style={styles.liveBadgeRow}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveBadgeText}>
+                    {liveItem.status === 'live' ? 'STREAMING NOW' : 'NEXT LIVE CLASS'}
+                  </Text>
+                  {displayLiveList.length > 1 && (
+                    <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: '700' }}>
+                      {idx + 1} / {displayLiveList.length}
+                    </Text>
+                  )}
+                  <View style={styles.drmBadge}>
+                    <ShieldCheck size={11} color="#34D399" />
+                    <Text style={styles.drmBadgeText}>Secure In-App</Text>
+                  </View>
                 </View>
+
+                {liveItem.youtube_video_id ? (
+                  <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden', marginVertical: 10, backgroundColor: '#020617', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <Image
+                      source={{ uri: `https://img.youtube.com/vi/${liveItem.youtube_video_id}/mqdefault.jpg` }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : null}
+
+                <Text style={styles.liveTitle} numberOfLines={2}>
+                  {liveItem.title || 'Live Masterclass Session'}
+                </Text>
+                <Text style={styles.liveTeacher}>
+                  By: BADE SIR & Expert Faculty{liveItem.scheduled_at ? ` • ${new Date(liveItem.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.joinLiveBtn}
+                  onPress={() => router.push(`/lecture/${liveItem.id}` as any)}
+                  activeOpacity={0.85}
+                >
+                  <Radio size={16} color="#FFFFFF" />
+                  <Text style={styles.joinLiveBtnText}>
+                    {liveItem.status === 'live' ? 'Watch Live Inside App' : 'Open Class Player'}
+                  </Text>
+                </TouchableOpacity>
               </View>
-
-              {liveItem.youtube_video_id ? (
-                <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden', marginVertical: 10, backgroundColor: '#020617', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                  <Image
-                    source={{ uri: `https://img.youtube.com/vi/${liveItem.youtube_video_id}/mqdefault.jpg` }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="contain"
-                  />
-                </View>
-              ) : null}
-
-              <Text style={styles.liveTitle} numberOfLines={2}>
-                {liveItem.title || 'Live Masterclass Session'}
-              </Text>
-              <Text style={styles.liveTeacher}>
-                By: BADE SIR & Expert Faculty{liveItem.scheduled_at ? ` • ${new Date(liveItem.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
-              </Text>
-
-              <TouchableOpacity
-                style={styles.joinLiveBtn}
-                onPress={() => router.push(`/lecture/${liveItem.id}` as any)}
-                activeOpacity={0.85}
-              >
-                <Radio size={16} color="#FFFFFF" />
-                <Text style={styles.joinLiveBtnText}>
-                  {liveItem.status === 'live' ? 'Watch Live Inside App' : 'Open Class Player'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))
+            ))}
+          </ScrollView>
         ) : (
           <View style={styles.liveCard}>
             <View style={styles.liveBadgeRow}>

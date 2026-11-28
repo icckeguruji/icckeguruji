@@ -4,11 +4,13 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ScreenCapture from 'expo-screen-capture';
+import * as Notifications from 'expo-notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { initLocalDatabase } from '../src/store/useLocalDb';
 import { AppUpdateModal } from '../src/components/AppUpdateModal';
+import { useAppUpdateStore, cleanupOldApks } from '../src/services/appUpdateService';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +60,22 @@ export default function RootLayout() {
     initLocalDatabase();
     useAuthStore.getState().initAuthStore();
     ScreenCapture.preventScreenCaptureAsync().catch(() => {});
+    cleanupOldApks().catch(() => {});
+
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data: any = response?.notification?.request?.content?.data;
+      if (data?.type === 'app_update') {
+        useAppUpdateStore.setState({ dismissed: false, hasUpdate: true });
+        const state = useAppUpdateStore.getState();
+        if (!state.isDownloading && !state.isReadyToInstall) {
+          state.startDownloadAndInstall().catch(() => {});
+        }
+      } else if (data?.type === 'install_apk') {
+        useAppUpdateStore.setState({ dismissed: false, hasUpdate: true });
+        useAppUpdateStore.getState().installDownloadedApk().catch(() => {});
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   return (

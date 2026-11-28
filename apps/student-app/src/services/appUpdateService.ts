@@ -77,6 +77,28 @@ function isNewerVersion(latest: string, current: string): boolean {
   return false;
 }
 
+/**
+ * Deletes any downloaded update APK files whose version is already installed (<= CURRENT_APP_VERSION).
+ * Runs automatically on app launch and after update check so old APKs never clutter device storage.
+ */
+export async function cleanupOldApks(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const dirs = [FileSystem.cacheDirectory, FileSystem.documentDirectory].filter(Boolean) as string[];
+  for (const dir of dirs) {
+    try {
+      const files = await FileSystem.readDirectoryAsync(dir);
+      for (const file of files) {
+        if (!file.endsWith('.apk')) continue;
+        const verMatch = file.match(/v(\d+\.\d+\.\d+)/i);
+        const fileVer = verMatch ? verMatch[1] : null;
+        if (!fileVer || !isNewerVersion(fileVer, CURRENT_APP_VERSION)) {
+          await FileSystem.deleteAsync(`${dir}${file}`, { idempotent: true }).catch(() => {});
+        }
+      }
+    } catch {}
+  }
+}
+
 export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
   hasUpdate: false,
   latestVersion: CURRENT_APP_VERSION,
@@ -230,6 +252,10 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
     const hasUpdate =
       versionCode > CURRENT_VERSION_CODE || isNewerVersion(latestVersion, CURRENT_APP_VERSION);
 
+    if (!hasUpdate) {
+      cleanupOldApks().catch(() => {});
+    }
+
     set({
       hasUpdate,
       latestVersion,
@@ -305,8 +331,8 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
 
     set({ isDownloading: true, downloadProgress: 0, error: null, isReadyToInstall: false });
 
-    // Target local path on device
-    const targetFile = `${FileSystem.documentDirectory || FileSystem.cacheDirectory}ideal-coaching-v${latestVersion}.apk`;
+    // Target local path in cacheDirectory (always covered by Expo FileProvider for APK install)
+    const targetFile = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}icc-update-v${latestVersion}.apk`;
 
     // Remove old download file if exists
     try {
@@ -380,106 +406,69 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       } catch {}
     };
 
-    try {
-      const downloadResumable = FileSystem.createDownloadResumable(
-        apkUrl,
-        targetFile,
-        {
-          headers: {
-            'Accept-Encoding': 'identity',
-            'User-Agent': 'ICC-Android-App-Updater/1.0.2',
-          },
-          cache: false,
-        },
-        handleDownloadProgress
-      );
+    const downloadCandidates = [
+      apkUrl,
+      'https://icconline.vercel.app/api/download-apk',
+      `${CDN_MIRROR_PREFIX}${apkUrl}`,
+    ].filter((u, idx, arr) => Boolean(u) && arr.indexOf(u) === idx);
 
-      const result = await downloadResumable.downloadAsync();
-
-      if (result && result.uri) {
-        set({
-          isDownloading: false,
-          downloadProgress: 100,
-          downloadedFilePath: result.uri,
-          isReadyToInstall: true,
-        });
-
-        await notifyDownloadComplete(result.uri);
-
-        // Auto launch native Android Package Installer immediately
-        await get().installDownloadedApk();
-      } else {
-        throw new Error('Download did not return file URI');
-      }
-    } catch (primaryErr: any) {
-      console.warn('Primary download attempt error, attempting CDN mirror fallback:', primaryErr);
-
+    let lastErr: any = null;
+    for (const candidateUrl of downloadCandidates) {
       try {
         lastNotifPercent = -1;
         lastBytes = 0;
         lastTime = Date.now();
-        const mirrorUrl = `${CDN_MIRROR_PREFIX}${apkUrl}`;
-        const mirrorResumable = FileSystem.createDownloadResumable(
-          mirrorUrl,
+        const downloadResumable = FileSystem.createDownloadResumable(
+          candidateUrl,
           targetFile,
-          {
-            headers: { 'Accept-Encoding': 'identity' },
-            cache: false,
-          },
+          { cache: false },
           handleDownloadProgress
         );
-        const mirrorResult = await mirrorResumable.downloadAsync();
-        if (mirrorResult && mirrorResult.uri) {
-          set({
-            isDownloading: false,
-            downloadProgress: 100,
-            downloadedFilePath: mirrorResult.uri,
-            isReadyToInstall: true,
-          });
-          await notifyDownloadComplete(mirrorResult.uri);
-          await get().installDownloadedApk();
-          return;
+        const result = await downloadResumable.downloadAsync();
+        if (result && result.uri) {
+          const fileInfo = await FileSystem.getInfoAsync(result.uri);
+          if (fileInfo.exists && (!('size' in fileInfo) || (fileInfo.size || 0) > 100000)) {
+            set({
+              isDownloading: false,
+              downloadProgress: 100,
+              downloadedFilePath: result.uri,
+              isReadyToInstall: true,
+            });
+            await notifyDownloadComplete(result.uri);
+            await get().installDownloadedApk();
+            return;
+          }
         }
-      } catch (mirrorErr) {
-        console.warn('CDN mirror download error:', mirrorErr);
+      } catch (err: any) {
+        lastErr = err;
       }
-
-      set({
-        isDownloading: false,
-        error: primaryErr?.message || 'Failed to download update APK',
-      });
-
-      // Fallback: Open in Android browser or Download Manager
-      Alert.alert(
-        'Direct Download Fallback',
-        'Would you like to open the direct download link in your mobile browser?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Download in Browser',
-            onPress: () => Linking.openURL('https://icconline.vercel.app/api/download-apk'),
-          },
-        ]
-      );
     }
+
+    set({
+      isDownloading: false,
+      error: lastErr?.message || 'Failed to download update APK inside app.',
+    });
+
+    Alert.alert(
+      'Download Failed',
+      'Could not complete the in-app update download. Please check your internet connection and tap Retry.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Retry', onPress: () => get().startDownloadAndInstall() },
+      ]
+    );
   },
 
   installDownloadedApk: async () => {
-    const { downloadedFilePath, apkUrl } = get();
+    const { downloadedFilePath } = get();
 
     if (!downloadedFilePath) {
-      if (apkUrl) {
-        Linking.openURL(apkUrl);
-      }
+      await get().startDownloadAndInstall();
       return;
     }
 
     try {
-      // Resolve content URI through Android FileProvider
       const contentUri = await FileSystem.getContentUriAsync(downloadedFilePath);
-
-      // Launch native Android Intent for package installation
-      // flags: FLAG_GRANT_READ_URI_PERMISSION (1) | FLAG_ACTIVITY_NEW_TASK (268435456) = 268435457
       await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
         data: contentUri,
         flags: 268435457,
@@ -487,13 +476,12 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       });
     } catch (err) {
       console.warn('IntentLauncher package install notice:', err);
-      // Fallback
       Alert.alert(
-        'Install Update / ऐप इंस्टॉल करें',
-        'डाउनलोड पूरा हो चुका है! कृपया नीचे "Install Now" दबाकर ऐप को इंस्टॉल करें। (यदि फोन परमिशन मांगे तो "Allow from this source" चालू करें)',
+        'Install Update',
+        'Download is complete! Tap "Install Now" below and allow "Install from this source" if prompted by Android.',
         [
           {
-            text: 'Install Now (अभी इंस्टॉल करें)',
+            text: 'Install Now',
             onPress: async () => {
               try {
                 const cUri = await FileSystem.getContentUriAsync(downloadedFilePath);
@@ -503,14 +491,11 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
                   type: 'application/vnd.android.package-archive',
                 });
               } catch {
-                Linking.openURL('https://icconline.vercel.app/api/download-apk');
+                Alert.alert('Install Permission Required', 'Please enable "Install unknown apps" for IDEAL COACHING CENTRE in Android Settings and tap Install again.');
               }
             },
           },
-          {
-            text: 'Direct APK Link',
-            onPress: () => Linking.openURL('https://icconline.vercel.app/api/download-apk'),
-          },
+          { text: 'Later', style: 'cancel' },
         ]
       );
     }
