@@ -17,6 +17,7 @@ interface QuestionItem {
   text: string;
   text_hi: string;
   options: { id: string; text: string; text_hi: string }[];
+  correctOptionId: string;
   marks: number;
 }
 
@@ -31,6 +32,7 @@ const mockQuestions: QuestionItem[] = [
       { id: 'opt3', text: 'Displacement reaction', text_hi: 'विस्थापन अभिक्रिया' },
       { id: 'opt4', text: 'Neutralization reaction only', text_hi: 'केवल उदासीनीकरण अभिक्रिया' },
     ],
+    correctOptionId: 'opt1',
     marks: 1,
   },
   {
@@ -43,6 +45,7 @@ const mockQuestions: QuestionItem[] = [
       { id: 'opt3', text: 'Carbon dioxide (CO2)', text_hi: 'कार्बन डाइऑक्साइड (CO2)' },
       { id: 'opt4', text: 'Sulphur dioxide (SO2)', text_hi: 'सल्फर डाइऑक्साइड (SO2)' },
     ],
+    correctOptionId: 'opt2',
     marks: 1,
   },
   {
@@ -53,6 +56,7 @@ const mockQuestions: QuestionItem[] = [
       { id: 'true', text: 'True', text_hi: 'सत्य' },
       { id: 'false', text: 'False', text_hi: 'असत्य' },
     ],
+    correctOptionId: 'true',
     marks: 1,
   },
 ];
@@ -105,14 +109,39 @@ export default function ActiveExamScreen() {
 
   const handleSubmitTest = (auto = false) => {
     const submitAction = () => {
-      // Navigate to results with score parameters
+      let score = 0;
+      let total = 0;
+      let correctCount = 0;
+      let wrongCount = 0;
+      let skippedCount = 0;
+
+      for (const q of mockQuestions) {
+        total += q.marks;
+        const chosen = selectedAnswers[q.id];
+        if (!chosen) {
+          skippedCount++;
+        } else if (chosen === q.correctOptionId) {
+          score += q.marks;
+          correctCount++;
+        } else {
+          wrongCount++;
+        }
+      }
+
+      const accPct = total > 0 ? Math.round((score / total) * 100) : 0;
+      const timeTakenSec = Math.max(1, 1800 - secondsRemaining);
+
       router.replace({
         pathname: `/exam-result/${id}`,
         params: {
-          totalScore: '2',
-          totalMarks: '3',
-          accuracy: '67%',
-          passed: 'true',
+          totalScore: String(score),
+          totalMarks: String(total),
+          accuracy: `${accPct}%`,
+          passed: String(accPct >= 40),
+          correctCount: String(correctCount),
+          wrongCount: String(wrongCount),
+          skippedCount: String(skippedCount),
+          timeTakenSec: String(timeTakenSec),
         },
       });
     };

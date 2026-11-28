@@ -19,6 +19,7 @@ import {
   SubjectItem,
   ClassItem,
 } from '@icc/shared-types';
+import { logAdminAction } from './auditLog';
 
 export function getResolvedThumbnailUrl(url?: string, titleOrClass?: string): string {
   const clean = (url || '').trim();
@@ -522,7 +523,9 @@ export const AdminApi = {
 
       // 2. Supabase client fallback
       try {
-        let req = supabase.from('profiles').select('*');
+        let req = supabase
+          .from('profiles')
+          .select('id,full_name,mobile_number,email,username,role,board_code,class_name,district,school_name,guardian_name,guardian_phone,avatar_url,preferred_language,is_active,created_at,updated_at');
         if (board) req = req.eq('board_code', board);
         if (query) {
           req = req.or(
@@ -634,6 +637,12 @@ export const AdminApi = {
               }),
             }).catch(() => {});
           } catch {}
+          logAdminAction({
+            action: 'create',
+            entityType: 'student',
+            entityId: (data as UserProfile).id,
+            details: { full_name: payload.full_name, board_code: payload.board_code },
+          }).catch(() => {});
           return data as UserProfile;
         }
       } catch (e) {
@@ -848,6 +857,12 @@ export const AdminApi = {
           };
           localCourses = [resolved, ...localCourses.filter((c) => c.id !== data.id)];
           savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+          logAdminAction({
+            action: 'create',
+            entityType: 'course',
+            entityId: resolved.id,
+            details: { title: resolved.title, price: resolved.price },
+          }).catch(() => {});
           return resolved;
         } else if (error) {
           console.warn('createCourse Supabase error, trying direct REST POST:', error);
@@ -1013,6 +1028,12 @@ export const AdminApi = {
     }
     localCourses = localCourses.filter((c) => c.id !== courseId);
     savePersistentState(STORAGE_KEYS.COURSES, localCourses);
+    logAdminAction({
+      action: 'delete',
+      entityType: 'course',
+      entityId: courseId,
+      details: { title: target?.title || courseId },
+    }).catch(() => {});
     return true;
   },
 
@@ -1498,6 +1519,30 @@ export const AdminApi = {
         if (!error && data) {
           localLiveClasses = [data as LiveClass, ...localLiveClasses];
           savePersistentState(STORAGE_KEYS.LIVE_CLASSES, localLiveClasses);
+          logAdminAction({
+            action: 'create',
+            entityType: 'live_class',
+            entityId: (data as LiveClass).id,
+            details: { title: insertPayload.title, scheduled_at: insertPayload.scheduled_at },
+          }).catch(() => {});
+
+          // Fire-and-forget WhatsApp auto-alert to enrolled/active students
+          try {
+            const phones = getPersistentState<UserProfile[]>(STORAGE_KEYS.STUDENTS, localStudents)
+              .map((s) => s.guardian_phone || s.mobile_number)
+              .filter(Boolean) as string[];
+            if (typeof window !== 'undefined' && phones.length > 0) {
+              fetch('/api/whatsapp/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  phones: phones.slice(0, 30),
+                  message: `Live Class Scheduled: *${insertPayload.title}*\nJoin inside the ICC Student App on time! — IDEAL COACHING CENTRE`,
+                }),
+              }).catch(() => {});
+            }
+          } catch {}
+
           return data as LiveClass;
         } else if (error) {
           console.error('createLiveClass Supabase error, trying direct REST POST:', error);

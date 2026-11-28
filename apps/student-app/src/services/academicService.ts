@@ -337,6 +337,7 @@ class AcademicRepository {
   private isLoaded: boolean = false;
   private loadPromise: Promise<void> | null = null;
   private syncPromise: Promise<void> | null = null;
+  private lastSyncTime = 0;
   private realtimeChannel: any = null;
   private lastRealtimeSync: number = 0;
   private notifyTimeout: any = null;
@@ -530,8 +531,8 @@ class AcademicRepository {
           fetchDirectRest<any[]>('recorded_lectures?select=*&order=lecture_order.asc'),
           fetchDirectRest<any[]>('subjects?select=*&order=display_order.asc'),
           fetchDirectRest<any[]>('chapters?select=*&order=chapter_number.asc'),
-          fetchDirectRest<any[]>('payments?select=*&order=created_at.desc'),
-          fetchDirectRest<any[]>('profiles?select=*&order=created_at.desc'),
+          fetchDirectRest<any[]>('payments?select=*&order=created_at.desc&limit=300'),
+          fetchDirectRest<any[]>('profiles?select=id,full_name,mobile_number,email,username,role,board_code,class_name,district,school_name,avatar_url,preferred_language,is_active,created_at,updated_at&order=created_at.desc&limit=500'),
         ]);
 
         const hasListChanged = (newList: any[], currentList: any[]): boolean => {
@@ -657,6 +658,7 @@ class AcademicRepository {
       } catch (e) {
         console.warn('Sync from cloud error:', e);
       } finally {
+        this.lastSyncTime = Date.now();
         this.syncPromise = null;
       }
     })();
@@ -813,6 +815,9 @@ class AcademicRepository {
           }
         } catch {}
       }
+    } else if (isSupabaseConfigured && Date.now() - this.lastSyncTime > 15000) {
+      // SWR: return cached data immediately while refreshing silently in background
+      this.syncFromCloud().catch(() => {});
     }
     const active = this.courses.filter((c) => !this.isDeleted(c.id));
     return active.map((c) => {

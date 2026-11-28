@@ -16,18 +16,38 @@ import { Share2, MessageCircle, ArrowLeft } from 'lucide-react-native';
 
 export default function ExamResultScreen() {
   const router = useRouter();
-  const { id, totalScore, totalMarks, accuracy, passed } =
+  const { id, totalScore, totalMarks, accuracy, passed, correctCount, wrongCount, skippedCount, timeTakenSec } =
     useLocalSearchParams<{
       id: string;
       totalScore: string;
       totalMarks: string;
       accuracy: string;
       passed: string;
+      correctCount?: string;
+      wrongCount?: string;
+      skippedCount?: string;
+      timeTakenSec?: string;
     }>();
 
   const { user, language } = useAuthStore();
   const t = translations[language];
   const isPassed = passed === 'true';
+
+  const numericAcc = parseInt(String(accuracy || '67').replace('%', ''), 10) || 0;
+  const correctNum = Number(correctCount ?? totalScore ?? 2);
+  const wrongNum = Number(wrongCount ?? 0);
+  const skippedNum = Number(skippedCount ?? 0);
+  const totalQ = Math.max(1, correctNum + wrongNum + skippedNum);
+  const secsTaken = Number(timeTakenSec ?? 90);
+  const avgSecPerQ = Math.max(1, Math.round(secsTaken / totalQ));
+  const rankBand =
+    numericAcc >= 85
+      ? 'Top 10% (Merit)'
+      : numericAcc >= 70
+      ? 'Top 25% (Strong)'
+      : numericAcc >= 40
+      ? 'Top 50% (Average)'
+      : 'Needs Revision';
 
   const handleShareWithParents = async () => {
     const rawPhone = (user?.guardian_phone || user?.mobile_number || '9771350910').replace(/\D/g, '');
@@ -79,6 +99,34 @@ export default function ExamResultScreen() {
           </Text>
           <Text style={styles.accuracyText}>
             Accuracy Rate: {accuracy || '67%'}
+          </Text>
+        </View>
+
+        {/* Smart Performance Analytics */}
+        <View style={styles.analyticsCard}>
+          <Text style={styles.analyticsHeading}>Smart Performance Analytics</Text>
+          <View style={styles.analyticsGrid}>
+            <View style={[styles.statBox, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+              <Text style={[styles.statValue, { color: '#047857' }]}>{correctNum}</Text>
+              <Text style={styles.statLabel}>Correct</Text>
+            </View>
+            <View style={[styles.statBox, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+              <Text style={[styles.statValue, { color: '#B91C1C' }]}>{wrongNum}</Text>
+              <Text style={styles.statLabel}>Wrong</Text>
+            </View>
+            <View style={[styles.statBox, { backgroundColor: '#F8FAFC', borderColor: '#CBD5E1' }]}>
+              <Text style={[styles.statValue, { color: '#475569' }]}>{skippedNum}</Text>
+              <Text style={styles.statLabel}>Skipped</Text>
+            </View>
+          </View>
+          <View style={styles.analyticsMetaRow}>
+            <Text style={styles.analyticsMetaText}>Speed: {avgSecPerQ}s / question</Text>
+            <Text style={styles.analyticsMetaBadge}>{rankBand}</Text>
+          </View>
+          <Text style={styles.analyticsAdvice}>
+            {numericAcc >= 75
+              ? 'Strong command on this topic! Keep practicing timed mock tests to stay in the top rank band.'
+              : 'Focus on reviewing the incorrect explanations below and re-attempt the chapter quiz for 85%+ mastery.'}
           </Text>
         </View>
 
@@ -198,6 +246,66 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#059669',
     fontWeight: '600',
+  },
+  analyticsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    gap: 12,
+  },
+  analyticsHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  analyticsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statBox: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  analyticsMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  analyticsMetaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  analyticsMetaBadge: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1D4ED8',
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  analyticsAdvice: {
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 17,
   },
   section: {
     gap: 14,
