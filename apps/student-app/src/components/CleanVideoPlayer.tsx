@@ -6,8 +6,11 @@ import {
   StyleSheet,
   Platform,
   Pressable,
+  Modal,
+  StatusBar,
 } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import {
   Play,
   Pause,
@@ -15,6 +18,8 @@ import {
   RotateCw,
   SlidersHorizontal,
   ShieldCheck,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react-native';
 
 interface CleanVideoPlayerProps {
@@ -70,12 +75,15 @@ export function CleanVideoPlayer({
   autoplay = false,
 }: CleanVideoPlayerProps) {
   const webViewRef = useRef<WebView>(null);
+  const fsWebViewRef = useRef<WebView>(null);
   const [isPlaying, setIsPlaying] = useState(autoplay);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [quality, setQuality] = useState<string>('default');
   const [speed, setSpeed] = useState<number>(1);
   const [barWidth, setBarWidth] = useState<number>(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fsStartSec, setFsStartSec] = useState(0);
   const cleanId = extractYouTubeId(videoId);
 
   useEffect(() => {
@@ -84,9 +92,19 @@ export function CleanVideoPlayer({
     setDuration(0);
   }, [cleanId, autoplay]);
 
+  useEffect(() => {
+    return () => {
+      if (Platform.OS !== 'web') {
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+      }
+    };
+  }, []);
+
+  const activeWebRef = isFullscreen ? fsWebViewRef : webViewRef;
+
   const sendPlayerCmd = (js: string) => {
-    if (Platform.OS !== 'web' && webViewRef.current) {
-      webViewRef.current.injectJavaScript(`try { ${js} } catch(e) {} true;`);
+    if (Platform.OS !== 'web' && activeWebRef.current) {
+      activeWebRef.current.injectJavaScript(`try { ${js} } catch(e) {} true;`);
     }
   };
 
@@ -134,6 +152,34 @@ export function CleanVideoPlayer({
     sendPlayerCmd(`if (window.iccPlayer && window.iccPlayer.setPlaybackRate) window.iccPlayer.setPlaybackRate(${next});`);
   };
 
+  const enterLandscapeFullscreen = async () => {
+    setFsStartSec(Math.floor(currentTime));
+    if (Platform.OS !== 'web' && webViewRef.current) {
+      webViewRef.current.injectJavaScript('try { if (window.iccPlayer) window.iccPlayer.pauseVideo(); } catch(e) {} true;');
+    }
+    if (Platform.OS !== 'web') {
+      try {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      } catch {}
+    }
+    setIsFullscreen(true);
+  };
+
+  const exitToPortrait = async () => {
+    if (Platform.OS !== 'web') {
+      try {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      } catch {}
+    }
+    setIsFullscreen(false);
+    if (Platform.OS !== 'web' && webViewRef.current && currentTime > 0) {
+      const resumeAt = Math.floor(currentTime);
+      webViewRef.current.injectJavaScript(
+        `try { if (window.iccPlayer) { window.iccPlayer.seekTo(${resumeAt}, true); ${isPlaying ? 'window.iccPlayer.playVideo();' : ''} } } catch(e) {} true;`
+      );
+    }
+  };
+
   const handleWebViewMessage = (event: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
@@ -146,9 +192,7 @@ export function CleanVideoPlayer({
     } catch {}
   };
 
-  // Zero-YouTube-UI HTML: controls=0 disables all YouTube buttons (no Share, no Copy Link, no Logo bar),
-  // and full-screen touch shield prevents long-press context menu completely.
-  const cleanHtml = `
+  const buildCleanHtml = (startSec: number, shouldAutoplay: boolean) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -186,7 +230,8 @@ export function CleanVideoPlayer({
         videoId: '${cleanId}',
         host: 'https://www.youtube-nocookie.com',
         playerVars: {
-          autoplay: ${autoplay ? 1 : 0},
+          autoplay: ${shouldAutoplay ? 1 : 0},
+          start: ${startSec},
           controls: 0,
           modestbranding: 1,
           rel: 0,
@@ -201,7 +246,8 @@ export function CleanVideoPlayer({
           onReady: function(e) {
             try {
               e.target.setPlaybackQuality('${quality}');
-              if (${autoplay ? 'true' : 'false'}) e.target.playVideo();
+              if (${speed} !== 1 && e.target.setPlaybackRate) e.target.setPlaybackRate(${speed});
+              if (${shouldAutoplay ? 'true' : 'false'}) e.target.playVideo();
             } catch(err) {}
           },
           onStateChange: function(e) {
@@ -229,65 +275,8 @@ export function CleanVideoPlayer({
 
   const progressPct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
 
-  return (
-    <View style={styles.wrapper}>
-      <View style={[styles.playerBox, { height }]}>
-        {Platform.OS === 'web' ? (
-          <View style={{ flex: 1, position: 'relative' }}>
-            <iframe
-              key={`${cleanId}-${quality}`}
-              width="100%"
-              height={height}
-              src={`https://www.youtube-nocookie.com/embed/${cleanId}?autoplay=${autoplay ? 1 : 0}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&disablekb=1&playsinline=1&vq=${quality}`}
-              frameBorder="0"
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-              style={{ border: 'none', pointerEvents: 'none' }}
-            />
-          </View>
-        ) : (
-          <WebView
-            key={cleanId}
-            ref={webViewRef}
-            source={{ html: cleanHtml, baseUrl: 'https://www.youtube-nocookie.com' }}
-            style={{ flex: 1, backgroundColor: '#000000' }}
-            originWhitelist={['*']}
-            javaScriptEnabled
-            domStorageEnabled
-            mixedContentMode="always"
-            allowsInlineMediaPlayback
-            allowsFullscreenVideo={false}
-            setSupportMultipleWindows={false}
-            mediaPlaybackRequiresUserAction={false}
-            scrollEnabled={false}
-            onMessage={handleWebViewMessage}
-            onShouldStartLoadWithRequest={(req) => {
-              const u = (req.url || '').toLowerCase();
-              return u.startsWith('about:') || u.includes('youtube-nocookie.com') || u.includes('youtube.com/iframe_api');
-            }}
-          />
-        )}
-
-        {/* Full-surface touch shield: completely blocks long-press Copy Link / Share / Watch on YouTube */}
-        <Pressable
-          style={styles.fullTouchShield}
-          onPress={togglePlay}
-          onLongPress={() => {}}
-        >
-          {!isPlaying && (
-            <View style={styles.centerPlayCircle}>
-              <Play size={26} color="#FFFFFF" fill="#FFFFFF" />
-            </View>
-          )}
-        </Pressable>
-
-        {/* Subtle ICC Badge (no YouTube branding) */}
-        <View style={styles.iccBadge} pointerEvents="none">
-          <ShieldCheck size={11} color="#38BDF8" />
-          <Text style={styles.iccBadgeText}>ICC PLAYER</Text>
-        </View>
-      </View>
-
-      {/* Custom Seek Bar + Controls */}
+  const renderControls = (inFullscreen: boolean) => (
+    <>
       <View style={styles.controlsContainer}>
         <Pressable
           style={styles.progressTrack}
@@ -319,13 +308,26 @@ export function CleanVideoPlayer({
             </Text>
           </View>
 
-          <TouchableOpacity onPress={cycleSpeed} style={styles.speedPill} activeOpacity={0.75}>
-            <Text style={styles.speedText}>{speed}x</Text>
-          </TouchableOpacity>
+          <View style={styles.rightControls}>
+            <TouchableOpacity onPress={cycleSpeed} style={styles.speedPill} activeOpacity={0.75}>
+              <Text style={styles.speedText}>{speed}x</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={inFullscreen ? exitToPortrait : enterLandscapeFullscreen}
+              style={styles.rotatePill}
+              activeOpacity={0.75}
+            >
+              {inFullscreen ? (
+                <Minimize2 size={13} color="#FFFFFF" />
+              ) : (
+                <Maximize2 size={13} color="#FFFFFF" />
+              )}
+              <Text style={styles.rotateText}>{inFullscreen ? 'Portrait' : 'Landscape'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
-      {/* In-App Video Quality Selector */}
       <View style={styles.qualityBar}>
         <View style={styles.qualityLabelRow}>
           <SlidersHorizontal size={12} color="#94A3B8" />
@@ -349,6 +351,131 @@ export function CleanVideoPlayer({
           })}
         </View>
       </View>
+    </>
+  );
+
+  return (
+    <View style={styles.wrapper}>
+      <View style={[styles.playerBox, { height }]}>
+        {Platform.OS === 'web' ? (
+          <View style={{ flex: 1, position: 'relative' }}>
+            <iframe
+              key={`${cleanId}-${quality}`}
+              width="100%"
+              height={height}
+              src={`https://www.youtube-nocookie.com/embed/${cleanId}?autoplay=${autoplay ? 1 : 0}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&disablekb=1&playsinline=1&vq=${quality}`}
+              frameBorder="0"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+              style={{ border: 'none', pointerEvents: 'none' }}
+            />
+          </View>
+        ) : (
+          <WebView
+            key={cleanId}
+            ref={webViewRef}
+            source={{ html: buildCleanHtml(0, autoplay), baseUrl: 'https://www.youtube-nocookie.com' }}
+            style={{ flex: 1, backgroundColor: '#000000' }}
+            originWhitelist={['*']}
+            javaScriptEnabled
+            domStorageEnabled
+            mixedContentMode="always"
+            allowsInlineMediaPlayback
+            allowsFullscreenVideo={false}
+            setSupportMultipleWindows={false}
+            mediaPlaybackRequiresUserAction={false}
+            scrollEnabled={false}
+            onMessage={handleWebViewMessage}
+            onShouldStartLoadWithRequest={(req) => {
+              const u = (req.url || '').toLowerCase();
+              return u.startsWith('about:') || u.includes('youtube-nocookie.com') || u.includes('youtube.com/iframe_api');
+            }}
+          />
+        )}
+
+        {/* Full-surface touch shield: completely blocks long-press Copy Link / Share / Watch on YouTube */}
+        <Pressable
+          style={styles.fullTouchShield}
+          onPress={togglePlay}
+          onLongPress={() => {}}
+        >
+          {!isPlaying && (
+            <View style={styles.centerPlayCircle}>
+              <Play size={26} color="#FFFFFF" fill="#FFFFFF" />
+            </View>
+          )}
+        </Pressable>
+
+        {/* Subtle ICC Badge */}
+        <View style={styles.iccBadge} pointerEvents="none">
+          <ShieldCheck size={11} color="#38BDF8" />
+          <Text style={styles.iccBadgeText}>ICC PLAYER</Text>
+        </View>
+      </View>
+
+      {renderControls(false)}
+
+      {/* Landscape Fullscreen Modal */}
+      <Modal
+        visible={isFullscreen}
+        animationType="fade"
+        supportedOrientations={['portrait', 'landscape']}
+        statusBarTranslucent
+        onRequestClose={exitToPortrait}
+      >
+        <StatusBar hidden={isFullscreen} />
+        <View style={styles.fsContainer}>
+          <View style={styles.fsVideoArea}>
+            {Platform.OS === 'web' ? (
+              <iframe
+                key={`fs-${cleanId}-${quality}`}
+                width="100%"
+                height="100%"
+                src={`https://www.youtube-nocookie.com/embed/${cleanId}?autoplay=1&start=${fsStartSec}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&disablekb=1&playsinline=1&vq=${quality}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                style={{ border: 'none', pointerEvents: 'none' }}
+              />
+            ) : (
+              <WebView
+                key={`fs-${cleanId}-${fsStartSec}`}
+                ref={fsWebViewRef}
+                source={{ html: buildCleanHtml(fsStartSec, true), baseUrl: 'https://www.youtube-nocookie.com' }}
+                style={{ flex: 1, backgroundColor: '#000000' }}
+                originWhitelist={['*']}
+                javaScriptEnabled
+                domStorageEnabled
+                mixedContentMode="always"
+                allowsInlineMediaPlayback
+                allowsFullscreenVideo={false}
+                setSupportMultipleWindows={false}
+                mediaPlaybackRequiresUserAction={false}
+                scrollEnabled={false}
+                onMessage={handleWebViewMessage}
+                onShouldStartLoadWithRequest={(req) => {
+                  const u = (req.url || '').toLowerCase();
+                  return u.startsWith('about:') || u.includes('youtube-nocookie.com') || u.includes('youtube.com/iframe_api');
+                }}
+              />
+            )}
+            <Pressable
+              style={styles.fullTouchShield}
+              onPress={togglePlay}
+              onLongPress={() => {}}
+            >
+              {!isPlaying && (
+                <View style={styles.centerPlayCircle}>
+                  <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
+                </View>
+              )}
+            </Pressable>
+            <View style={styles.iccBadge} pointerEvents="none">
+              <ShieldCheck size={11} color="#38BDF8" />
+              <Text style={styles.iccBadgeText}>ICC FULLSCREEN</Text>
+            </View>
+          </View>
+          {renderControls(true)}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -359,6 +486,16 @@ const styles = StyleSheet.create({
   },
   playerBox: {
     width: '100%',
+    backgroundColor: '#000000',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  fsContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  fsVideoArea: {
+    flex: 1,
     backgroundColor: '#000000',
     position: 'relative',
     overflow: 'hidden',
@@ -426,7 +563,12 @@ const styles = StyleSheet.create({
   leftControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+  },
+  rightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   iconBtn: {
     width: 30,
@@ -456,7 +598,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   speedPill: {
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     backgroundColor: '#1E293B',
@@ -466,6 +608,20 @@ const styles = StyleSheet.create({
   speedText: {
     color: '#E2E8F0',
     fontSize: 11,
+    fontWeight: '800',
+  },
+  rotatePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#2563EB',
+  },
+  rotateText: {
+    color: '#FFFFFF',
+    fontSize: 10.5,
     fontWeight: '800',
   },
   qualityBar: {
