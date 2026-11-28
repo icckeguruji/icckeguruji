@@ -30,6 +30,12 @@ export default function LiveClassesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<LiveClass | null>(null);
+  const [ytStatus, setYtStatus] = useState<{ configured: boolean; connected: boolean; channelTitle?: string | null }>({
+    configured: false,
+    connected: false,
+  });
+  const [ytBroadcastResult, setYtBroadcastResult] = useState<{ rtmpUrl: string; streamKey: string; videoId: string } | null>(null);
+  const [ytCreating, setYtCreating] = useState(false);
 
   const [formData, setFormData] = useState({
     course_id: '',
@@ -93,6 +99,10 @@ export default function LiveClassesPage() {
 
   useEffect(() => {
     loadClasses();
+    fetch('/api/youtube/status')
+      .then((r) => r.json())
+      .then((d) => setYtStatus(d))
+      .catch(() => {});
     AdminApi.getCourses().then((cList) => {
       setCourses(cList || []);
       if (cList && cList.length > 0) {
@@ -229,6 +239,42 @@ export default function LiveClassesPage() {
       />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        {/* YouTube Channel Connect Bar */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div>
+            <p className="text-sm font-bold text-slate-800">
+              {ytStatus.connected ? `YouTube Connected: ${ytStatus.channelTitle || 'Channel Active'}` : 'Connect Your YouTube Channel'}
+            </p>
+            <p className="text-xs text-slate-500">
+              {ytStatus.connected
+                ? 'Schedule Unlisted Live broadcasts and generate RTMP Stream Keys directly from here.'
+                : ytStatus.configured
+                ? 'Connect your channel once to schedule & go live directly without opening YouTube Studio.'
+                : 'Add GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET in Vercel to enable 1-click YouTube OAuth connect.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {ytStatus.connected ? (
+              <button
+                onClick={async () => {
+                  await fetch('/api/youtube/disconnect', { method: 'POST' });
+                  setYtStatus((s) => ({ ...s, connected: false, channelTitle: null }));
+                }}
+                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+              >
+                Disconnect YouTube
+              </button>
+            ) : (
+              <a
+                href="/api/youtube/auth?source=web"
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition"
+              >
+                Connect YouTube Channel
+              </a>
+            )}
+          </div>
+        </div>
+
         <div className="flex justify-between items-center">
           <div>
             <h3 className="font-bold text-slate-800 text-sm">
@@ -485,9 +531,52 @@ export default function LiveClassesPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('यूट्यूब वीडियो आईडी या लिंक', 'YouTube Video ID or Full URL')}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-slate-700">
+                      YouTube Video ID or Full URL
+                    </label>
+                    {ytStatus.connected && (
+                      <button
+                        type="button"
+                        disabled={ytCreating}
+                        onClick={async () => {
+                          if (!formData.title.trim()) {
+                            alert('Please enter Class Title first.');
+                            return;
+                          }
+                          setYtCreating(true);
+                          try {
+                            const res = await fetch('/api/youtube/broadcast', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                action: 'create',
+                                title: formData.title.trim(),
+                                scheduledAt: new Date(formData.scheduled_at).toISOString(),
+                              }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok || !data.success) {
+                              throw new Error(data.error || 'Failed to create YouTube broadcast');
+                            }
+                            setFormData((prev) => ({ ...prev, youtube_video_id: data.videoId }));
+                            setYtBroadcastResult({
+                              videoId: data.videoId,
+                              rtmpUrl: data.rtmpUrl,
+                              streamKey: data.streamKey,
+                            });
+                          } catch (err: any) {
+                            alert('YouTube Error: ' + (err?.message || 'Failed to create broadcast'));
+                          } finally {
+                            setYtCreating(false);
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold transition disabled:opacity-50"
+                      >
+                        {ytCreating ? 'Creating on YouTube...' : 'Create Directly on YouTube (Unlisted)'}
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
@@ -496,6 +585,13 @@ export default function LiveClassesPage() {
                     placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ or dQw4w9WgXcQ"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
                   />
+                  {ytBroadcastResult && (
+                    <div className="mt-2 p-2.5 rounded-lg bg-slate-900 text-slate-100 text-xs space-y-1">
+                      <p className="font-bold text-emerald-400">YouTube Broadcast Created (Unlisted)</p>
+                      <p className="font-mono break-all">RTMP: {ytBroadcastResult.rtmpUrl}</p>
+                      <p className="font-mono break-all">Key: {ytBroadcastResult.streamKey}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

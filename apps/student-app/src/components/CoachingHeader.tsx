@@ -420,6 +420,21 @@ export function CoachingHeader({
                     <ChevronRight size={16} color={theme.textMuted} />
                   </TouchableOpacity>
 
+                  {/* YouTube Direct Go Live */}
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => handleNavigate('/admin/go-live')}
+                  >
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FEF2F2' }]}>
+                      <Video size={18} color="#DC2626" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: theme.text }]}>YouTube Go Live</Text>
+                      <Text style={styles.menuItemSubText}>Connect channel, schedule & go live from app</Text>
+                    </View>
+                    <ChevronRight size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+
                   {/* Live Classes */}
                   <TouchableOpacity
                     style={styles.menuItem}

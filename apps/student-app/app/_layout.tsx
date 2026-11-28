@@ -183,6 +183,12 @@ export default function RootLayout() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen
+              name="admin/go-live"
+              options={{
+                headerShown: false,
+              }}
+            />
           </Stack>
           <AppUpdateModal />
         </PaperProvider>
