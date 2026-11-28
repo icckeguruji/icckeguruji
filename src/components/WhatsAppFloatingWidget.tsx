@@ -127,7 +127,7 @@ export default function WhatsAppFloatingWidget({
                 <span>Active</span>
               </div>
               <p className="leading-relaxed">
-                नमस्ते! 🙏 Welcome to <strong>{coachingName}</strong> (Sarotiya, Mahagama, Godda).
+                Hello! Welcome to <strong>{coachingName}</strong> (Sarotiya, Mahagama, Godda).
                 For Classes 1st to 12th admissions, fees, handwritten notes, or direct counseling with <strong>Director BADE SIR</strong>, tap an option below!
               </p>
               <div className="flex items-center gap-1 pt-1 text-[10px] text-slate-500">

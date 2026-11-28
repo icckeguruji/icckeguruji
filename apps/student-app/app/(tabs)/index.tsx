@@ -181,12 +181,12 @@ export default function StudentHomeScreen() {
                   style={[styles.updateTitleText, { color: isDark ? '#FFFFFF' : '#1E1B4B' }]}
                   numberOfLines={1}
                 >
-                  {titleHi || 'नया वर्जन उपलब्ध है — अभी अपडेट करें'}
+                  {titleHi || 'New update available — Tap to update'}
                 </Text>
               </View>
             </View>
             <View style={styles.updateActionBtn}>
-              <Text style={styles.updateActionBtnText}>अपडेट</Text>
+              <Text style={styles.updateActionBtnText}>Update</Text>
             </View>
           </TouchableOpacity>
         )}

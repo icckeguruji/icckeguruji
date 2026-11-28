@@ -812,7 +812,7 @@ export default function StudentProfileScreen() {
               <User size={32} color="#2563EB" />
             </View>
             <Text style={[styles.userName, { color: theme.text, fontSize: 17, marginBottom: 4, textAlign: 'center' }]}>
-              Guest Learner (अतिथि शिक्षार्थी)
+              Guest Learner
             </Text>
             <Text style={{ fontSize: 12, color: theme.textSecondary, textAlign: 'center', marginBottom: 16, maxWidth: 300, lineHeight: 16 }}>
               You are browsing as Guest. Log in to access your enrolled live classes, video lectures, and personalized test reports.
@@ -822,7 +822,7 @@ export default function StudentProfileScreen() {
               onPress={() => router.push('/(auth)/login')}
             >
               <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>
-                Log In / Register (लॉगिन करें)
+                Log In / Register
               </Text>
             </TouchableOpacity>
           </View>
@@ -1376,7 +1376,7 @@ export default function StudentProfileScreen() {
               const res = await useAppUpdateStore.getState().checkForUpdate(true);
               if (!res.hasUpdate) {
                 Alert.alert(
-                  'Up to Date! 🎉 (नवीनतम संस्करण)',
+                  'Up to Date! 🎉',
                   `You are running the latest official version of IDEAL COACHING CENTRE (v${CURRENT_APP_VERSION}).`
                 );
               }
@@ -1387,7 +1387,7 @@ export default function StudentProfileScreen() {
                 <RefreshCw size={18} color="#2563EB" />
               </View>
               <View>
-                <Text style={styles.menuItemText}>Check for App Updates (ऐप अपडेट जांचें)</Text>
+                <Text style={styles.menuItemText}>Check for App Updates</Text>
                 <Text style={styles.menuItemSub}>Version v{CURRENT_APP_VERSION} (Build {CURRENT_VERSION_CODE})</Text>
               </View>
             </View>
@@ -2489,10 +2489,6 @@ export default function StudentProfileScreen() {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: isDark ? '#27272A' : '#F1F5F9' }}>
                   <Text style={{ fontSize: 13, color: theme.textSecondary }}>Response Speed</Text>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>&lt; 2 Seconds</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: isDark ? '#27272A' : '#F1F5F9' }}>
-                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>Monthly Expense</Text>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>₹0 / Free Tier</Text>
                 </View>
               </View>
             </ScrollView>

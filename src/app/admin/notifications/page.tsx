@@ -185,9 +185,9 @@ export default function PushNotificationsPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm text-white">Expo & Firebase Push Gateway</h3>
+                <h3 className="font-bold text-sm text-white">Student Push & Email Notification Service</h3>
                 <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                  100% Free Tier (₹0/Month)
+                  Instant Delivery
                 </span>
               </div>
               <p className="text-xs text-blue-200 mt-0.5">

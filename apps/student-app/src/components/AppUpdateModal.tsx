@@ -42,7 +42,7 @@ export function AppUpdateModal() {
     dismissUpdateBanner,
   } = useAppUpdateStore();
 
-  const [activeLangTab, setActiveLangTab] = useState<'hi' | 'en'>('hi');
+  const [activeLangTab, setActiveLangTab] = useState<'hi' | 'en'>('en');
 
   useEffect(() => {
     // Automatically check for update on app mount
@@ -91,31 +91,13 @@ export function AppUpdateModal() {
           {/* Hindi Title Banner */}
           <View style={styles.titleBanner}>
             <Text style={styles.titleBannerText}>
-              {titleHi || 'नया आधिकारिक अपडेट उपलब्ध है'}
+              {titleHi && !/[\u0900-\u097F]/.test(titleHi) ? titleHi : `New Official Update Available (v${latestVersion})`}
             </Text>
           </View>
 
-          {/* Language Switch for Changelog */}
+          {/* Release Highlights */}
           <View style={styles.langToggleRow}>
-            <Text style={styles.notesHeading}>📋 What&apos;s New / बदलाव:</Text>
-            <View style={styles.langButtons}>
-              <TouchableOpacity
-                onPress={() => setActiveLangTab('hi')}
-                style={[styles.langBtn, activeLangTab === 'hi' && styles.langBtnActive]}
-              >
-                <Text style={[styles.langBtnText, activeLangTab === 'hi' && styles.langBtnTextActive]}>
-                  हिंदी
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setActiveLangTab('en')}
-                style={[styles.langBtn, activeLangTab === 'en' && styles.langBtnActive]}
-              >
-                <Text style={[styles.langBtnText, activeLangTab === 'en' && styles.langBtnTextActive]}>
-                  English
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.notesHeading}>📋 What&apos;s New:</Text>
           </View>
 
           {/* Release Highlights / Changelog List */}
@@ -172,7 +154,7 @@ export function AppUpdateModal() {
                 activeOpacity={0.8}
               >
                 <Smartphone size={16} color="#FFFFFF" />
-                <Text style={styles.installBtnText}>Tap to Install APK (अभी इंस्टॉल करें)</Text>
+                <Text style={styles.installBtnText}>Tap to Install APK</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -184,7 +166,7 @@ export function AppUpdateModal() {
                   onPress={dismissUpdateBanner}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.laterBtnText}>Later (बाद में)</Text>
+                  <Text style={styles.laterBtnText}>Later</Text>
                 </TouchableOpacity>
               )}
 
@@ -194,7 +176,7 @@ export function AppUpdateModal() {
                 activeOpacity={0.8}
               >
                 <ArrowDownCircle size={16} color="#FFFFFF" />
-                <Text style={styles.updateBtnText}>Update Now (अभी अपडेट करें)</Text>
+                <Text style={styles.updateBtnText}>Update Now</Text>
               </TouchableOpacity>
             </View>
           )}

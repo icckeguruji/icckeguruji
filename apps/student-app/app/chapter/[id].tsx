@@ -384,19 +384,19 @@ export default function ChapterContentScreen() {
             <Lock size={30} color="#DC2626" />
           </View>
           <Text style={{ fontSize: 18, fontWeight: '800', color: theme.text, textAlign: 'center', marginBottom: 8 }}>
-            {isPendingApproval ? '⏳ Approval Pending' : '🔒 अध्याय लॉक है (Course Locked)'}
+            {isPendingApproval ? '⏳ Approval Pending' : '🔒 Course Locked'}
           </Text>
           <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 20 }}>
             {isPendingApproval
-              ? 'आपका भुगतान (UTR) अभी डायरेक्टर BADE SIR द्वारा सत्यापन (verification) के अधीन है। स्वीकृत होते ही यह अध्याय अनलॉक हो जाएगा।'
-              : 'इस अध्याय के वीडियो लेक्चर्स, लाइव क्लास और PDF नोट्स देखने के लिए कृपया पहले इस कोर्स में Enroll करें।'}
+              ? 'Your payment UTR is under verification by Director BADE SIR. This chapter will unlock automatically once approved.'
+              : 'Please enroll in this course first to unlock video lectures, live classes, and PDF notes.'}
           </Text>
           {!isPendingApproval && resolvedCourseId ? (
             <TouchableOpacity
               style={{ backgroundColor: '#2563EB', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 12 }}
               onPress={() => router.push(`/payment/${resolvedCourseId}` as any)}
             >
-              <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Enroll Now (अभी प्रवेश लें)</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>Enroll Now</Text>
             </TouchableOpacity>
           ) : null}
         </View>

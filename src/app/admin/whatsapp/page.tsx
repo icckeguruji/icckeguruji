@@ -254,15 +254,15 @@ export default function WhatsAppAdminPage() {
           </div>
         )}
 
-        {/* Operational Disclosure Banner (Part 1 Compliance) */}
+        {/* Assistant Usage Notice */}
         <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex items-start space-x-3 text-xs">
           <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h4 className="font-bold text-amber-900">
-              Operational Architecture & Zero-Cost Policy Notice
+              WhatsApp AI Assistant Guidelines
             </h4>
             <p className="text-amber-800 leading-relaxed text-[11px]">
-              This service uses <strong>@whiskeysockets/baileys</strong> multi-device linked-device Web automation with zero paid WhatsApp Business API fees. To safeguard the institute account against automated rate-limiting, bulk unsolicited broadcasting is strictly prohibited. The bot operates purely in reactive one-to-one conversational mode for student doubts, notes, fees, and syllabus queries.
+              Connect your official WhatsApp number via QR scan or 8-digit phone pairing code. Miss Zoya automatically replies to student inquiries about courses, fees, live classes, and notes, and sends enrollment notifications.
             </p>
           </div>
         </div>
@@ -580,7 +580,7 @@ export default function WhatsAppAdminPage() {
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-md transition inline-flex items-center space-x-2"
                     >
                       <QrCode className="w-4 h-4" />
-                      <span>{loading ? 'Initializing Baileys...' : 'Connect WhatsApp & Generate QR'}</span>
+                      <span>{loading ? 'Connecting...' : 'Connect WhatsApp & Generate QR'}</span>
                     </button>
                   </div>
                 ) : (
@@ -698,7 +698,7 @@ export default function WhatsAppAdminPage() {
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
               <span className="font-bold text-blue-700 block text-xs">1. Public Visitor Queries</span>
               <p className="text-slate-600 text-[11px] leading-relaxed">
-                "What is Class 10 fee?", "BSEB or JAC batch timings?", "Admission kaise le?", " बड़े सर का नंबर?"
+                &quot;What is Class 10 fee?&quot;, &quot;Live class timing?&quot;, &quot;How to enroll?&quot;, &quot;Director contact number?&quot;
               </p>
               <span className="text-[10px] text-slate-400 block font-semibold">Response: Real course prices & official UPI VPA.</span>
             </div>

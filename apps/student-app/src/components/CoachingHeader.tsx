@@ -353,7 +353,7 @@ export function CoachingHeader({
                       style={[styles.userName, { color: theme.text }]}
                       numberOfLines={1}
                     >
-                      {user?.full_name || 'Guest Learner (अतिथि)'}
+                      {user?.full_name || 'Guest Learner'}
                     </Text>
                     <Text
                       style={[styles.userPhone, { color: theme.textSecondary }]}
@@ -849,7 +849,7 @@ export function CoachingHeader({
                   activeOpacity={0.8}
                 >
                   <Lock size={18} color="#FFFFFF" />
-                  <Text style={[styles.logoutBtnText, { color: '#FFFFFF' }]}>Log In / Register (लॉगिन करें)</Text>
+                  <Text style={[styles.logoutBtnText, { color: '#FFFFFF' }]}>Log In / Register</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity

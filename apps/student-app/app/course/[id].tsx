@@ -201,7 +201,7 @@ export default function CourseDetailsScreen() {
       if (isPendingApproval) {
         Alert.alert(
           '⏳ Approval Pending',
-          'आपका भुगतान (UTR) अभी डायरेक्टर BADE SIR द्वारा सत्यापन (verification) के अधीन है। स्वीकृत होते ही सभी विषय अनलॉक हो जाएंगे।'
+          'Your payment UTR is currently under verification by Director BADE SIR. All subjects will unlock automatically once approved.'
         );
         return;
       }
@@ -1465,10 +1465,10 @@ export default function CourseDetailsScreen() {
               <Lock size={26} color="#2563EB" />
             </View>
             <Text style={[styles.modalHeading, { color: theme.text, textAlign: 'center', marginBottom: 6, fontSize: 16 }]}>
-              🔒 कोर्स लॉक है (Course Locked)
+              🔒 Course Locked
             </Text>
             <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'center', lineHeight: 18, marginBottom: 18 }}>
-              आपने अभी तक इस कोर्स में नामांकन (Enroll) नहीं किया है। सभी विषयों, रिकॉर्डेड वीडियो लेक्चर्स, लाइव क्लास एवं हस्तलिखित पीडीएफ नोट्स को अनलॉक करने के लिए नीचे Enroll Now दबाएं।
+              You have not enrolled in this course yet. Tap Enroll Now below to unlock all subjects, recorded video lectures, live classes, and PDF notes.
             </Text>
 
             <TouchableOpacity
@@ -1479,7 +1479,7 @@ export default function CourseDetailsScreen() {
               }}
             >
               <Text style={styles.submitBtnText}>
-                कोर्स में प्रवेश लें ({course?.is_free ? 'निःशुल्क' : formatINR(course?.discount_price || course?.price || 999)})
+                Enroll Now ({course?.is_free ? 'Free' : formatINR(course?.discount_price || course?.price || 999)})
               </Text>
             </TouchableOpacity>
 
@@ -1492,7 +1492,7 @@ export default function CourseDetailsScreen() {
                 }}
               >
                 <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13 }}>
-                  पहले से नामांकित हैं? लॉगिन करें
+                  Already enrolled? Log In
                 </Text>
               </TouchableOpacity>
             )}
@@ -1501,7 +1501,7 @@ export default function CourseDetailsScreen() {
               style={{ paddingVertical: 10, alignItems: 'center', justifyContent: 'center' }}
               onPress={() => setShowEnrollGate(false)}
             >
-              <Text style={{ color: theme.textSecondary, fontWeight: '600', fontSize: 13 }}>रद्द करें (Cancel)</Text>
+              <Text style={{ color: theme.textSecondary, fontWeight: '600', fontSize: 13 }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
