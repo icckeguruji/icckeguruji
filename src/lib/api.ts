@@ -525,7 +525,7 @@ export const AdminApi = {
       try {
         let req = supabase
           .from('profiles')
-          .select('id,full_name,mobile_number,email,username,role,board_code,class_name,district,school_name,guardian_name,guardian_phone,avatar_url,preferred_language,is_active,created_at,updated_at');
+          .select('id,username,full_name,mobile_number,email,board_code,class_id,district,school_name,preferred_language,avatar_url,is_active,created_at,updated_at,dob,role');
         if (board) req = req.eq('board_code', board);
         if (query) {
           req = req.or(

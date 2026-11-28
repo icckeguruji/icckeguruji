@@ -532,7 +532,7 @@ class AcademicRepository {
           fetchDirectRest<any[]>('subjects?select=*&order=display_order.asc'),
           fetchDirectRest<any[]>('chapters?select=*&order=chapter_number.asc'),
           fetchDirectRest<any[]>('payments?select=*&order=created_at.desc&limit=300'),
-          fetchDirectRest<any[]>('profiles?select=id,full_name,mobile_number,email,username,role,board_code,class_name,district,school_name,avatar_url,preferred_language,is_active,created_at,updated_at&order=created_at.desc&limit=500'),
+          fetchDirectRest<any[]>('profiles?select=id,username,full_name,mobile_number,email,board_code,class_id,district,school_name,preferred_language,avatar_url,is_active,created_at,updated_at,dob,role&order=created_at.desc&limit=500'),
         ]);
 
         const hasListChanged = (newList: any[], currentList: any[]): boolean => {
