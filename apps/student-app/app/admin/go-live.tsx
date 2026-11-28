@@ -255,6 +255,7 @@ export default function AdminGoLiveScreen() {
 
   const handleTransition = async (nextStatus: 'live' | 'complete') => {
     if (!activeBroadcast) return;
+    if (activeBroadcast.state === nextStatus) return;
     try {
       const tok = storedYtToken || (await loadLocalToken());
       const headers: Record<string, string> = {
@@ -283,7 +284,16 @@ export default function AdminGoLiveScreen() {
         );
       }
       setActiveBroadcast({ ...activeBroadcast, state: nextStatus });
-      Alert.alert('Updated', nextStatus === 'live' ? 'Broadcast is now LIVE!' : 'Broadcast ended & archived.');
+      if (nextStatus === 'live') {
+        Alert.alert(
+          'Live Started',
+          data.pendingAutoStart
+            ? 'Camera stream connected! YouTube Auto-Start is making your class LIVE.'
+            : 'Broadcast is now LIVE on YouTube!'
+        );
+      } else if (!data.skipped) {
+        Alert.alert('Updated', 'Broadcast ended & archived.');
+      }
     } catch (e: any) {
       Alert.alert('Broadcast Error', e?.message || 'Make sure your RTMP camera stream is sending video first.');
     }

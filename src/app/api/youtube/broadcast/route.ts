@@ -27,21 +27,142 @@ export async function POST(req: NextRequest) {
       if (!videoId || !status) {
         return NextResponse.json({ success: false, error: 'videoId and status are required' }, { status: 400 });
       }
-      const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?broadcastStatus=${encodeURIComponent(status)}&id=${encodeURIComponent(videoId)}&part=status`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${accessToken}` },
+
+      const fetchBroadcast = async () => {
+        const r = await fetch(
+          `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=status,contentDetails&id=${encodeURIComponent(videoId)}`,
+          { headers: { Authorization: `Bearer ${accessToken}` }, cache: 'no-store' }
+        );
+        const j = await r.json();
+        return j?.items?.[0] || null;
+      };
+
+      const callTransition = async (targetStatus: string) => {
+        const r = await fetch(
+          `https://www.googleapis.com/youtube/v3/liveBroadcasts/transition?broadcastStatus=${encodeURIComponent(targetStatus)}&id=${encodeURIComponent(videoId)}&part=status`,
+          { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const d = await r.json();
+        return { ok: r.ok, data: d };
+      };
+
+      const current = await fetchBroadcast();
+      const lifeCycle = current?.status?.lifeCycleStatus as string | undefined;
+      const autoStart = Boolean(current?.contentDetails?.enableAutoStart);
+      const boundStreamId = current?.contentDetails?.boundStreamId as string | undefined;
+
+      if (status === 'live') {
+        if (lifeCycle === 'live' || lifeCycle === 'liveStarting') {
+          return NextResponse.json({ success: true, alreadyLive: true, broadcast: current });
         }
-      );
-      const data = await res.json();
-      if (!res.ok) {
+
+        if (lifeCycle === 'complete') {
+          return NextResponse.json(
+            { success: false, error: 'This YouTube broadcast has already ended. Please create a new Live Class.' },
+            { status: 400 }
+          );
+        }
+
+        // Wait briefly for RTMP stream to become active if needed
+        let streamActive = false;
+        if (boundStreamId) {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const sRes = await fetch(
+              `https://www.googleapis.com/youtube/v3/liveStreams?part=status&id=${encodeURIComponent(boundStreamId)}`,
+              { headers: { Authorization: `Bearer ${accessToken}` }, cache: 'no-store' }
+            );
+            const sJson = await sRes.json();
+            const streamStatus = sJson?.items?.[0]?.status?.streamStatus;
+            if (streamStatus === 'active') {
+              streamActive = true;
+              break;
+            }
+            if (attempt < 2) await new Promise((r) => setTimeout(r, 1500));
+          }
+        }
+
+        // Re-check broadcast status in case enableAutoStart already moved it to live/liveStarting
+        const refreshed = await fetchBroadcast();
+        const refreshedCycle = refreshed?.status?.lifeCycleStatus as string | undefined;
+        if (refreshedCycle === 'live' || refreshedCycle === 'liveStarting') {
+          return NextResponse.json({ success: true, alreadyLive: true, broadcast: refreshed });
+        }
+
+        if (!streamActive && autoStart) {
+          return NextResponse.json({
+            success: true,
+            pendingAutoStart: true,
+            message: 'RTMP stream connected. YouTube Auto-Start will mark the broadcast LIVE in a few seconds.',
+            broadcast: refreshed || current,
+          });
+        }
+
+        let res = await callTransition('live');
+        if (!res.ok && refreshedCycle === 'ready') {
+          // Some channels require ready -> testing -> live
+          const testRes = await callTransition('testing');
+          if (testRes.ok) {
+            await new Promise((r) => setTimeout(r, 1500));
+            res = await callTransition('live');
+          }
+        }
+
+        if (!res.ok) {
+          const afterCheck = await fetchBroadcast();
+          const afterCycle = afterCheck?.status?.lifeCycleStatus;
+          if (afterCycle === 'live' || afterCycle === 'liveStarting') {
+            return NextResponse.json({ success: true, alreadyLive: true, broadcast: afterCheck });
+          }
+          if (autoStart) {
+            return NextResponse.json({
+              success: true,
+              pendingAutoStart: true,
+              message: 'YouTube Auto-Start is enabled; broadcast will go LIVE once video frames arrive.',
+              broadcast: afterCheck || current,
+            });
+          }
+          return NextResponse.json(
+            { success: false, error: res.data?.error?.message || 'Failed to transition YouTube broadcast to live' },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json({ success: true, broadcast: res.data });
+      }
+
+      if (status === 'complete') {
+        if (lifeCycle === 'complete') {
+          return NextResponse.json({ success: true, alreadyComplete: true, broadcast: current });
+        }
+        if (lifeCycle !== 'live' && lifeCycle !== 'liveStarting') {
+          return NextResponse.json({
+            success: true,
+            skipped: true,
+            note: `Broadcast was in '${lifeCycle || 'ready'}' state and not live yet.`,
+            broadcast: current,
+          });
+        }
+        const res = await callTransition('complete');
+        if (!res.ok) {
+          const afterCheck = await fetchBroadcast();
+          if (afterCheck?.status?.lifeCycleStatus === 'complete') {
+            return NextResponse.json({ success: true, alreadyComplete: true, broadcast: afterCheck });
+          }
+          return NextResponse.json(
+            { success: false, error: res.data?.error?.message || 'Failed to end YouTube broadcast' },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json({ success: true, broadcast: res.data });
+      }
+
+      const fallbackRes = await callTransition(status);
+      if (!fallbackRes.ok) {
         return NextResponse.json(
-          { success: false, error: data?.error?.message || 'Failed to transition YouTube broadcast' },
+          { success: false, error: fallbackRes.data?.error?.message || 'Failed to transition YouTube broadcast' },
           { status: 400 }
         );
       }
-      return NextResponse.json({ success: true, broadcast: data });
+      return NextResponse.json({ success: true, broadcast: fallbackRes.data });
     }
 
     // Default: Create Unlisted YouTube Live Broadcast + RTMP Stream + Bind

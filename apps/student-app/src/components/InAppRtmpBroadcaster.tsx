@@ -179,7 +179,6 @@ export function InAppRtmpBroadcaster({
             onPress={() => {
               setStreaming(false);
               setStreamState('idle');
-              onLiveStopped?.();
             }}
           >
             <Square size={15} color="#FFFFFF" fill="#FFFFFF" />
