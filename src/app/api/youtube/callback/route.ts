@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGoogleOAuthCredentials, saveYouTubeConfig } from '@/lib/youtubeAuth';
+import { getGoogleOAuthCredentials, saveYouTubeConfig, YT_COOKIE_NAME } from '@/lib/youtubeAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,26 +48,39 @@ export async function GET(req: NextRequest) {
       }
     } catch {}
 
-    await saveYouTubeConfig({
+    const configPayload = {
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
       expires_at: Date.now() + (Number(tokenData.expires_in) || 3600) * 1000,
       channel_id: channelId,
       channel_title: channelTitle,
+    };
+
+    await saveYouTubeConfig(configPayload, req);
+
+    const cookieValue = Buffer.from(JSON.stringify(configPayload), 'utf8').toString('base64');
+
+    const res =
+      state === 'app'
+        ? new NextResponse(
+            `<html><body style="font-family:sans-serif;text-align:center;padding:40px;">
+              <h2>YouTube Channel Connected!</h2>
+              <p><strong>${channelTitle}</strong> is now connected to IDEAL COACHING CENTRE.</p>
+              <p>You can close this window and return to the app.</p>
+            </body></html>`,
+            { status: 200, headers: { 'Content-Type': 'text/html' } }
+          )
+        : NextResponse.redirect('https://icconline.vercel.app/admin/live-classes?yt_connected=1');
+
+    res.cookies.set(YT_COOKIE_NAME, cookieValue, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
     });
 
-    if (state === 'app') {
-      return new NextResponse(
-        `<html><body style="font-family:sans-serif;text-align:center;padding:40px;">
-          <h2>YouTube Channel Connected!</h2>
-          <p><strong>${channelTitle}</strong> is now connected to IDEAL COACHING CENTRE.</p>
-          <p>You can close this window and return to the app.</p>
-        </body></html>`,
-        { status: 200, headers: { 'Content-Type': 'text/html' } }
-      );
-    }
-
-    return NextResponse.redirect('https://icconline.vercel.app/admin/live-classes?yt_connected=1');
+    return res;
   } catch {
     return NextResponse.redirect('https://icconline.vercel.app/admin/live-classes?yt_error=unknown');
   }

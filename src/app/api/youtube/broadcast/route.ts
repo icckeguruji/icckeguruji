@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action = 'create', title, description, scheduledAt, videoId, status } = body || {};
-    const accessToken = await getValidYouTubeAccessToken();
+    const accessToken = await getValidYouTubeAccessToken(req);
 
     if (action === 'transition') {
       if (!videoId || !status) {

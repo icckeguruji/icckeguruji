@@ -12,7 +12,8 @@ import {
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { AppState } from 'react-native';
 import { ArrowLeft, Radio, Youtube, Copy, Play, Square, RefreshCw, CheckCircle2 } from 'lucide-react-native';
 import { academicService, AcademicSubject, AcademicChapter } from '../../src/services/academicService';
 import { Course } from '@icc/shared-types';
@@ -66,6 +67,9 @@ export default function AdminGoLiveScreen() {
 
   useEffect(() => {
     fetchYtStatus();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') fetchYtStatus();
+    });
     academicService.getCourses().then(async (list) => {
       setCourses(list);
       if (list.length > 0) {
@@ -80,7 +84,14 @@ export default function AdminGoLiveScreen() {
         }
       }
     });
+    return () => sub.remove();
   }, [fetchYtStatus]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchYtStatus();
+    }, [fetchYtStatus])
+  );
 
   const handleSelectCourse = async (c: Course) => {
     setSelectedCourse(c);

@@ -99,7 +99,7 @@ export default function LiveClassesPage() {
 
   useEffect(() => {
     loadClasses();
-    fetch('/api/youtube/status')
+    fetch('/api/youtube/status', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setYtStatus(d))
       .catch(() => {});
