@@ -54,6 +54,8 @@ export default function AdminGoLiveScreen() {
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<'unlisted' | 'public' | 'private'>('unlisted');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [thumbnailBase64, setThumbnailBase64] = useState<string | null>(null);
+  const [thumbnailMimeType, setThumbnailMimeType] = useState<string>('image/jpeg');
   const [creating, setCreating] = useState(false);
 
   const [activeBroadcast, setActiveBroadcast] = useState<{
@@ -185,9 +187,12 @@ export default function AdminGoLiveScreen() {
         allowsEditing: true,
         aspect: [16, 9],
         quality: 0.7,
+        base64: true,
       });
       if (!res.canceled && res.assets[0]?.uri) {
         setThumbnailUrl(res.assets[0].uri);
+        setThumbnailBase64(res.assets[0].base64 || null);
+        setThumbnailMimeType(res.assets[0].mimeType || 'image/jpeg');
       }
     } catch {}
   };
@@ -206,6 +211,7 @@ export default function AdminGoLiveScreen() {
       };
       if (tok) headers['x-icc-yt-token'] = tok;
 
+      const trimmedThumb = thumbnailUrl.trim();
       const res = await fetch(`${API_BASE}/api/youtube/broadcast`, {
         method: 'POST',
         headers,
@@ -215,12 +221,21 @@ export default function AdminGoLiveScreen() {
           description: description.trim() || `${selectedCourse?.title || 'ICC'} • ${selectedSubject?.name || ''}`,
           visibility,
           scheduledAt: new Date(Date.now() + 60_000).toISOString(),
+          thumbnailUrl: trimmedThumb.startsWith('http') ? trimmedThumb : undefined,
+          thumbnailBase64: thumbnailBase64 || undefined,
+          thumbnailMimeType,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to create YouTube broadcast.');
       }
+
+      const persistedThumbUrl = trimmedThumb.startsWith('http')
+        ? trimmedThumb
+        : data.thumbnailSet
+        ? `https://i.ytimg.com/vi/${data.videoId}/hqdefault.jpg`
+        : undefined;
 
       const saved = await academicService.scheduleLiveClass({
         course_id: selectedCourse?.id,
@@ -231,7 +246,7 @@ export default function AdminGoLiveScreen() {
         title_hi: title.trim(),
         description: description.trim(),
         youtube_video_id: data.videoId,
-        thumbnail_url: thumbnailUrl.trim() || undefined,
+        thumbnail_url: persistedThumbUrl,
         scheduled_at: new Date().toISOString(),
         duration_minutes: 60,
         status: 'scheduled',
@@ -245,7 +260,12 @@ export default function AdminGoLiveScreen() {
         liveClassId: saved.id,
         state: 'ready',
       });
-      Alert.alert('Success', `YouTube Live (${visibility}) created & saved to course!`);
+      Alert.alert(
+        'Success',
+        data.thumbnailWarning
+          ? `YouTube Live (${visibility}) created! Note: ${data.thumbnailWarning}`
+          : `YouTube Live (${visibility}) created & thumbnail uploaded!`
+      );
     } catch (e: any) {
       Alert.alert('YouTube Live Error', e?.message || 'Could not create YouTube broadcast.');
     } finally {

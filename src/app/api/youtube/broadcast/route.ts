@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
       videoId,
       status,
       visibility = 'unlisted',
+      thumbnailUrl,
+      thumbnailBase64,
+      thumbnailMimeType = 'image/jpeg',
     } = body || {};
     const accessToken = await getValidYouTubeAccessToken(req);
 
@@ -244,6 +247,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let thumbnailSet = false;
+    let thumbnailWarning: string | null = null;
+    try {
+      let imgBuffer: Buffer | null = null;
+      let imgMime = thumbnailMimeType || 'image/jpeg';
+
+      if (thumbnailBase64 && typeof thumbnailBase64 === 'string') {
+        const match = thumbnailBase64.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          imgMime = match[1];
+          imgBuffer = Buffer.from(match[2], 'base64');
+        } else {
+          imgBuffer = Buffer.from(thumbnailBase64, 'base64');
+        }
+      } else if (thumbnailUrl && typeof thumbnailUrl === 'string') {
+        if (thumbnailUrl.startsWith('data:')) {
+          const match = thumbnailUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            imgMime = match[1];
+            imgBuffer = Buffer.from(match[2], 'base64');
+          }
+        } else if (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://')) {
+          const imgRes = await fetch(thumbnailUrl);
+          if (imgRes.ok) {
+            imgMime = imgRes.headers.get('content-type') || 'image/jpeg';
+            imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+          }
+        }
+      }
+
+      if (imgBuffer && imgBuffer.length > 0) {
+        const thumbRes = await fetch(
+          `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${encodeURIComponent(broadcast.id)}&uploadType=media`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': imgMime.startsWith('image/') ? imgMime : 'image/jpeg',
+            },
+            body: new Uint8Array(imgBuffer),
+          }
+        );
+        if (thumbRes.ok) {
+          thumbnailSet = true;
+        } else {
+          const tErr = await thumbRes.json().catch(() => ({}));
+          thumbnailWarning = tErr?.error?.message || 'Could not set custom thumbnail on YouTube';
+        }
+      }
+    } catch (thumbErr: any) {
+      thumbnailWarning = thumbErr?.message || 'Thumbnail upload failed';
+    }
+
     const ingestion = stream?.cdn?.ingestionInfo || {};
     return NextResponse.json({
       success: true,
@@ -251,6 +307,8 @@ export async function POST(req: NextRequest) {
       rtmpUrl: ingestion.ingestionAddress || 'rtmp://a.rtmp.youtube.com/live2',
       streamKey: ingestion.streamName || '',
       watchUrl: `https://youtu.be/${broadcast.id}`,
+      thumbnailSet,
+      thumbnailWarning,
     });
   } catch (err: any) {
     return NextResponse.json(

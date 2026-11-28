@@ -572,6 +572,7 @@ export default function LiveClassesPage() {
                                 title: formData.title.trim(),
                                 visibility: formData.visibility,
                                 scheduledAt: new Date(formData.scheduled_at).toISOString(),
+                                thumbnailUrl: formData.thumbnail_url.trim() || undefined,
                               }),
                             });
                             const data = await res.json();
