@@ -224,25 +224,36 @@ export default function StudentHomeScreen() {
             contentContainerStyle={{ gap: 12, paddingRight: 4 }}
           >
             {displayLiveList.map((liveItem, idx) => (
-              <View key={liveItem.id} style={[styles.liveCard, { width: LIVE_CARD_WIDTH }]}>
+              <View
+                key={liveItem.id}
+                style={[
+                  styles.liveCard,
+                  {
+                    width: LIVE_CARD_WIDTH,
+                    backgroundColor: theme.surfaceCard,
+                    borderColor: theme.cardBorder,
+                    borderWidth: 1,
+                  },
+                ]}
+              >
                 <View style={styles.liveBadgeRow}>
                   <View style={styles.liveDot} />
                   <Text style={styles.liveBadgeText}>
                     {liveItem.status === 'live' ? 'STREAMING NOW' : 'NEXT LIVE CLASS'}
                   </Text>
                   {displayLiveList.length > 1 && (
-                    <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: '700' }}>
+                    <Text style={{ color: theme.textSecondary, fontSize: 10, fontWeight: '700' }}>
                       {idx + 1} / {displayLiveList.length}
                     </Text>
                   )}
                   <View style={styles.drmBadge}>
-                    <ShieldCheck size={11} color="#34D399" />
-                    <Text style={styles.drmBadgeText}>Secure In-App</Text>
+                    <ShieldCheck size={11} color={isDark ? '#34D399' : '#059669'} />
+                    <Text style={[styles.drmBadgeText, { color: isDark ? '#34D399' : '#059669' }]}>Secure In-App</Text>
                   </View>
                 </View>
 
                 {liveItem.youtube_video_id ? (
-                  <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden', marginVertical: 10, backgroundColor: '#020617', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                  <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden', marginVertical: 10, backgroundColor: isDark ? '#020617' : '#F1F5F9', borderWidth: 1, borderColor: theme.cardBorder }}>
                     <Image
                       source={{ uri: `https://img.youtube.com/vi/${liveItem.youtube_video_id}/mqdefault.jpg` }}
                       style={{ width: '100%', height: '100%' }}
@@ -251,10 +262,10 @@ export default function StudentHomeScreen() {
                   </View>
                 ) : null}
 
-                <Text style={styles.liveTitle} numberOfLines={2}>
+                <Text style={[styles.liveTitle, { color: theme.text }]} numberOfLines={2}>
                   {liveItem.title || 'Live Masterclass Session'}
                 </Text>
-                <Text style={styles.liveTeacher}>
+                <Text style={[styles.liveTeacher, { color: theme.textSecondary }]}>
                   By: BADE SIR & Expert Faculty{liveItem.scheduled_at ? ` • ${new Date(liveItem.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
                 </Text>
 
@@ -272,17 +283,26 @@ export default function StudentHomeScreen() {
             ))}
           </ScrollView>
         ) : (
-          <View style={styles.liveCard}>
+          <View
+            style={[
+              styles.liveCard,
+              {
+                backgroundColor: theme.surfaceCard,
+                borderColor: theme.cardBorder,
+                borderWidth: 1,
+              },
+            ]}
+          >
             <View style={styles.liveBadgeRow}>
               <View style={styles.liveDot} />
               <Text style={styles.liveBadgeText}>NEXT LIVE CLASS</Text>
               <View style={styles.drmBadge}>
-                <ShieldCheck size={11} color="#34D399" />
-                <Text style={styles.drmBadgeText}>Secure In-App</Text>
+                <ShieldCheck size={11} color={isDark ? '#34D399' : '#059669'} />
+                <Text style={[styles.drmBadgeText, { color: isDark ? '#34D399' : '#059669' }]}>Secure In-App</Text>
               </View>
             </View>
-            <Text style={styles.liveTitle}>Daily Board Masterclasses</Text>
-            <Text style={styles.liveTeacher}>By: BADE SIR & Expert Faculty</Text>
+            <Text style={[styles.liveTitle, { color: theme.text }]}>Daily Board Masterclasses</Text>
+            <Text style={[styles.liveTeacher, { color: theme.textSecondary }]}>By: BADE SIR & Expert Faculty</Text>
             <TouchableOpacity
               style={styles.joinLiveBtn}
               onPress={() => router.push('/(tabs)/live')}
