@@ -170,14 +170,6 @@ export default function RecordedLectureScreen() {
             <FileText size={16} color="#2563EB" />
             <Text style={styles.actionBtnText}>Secure Notes</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => router.push('/doubts')}
-          >
-            <MessageSquareQuote size={16} color="#059669" />
-            <Text style={styles.actionBtnTextGreen}>Ask Doubt</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Playlist: Next Lectures */}

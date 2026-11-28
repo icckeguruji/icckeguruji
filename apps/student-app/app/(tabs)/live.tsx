@@ -543,11 +543,11 @@ export default function StudentLiveScreen() {
                 </Text>
 
                 {item.youtube_video_id ? (
-                  <View style={styles.cardThumbWrap}>
+                  <View style={[styles.cardThumbWrap, { aspectRatio: 16 / 9, height: undefined, backgroundColor: '#0F172A' }]}>
                     <Image
-                      source={{ uri: `https://img.youtube.com/vi/${item.youtube_video_id}/hqdefault.jpg` }}
+                      source={{ uri: `https://img.youtube.com/vi/${item.youtube_video_id}/mqdefault.jpg` }}
                       style={styles.cardThumb}
-                      resizeMode="cover"
+                      resizeMode="contain"
                     />
                   </View>
                 ) : null}

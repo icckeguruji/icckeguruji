@@ -1060,11 +1060,11 @@ export default function CourseDetailsScreen() {
                         <Text style={[styles.liveCardTitle, { color: theme.text }]}>{item.title}</Text>
                         <Text style={[styles.liveCardDesc, { color: theme.textSecondary }]}>{item.description}</Text>
                         {item.youtube_video_id ? (
-                          <View style={{ width: '100%', height: 140, borderRadius: 10, overflow: 'hidden', marginBottom: 10, backgroundColor: '#0F172A' }}>
+                          <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 10, overflow: 'hidden', marginBottom: 10, backgroundColor: '#0F172A' }}>
                             <Image
-                              source={{ uri: `https://img.youtube.com/vi/${item.youtube_video_id}/hqdefault.jpg` }}
+                              source={{ uri: `https://img.youtube.com/vi/${item.youtube_video_id}/mqdefault.jpg` }}
                               style={{ width: '100%', height: '100%' }}
-                              resizeMode="cover"
+                              resizeMode="contain"
                             />
                           </View>
                         ) : null}
@@ -1114,9 +1114,9 @@ export default function CourseDetailsScreen() {
                       >
                         {lec.youtube_video_id ? (
                           <Image
-                            source={{ uri: `https://img.youtube.com/vi/${lec.youtube_video_id}/hqdefault.jpg` }}
-                            style={{ width: 72, height: 46, borderRadius: 8, backgroundColor: '#0F172A' }}
-                            resizeMode="cover"
+                            source={{ uri: `https://img.youtube.com/vi/${lec.youtube_video_id}/mqdefault.jpg` }}
+                            style={{ width: 88, height: 50, borderRadius: 8, backgroundColor: '#0F172A' }}
+                            resizeMode="contain"
                           />
                         ) : (
                           <View style={styles.playIconBox}>

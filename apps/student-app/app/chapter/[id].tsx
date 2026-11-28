@@ -618,9 +618,9 @@ export default function ChapterContentScreen() {
                   >
                     {lec.youtube_video_id ? (
                       <Image
-                        source={{ uri: `https://img.youtube.com/vi/${lec.youtube_video_id}/hqdefault.jpg` }}
+                        source={{ uri: `https://img.youtube.com/vi/${lec.youtube_video_id}/mqdefault.jpg` }}
                         style={styles.lectureThumb}
-                        resizeMode="cover"
+                        resizeMode="contain"
                       />
                     ) : (
                       <View style={[styles.lectureOrderBadge, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>

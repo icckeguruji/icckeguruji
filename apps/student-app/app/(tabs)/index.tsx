@@ -71,6 +71,7 @@ export default function StudentHomeScreen() {
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
+  const [approvedCourseIds, setApprovedCourseIds] = useState<string[]>([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
   const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -88,6 +89,12 @@ export default function StudentHomeScreen() {
         setCourses(fetchedCourses);
       }
       setLiveClasses(fetchedLive);
+      setApprovedCourseIds(
+        pays
+          .filter((p: any) => p.status === 'approved' && (!user?.id || p.student_id === user.id || p.user_id === user.id))
+          .map((p: any) => p.course_id)
+          .filter(Boolean)
+      );
       setPendingApprovalsCount(pays.filter((p: any) => p.status === 'pending').length);
       setActiveStudentsCount(studs.filter((s: any) => s.is_active).length);
     } catch {
@@ -118,7 +125,6 @@ export default function StudentHomeScreen() {
     };
   }, [loadCachedData]);
 
-  const activeLive = liveClasses.find((l) => l.status === 'live') || liveClasses[0];
   const enrolledCourses = courses.length > 0
     ? (user?.role === 'admin'
         ? courses.slice(0, 3)
@@ -132,6 +138,18 @@ export default function StudentHomeScreen() {
               })
             : courses.slice(0, 1)))
     : [];
+
+  const studentRelevantCourseIds = new Set([
+    ...approvedCourseIds,
+    ...courses.filter((c) => c.is_free).map((c) => c.id),
+    ...enrolledCourses.map((c) => c.id),
+  ]);
+
+  const upcomingOrLive = liveClasses.filter((l) => l.status === 'live' || l.status === 'scheduled');
+  const filteredStudentLives = (upcomingOrLive.length > 0 ? upcomingOrLive : liveClasses).filter(
+    (l) => isAdmin || !l.course_id || studentRelevantCourseIds.size === 0 || studentRelevantCourseIds.has(l.course_id)
+  );
+  const displayLiveList = filteredStudentLives.length > 0 ? filteredStudentLives : upcomingOrLive.slice(0, 3);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
@@ -191,45 +209,72 @@ export default function StudentHomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Live Class Highlight Banner */}
-        <View style={styles.liveCard}>
-          <View style={styles.liveBadgeRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveBadgeText}>
-              {activeLive?.status === 'live' ? 'STREAMING NOW' : 'NEXT LIVE CLASS'}
-            </Text>
-            <View style={styles.drmBadge}>
-              <ShieldCheck size={11} color="#34D399" />
-              <Text style={styles.drmBadgeText}>Secure In-App</Text>
-            </View>
-          </View>
-          <Text style={styles.liveTitle}>
-            {activeLive?.title || 'Science: Important 2-Mark Expected Questions'}
-          </Text>
-          <Text style={styles.liveTeacher}>
-            By: BADE SIR & Expert Faculty
-          </Text>
-          {activeLive?.youtube_video_id ? (
-            <View style={{ width: '100%', height: 120, borderRadius: 10, overflow: 'hidden', marginBottom: 10, backgroundColor: '#0F172A' }}>
-              <Image
-                source={{ uri: `https://img.youtube.com/vi/${activeLive.youtube_video_id}/hqdefault.jpg` }}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
-            </View>
-          ) : null}
+        {/* Live Class Highlight Banners (All student-enrolled & upcoming live sessions) */}
+        {displayLiveList.length > 0 ? (
+          displayLiveList.map((liveItem) => (
+            <View key={liveItem.id} style={styles.liveCard}>
+              <View style={styles.liveBadgeRow}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveBadgeText}>
+                  {liveItem.status === 'live' ? 'STREAMING NOW' : 'NEXT LIVE CLASS'}
+                </Text>
+                <View style={styles.drmBadge}>
+                  <ShieldCheck size={11} color="#34D399" />
+                  <Text style={styles.drmBadgeText}>Secure In-App</Text>
+                </View>
+              </View>
 
-          <TouchableOpacity
-            style={styles.joinLiveBtn}
-            onPress={() => router.push('/(tabs)/live')}
-            activeOpacity={0.85}
-          >
-            <Radio size={16} color="#FFFFFF" />
-            <Text style={styles.joinLiveBtnText}>
-              Watch Live Inside App
-            </Text>
-          </TouchableOpacity>
-        </View>
+              {liveItem.youtube_video_id ? (
+                <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden', marginVertical: 10, backgroundColor: '#020617', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                  <Image
+                    source={{ uri: `https://img.youtube.com/vi/${liveItem.youtube_video_id}/mqdefault.jpg` }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="contain"
+                  />
+                </View>
+              ) : null}
+
+              <Text style={styles.liveTitle} numberOfLines={2}>
+                {liveItem.title || 'Live Masterclass Session'}
+              </Text>
+              <Text style={styles.liveTeacher}>
+                By: BADE SIR & Expert Faculty{liveItem.scheduled_at ? ` • ${new Date(liveItem.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.joinLiveBtn}
+                onPress={() => router.push(`/lecture/${liveItem.id}` as any)}
+                activeOpacity={0.85}
+              >
+                <Radio size={16} color="#FFFFFF" />
+                <Text style={styles.joinLiveBtnText}>
+                  {liveItem.status === 'live' ? 'Watch Live Inside App' : 'Open Class Player'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        ) : (
+          <View style={styles.liveCard}>
+            <View style={styles.liveBadgeRow}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveBadgeText}>NEXT LIVE CLASS</Text>
+              <View style={styles.drmBadge}>
+                <ShieldCheck size={11} color="#34D399" />
+                <Text style={styles.drmBadgeText}>Secure In-App</Text>
+              </View>
+            </View>
+            <Text style={styles.liveTitle}>Daily Board Masterclasses</Text>
+            <Text style={styles.liveTeacher}>By: BADE SIR & Expert Faculty</Text>
+            <TouchableOpacity
+              style={styles.joinLiveBtn}
+              onPress={() => router.push('/(tabs)/live')}
+              activeOpacity={0.85}
+            >
+              <Radio size={16} color="#FFFFFF" />
+              <Text style={styles.joinLiveBtnText}>Go to Live Classes</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Quick Service Grid with Lucide Icons */}
         <View style={styles.gridRow}>
@@ -267,18 +312,6 @@ export default function StudentHomeScreen() {
             </View>
             <Text style={[styles.gridText, { color: theme.text }]}>AI Quiz</Text>
             <Text style={[styles.gridSub, { color: theme.textSecondary }]}>30s Practice</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.gridItem, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}
-            onPress={() => router.push('/doubts')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { backgroundColor: isDark ? '#2E1E05' : '#FEF3C7' }]}>
-              <MessageSquareQuote size={20} color="#D97706" />
-            </View>
-            <Text style={[styles.gridText, { color: theme.text }]}>Doubts</Text>
-            <Text style={[styles.gridSub, { color: theme.textSecondary }]}>AI & Faculty</Text>
           </TouchableOpacity>
         </View>
 
