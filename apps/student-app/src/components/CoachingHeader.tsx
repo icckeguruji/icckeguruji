@@ -301,10 +301,16 @@ export function CoachingHeader({
                     style={[styles.drawerTitle, { color: theme.text }]}
                     numberOfLines={1}
                   >
-                    IDEAL COACHING
+                    {user?.full_name || 'Guest Learner'}
                   </Text>
                   <Text style={styles.drawerSubtitle} numberOfLines={1}>
-                    BSEB & JAC • +91 9771350910
+                    {isAdmin
+                      ? 'Director / Admin'
+                      : user
+                      ? user.mobile_number
+                        ? `+91 ${user.mobile_number}`
+                        : user.email || 'Student Account'
+                      : 'Not Logged In • Browse Mode'}
                   </Text>
                 </View>
               </View>
