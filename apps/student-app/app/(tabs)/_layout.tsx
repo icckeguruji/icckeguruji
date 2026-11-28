@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
+import { academicService } from '../../src/services/academicService';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Home, BookOpen, Radio, FileText, CheckSquare, User } from 'lucide-react-native';
 
@@ -9,6 +10,19 @@ export default function TabsLayout() {
   const isDark = theme.isDark;
   const activeBg = isDark ? 'rgba(59, 130, 246, 0.18)' : '#EFF6FF';
   const liveActiveBg = isDark ? 'rgba(239, 68, 68, 0.18)' : '#FEF2F2';
+  const [hasActiveLive, setHasActiveLive] = useState(false);
+
+  useEffect(() => {
+    const checkLive = () => {
+      academicService
+        .getLiveClasses()
+        .then((list) => setHasActiveLive(list.some((l) => l.status === 'live')))
+        .catch(() => {});
+    };
+    checkLive();
+    const unsub = academicService.subscribe(checkLive);
+    return () => unsub();
+  }, []);
 
   return (
     <Tabs
@@ -65,7 +79,20 @@ export default function TabsLayout() {
           title: 'Live',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconWrapper, focused && { backgroundColor: liveActiveBg }]}>
-              <Radio size={19} color={focused ? (isDark ? '#F87171' : '#DC2626') : color} strokeWidth={focused ? 2.5 : 2} />
+              <Radio size={19} color={focused || hasActiveLive ? (isDark ? '#F87171' : '#DC2626') : color} strokeWidth={focused ? 2.5 : 2} />
+              {hasActiveLive && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 3,
+                    right: 5,
+                    width: 7,
+                    height: 7,
+                    borderRadius: 4,
+                    backgroundColor: '#EF4444',
+                  }}
+                />
+              )}
             </View>
           ),
         }}

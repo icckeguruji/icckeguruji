@@ -538,6 +538,40 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
+        {/* Actionable Quick Navigation Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link
+            href="/admin/payments"
+            className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/30 transition shadow-xs"
+          >
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pending Approvals</p>
+              <p className="text-lg font-black text-slate-800">{stats.pendingPayments} Payments</p>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold">Review</span>
+          </Link>
+          <Link
+            href="/admin/live-classes"
+            className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/30 transition shadow-xs"
+          >
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Live Classes</p>
+              <p className="text-lg font-black text-slate-800">Schedule & Broadcast</p>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 text-xs font-bold">Manage</span>
+          </Link>
+          <Link
+            href="/admin/whatsapp"
+            className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 transition shadow-xs"
+          >
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Miss Zoya Bot</p>
+              <p className="text-lg font-black text-slate-800">WhatsApp & Alerts</p>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold">Open</span>
+          </Link>
+        </div>
+
         {/* Primary KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Students */}

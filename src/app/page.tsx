@@ -107,6 +107,19 @@ export default function PublicHomePage() {
               ))}
             </div>
 
+            {/* Trust Signals */}
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+                10+ Years Teaching Excellence
+              </span>
+              <span className="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">
+                BSEB & JAC Board Toppers
+              </span>
+              <span className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
+                Daily Live Classes + Handwritten Notes
+              </span>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <a
                 href="https://github.com/icckeguruji/icckeguruji/releases/download/v1.0.1/ideal-coaching-release.apk"
@@ -451,6 +464,24 @@ export default function PublicHomePage() {
           </div>
         </div>
       </section>
+
+      {/* Sticky Mobile Bottom CTA Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2.5 flex items-center gap-2.5 shadow-lg">
+        <a
+          href="https://wa.me/919771350910?text=Hello%20IDEAL%20COACHING%20CENTRE%2C%20I%20want%20admission%20details."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs text-center shadow-xs"
+        >
+          WhatsApp Enquiry
+        </a>
+        <Link
+          href="/download-app"
+          className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs text-center shadow-xs"
+        >
+          Download App
+        </Link>
+      </div>
     </div>
   );
 }

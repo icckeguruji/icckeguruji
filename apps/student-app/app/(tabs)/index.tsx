@@ -295,7 +295,13 @@ export default function StudentHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {enrolledCourses.length === 0 ? (
+          {enrolledCourses.length === 0 && isSyncing ? (
+            <View style={[styles.courseCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder, padding: 16, gap: 10 }]}>
+              <View style={{ height: 120, borderRadius: 12, backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }} />
+              <View style={{ height: 16, width: '70%', borderRadius: 6, backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }} />
+              <View style={{ height: 12, width: '90%', borderRadius: 6, backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }} />
+            </View>
+          ) : enrolledCourses.length === 0 ? (
             <View style={styles.emptyCoursesBox}>
               <BookOpen size={36} color="#94A3B8" />
               <Text style={styles.emptyCoursesTitle}>No Active Courses Enrolled</Text>
