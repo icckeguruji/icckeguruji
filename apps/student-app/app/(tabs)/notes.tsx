@@ -35,6 +35,7 @@ import { CoachingHeader } from '../../src/components/CoachingHeader';
 import { DataService } from '../../src/services/dataService';
 import {
   academicService,
+  getSafeClassId,
   AcademicSubject,
   SubSubject,
   AcademicChapter,
@@ -91,6 +92,8 @@ export default function StudentNotesScreen() {
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [activeSubject, setActiveSubject] = useState('all');
+  const [activeClassFilter, setActiveClassFilter] = useState('all');
+  const [activeChapterFilter, setActiveChapterFilter] = useState('all');
 
   // Admin Upload Note Modal & Cascading Dropdown States
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -330,6 +333,7 @@ export default function StudentNotesScreen() {
         file_size_bytes: pickedFile?.size || 2400000,
         material_type: noteForm.material_type,
         is_free: noteForm.is_free,
+        class_id: getSafeClassId(undefined, selectedClass),
         class_name: selectedClass,
         subject_id: selectedSubject?.id,
         chapter_id: selectedChapter?.id,
@@ -375,12 +379,23 @@ export default function StudentNotesScreen() {
     if (activeSubject === 'offline') {
       return downloadedIds.includes(mat.id);
     }
+    if (activeClassFilter !== 'all') {
+      const targetClassId = getSafeClassId(undefined, activeClassFilter);
+      const classMatch =
+        mat.class_id === targetClassId ||
+        (mat.description || '').toLowerCase().includes(activeClassFilter.toLowerCase());
+      if (!classMatch) return false;
+    }
+    if (activeChapterFilter !== 'all' && mat.chapter_id !== activeChapterFilter) {
+      return false;
+    }
     if (activeSubject === 'all') {
       return true;
     }
     const filterLower = activeSubject.toLowerCase();
     const titleLower = (mat.title + ' ' + (mat.title_hi || '') + ' ' + (mat.description || '')).toLowerCase();
-    const matSubLower = (mat.subject?.name || '').toLowerCase();
+    const matchedSub = subjectsList.find((s) => s.id === mat.subject_id);
+    const matSubLower = (mat.subject?.name || matchedSub?.name || '').toLowerCase();
 
     if (filterLower === 'science') {
       return (
@@ -464,6 +479,36 @@ export default function StudentNotesScreen() {
         </View>
       )}
 
+      {/* Class Filter Bar */}
+      <View style={[styles.subjectBar, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.subjectScroll}
+        >
+          {['all', 'Class 10', 'Class 12', 'Class 11', 'Class 9', 'Class 8'].map((cls) => (
+            <TouchableOpacity
+              key={cls}
+              style={[styles.subjectChip, activeClassFilter === cls && styles.subjectChipActive]}
+              onPress={() => {
+                setActiveClassFilter(cls);
+                setActiveChapterFilter('all');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.subjectChipText,
+                  activeClassFilter === cls && styles.subjectChipTextActive,
+                ]}
+              >
+                {cls === 'all' ? 'All Classes' : cls}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {/* Subject Filter Bar with Offline Tab */}
       <View style={styles.subjectBar}>
         <ScrollView
@@ -478,7 +523,10 @@ export default function StudentNotesScreen() {
               <TouchableOpacity
                 key={sub.id}
                 style={[styles.subjectChip, activeSubject === sub.id && styles.subjectChipActive]}
-                onPress={() => setActiveSubject(sub.id)}
+                onPress={() => {
+                  setActiveSubject(sub.id);
+                  setActiveChapterFilter('all');
+                }}
                 activeOpacity={0.7}
               >
                 <Text

@@ -442,6 +442,82 @@ CRITICAL RULES:
       });
     }
 
+    // -------------------------------------------------------------
+    // ACTION 4: ONE-CLICK AI AUTO-FILL (ENGLISH + HINDI + SUGGESTIONS)
+    // -------------------------------------------------------------
+    if (action === 'autofill_academic') {
+      const { kind = 'course', title = '', context = 'BSEB & JAC Board' } = payload || {};
+      const cleanTitle = String(title || '').trim() || 'Board Preparation';
+
+      if (isApiKeyValid) {
+        try {
+          const prompt = `You are an academic curriculum assistant for IDEAL COACHING CENTRE (${context}).
+Item Type: ${kind}
+Input Title: "${cleanTitle}"
+
+Return ONLY a valid JSON object (no markdown fences) with these exact keys:
+{
+  "title": "Clean English title",
+  "title_hi": "Accurate natural Hindi title in Devanagari",
+  "tagline": "Short punchy English tagline (max 80 chars)",
+  "description": "Clear 1-2 sentence English academic description",
+  "description_hi": "Clear 1-2 sentence Hindi description in Devanagari",
+  "suggestions": ["3 short recommended topic or chapter titles in English"]
+}`;
+
+          const aiResponse = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: primaryModel,
+              messages: [
+                { role: 'system', content: 'Return strictly valid JSON only.' },
+                { role: 'user', content: prompt },
+              ],
+              temperature: 0.3,
+              max_tokens: 700,
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const data = await aiResponse.json();
+            let raw = (data.choices?.[0]?.message?.content || '').replace(/```json|```/gi, '').trim();
+            const firstBrace = raw.indexOf('{');
+            const lastBrace = raw.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1) {
+              raw = raw.slice(firstBrace, lastBrace + 1);
+            }
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.title) {
+              return NextResponse.json({ success: true, result: parsed, live: true });
+            }
+          }
+        } catch (err) {
+          console.warn('AI autofill fallback:', err);
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        live: false,
+        result: {
+          title: cleanTitle,
+          title_hi: cleanTitle,
+          tagline: `Complete ${cleanTitle} Mastery with BADE SIR`,
+          description: `Structured ${cleanTitle} curriculum with daily live classes, recorded lectures, handwritten PDF notes, and weekly tests.`,
+          description_hi: `${cleanTitle} की संपूर्ण तैयारी — लाइव कक्षाएं, हस्तलिखित नोट्स और साप्ताहिक टेस्ट के साथ।`,
+          suggestions: [
+            `${cleanTitle} — Core Concepts & Fundamentals`,
+            `${cleanTitle} — Important Board Questions`,
+            `${cleanTitle} — Previous Year Paper Practice`,
+          ],
+        },
+      });
+    }
+
     return NextResponse.json(
       { success: false, error: 'Unknown action requested' },
       { status: 400 }

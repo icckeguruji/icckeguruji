@@ -1963,6 +1963,22 @@ class AcademicRepository {
       } catch (e) {
         console.warn('getStudyMaterials Supabase fetch error:', e);
       }
+
+      // Direct REST fallback
+      const ep = chapterId && isValidUUID(chapterId)
+        ? `study_materials?select=*&chapter_id=eq.${chapterId}&order=created_at.desc`
+        : 'study_materials?select=*&order=created_at.desc';
+      const direct = await fetchDirectRest<any[]>(ep);
+      if (Array.isArray(direct)) {
+        const active = direct.filter((m: any) => !this.isDeleted(m.id));
+        if (!chapterId) {
+          this.materials = active;
+        } else {
+          this.materials = [...this.materials.filter((m) => m.chapter_id !== chapterId), ...active];
+        }
+        this.persist('icc_study_materials', this.materials).catch(() => {});
+        return active;
+      }
     }
     const list = this.materials.filter((m) => !this.isDeleted(m.id));
     if (chapterId) {
@@ -1983,10 +1999,11 @@ class AcademicRepository {
     const subjectId = (data.subject_id && isValidUUID(data.subject_id)) ? data.subject_id : defaultSubjectId;
     const chapterId = (data.chapter_id && isValidUUID(data.chapter_id)) ? data.chapter_id : defaultChapterId;
 
+    const resolvedClassId = getSafeClassId(data.class_id, data.class_name);
     const newMat: StudyMaterial = {
       id: matId,
       board_id: data.board_id || defaultBoardId,
-      class_id: data.class_id || defaultClassId,
+      class_id: resolvedClassId || defaultClassId,
       subject_id: subjectId,
       chapter_id: chapterId,
       title: data.title || 'Study Material PDF',
@@ -2000,7 +2017,6 @@ class AcademicRepository {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    if (data.class_name) (newMat as any).class_name = data.class_name;
 
     let isSaved = false;
     if (isSupabaseConfigured) {
@@ -2018,7 +2034,6 @@ class AcademicRepository {
           file_size_bytes: newMat.file_size_bytes,
           material_type: newMat.material_type,
           is_free: newMat.is_free,
-          class_name: (newMat as any).class_name,
         };
         const { error } = await supabase.from('study_materials').upsert(payload);
         if (!error) {
@@ -2026,7 +2041,7 @@ class AcademicRepository {
         } else {
           const direct = await fetchDirectRest('study_materials', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
             body: JSON.stringify(payload),
           });
           if (direct) isSaved = true;

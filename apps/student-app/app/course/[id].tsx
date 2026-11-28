@@ -27,6 +27,7 @@ import {
   RecordedLecture,
 } from '../../src/services/academicService';
 import { Course, LiveClass, StudyMaterial } from '@icc/shared-types';
+import { aiService } from '../../src/services/aiService';
 import { supabase, isSupabaseConfigured } from '../../src/lib/supabase';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -161,6 +162,26 @@ export default function CourseDetailsScreen() {
   const [studyMaterials, setStudyMaterials] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [aiFilling, setAiFilling] = useState(false);
+
+  const handleAiAutoFill = async (kind: 'subject' | 'sub_subject' | 'chapter') => {
+    setAiFilling(true);
+    try {
+      const res = await aiService.autoFillAcademic({
+        kind,
+        title: formTitle.trim() || (kind === 'chapter' ? 'Chapter 1' : 'Science'),
+        context: currentCourse?.title || 'BSEB & JAC Board',
+      });
+      if (!formTitle.trim()) setFormTitle(res.title);
+      setFormTitleHi(res.title_hi || res.title);
+      if (kind === 'chapter' && !formDesc.trim()) {
+        setFormDesc(res.description || '');
+      }
+    } catch {
+    } finally {
+      setAiFilling(false);
+    }
+  };
 
   // Admin Modals
   const [modalType, setModalType] = useState<
@@ -1217,6 +1238,17 @@ export default function CourseDetailsScreen() {
               onChangeText={setFormTitleHi}
             />
 
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, marginBottom: 8, borderRadius: 8, backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' }}
+              disabled={aiFilling}
+              onPress={() => handleAiAutoFill('subject')}
+            >
+              <Sparkles size={14} color="#4F46E5" />
+              <Text style={{ color: '#4F46E5', fontSize: 12, fontWeight: '700' }}>
+                {aiFilling ? 'AI Generating...' : 'AI Auto-Fill (EN + HI)'}
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubject}>
               <Text style={styles.submitBtnText}>Save Subject</Text>
             </TouchableOpacity>
@@ -1290,6 +1322,17 @@ export default function CourseDetailsScreen() {
               value={formDesc}
               onChangeText={setFormDesc}
             />
+
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, marginBottom: 8, borderRadius: 8, backgroundColor: isDark ? '#1E1B4B' : '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' }}
+              disabled={aiFilling}
+              onPress={() => handleAiAutoFill('chapter')}
+            >
+              <Sparkles size={14} color="#4F46E5" />
+              <Text style={{ color: '#4F46E5', fontSize: 12, fontWeight: '700' }}>
+                {aiFilling ? 'AI Generating...' : 'AI Auto-Fill (EN + HI + Description)'}
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleCreateChapter}>
               <Text style={styles.submitBtnText}>Add Chapter</Text>

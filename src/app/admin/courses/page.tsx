@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi, getResolvedThumbnailUrl, RecordedLectureItem } from '@/lib/api';
+import { autoFillAcademicWithAI } from '@/lib/aiAutofill';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Course, LiveClass, StudyMaterial } from '@icc/shared-types';
 import { formatINR } from '@icc/shared-utils';
@@ -25,6 +26,7 @@ import {
   X,
   AlertCircle,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 
 interface CourseSubject {
@@ -65,6 +67,8 @@ const CLASSES_LIST = [
 export default function CoursesPage() {
   const { lang, t } = useLanguage();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [activeClassFilter, setActiveClassFilter] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -968,9 +972,39 @@ export default function CoursesPage() {
 
               <form onSubmit={handleCreateCourse} className="space-y-4 pt-4 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {t('कोर्स का शीर्षक (Course Title)', 'Course Title')}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-slate-700">
+                      Course Title
+                    </label>
+                    <button
+                      type="button"
+                      disabled={aiLoading}
+                      onClick={async () => {
+                        setAiLoading(true);
+                        try {
+                          const res = await autoFillAcademicWithAI({
+                            kind: 'course',
+                            title: formData.title || `${formData.class_name} Board Course`,
+                            context: `${formData.board_code} ${formData.class_name}`,
+                          });
+                          setFormData((prev) => ({
+                            ...prev,
+                            title: prev.title.trim() || res.title,
+                            title_hi: res.title_hi,
+                            description: res.description,
+                            description_hi: res.description_hi,
+                          }));
+                          setAiSuggestions(res.suggestions || []);
+                        } finally {
+                          setAiLoading(false);
+                        }
+                      }}
+                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-xs font-bold transition disabled:opacity-50"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{aiLoading ? 'AI Generating...' : 'AI Auto-Fill (EN + HI)'}</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     required
@@ -979,6 +1013,20 @@ export default function CoursesPage() {
                     placeholder="e.g. Class 10th Board Exam Complete Batch"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
+                  {aiSuggestions.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {aiSuggestions.map((sug, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, title: sug }))}
+                          className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition"
+                        >
+                          + {sug}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>

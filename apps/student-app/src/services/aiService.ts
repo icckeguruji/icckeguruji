@@ -602,6 +602,54 @@ class AIService {
       newlyUnlockedBadge,
     };
   }
+
+  async autoFillAcademic(params: {
+    kind: 'course' | 'subject' | 'sub_subject' | 'chapter' | 'material';
+    title: string;
+    context?: string;
+  }): Promise<{
+    title: string;
+    title_hi: string;
+    tagline: string;
+    description: string;
+    description_hi: string;
+    suggestions: string[];
+  }> {
+    const cleanTitle = (params.title || '').trim() || 'Board Preparation';
+    try {
+      const res = await fetch('https://icconline.vercel.app/api/ai/grok', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'autofill_academic',
+          payload: {
+            kind: params.kind,
+            title: cleanTitle,
+            context: params.context || 'BSEB & JAC Board',
+          },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success && data?.result) {
+          return data.result;
+        }
+      }
+    } catch {}
+
+    return {
+      title: cleanTitle,
+      title_hi: cleanTitle,
+      tagline: `Complete ${cleanTitle} Mastery with BADE SIR`,
+      description: `Structured ${cleanTitle} curriculum with daily live classes, recorded lectures, and handwritten PDF notes.`,
+      description_hi: `${cleanTitle} की संपूर्ण तैयारी — लाइव कक्षाएं, हस्तलिखित नोट्स और साप्ताहिक टेस्ट के साथ।`,
+      suggestions: [
+        `${cleanTitle} — Core Concepts`,
+        `${cleanTitle} — Important Questions`,
+        `${cleanTitle} — Board Paper Practice`,
+      ],
+    };
+  }
 }
 
 export const aiService = new AIService();

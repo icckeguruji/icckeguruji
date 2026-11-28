@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -79,6 +79,8 @@ export default function StudentHomeScreen() {
   const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const liveScrollRef = useRef<ScrollView>(null);
+  const liveSlideIndexRef = useRef(0);
 
   const loadCachedData = useCallback(async () => {
     try {
@@ -154,6 +156,20 @@ export default function StudentHomeScreen() {
   );
   const displayLiveList = filteredStudentLives.length > 0 ? filteredStudentLives : upcomingOrLive.slice(0, 3);
 
+  // Auto-slide live/scheduled classes horizontally every 4 seconds
+  useEffect(() => {
+    if (displayLiveList.length <= 1) return;
+    const timer = setInterval(() => {
+      const nextIdx = (liveSlideIndexRef.current + 1) % displayLiveList.length;
+      liveSlideIndexRef.current = nextIdx;
+      liveScrollRef.current?.scrollTo({
+        x: nextIdx * (LIVE_CARD_WIDTH + 12),
+        animated: true,
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [displayLiveList.length]);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'left', 'right']}>
       {/* Branded Coaching Header with Logo, Name & Live Sync */}
@@ -215,12 +231,17 @@ export default function StudentHomeScreen() {
         {/* Live Class Horizontal Slider (One spot, swipeable one after another) */}
         {displayLiveList.length > 0 ? (
           <ScrollView
+            ref={liveScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             pagingEnabled
             decelerationRate="fast"
             snapToInterval={LIVE_CARD_WIDTH + 12}
             snapToAlignment="start"
+            onMomentumScrollEnd={(e) => {
+              const x = e.nativeEvent.contentOffset.x;
+              liveSlideIndexRef.current = Math.round(x / (LIVE_CARD_WIDTH + 12));
+            }}
             contentContainerStyle={{ gap: 12, paddingRight: 4 }}
           >
             {displayLiveList.map((liveItem, idx) => (

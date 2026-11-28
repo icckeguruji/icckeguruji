@@ -12,7 +12,7 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -80,6 +80,7 @@ const PRESET_AVATARS = [
 
 export default function StudentProfileScreen() {
   const router = useRouter();
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
   const theme = useAppTheme();
   const isDark = theme.isDark;
   const {
@@ -173,6 +174,12 @@ export default function StudentProfileScreen() {
 
   // Handle opening modals from Hamburger Director Menu
   const { activeModal, closeModal: closeDirectorModal } = useDirectorStore();
+
+  useEffect(() => {
+    if (edit === '1' && user) {
+      openEditModal();
+    }
+  }, [edit]);
 
   useEffect(() => {
     if (activeModal === 'payment') {
@@ -992,228 +999,6 @@ export default function StudentProfileScreen() {
 
         {/* General Options & Actions */}
         <View style={[styles.menuSection, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
-          {/* Director Administration Center */}
-          {isAdmin && (
-            <View
-              style={[
-                styles.directorAdminCard,
-                {
-                  backgroundColor: isDark ? '#141416' : '#FFFBEB',
-                  borderColor: isDark ? '#78350F' : '#F59E0B',
-                },
-              ]}
-            >
-              <View style={styles.directorCardHeader}>
-                <View style={styles.directorBadge}>
-                  <ShieldCheck size={16} color={isDark ? '#FBBF24' : '#92400E'} />
-                  <Text style={[styles.directorBadgeTitle, { color: isDark ? '#FBBF24' : '#92400E' }]}>
-                    👑 Director Command Center (BADE SIR)
-                  </Text>
-                </View>
-                <Text style={[styles.directorCardSub, { color: isDark ? '#FCD34D' : '#B45309' }]}>
-                  Unified administrative control inside mobile app
-                </Text>
-              </View>
-
-              {/* 🤖 Director AI Copilot Autonomous Agent Trigger */}
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#EFF6FF',
-                    borderColor: isDark ? '#3B82F6' : '#BFDBFE',
-                    borderWidth: 1.5,
-                  },
-                ]}
-                onPress={() => setIsAiModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#2563EB' }]}>
-                  <Bot size={20} color="#FFFFFF" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: '#3B82F6', fontWeight: '800' }]}>
-                    🤖 Director AI Copilot
-                  </Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>
-                    Manage courses, live classes and fee approvals with AI
-                  </Text>
-                </View>
-                <View style={[styles.pendingBadge, { backgroundColor: '#2563EB' }]}>
-                  <Text style={[styles.pendingBadgeText, { color: '#FFFFFF' }]}>LIVE AI</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* 📚 Course Management */}
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => router.push('/(tabs)/courses')}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#EEF2FF' }]}>
-                  <BookOpen size={18} color="#4F46E5" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Course Management</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Create, edit & manage syllabus and subjects</Text>
-                </View>
-                <ChevronRight size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              {/* 🔴 Live Classes Hub */}
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => setIsLiveModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#FEF2F2' }]}>
-                  <Video size={18} color="#DC2626" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Live Classes Hub</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Schedule YouTube Live & batch broadcasts</Text>
-                </View>
-                <ChevronRight size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              {/* 📑 PDF Notes & Study Materials */}
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => setIsNotesModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#FAF5FF' }]}>
-                  <FileText size={18} color="#9333EA" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>PDF Notes & Study Materials</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Upload & manage handwritten formula notes</Text>
-                </View>
-                <ChevronRight size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => setIsPaymentModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#FEF3C7' }]}>
-                  <CreditCard size={18} color="#D97706" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>UPI Fee Approvals</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Review screenshot, verify UTR & unlock courses</Text>
-                </View>
-                <View style={styles.pendingBadge}>
-                  <Text style={styles.pendingBadgeText}>
-                    {payments.filter((p) => p.status === 'pending').length} Pending
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => setIsStudentModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#EFF6FF' }]}>
-                  <Users size={18} color="#2563EB" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Student Directory & WhatsApp Alerts</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Direct call & WhatsApp parent reports</Text>
-                </View>
-                <ChevronRight size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => setIsBroadcastModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#F0FDF4' }]}>
-                  <Bell size={18} color="#16A34A" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Broadcast Announcement</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Send push notification to all students</Text>
-                </View>
-                <ChevronRight size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              {/* 💬 WhatsApp AI Bot Status */}
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => setIsBotModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: '#ECFDF5' }]}>
-                  <MessageSquare size={18} color="#059669" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>WhatsApp AI Bot Status</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Active 24/7 automated admission inquiry agent</Text>
-                </View>
-                <ChevronRight size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-
-              {/* ⚙️ System Settings & Storage */}
-              <TouchableOpacity
-                style={[
-                  styles.adminHubRow,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#FFFFFF',
-                    borderColor: isDark ? '#27272A' : '#FDE68A',
-                  },
-                ]}
-                onPress={() => setIsQuotaModalOpen(true)}
-              >
-                <View style={[styles.adminHubIconBox, { backgroundColor: isDark ? '#18181B' : '#F8FAFC' }]}>
-                  <Settings size={18} color={theme.textSecondary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminHubRowTitle, { color: theme.text }]}>Settings & System Storage</Text>
-                  <Text style={[styles.adminHubRowSub, { color: theme.textSecondary }]}>Storage usage, active limits and cloud status</Text>
-                </View>
-                <ChevronRight size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-          )}
-
           {/* Edit Profile Details Item */}
           <TouchableOpacity
             style={styles.menuItem}

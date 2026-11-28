@@ -122,12 +122,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          href: null,
           title: 'Profile',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconWrapper, focused && { backgroundColor: activeBg }]}>
-              <User size={19} color={color} strokeWidth={focused ? 2.5 : 2} />
-            </View>
-          ),
         }}
       />
     </Tabs>
