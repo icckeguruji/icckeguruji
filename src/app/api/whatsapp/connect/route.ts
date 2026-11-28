@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${WA_URL}/connect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

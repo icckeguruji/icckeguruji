@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import { AdminApi, RecordedLectureItem } from '@/lib/api';
+import { Course } from '@icc/shared-types';
 import { extractYouTubeVideoId, getYouTubeThumbnail } from '@icc/shared-utils';
 import {
   PlaySquare,
@@ -19,11 +20,19 @@ import {
 export default function RecordedLecturesPage() {
   const { lang, t } = useLanguage();
   const [lectures, setLectures] = useState<RecordedLectureItem[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [subSubjects, setSubSubjects] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingLecture, setEditingLecture] = useState<RecordedLectureItem | null>(null);
 
   const [formData, setFormData] = useState({
+    course_id: '',
+    subject_id: '',
+    sub_subject_id: '',
+    chapter_id: '',
     title: '',
     title_hi: '',
     youtube_video_id: '',
@@ -45,41 +54,96 @@ export default function RecordedLecturesPage() {
     chapter: 'Ch 1: Basics',
   });
 
+  const loadSubjectsForCourse = async (courseId: string) => {
+    if (!courseId) {
+      setSubjects([]);
+      setSubSubjects([]);
+      setChapters([]);
+      return;
+    }
+    const subs = await AdminApi.getCourseSubjects(courseId);
+    setSubjects(subs || []);
+    if (subs && subs.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        subject_id: subs[0].id,
+        sub_subject_id: '',
+        subject: subs[0].name,
+      }));
+      await loadChaptersForSubject(subs[0].id, undefined, subs[0].name);
+    } else {
+      setSubSubjects([]);
+      setChapters([]);
+      setFormData((prev) => ({ ...prev, subject_id: '', sub_subject_id: '', chapter_id: '' }));
+    }
+  };
+
+  const loadChaptersForSubject = async (subjectId: string, subSubjectId?: string, subName?: string) => {
+    if (!subjectId) {
+      setSubSubjects([]);
+      setChapters([]);
+      return;
+    }
+    const subSubs = subSubjectId === undefined ? await AdminApi.getSubSubjects(subjectId) : subSubjects;
+    if (subSubjectId === undefined) setSubSubjects(subSubs || []);
+    const activeSubSubId = subSubjectId !== undefined ? subSubjectId : (subSubs?.[0]?.id || '');
+    const chaps = await AdminApi.getSubjectChapters(subjectId, activeSubSubId || undefined);
+    setChapters(chaps || []);
+    setFormData((prev) => ({
+      ...prev,
+      sub_subject_id: activeSubSubId,
+      chapter_id: chaps?.[0]?.id || '',
+      subject: subName || prev.subject,
+      chapter: chaps?.[0]?.title || prev.chapter,
+    }));
+  };
+
   const loadLectures = () => {
     AdminApi.getRecordedLectures().then((data) => setLectures(data));
   };
 
   useEffect(() => {
     loadLectures();
+    AdminApi.getCourses().then((cList) => {
+      setCourses(cList || []);
+      if (cList && cList.length > 0) {
+        setFormData((prev) => ({ ...prev, course_id: cList[0].id }));
+        loadSubjectsForCourse(cList[0].id);
+      }
+    });
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const vidId = extractYouTubeVideoId(formData.youtube_video_id);
+      const selectedSub = subjects.find((s) => s.id === formData.subject_id);
+      const selectedChap = chapters.find((ch) => ch.id === formData.chapter_id);
       const created = await AdminApi.createRecordedLecture({
+        course_id: formData.course_id || undefined,
+        subject_id: formData.subject_id || undefined,
+        chapter_id: formData.chapter_id || undefined,
         title: formData.title,
         title_hi: formData.title_hi || formData.title,
         youtube_video_id: vidId,
         duration_minutes: Number(formData.duration_minutes),
         lecture_order: Number(formData.lecture_order),
         is_free_preview: formData.is_free_preview,
-        subject: formData.subject,
-        chapter: formData.chapter,
+        subject: selectedSub?.name || formData.subject,
+        chapter: selectedChap?.title || formData.chapter,
       });
       setLectures((prev) => [created, ...prev.filter((l) => l.id !== created.id)]);
       setIsModalOpen(false);
-      setFormData({
+      setFormData((prev) => ({
+        ...prev,
         title: '',
         title_hi: '',
         youtube_video_id: '',
         duration_minutes: 45,
         is_free_preview: false,
-        lecture_order: (lectures.length + 1),
-        subject: 'Science (विज्ञान)',
-        chapter: 'Ch 1: Basics',
-      });
-      alert('Recorded lecture successfully saved to cloud database!');
+        lecture_order: lectures.length + 2,
+      }));
+      alert('Recorded lecture successfully saved & linked to Course -> Subject -> Chapter!');
     } catch (err: any) {
       alert(err.message || 'Database Error: Failed to save lecture. Please try again.');
     }
@@ -279,6 +343,92 @@ export default function RecordedLecturesPage() {
               </div>
 
               <form onSubmit={handleCreate} className="space-y-4 pt-4 text-xs">
+                {/* Class/Course -> Subject -> Sub-Subject -> Chapter Cascading Selectors */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Course / Class</label>
+                    <select
+                      value={formData.course_id}
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, course_id: e.target.value }));
+                        loadSubjectsForCourse(e.target.value);
+                      }}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title} {c.class_name ? `(${c.class_name})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Subject</label>
+                    <select
+                      value={formData.subject_id}
+                      onChange={(e) => {
+                        const sub = subjects.find((s) => s.id === e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          subject_id: e.target.value,
+                          sub_subject_id: '',
+                          subject: sub?.name || prev.subject,
+                        }));
+                        loadChaptersForSubject(e.target.value, undefined, sub?.name);
+                      }}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {subjects.length === 0 ? (
+                        <option value="">No subjects</option>
+                      ) : (
+                        subjects.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  {subSubjects.length > 0 && (
+                    <div>
+                      <label className="block font-semibold text-purple-700 mb-1">Sub-Subject / Unit</label>
+                      <select
+                        value={formData.sub_subject_id}
+                        onChange={(e) => loadChaptersForSubject(formData.subject_id, e.target.value)}
+                        className="w-full px-2.5 py-2 border border-purple-300 rounded-lg bg-white"
+                      >
+                        <option value="">All Units</option>
+                        {subSubjects.map((ss) => (
+                          <option key={ss.id} value={ss.id}>{ss.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Chapter</label>
+                    <select
+                      value={formData.chapter_id}
+                      onChange={(e) => {
+                        const ch = chapters.find((c) => c.id === e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          chapter_id: e.target.value,
+                          chapter: ch?.title || prev.chapter,
+                        }));
+                      }}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      {chapters.length === 0 ? (
+                        <option value="">All / General</option>
+                      ) : (
+                        chapters.map((ch) => (
+                          <option key={ch.id} value={ch.id}>
+                            Ch {ch.chapter_number}: {ch.title}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">{t('व्याख्यान का शीर्षक (अंग्रेज़ी)', 'Lecture Title')}</label>
                   <input

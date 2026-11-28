@@ -76,6 +76,10 @@ export default function WhatsAppAdminPage() {
   const fetchStatus = async () => {
     try {
       const res = await fetch('/api/whatsapp/status', { cache: 'no-store' });
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -107,13 +111,24 @@ export default function WhatsAppAdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(phoneNumber ? { phoneNumber } : {}),
       });
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
       const data = await res.json();
       if (data.success) {
+        if (data.state) {
+          setStatus((prev) => ({ ...prev, ...data.state, isServiceOnline: true }));
+        }
         setActionMsg({
-          type: 'success',
-          text: phoneNumber
-            ? 'Pairing code requested! Wait 2-3 seconds for your 8-digit code below.'
-            : 'WhatsApp connection initiated! Please scan the QR code below.',
+          type: data.state?.errorMessage ? 'error' : 'success',
+          text:
+            data.state?.errorMessage ||
+            (data.state?.pairingCode
+              ? `8-Digit Pairing Code Ready: ${data.state.pairingCode}`
+              : phoneNumber
+              ? 'Pairing code requested! Wait 2-3 seconds for your 8-digit code below.'
+              : 'WhatsApp connection initiated! Please scan the QR code below.'),
         });
         setTimeout(fetchStatus, 1800);
         fetchStatus();

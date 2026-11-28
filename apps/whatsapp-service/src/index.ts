@@ -40,6 +40,15 @@ app.post('/connect', async (req, res) => {
   try {
     const { phoneNumber } = req.body || {};
     await whatsAppManager.startConnection(phoneNumber);
+    // Wait up to 6s so pairingCode or qrCodeDataUrl is returned immediately in the HTTP response
+    const startWait = Date.now();
+    while (Date.now() - startWait < 6000) {
+      const s = whatsAppManager.state;
+      if (s.pairingCode || s.qrCodeDataUrl || s.status === 'CONNECTED' || s.status === 'ERROR') {
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
     res.json({ success: true, message: phoneNumber ? 'Pairing code initiated' : 'WhatsApp QR connection initiated', state: whatsAppManager.state });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

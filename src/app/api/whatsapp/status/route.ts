@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   // 1. Try local/remote Baileys microservice first
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2500);
+    const timeout = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(`${WA_URL}/status`, {
       signal: controller.signal,
       cache: 'no-store',

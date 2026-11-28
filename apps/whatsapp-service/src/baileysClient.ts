@@ -1,4 +1,5 @@
 import makeWASocket, {
+  Browsers,
   DisconnectReason,
   useMultiFileAuthState,
   WASocket,
@@ -171,40 +172,53 @@ class WhatsAppClientManager {
     await this.updateSupabaseStatus();
 
     try {
-      await this.restoreSessionFromSupabase();
+      if (!formattedPhone) {
+        await this.restoreSessionFromSupabase();
+      }
       const { state, saveCreds } = await useMultiFileAuthState(this.sessionDir);
+      let pairingRequested = false;
 
       this.socket = makeWASocket({
         auth: state,
         printQRInTerminal: !formattedPhone,
         logger: pino({ level: 'silent' }) as any,
-        browser: ['IDEAL COACHING CENTRE', 'Chrome', '124.0.0'],
+        browser: Browsers.ubuntu('Chrome'),
         defaultQueryTimeoutMs: 60000,
       });
 
-      if (formattedPhone && !state.creds.registered) {
-        setTimeout(async () => {
-          try {
-            if (!this.socket || this.state.status === 'CONNECTED') return;
-            const rawCode = await this.socket.requestPairingCode(formattedPhone);
-            const prettyCode = rawCode.length === 8 ? `${rawCode.slice(0, 4)}-${rawCode.slice(4)}` : rawCode;
-            this.state.status = 'PAIRING_CODE';
-            this.state.pairingCode = prettyCode;
-            this.state.qrCodeDataUrl = null;
-            this.state.qrExpiresAt = new Date(Date.now() + 120000).toISOString();
-            console.log(`[WhatsApp Service] Pairing Code generated for +${formattedPhone}: ${prettyCode}`);
-            await this.updateSupabaseStatus();
-          } catch (pairErr: any) {
-            console.error('[WhatsApp Service] Pairing code error:', pairErr);
-            this.state.errorMessage = pairErr?.message || 'Failed to generate pairing code';
-            await this.updateSupabaseStatus();
-          }
-        }, 1800);
-      }
+      const triggerPairingIfReady = async () => {
+        if (!formattedPhone || state.creds.registered || pairingRequested || !this.socket) return;
+        pairingRequested = true;
+        try {
+          // Small delay ensures noise socket handshake is ready for pairing code
+          await new Promise((r) => setTimeout(r, 1200));
+          if (!this.socket || this.state.status === 'CONNECTED') return;
+          const rawCode = await this.socket.requestPairingCode(formattedPhone);
+          const prettyCode = rawCode.length === 8 ? `${rawCode.slice(0, 4)}-${rawCode.slice(4)}` : rawCode;
+          this.state.status = 'PAIRING_CODE';
+          this.state.pairingCode = prettyCode;
+          this.state.qrCodeDataUrl = null;
+          this.state.qrExpiresAt = new Date(Date.now() + 120000).toISOString();
+          this.state.errorMessage = null;
+          console.log(`[WhatsApp Service] ✅ Pairing Code generated for +${formattedPhone}: ${prettyCode}`);
+          await this.updateSupabaseStatus();
+        } catch (pairErr: any) {
+          this.isConnecting = false;
+          this.state.status = 'ERROR';
+          this.state.errorMessage = pairErr?.message || 'Failed to generate pairing code. Try again.';
+          console.error('[WhatsApp Service] Pairing code error:', pairErr);
+          await this.updateSupabaseStatus();
+        }
+      };
 
       // 1. Connection Updates
       this.socket.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
+
+        if (qr && formattedPhone && !state.creds.registered) {
+          await triggerPairingIfReady();
+          return;
+        }
 
         if (qr && !this.state.pairingPhone) {
           try {
@@ -220,8 +234,13 @@ class WhatsAppClientManager {
         }
 
         if (connection === 'connecting') {
-          this.state.status = 'CONNECTING';
-          await this.updateSupabaseStatus();
+          if (!this.state.pairingCode) {
+            this.state.status = 'CONNECTING';
+            await this.updateSupabaseStatus();
+          }
+          if (formattedPhone && !state.creds.registered) {
+            triggerPairingIfReady();
+          }
         }
 
         if (connection === 'open') {

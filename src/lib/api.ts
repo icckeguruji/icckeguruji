@@ -1483,6 +1483,7 @@ export const AdminApi = {
       scheduled_at: cls.scheduled_at || new Date().toISOString(),
       duration_minutes: cls.duration_minutes || 60,
       status: cls.status || 'scheduled',
+      class_name: (cls as any).class_name || null,
       chapter_id: (cls as any).chapter_id || null,
       subject_id: (cls as any).subject_id || null,
     };

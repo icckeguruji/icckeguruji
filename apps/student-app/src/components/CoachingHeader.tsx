@@ -304,7 +304,7 @@ export function CoachingHeader({
                     IDEAL COACHING
                   </Text>
                   <Text style={styles.drawerSubtitle} numberOfLines={1}>
-                    Director: BADE SIR (9771350910)
+                    BSEB & JAC • +91 9771350910
                   </Text>
                 </View>
               </View>
@@ -488,14 +488,14 @@ export function CoachingHeader({
                       },
                     ]}
                   >
-                    <Text style={styles.adminHeaderHeading}>👑 DIRECTOR PORTAL (BADE SIR)</Text>
+                    <Text style={styles.adminHeaderHeading}>ADMIN PANEL</Text>
                     <Text
                       style={[
                         styles.adminHeaderSub,
                         { color: isDark ? '#FBBF24' : '#92400E' },
                       ]}
                     >
-                      Admin Dashboard Menu (13 Modules)
+                      Quick Management
                     </Text>
                   </View>
 
@@ -516,7 +516,7 @@ export function CoachingHeader({
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.menuItemText, { color: '#3B82F6', fontWeight: '800' }]}>
-                        Director AI Copilot
+                        ICC AI Assistant
                       </Text>
                       <Text style={styles.menuItemSubText}>Voice/text autonomous actions</Text>
                     </View>
@@ -826,10 +826,10 @@ export function CoachingHeader({
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.menuItemText, { color: theme.text }]}>
-                    Director WhatsApp Helpline
+                    WhatsApp Support
                   </Text>
                   <Text style={styles.menuItemSubText}>
-                    +91 9771350910 • Direct Chat with BADE SIR
+                    +91 9771350910 • Chat on WhatsApp
                   </Text>
                 </View>
                 <ExternalLink size={16} color="#16A34A" />
