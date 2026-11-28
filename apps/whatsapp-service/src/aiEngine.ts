@@ -13,6 +13,8 @@ interface AiProcessOptions {
 
 // Per-user short conversation history (in-memory, max 6 turns)
 const conversationMemory = new Map<string, Array<{ role: 'user' | 'assistant'; content: string }>>();
+let cachedSnapshot: any = null;
+let snapshotFetchedAt = 0;
 
 function detectLanguageMode(text: string): 'hindi' | 'hinglish' | 'english' {
   if (/[\u0900-\u097F]/.test(text)) return 'hindi';
@@ -30,6 +32,9 @@ function detectLanguageMode(text: string): 'hindi' | 'hinglish' | 'english' {
 }
 
 async function fetchLiveInstituteSnapshot() {
+  if (cachedSnapshot && Date.now() - snapshotFetchedAt < 60000) {
+    return cachedSnapshot;
+  }
   try {
     const [coursesRes, subjectsRes, liveRes, lecRes, matRes, psRes] = await Promise.all([
       supabase.from('courses').select('id, title, title_hi, class_name, price, discount_price, validity_days, is_free, is_published').eq('is_published', true).order('created_at', { ascending: false }),
@@ -50,7 +55,7 @@ async function fetchLiveInstituteSnapshot() {
       settingsMap[row.key] = row.value;
     });
 
-    return {
+    const snapshot = {
       courses,
       subjects,
       liveClasses,
@@ -62,6 +67,9 @@ async function fetchLiveInstituteSnapshot() {
         apk_download_url: 'https://icconline.vercel.app/api/download-apk',
       },
     };
+    cachedSnapshot = snapshot;
+    snapshotFetchedAt = Date.now();
+    return snapshot;
   } catch {
     return {
       courses: [],
@@ -93,7 +101,7 @@ async function askMissZoyaLLM(
   const endpoint = isGroq
     ? 'https://api.groq.com/openai/v1/chat/completions'
     : 'https://api.x.ai/v1/chat/completions';
-  const model = isGroq ? 'openai/gpt-oss-120b' : 'grok-beta';
+  const model = isGroq ? 'llama-3.1-8b-instant' : 'grok-beta';
 
   const history = conversationMemory.get(senderJid) || [];
   const langInstruction =
@@ -115,6 +123,8 @@ LIVE WEBSITE, APP & DASHBOARD DATA:
 ${systemContext}`;
 
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -129,9 +139,11 @@ ${systemContext}`;
           { role: 'user', content: text },
         ],
         temperature: 0.4,
-        max_tokens: 650,
+        max_tokens: 500,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
     if (!res.ok) return null;
     const data = (await res.json()) as any;
     const reply = data?.choices?.[0]?.message?.content?.trim();

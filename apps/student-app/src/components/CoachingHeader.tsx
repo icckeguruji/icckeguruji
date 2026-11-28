@@ -438,7 +438,7 @@ export function CoachingHeader({
                   {/* Notes & PDFs */}
                   <TouchableOpacity
                     style={styles.menuItem}
-                    onPress={() => handleOpenDirectorModal('study_materials')}
+                    onPress={() => handleNavigate('/(tabs)/notes')}
                   >
                     <View style={[styles.menuIconBox, { backgroundColor: '#F0FDF4' }]}>
                       <FileText size={18} color="#059669" />

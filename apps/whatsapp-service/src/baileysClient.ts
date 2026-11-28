@@ -35,6 +35,8 @@ class WhatsAppClientManager {
   private sessionDir: string;
   private syncTimer: NodeJS.Timeout | null = null;
   private sessionRestored = false;
+  private reconnectAttempts = 0;
+  private isReplaced = false;
 
   public state: WhatsAppServiceState = {
     status: 'DISCONNECTED',
@@ -64,7 +66,6 @@ class WhatsAppClientManager {
       const existing = fs.readdirSync(this.sessionDir);
       if (existing.includes('creds.json')) return true;
     }
-    this.sessionRestored = true;
     try {
       const { data } = await supabase
         .from('platform_settings')
@@ -81,6 +82,7 @@ class WhatsAppClientManager {
               fs.writeFileSync(path.join(this.sessionDir, fileName), content, 'utf8');
             }
           }
+          this.sessionRestored = true;
           console.log(`[WhatsApp Service] ✅ Restored ${keys.length} Baileys auth files from Supabase (persistent across deploys).`);
           return true;
         }
@@ -112,7 +114,7 @@ class WhatsAppClientManager {
       } catch (e) {
         console.warn('[WhatsApp Service] Session backup warning:', e);
       }
-    }, 1500);
+    }, 500);
   }
 
   public async clearSupabaseSession() {
@@ -184,6 +186,10 @@ class WhatsAppClientManager {
         logger: pino({ level: 'silent' }) as any,
         browser: Browsers.ubuntu('Chrome'),
         defaultQueryTimeoutMs: 60000,
+        connectTimeoutMs: 60000,
+        keepAliveIntervalMs: 25000,
+        syncFullHistory: false,
+        markOnlineOnConnect: false,
       });
 
       const triggerPairingIfReady = async () => {
@@ -245,6 +251,8 @@ class WhatsAppClientManager {
 
         if (connection === 'open') {
           this.isConnecting = false;
+          this.reconnectAttempts = 0;
+          this.isReplaced = false;
           this.state.status = 'CONNECTED';
           this.state.qrCodeDataUrl = null;
           this.state.qrExpiresAt = null;
@@ -267,11 +275,12 @@ class WhatsAppClientManager {
         if (connection === 'close') {
           this.isConnecting = false;
           const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-          const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+          const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+          const isConnectionReplaced = statusCode === DisconnectReason.connectionReplaced;
 
-          console.log(`[WhatsApp Service] Connection closed. Reason: ${statusCode}, Should Reconnect: ${shouldReconnect}`);
+          console.log(`[WhatsApp Service] Connection closed. Reason: ${statusCode}`);
 
-          if (statusCode === DisconnectReason.loggedOut) {
+          if (isLoggedOut) {
             this.state.status = 'DISCONNECTED';
             this.state.connectedPhone = null;
             this.state.connectedName = null;
@@ -279,11 +288,19 @@ class WhatsAppClientManager {
             this.clearSession();
             await this.clearSupabaseSession();
             await this.updateSupabaseStatus();
+          } else if (isConnectionReplaced) {
+            // Another deploy container took over the session; do NOT clear Supabase session or fight it
+            this.isReplaced = true;
+            console.log('[WhatsApp Service] Session replaced by newer instance — standing down cleanly.');
           } else {
-            this.state.status = 'DISCONNECTED';
+            this.state.status = 'CONNECTING';
             this.state.errorMessage = 'Connection interrupted. Reconnecting...';
             await this.updateSupabaseStatus();
-            setTimeout(() => this.startConnection(), 4000);
+            const delay = Math.min(30000, 3000 * Math.pow(1.5, this.reconnectAttempts));
+            this.reconnectAttempts++;
+            setTimeout(() => {
+              if (!this.isReplaced) this.startConnection();
+            }, delay);
           }
         }
       });
