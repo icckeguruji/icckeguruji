@@ -150,4 +150,10 @@ app.listen(Number(PORT), '0.0.0.0', async () => {
     console.log('[WhatsApp Service] 🔄 Auto-reconnecting saved WhatsApp session from Supabase...');
     whatsAppManager.startConnection().catch((e) => console.warn('Auto-reconnect error:', e));
   }
+
+  // Self keep-alive ping every 10 minutes
+  const selfUrl = process.env.RENDER_EXTERNAL_URL || 'https://icc-whatsapp-miss-zoya.onrender.com';
+  setInterval(() => {
+    fetch(`${selfUrl}/health`).catch(() => {});
+  }, 10 * 60 * 1000);
 });

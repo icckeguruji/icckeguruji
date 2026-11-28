@@ -32,6 +32,8 @@ class WhatsAppClientManager {
   private socket: WASocket | null = null;
   private isConnecting: boolean = false;
   private processedMessageIds = new Set<string>();
+  private botSentMessageIds = new Set<string>();
+  private humanPausedUntil = new Map<string, number>();
   private sessionDir: string;
   private syncTimer: NodeJS.Timeout | null = null;
   private sessionRestored = false;
@@ -311,23 +313,40 @@ class WhatsAppClientManager {
         this.scheduleSessionBackupToSupabase();
       });
 
-      // 3. Process Incoming Messages
+      // 3. Process Incoming Messages & Detect Human Intervention
       this.socket.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify' || !this.state.isBotEnabled) return;
 
         for (const msg of messages) {
-          if (!msg.message || msg.key.fromMe) continue;
+          if (!msg.message) continue;
 
           const remoteJid = msg.key.remoteJid;
           if (!remoteJid || remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') {
-            continue; // Ignore group chats and status updates
+            continue;
           }
 
           const msgId = msg.key.id || `${Date.now()}`;
+
+          // Detect human reply from the linked WhatsApp device -> pause Miss Zoya for 30 mins in this chat
+          if (msg.key.fromMe) {
+            if (!this.botSentMessageIds.has(msgId)) {
+              this.humanPausedUntil.set(remoteJid, Date.now() + 30 * 60 * 1000);
+              console.log(`[WhatsApp Service] 🤫 Human replied in [${remoteJid}] — Miss Zoya paused for 30 minutes.`);
+            }
+            continue;
+          }
+
           if (this.processedMessageIds.has(msgId)) continue;
           this.processedMessageIds.add(msgId);
           if (this.processedMessageIds.size > 2000) {
             this.processedMessageIds.clear();
+          }
+
+          // Skip AI reply while human intervention pause is active
+          const pausedUntil = this.humanPausedUntil.get(remoteJid) || 0;
+          if (Date.now() < pausedUntil) {
+            console.log(`[WhatsApp Service] 🤫 Miss Zoya paused (human active) for [${remoteJid}]`);
+            continue;
           }
 
           // Extract text content
@@ -357,34 +376,58 @@ class WhatsAppClientManager {
     }
   }
 
+  private async sendTrackedMessage(jid: string, content: any) {
+    if (!this.socket) return;
+    const sent = await this.socket.sendMessage(jid, content);
+    if (sent?.key?.id) {
+      this.botSentMessageIds.add(sent.key.id);
+      if (this.botSentMessageIds.size > 2000) {
+        this.botSentMessageIds.clear();
+      }
+    }
+  }
+
   private async handleIncomingMessage(senderJid: string, text: string, pushName?: string) {
     try {
-      // 1. Resolve Identity
+      // 1. Resolve Identity (Account Link or Auto Phone-Number Match)
       const identity = await resolveSenderIdentity(senderJid);
 
-      let reply = '';
+      let replyText = '';
+      let mediaItems: Array<{ imageUrl: string; caption: string }> = [];
 
       // 2. Check for Account Linking Command
       const upper = text.toUpperCase();
       if (upper.startsWith('#LINK') || upper.startsWith('LINK ') || (/^[A-Z0-9]{6}$/.test(text.toUpperCase()) && !identity.isLinked)) {
         const linkRes = await verifyAndLinkToken(senderJid, text, pushName);
-        reply = linkRes.message;
+        replyText = linkRes.message;
       } else {
         // 3. Process via Miss Zoya AI & Live Database Tools
-        reply = await processAiMessage({
+        const aiRes = await processAiMessage({
           senderJid,
           senderText: text,
           identity,
           pushName,
         });
+        replyText = aiRes.text;
+        mediaItems = aiRes.media || [];
       }
 
-      // 4. Send Reply via WhatsApp
-      if (this.socket && reply) {
-        await this.socket.sendMessage(senderJid, { text: reply });
-        this.state.totalReplies += 1;
-        await this.updateSupabaseStatus();
-        console.log(`[WhatsApp Outgoing] Replied to [${senderJid}]`);
+      // 4. Send Course Thumbnails (if any) + Text Reply via WhatsApp
+      if (this.socket) {
+        for (const item of mediaItems) {
+          try {
+            await this.sendTrackedMessage(senderJid, {
+              image: { url: item.imageUrl },
+              caption: item.caption,
+            });
+          } catch {}
+        }
+        if (replyText) {
+          await this.sendTrackedMessage(senderJid, { text: replyText });
+          this.state.totalReplies += 1;
+          await this.updateSupabaseStatus();
+          console.log(`[WhatsApp Outgoing] Replied to [${senderJid}]`);
+        }
       }
     } catch (err) {
       console.error(`[WhatsApp Service] Error processing message from ${senderJid}:`, err);
@@ -418,7 +461,7 @@ class WhatsAppClientManager {
     const normalized = digits.length === 10 ? `91${digits}` : digits;
     const jid = `${normalized}@s.whatsapp.net`;
     try {
-      await this.socket.sendMessage(jid, { text });
+      await this.sendTrackedMessage(jid, { text });
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Failed to send WhatsApp message' };

@@ -11,10 +11,53 @@ interface AiProcessOptions {
   pushName?: string;
 }
 
-// Per-user short conversation history (in-memory, max 6 turns)
+export interface AiReplyResult {
+  text: string;
+  media?: Array<{ imageUrl: string; caption: string }>;
+}
+
+// Per-user short conversation history (in-memory cache + persistent Supabase backup)
 const conversationMemory = new Map<string, Array<{ role: 'user' | 'assistant'; content: string }>>();
 let cachedSnapshot: any = null;
 let snapshotFetchedAt = 0;
+
+function resolveThumbnailUrl(raw?: string): string {
+  const clean = (raw || '').trim();
+  if (!clean || clean.startsWith('data:') || clean.startsWith('file://')) {
+    return 'https://icconline.vercel.app/thumbnails/batch-b3-class10.jpg';
+  }
+  if (clean.startsWith('/')) return `https://icconline.vercel.app${clean}`;
+  return clean;
+}
+
+async function loadPersistentMemory(senderJid: string): Promise<Array<{ role: 'user' | 'assistant'; content: string }>> {
+  const cached = conversationMemory.get(senderJid);
+  if (cached) return cached;
+  try {
+    const safeKey = `wa_mem_${senderJid.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 48)}`;
+    const { data } = await supabase
+      .from('platform_settings')
+      .select('value')
+      .eq('key', safeKey)
+      .maybeSingle();
+    if (Array.isArray(data?.value)) {
+      const mem = (data.value as any[]).slice(-8);
+      conversationMemory.set(senderJid, mem);
+      return mem;
+    }
+  } catch {}
+  return [];
+}
+
+function savePersistentMemory(senderJid: string, history: Array<{ role: 'user' | 'assistant'; content: string }>) {
+  const trimmed = history.slice(-8);
+  conversationMemory.set(senderJid, trimmed);
+  const safeKey = `wa_mem_${senderJid.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 48)}`;
+  supabase
+    .from('platform_settings')
+    .upsert({ key: safeKey, value: trimmed, updated_at: new Date().toISOString() })
+    .then(() => {}, () => {});
+}
 
 function detectLanguageMode(text: string): 'hindi' | 'hinglish' | 'english' {
   if (/[\u0900-\u097F]/.test(text)) return 'hindi';
@@ -37,7 +80,7 @@ async function fetchLiveInstituteSnapshot() {
   }
   try {
     const [coursesRes, subjectsRes, liveRes, lecRes, matRes, psRes] = await Promise.all([
-      supabase.from('courses').select('id, title, title_hi, class_name, price, discount_price, validity_days, is_free, is_published').eq('is_published', true).order('created_at', { ascending: false }),
+      supabase.from('courses').select('id, title, title_hi, class_name, thumbnail_url, price, discount_price, validity_days, is_free, is_published').eq('is_published', true).order('created_at', { ascending: false }),
       supabase.from('subjects').select('id, name, name_hi, course_id').order('display_order', { ascending: true }),
       supabase.from('live_classes').select('id, title, status, scheduled_at, duration_minutes, course_id').order('scheduled_at', { ascending: false }).limit(8),
       supabase.from('recorded_lectures').select('id, title, course_id').limit(15),
@@ -103,7 +146,7 @@ async function askMissZoyaLLM(
     : 'https://api.x.ai/v1/chat/completions';
   const model = isGroq ? 'llama-3.1-8b-instant' : 'grok-beta';
 
-  const history = conversationMemory.get(senderJid) || [];
+  const history = await loadPersistentMemory(senderJid);
   const langInstruction =
     langMode === 'english'
       ? 'The user is speaking in English. Reply warmly, politely, and clearly in natural English.'
@@ -149,8 +192,7 @@ ${systemContext}`;
     const reply = data?.choices?.[0]?.message?.content?.trim();
     if (!reply) return null;
 
-    const updated = [...history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }].slice(-6);
-    conversationMemory.set(senderJid, updated);
+    savePersistentMemory(senderJid, [...history, { role: 'user' as const, content: text }, { role: 'assistant' as const, content: reply }]);
     return reply;
   } catch {
     return null;
@@ -162,7 +204,7 @@ export async function processAiMessage({
   senderText,
   identity,
   pushName,
-}: AiProcessOptions): Promise<string> {
+}: AiProcessOptions): Promise<AiReplyResult> {
   const text = senderText.trim();
   const lower = text.toLowerCase();
   const langMode = detectLanguageMode(text);
@@ -194,17 +236,55 @@ export async function processAiMessage({
     ? snapshot.subjects.slice(0, 15).map((s: any) => s.name).join(', ')
     : 'Mathematics, Science (Physics, Chemistry, Biology), Social Science (History, Geography, Civics, Economics), English, Hindi';
 
-  let personalContext = 'User is a public visitor (not linked yet).';
+  let isEnrolledStudent = false;
+  let enrolledCourseNames: string[] = [];
+  let personalContext = 'User is a public / unenrolled visitor. Share course details, app download link (https://icconline.vercel.app/download-app), and step-by-step UPI enrollment instructions.';
+
   if (identity.isLinked && identity.userId) {
-    personalContext = `Linked User: ${identity.userName} (Role: ${identity.userRole})`;
+    personalContext = `Recognized User: ${identity.userName} (Role: ${identity.userRole})`;
     if (identity.userRole === 'student') {
-      const [pays, lives] = await Promise.all([
+      const [pays, enrollments, lives] = await Promise.all([
         StudentTools.getStudentPayments(identity.userId),
+        StudentTools.getStudentEnrollments(identity.userId),
         StudentTools.getStudentLiveClasses(identity.userId),
       ]);
-      personalContext += `\nLatest Payments: ${JSON.stringify(pays.slice(0, 2))}\nUpcoming Student Live Classes: ${JSON.stringify(lives.slice(0, 3))}`;
+      const approvedPays = pays.filter((p: any) => p.status === 'approved');
+      const activeEnr = enrollments.filter((e: any) => e.status === 'active');
+      isEnrolledStudent = approvedPays.length > 0 || activeEnr.length > 0;
+      enrolledCourseNames = [
+        ...activeEnr.map((e: any) => e.courses?.title).filter(Boolean),
+        ...approvedPays.map((p: any) => p.course_title).filter(Boolean),
+      ];
+      if (isEnrolledStudent) {
+        personalContext += `\nEnrolled Courses: ${enrolledCourseNames.join(', ') || 'Active Student Batch'}\nUpcoming & Live Classes for Enrolled Student: ${JSON.stringify(lives.slice(0, 4))}\nNote: Prioritize telling them about their Live & Scheduled classes!`;
+      } else {
+        personalContext += `\nEnrollment Status: NOT ENROLLED YET. Tell them course details, App Download Link (https://icconline.vercel.app/download-app), and how to enroll via UPI (${coaching.upiId}) inside the app!`;
+      }
+    }
+  } else {
+    // Smart Lead Capture for public/new numbers
+    const last10 = senderJid.split('@')[0].replace(/\D/g, '').slice(-10);
+    if (last10.length === 10) {
+      supabase
+        .from('platform_settings')
+        .upsert({
+          key: `wa_lead_${last10}`,
+          value: { phone: last10, pushName: pushName || 'Visitor', lastMessage: text.slice(0, 200), updatedAt: new Date().toISOString() },
+          updated_at: new Date().toISOString(),
+        })
+        .then(() => {}, () => {});
     }
   }
+
+  // Attach course thumbnails when unenrolled user asks about courses, fees, admission, join, or enroll
+  const wantsCourseInfo = /(course|batch|fee|price|paisa|kitna|enroll|admission|join|class|syllabus|details)/i.test(lower);
+  const courseMedia: Array<{ imageUrl: string; caption: string }> =
+    !isEnrolledStudent && wantsCourseInfo && snapshot.courses.length > 0
+      ? snapshot.courses.slice(0, 2).map((c: any) => ({
+          imageUrl: resolveThumbnailUrl(c.thumbnail_url),
+          caption: `🎓 *${c.title}*\n💰 Fee: ₹${c.discount_price || c.price} (MRP ₹${c.price})\n⏳ Validity: ${c.validity_days || 365} Days\n📲 App Link: https://icconline.vercel.app/download-app\n📝 Enroll in App → Select Course → Pay via UPI (\`${coaching.upiId}\`) & submit UTR!`,
+        }))
+      : [];
 
   const systemContext = `Institute: ${coaching.instituteName}
 Director: ${coaching.director}
@@ -233,11 +313,12 @@ ${personalContext}`;
   // 1. Try LLM-powered Miss Zoya first
   const llmReply = await askMissZoyaLLM(senderJid, text, langMode, systemContext);
   if (llmReply) {
-    return llmReply;
+    return { text: llmReply, media: courseMedia };
   }
 
   // 2. Smart Bilingual Rule-Based Fallback (Miss Zoya)
-  const isGreeting = /^(hi|hello|hey|hlo|namaste|salam|assalam|good morning|good evening|good afternoon|zoya|miss zoya)\b/i.test(lower);
+  const buildFallbackText = async (): Promise<string> => {
+    const isGreeting = /^(hi|hello|hey|hlo|namaste|salam|assalam|good morning|good evening|good afternoon|zoya|miss zoya)\b/i.test(lower);
   if (isGreeting) {
     if (langMode === 'english') {
       return `🌸 *Welcome to IDEAL COACHING CENTRE (ICC)!*\n\nHello *${displayName}*! I am *Miss Zoya*, your friendly AI Assistant. 😊\n\nI can help you with:\n📚 *Live Courses & Fees*\n🔴 *Live Class Schedule*\n📝 *Admission & UPI Enrollment*\n📲 *Android App Download Link*\n\nHow may I help you today?`;
@@ -317,8 +398,12 @@ ${personalContext}`;
     }
   }
 
-  if (langMode === 'english') {
-    return `🌸 Hello *${displayName}*! I am *Miss Zoya* from *IDEAL COACHING CENTRE*.\n\nYou can ask me about:\n• *Courses & Fees*\n• *Live Class Schedule*\n• *How to Enroll*\n• *Android App Download Link*\n• *Contact & Address*\n\nWhat would you like to know? 😊`;
-  }
-  return `🌸 नमस्ते *${displayName}* जी! मैं *Miss Zoya* हूँ, *IDEAL COACHING CENTRE (BADE SIR)* की AI असिस्टेंट।\n\nआप मुझसे पूछ सकते हैं:\n• *कोर्स और फीस की जानकारी*\n• *लाइव क्लास का समय*\n• *Enroll कैसे करें*\n• *Android App डाउनलोड लिंक*\n• *कोचिंग का पता और नंबर*\n\nकृपया अपना सवाल पूछें, मुझे आपकी मदद करके खुशी होगी! 😊`;
+    if (langMode === 'english') {
+      return `🌸 Hello *${displayName}*! I am *Miss Zoya* from *IDEAL COACHING CENTRE*.\n\nYou can ask me about:\n• *Courses & Fees*\n• *Live Class Schedule*\n• *How to Enroll*\n• *Android App Download Link*\n• *Contact & Address*\n\nWhat would you like to know? 😊`;
+    }
+    return `🌸 नमस्ते *${displayName}* जी! मैं *Miss Zoya* हूँ, *IDEAL COACHING CENTRE (BADE SIR)* की AI असिस्टेंट।\n\nआप मुझसे पूछ सकते हैं:\n• *कोर्स और फीस की जानकारी*\n• *लाइव क्लास का समय*\n• *Enroll कैसे करें*\n• *Android App डाउनलोड लिंक*\n• *कोचिंग का पता और नंबर*\n\nकृपया अपना सवाल पूछें, मुझे आपकी मदद करके खुशी होगी! 😊`;
+  };
+
+  const fallbackText = await buildFallbackText();
+  return { text: fallbackText, media: courseMedia };
 }

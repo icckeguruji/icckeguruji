@@ -1,0 +1,14 @@
+name: Keep WhatsApp Service Awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render WhatsApp Service
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health Check Ping
+        run: curl -fsS --max-time 20 https://icc-whatsapp-miss-zoya.onrender.com/health || true
