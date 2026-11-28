@@ -34,6 +34,7 @@ export default function LiveClassesPage() {
     configured: false,
     connected: false,
   });
+  const [ytErrorMsg, setYtErrorMsg] = useState<string | null>(null);
   const [ytBroadcastResult, setYtBroadcastResult] = useState<{ rtmpUrl: string; streamKey: string; videoId: string } | null>(null);
   const [ytCreating, setYtCreating] = useState(false);
 
@@ -101,6 +102,14 @@ export default function LiveClassesPage() {
 
   useEffect(() => {
     loadClasses();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ytErr = params.get('yt_error');
+      const ytDesc = params.get('yt_error_desc');
+      if (ytErr) {
+        setYtErrorMsg(ytDesc ? `${ytErr}: ${ytDesc}` : ytErr);
+      }
+    }
     fetch('/api/youtube/status', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => setYtStatus(d))
@@ -256,6 +265,11 @@ export default function LiveClassesPage() {
                 ? 'Connect your channel once to schedule & go live directly without opening YouTube Studio.'
                 : 'Add GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET in Vercel to enable 1-click YouTube OAuth connect.'}
             </p>
+            {ytErrorMsg && !ytStatus.connected && (
+              <p className="text-xs text-red-600 font-semibold mt-1">
+                OAuth Error: {ytErrorMsg}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {ytStatus.connected ? (

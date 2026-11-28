@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const source = req.nextUrl.searchParams.get('source') || 'web';
   if (source !== 'app' && !isAdminRequest(req)) {
-    return NextResponse.json({ success: false, error: 'Unauthorized: Admin login required.' }, { status: 401 });
+    return NextResponse.redirect(new URL('/login?error=admin_session_expired', req.url));
   }
 
   const { clientId, isConfigured, redirectUri } = getGoogleOAuthCredentials();

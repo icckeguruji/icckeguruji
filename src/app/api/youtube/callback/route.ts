@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
   const err = req.nextUrl.searchParams.get('error');
 
   if (err || !code) {
-    return NextResponse.redirect('https://icconline.vercel.app/admin/live-classes?yt_error=cancelled');
+    return NextResponse.redirect(
+      `https://icconline.vercel.app/admin/live-classes?yt_error=cancelled&yt_error_desc=${encodeURIComponent(err || 'Authorization cancelled')}`
+    );
   }
 
   const { clientId, clientSecret, redirectUri } = getGoogleOAuthCredentials();
@@ -31,7 +33,10 @@ export async function GET(req: NextRequest) {
     });
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
-      return NextResponse.redirect('https://icconline.vercel.app/admin/live-classes?yt_error=token_exchange');
+      const desc = tokenData?.error_description || tokenData?.error || 'Google token exchange failed';
+      return NextResponse.redirect(
+        `https://icconline.vercel.app/admin/live-classes?yt_error=token_exchange&yt_error_desc=${encodeURIComponent(desc)}`
+      );
     }
 
     let channelId = '';
@@ -83,7 +88,9 @@ export async function GET(req: NextRequest) {
     });
 
     return res;
-  } catch {
-    return NextResponse.redirect('https://icconline.vercel.app/admin/live-classes?yt_error=unknown');
+  } catch (e: any) {
+    return NextResponse.redirect(
+      `https://icconline.vercel.app/admin/live-classes?yt_error=unknown&yt_error_desc=${encodeURIComponent(e?.message || 'Unexpected callback error')}`
+    );
   }
 }
