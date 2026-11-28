@@ -141,22 +141,34 @@ export default function ChapterContentScreen() {
         academicService.getRecordedLectures(id),
         academicService.getStudyMaterials(id),
       ]);
+      // Also include completed live class recordings in the chapter Videos list if not already present
+      const completedRecordings: RecordedLecture[] = lives
+        .filter((lc) => lc.status === 'completed' && lc.youtube_video_id && !vids.some((v) => v.youtube_video_id === lc.youtube_video_id))
+        .map((lc, idx) => ({
+          id: lc.id,
+          course_id: lc.course_id || resolvedCourseId,
+          subject_id: (lc as any).subject_id || subjectId || foundChap?.subject_id || '',
+          chapter_id: id,
+          title: lc.title,
+          title_hi: lc.title_hi || lc.title,
+          description: lc.description || 'Recorded Live Class',
+          youtube_video_id: lc.youtube_video_id,
+          duration_seconds: (lc.duration_minutes || 45) * 60,
+          is_free_preview: false,
+          lecture_order: vids.length + idx + 1,
+        }));
       setLiveClasses(lives);
-      setRecordedLectures(vids);
+      setRecordedLectures([...vids, ...completedRecordings]);
       setStudyMaterials(mats);
     } catch (err) {
       console.warn('Error loading chapter content:', err);
     } finally {
       setLoading(false);
     }
-  }, [id, subjectId]);
+  }, [id, subjectId, courseId]);
 
   useEffect(() => {
     loadContent();
-    const unsub = academicService.subscribe(() => {
-      loadContent();
-    });
-    return () => unsub();
   }, [loadContent]);
 
   useFocusEffect(

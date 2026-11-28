@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { SlidersHorizontal } from 'lucide-react-native';
+import { SlidersHorizontal, ShieldCheck } from 'lucide-react-native';
 
 interface CleanVideoPlayerProps {
   videoId: string;
@@ -17,6 +17,30 @@ const QUALITY_OPTIONS = [
   { key: 'medium', label: '360p' },
 ];
 
+export function extractYouTubeId(input: string): string {
+  const raw = (input || '').trim();
+  if (!raw) return 'jfKfPfyJRdk';
+  if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
+  try {
+    if (raw.includes('youtu.be/')) {
+      return raw.split('youtu.be/')[1].split(/[?&/]/)[0] || raw;
+    }
+    if (raw.includes('v=')) {
+      return raw.split('v=')[1].split(/[?&/]/)[0] || raw;
+    }
+    if (raw.includes('/embed/')) {
+      return raw.split('/embed/')[1].split(/[?&/]/)[0] || raw;
+    }
+    if (raw.includes('/live/')) {
+      return raw.split('/live/')[1].split(/[?&/]/)[0] || raw;
+    }
+    if (raw.includes('/shorts/')) {
+      return raw.split('/shorts/')[1].split(/[?&/]/)[0] || raw;
+    }
+  } catch {}
+  return raw;
+}
+
 export function CleanVideoPlayer({
   videoId,
   height = 220,
@@ -24,20 +48,28 @@ export function CleanVideoPlayer({
 }: CleanVideoPlayerProps) {
   const webViewRef = useRef<WebView>(null);
   const [quality, setQuality] = useState<string>('default');
+  const cleanId = extractYouTubeId(videoId);
 
   const handleQualityChange = (qKey: string) => {
     setQuality(qKey);
     if (Platform.OS !== 'web' && webViewRef.current) {
       webViewRef.current.injectJavaScript(`
         try {
-          if (window.iccPlayer && typeof window.iccPlayer.setPlaybackQuality === 'function') {
-            window.iccPlayer.setPlaybackQuality('${qKey}');
+          var frame = document.getElementById('icc-yt-frame');
+          if (frame && frame.contentWindow) {
+            frame.contentWindow.postMessage(JSON.stringify({
+              event: 'command',
+              func: 'setPlaybackQuality',
+              args: ['${qKey}']
+            }), '*');
           }
         } catch(e) {}
         true;
       `);
     }
   };
+
+  const embedSrc = `https://www.youtube-nocookie.com/embed/${cleanId}?enablejsapi=1&autoplay=${autoplay ? 1 : 0}&controls=1&modestbranding=1&rel=0&iv_load_policy=3&fs=0&disablekb=1&playsinline=1&vq=${quality}`;
 
   const cleanHtml = `
 <!DOCTYPE html>
@@ -47,49 +79,30 @@ export function CleanVideoPlayer({
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
-    #player { width: 100%; height: 100%; }
-    /* Shield top bar (title/share/watch later) & bottom-right YouTube logo */
+    iframe { width: 100%; height: 100%; border: 0; display: block; }
+    /* Solid opaque shields: completely hide & block YouTube Title, Share button, Watch Later & YouTube Logo */
     .shield-top {
       position: fixed; top: 0; left: 0; right: 0; height: 52px;
-      z-index: 9999; background: transparent;
+      z-index: 9999; background: #0F172A;
+      display: flex; align-items: center; padding: 0 12px;
+      color: #CBD5E1; font-family: sans-serif; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.4px; pointer-events: auto;
     }
     .shield-yt-logo {
-      position: fixed; bottom: 0; right: 0; width: 110px; height: 48px;
-      z-index: 9999; background: transparent;
+      position: fixed; bottom: 0; right: 0; width: 115px; height: 46px;
+      z-index: 9999; background: #000000; pointer-events: auto;
     }
   </style>
 </head>
 <body>
-  <div id="player"></div>
-  <div class="shield-top"></div>
+  <iframe
+    id="icc-yt-frame"
+    src="${embedSrc}"
+    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+    referrerpolicy="strict-origin-when-cross-origin"
+  ></iframe>
+  <div class="shield-top">ICC PROTECTED PLAYER</div>
   <div class="shield-yt-logo"></div>
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <script>
-    var iccPlayer;
-    function onYouTubeIframeAPIReady() {
-      iccPlayer = new YT.Player('player', {
-        width: '100%',
-        height: '100%',
-        videoId: '${videoId}',
-        playerVars: {
-          autoplay: ${autoplay ? 1 : 0},
-          controls: 1,
-          modestbranding: 1,
-          rel: 0,
-          iv_load_policy: 3,
-          fs: 0,
-          disablekb: 1,
-          playsinline: 1
-        },
-        events: {
-          onReady: function(e) {
-            try { e.target.setPlaybackQuality('${quality}'); } catch(err) {}
-          }
-        }
-      });
-      window.iccPlayer = iccPlayer;
-    }
-  </script>
 </body>
 </html>
   `;
@@ -99,29 +112,44 @@ export function CleanVideoPlayer({
       <View style={[styles.playerBox, { height }]}>
         {Platform.OS === 'web' ? (
           <iframe
-            key={`${videoId}-${quality}`}
+            key={`${cleanId}-${quality}`}
             width="100%"
             height={height}
-            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${autoplay ? 1 : 0}&rel=0&modestbranding=1&controls=1&iv_load_policy=3&fs=0&vq=${quality}`}
+            src={embedSrc}
             frameBorder="0"
             allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
             style={{ border: 'none' }}
           />
         ) : (
           <WebView
+            key={cleanId}
             ref={webViewRef}
-            source={{ html: cleanHtml, baseUrl: 'https://icconline.vercel.app' }}
+            source={{ html: cleanHtml, baseUrl: 'https://www.youtube-nocookie.com' }}
             style={{ flex: 1, backgroundColor: '#000000' }}
+            originWhitelist={['*']}
             javaScriptEnabled
             domStorageEnabled
+            mixedContentMode="always"
             allowsInlineMediaPlayback
+            allowsFullscreenVideo={false}
+            setSupportMultipleWindows={false}
             mediaPlaybackRequiresUserAction={false}
             scrollEnabled={false}
+            onShouldStartLoadWithRequest={(req) => {
+              const u = (req.url || '').toLowerCase();
+              if (u.startsWith('about:') || u.includes('youtube-nocookie.com/embed/')) {
+                return true;
+              }
+              return false;
+            }}
           />
         )}
 
-        {/* Native protective overlays: block YouTube Share, Title & Branding */}
-        <View style={styles.topShield} pointerEvents="auto" />
+        {/* Native opaque shields: guarantee YouTube Share button, Title & Logo are invisible and untappable */}
+        <View style={styles.topShield} pointerEvents="auto">
+          <ShieldCheck size={13} color="#38BDF8" />
+          <Text style={styles.topShieldText}>ICC PROTECTED STREAM</Text>
+        </View>
         <View style={styles.bottomRightShield} pointerEvents="auto" />
       </View>
 
@@ -165,15 +193,27 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 48,
+    height: 52,
+    backgroundColor: '#0F172A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
     zIndex: 20,
+  },
+  topShieldText: {
+    color: '#CBD5E1',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   bottomRightShield: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 105,
-    height: 44,
+    width: 115,
+    height: 46,
+    backgroundColor: '#000000',
     zIndex: 20,
   },
   qualityBar: {
@@ -183,18 +223,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B',
   },
   qualityLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   qualityLabel: {
+    color: '#94A3B8',
     fontSize: 11,
     fontWeight: '700',
-    color: '#94A3B8',
   },
   qualityPills: {
     flexDirection: 'row',
@@ -206,14 +246,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   qualityPillActive: {
     backgroundColor: '#2563EB',
+    borderColor: '#3B82F6',
   },
   qualityPillText: {
-    fontSize: 10,
-    fontWeight: '700',
     color: '#CBD5E1',
+    fontSize: 11,
+    fontWeight: '700',
   },
   qualityPillTextActive: {
     color: '#FFFFFF',

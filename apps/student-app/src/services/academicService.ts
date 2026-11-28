@@ -1588,6 +1588,17 @@ class AcademicRepository {
       } catch (e) {
         console.warn('getRecordedLectures Supabase fetch error:', e);
       }
+
+      // Direct REST fallback if supabase-js session expired
+      const direct = await fetchDirectRest<any[]>(
+        `recorded_lectures?select=*&chapter_id=eq.${chapterId}&order=lecture_order.asc`
+      );
+      if (Array.isArray(direct)) {
+        const active = direct.filter((l: any) => !this.isDeleted(l.id));
+        this.lectures = [...this.lectures.filter((l) => l.chapter_id !== chapterId), ...active];
+        this.persist('icc_recorded_lectures', this.lectures).catch(() => {});
+        return active;
+      }
     }
     return this.lectures.filter((l) => !this.isDeleted(l.id) && l.chapter_id === chapterId);
   }
