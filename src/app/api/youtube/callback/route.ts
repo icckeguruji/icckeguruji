@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
     await saveYouTubeConfig(configPayload, req);
 
     const cookieValue = Buffer.from(JSON.stringify(configPayload), 'utf8').toString('base64');
+    const appDeepLink = `idealcoaching://admin/go-live?yt_token=${encodeURIComponent(cookieValue)}`;
 
     const res =
       state === 'app'
@@ -66,7 +67,8 @@ export async function GET(req: NextRequest) {
             `<html><body style="font-family:sans-serif;text-align:center;padding:40px;">
               <h2>YouTube Channel Connected!</h2>
               <p><strong>${channelTitle}</strong> is now connected to IDEAL COACHING CENTRE.</p>
-              <p>You can close this window and return to the app.</p>
+              <p style="margin:24px 0;"><a href="${appDeepLink}" style="background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold;">Return to ICC App</a></p>
+              <script>setTimeout(function(){ window.location.href = ${JSON.stringify(appDeepLink)}; }, 400);</script>
             </body></html>`,
             { status: 200, headers: { 'Content-Type': 'text/html' } }
           )

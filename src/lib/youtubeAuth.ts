@@ -71,8 +71,17 @@ export async function getYouTubeConfig(req?: NextRequest): Promise<YouTubeOAuthC
     } catch {}
   }
 
-  // Cookie fallback (works on Admin Web even if platform_settings RLS blocks anon write)
+  // Header fallback from Android App (when deep-link token is stored in SecureStore)
   if (req) {
+    const rawHeader = req.headers.get('x-icc-yt-token');
+    if (rawHeader) {
+      try {
+        const parsed = JSON.parse(Buffer.from(rawHeader, 'base64').toString('utf8'));
+        if (parsed?.access_token) return parsed as YouTubeOAuthConfig;
+      } catch {}
+    }
+
+    // Cookie fallback (works on Admin Web even if platform_settings RLS blocks anon write)
     const rawCookie = req.cookies.get(YT_COOKIE_NAME)?.value;
     if (rawCookie) {
       try {

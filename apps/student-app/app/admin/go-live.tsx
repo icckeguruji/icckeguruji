@@ -10,22 +10,30 @@ import {
   ActivityIndicator,
   Linking,
   Share,
+  AppState,
+  Image,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { AppState } from 'react-native';
-import { ArrowLeft, Radio, Youtube, Copy, Play, Square, RefreshCw, CheckCircle2 } from 'lucide-react-native';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import * as ImagePicker from 'expo-image-picker';
+import { ArrowLeft, Radio, Youtube, Copy, Play, Square, RefreshCw, CheckCircle2, Image as ImageIcon } from 'lucide-react-native';
 import { academicService, AcademicSubject, AcademicChapter } from '../../src/services/academicService';
 import { Course } from '@icc/shared-types';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 const API_BASE = 'https://icconline.vercel.app';
+const YT_TOKEN_STORAGE_KEY = 'icc_yt_oauth_token_b64';
+const CLASS_FILTERS = ['All', 'Class 10', 'Class 12', 'Class 11', 'Class 9', 'Class 8'];
 
 export default function AdminGoLiveScreen() {
   const router = useRouter();
+  const { yt_token } = useLocalSearchParams<{ yt_token?: string }>();
   const theme = useAppTheme();
   const isDark = theme.isDark;
 
+  const [storedYtToken, setStoredYtToken] = useState<string | null>(null);
   const [ytStatus, setYtStatus] = useState<{
     configured: boolean;
     connected: boolean;
@@ -33,6 +41,7 @@ export default function AdminGoLiveScreen() {
   }>({ configured: false, connected: false });
   const [loadingStatus, setLoadingStatus] = useState(true);
 
+  const [selectedClass, setSelectedClass] = useState('All');
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [subjects, setSubjects] = useState<AcademicSubject[]>([]);
@@ -42,6 +51,8 @@ export default function AdminGoLiveScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [visibility, setVisibility] = useState<'unlisted' | 'public' | 'private'>('unlisted');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [creating, setCreating] = useState(false);
 
   const [activeBroadcast, setActiveBroadcast] = useState<{
@@ -53,23 +64,65 @@ export default function AdminGoLiveScreen() {
     state: 'ready' | 'live' | 'complete';
   } | null>(null);
 
-  const fetchYtStatus = useCallback(async () => {
+  const saveTokenLocally = async (tok: string) => {
+    setStoredYtToken(tok);
+    try {
+      if (Platform.OS !== 'web') {
+        await SecureStore.setItemAsync(YT_TOKEN_STORAGE_KEY, tok);
+      } else if (typeof window !== 'undefined') {
+        localStorage.setItem(YT_TOKEN_STORAGE_KEY, tok);
+      }
+    } catch {}
+  };
+
+  const loadLocalToken = async (): Promise<string | null> => {
+    try {
+      if (Platform.OS !== 'web') {
+        return await SecureStore.getItemAsync(YT_TOKEN_STORAGE_KEY);
+      } else if (typeof window !== 'undefined') {
+        return localStorage.getItem(YT_TOKEN_STORAGE_KEY);
+      }
+    } catch {}
+    return null;
+  };
+
+  const fetchYtStatus = useCallback(async (overrideToken?: string | null) => {
     setLoadingStatus(true);
     try {
-      const res = await fetch(`${API_BASE}/api/youtube/status`);
+      const tok = overrideToken ?? storedYtToken ?? (await loadLocalToken());
+      if (tok && !storedYtToken) setStoredYtToken(tok);
+      const headers: Record<string, string> = {};
+      if (tok) headers['x-icc-yt-token'] = tok;
+      const res = await fetch(`${API_BASE}/api/youtube/status`, { headers });
       const data = await res.json();
       setYtStatus(data);
     } catch {
     } finally {
       setLoadingStatus(false);
     }
-  }, []);
+  }, [storedYtToken]);
+
+  useEffect(() => {
+    if (yt_token) {
+      saveTokenLocally(yt_token).then(() => fetchYtStatus(yt_token));
+    }
+  }, [yt_token]);
 
   useEffect(() => {
     fetchYtStatus();
-    const sub = AppState.addEventListener('change', (state) => {
+    const appStateSub = AppState.addEventListener('change', (state) => {
       if (state === 'active') fetchYtStatus();
     });
+    const urlSub = Linking.addEventListener('url', (ev) => {
+      try {
+        const parsed = new URL(ev.url);
+        const tok = parsed.searchParams.get('yt_token');
+        if (tok) {
+          saveTokenLocally(tok).then(() => fetchYtStatus(tok));
+        }
+      } catch {}
+    });
+
     academicService.getCourses().then(async (list) => {
       setCourses(list);
       if (list.length > 0) {
@@ -84,7 +137,11 @@ export default function AdminGoLiveScreen() {
         }
       }
     });
-    return () => sub.remove();
+
+    return () => {
+      appStateSub.remove();
+      urlSub.remove();
+    };
   }, [fetchYtStatus]);
 
   useFocusEffect(
@@ -92,6 +149,11 @@ export default function AdminGoLiveScreen() {
       fetchYtStatus();
     }, [fetchYtStatus])
   );
+
+  const visibleCourses =
+    selectedClass === 'All'
+      ? courses
+      : courses.filter((c) => (c.class_name || c.title || '').toLowerCase().includes(selectedClass.toLowerCase()));
 
   const handleSelectCourse = async (c: Course) => {
     setSelectedCourse(c);
@@ -115,6 +177,20 @@ export default function AdminGoLiveScreen() {
     setSelectedChapter(chaps[0] || null);
   };
 
+  const handlePickThumbnail = async () => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.7,
+      });
+      if (!res.canceled && res.assets[0]?.uri) {
+        setThumbnailUrl(res.assets[0].uri);
+      }
+    } catch {}
+  };
+
   const handleCreateYouTubeLive = async () => {
     if (!title.trim()) {
       Alert.alert('Required', 'Please enter a Live Class Title.');
@@ -122,16 +198,21 @@ export default function AdminGoLiveScreen() {
     }
     setCreating(true);
     try {
+      const tok = storedYtToken || (await loadLocalToken());
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-icc-admin-email': 'icckeguruji@gmail.com',
+      };
+      if (tok) headers['x-icc-yt-token'] = tok;
+
       const res = await fetch(`${API_BASE}/api/youtube/broadcast`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-icc-admin-email': 'icckeguruji@gmail.com',
-        },
+        headers,
         body: JSON.stringify({
           action: 'create',
           title: title.trim(),
           description: description.trim() || `${selectedCourse?.title || 'ICC'} • ${selectedSubject?.name || ''}`,
+          visibility,
           scheduledAt: new Date(Date.now() + 60_000).toISOString(),
         }),
       });
@@ -144,15 +225,16 @@ export default function AdminGoLiveScreen() {
         course_id: selectedCourse?.id,
         subject_id: selectedSubject?.id,
         chapter_id: selectedChapter?.id,
-        class_name: selectedCourse?.class_name || 'Class 10',
+        class_name: selectedCourse?.class_name || (selectedClass !== 'All' ? selectedClass : 'Class 10'),
         title: title.trim(),
         title_hi: title.trim(),
         description: description.trim(),
         youtube_video_id: data.videoId,
+        thumbnail_url: thumbnailUrl.trim() || undefined,
         scheduled_at: new Date().toISOString(),
         duration_minutes: 60,
         status: 'scheduled',
-      });
+      } as any);
 
       setActiveBroadcast({
         videoId: data.videoId,
@@ -162,7 +244,7 @@ export default function AdminGoLiveScreen() {
         liveClassId: saved.id,
         state: 'ready',
       });
-      Alert.alert('Success', 'Unlisted YouTube Live Broadcast created & saved to course!');
+      Alert.alert('Success', `YouTube Live (${visibility}) created & saved to course!`);
     } catch (e: any) {
       Alert.alert('YouTube Live Error', e?.message || 'Could not create YouTube broadcast.');
     } finally {
@@ -173,12 +255,16 @@ export default function AdminGoLiveScreen() {
   const handleTransition = async (nextStatus: 'live' | 'complete') => {
     if (!activeBroadcast) return;
     try {
+      const tok = storedYtToken || (await loadLocalToken());
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-icc-admin-email': 'icckeguruji@gmail.com',
+      };
+      if (tok) headers['x-icc-yt-token'] = tok;
+
       const res = await fetch(`${API_BASE}/api/youtube/broadcast`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-icc-admin-email': 'icckeguruji@gmail.com',
-        },
+        headers,
         body: JSON.stringify({
           action: 'transition',
           videoId: activeBroadcast.videoId,
@@ -215,7 +301,7 @@ export default function AdminGoLiveScreen() {
           <Text style={[styles.headerTitle, { color: theme.text }]}>YouTube Direct Live</Text>
           <Text style={[styles.headerSub, { color: theme.textSecondary }]}>Schedule & Broadcast from App</Text>
         </View>
-        <TouchableOpacity onPress={fetchYtStatus} style={[styles.backBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
+        <TouchableOpacity onPress={() => fetchYtStatus()} style={[styles.backBtn, { backgroundColor: isDark ? '#18181B' : '#F1F5F9' }]}>
           <RefreshCw size={17} color={theme.text} />
         </TouchableOpacity>
       </View>
@@ -234,10 +320,8 @@ export default function AdminGoLiveScreen() {
                   {loadingStatus
                     ? 'Checking connection...'
                     : ytStatus.connected
-                    ? 'Connected • Ready for Unlisted Live'
-                    : ytStatus.configured
-                    ? 'Not connected yet'
-                    : 'Server OAuth env keys pending'}
+                    ? 'Connected • Ready for Live Broadcast'
+                    : 'Tap Connect to link your YouTube Channel'}
                 </Text>
               </View>
             </View>
@@ -256,10 +340,23 @@ export default function AdminGoLiveScreen() {
 
         {/* Create Live Broadcast Form */}
         <View style={[styles.card, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>1. Select Course, Subject & Chapter</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>1. Class, Course, Subject & Chapter</Text>
+
+          {/* Class Filter */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {CLASS_FILTERS.map((cls) => (
+              <TouchableOpacity
+                key={cls}
+                onPress={() => setSelectedClass(cls)}
+                style={[styles.chip, selectedClass === cls && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, selectedClass === cls && styles.chipTextActive]}>{cls}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {courses.map((c) => (
+            {visibleCourses.map((c) => (
               <TouchableOpacity
                 key={c.id}
                 onPress={() => handleSelectCourse(c)}
@@ -304,6 +401,8 @@ export default function AdminGoLiveScreen() {
             </ScrollView>
           )}
 
+          <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 4 }]}>2. Title, Visibility & Thumbnail</Text>
+
           <TextInput
             style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
             placeholderTextColor={theme.textMuted}
@@ -319,6 +418,45 @@ export default function AdminGoLiveScreen() {
             onChangeText={setDescription}
           />
 
+          {/* Visibility Selector */}
+          <View style={styles.chipRow}>
+            {(['unlisted', 'public', 'private'] as const).map((vis) => (
+              <TouchableOpacity
+                key={vis}
+                onPress={() => setVisibility(vis)}
+                style={[styles.chip, visibility === vis && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, visibility === vis && styles.chipTextActive]}>
+                  {vis.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Thumbnail URL + Device Picker */}
+          <View style={styles.rowGap}>
+            <TextInput
+              style={[styles.input, { flex: 1, backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}
+              placeholderTextColor={theme.textMuted}
+              placeholder="Thumbnail Image URL (Optional)"
+              value={thumbnailUrl}
+              onChangeText={setThumbnailUrl}
+            />
+            <TouchableOpacity
+              onPress={handlePickThumbnail}
+              style={[styles.pickThumbBtn, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF' }]}
+            >
+              <ImageIcon size={16} color="#2563EB" />
+              <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#2563EB' }}>Pick</Text>
+            </TouchableOpacity>
+          </View>
+
+          {thumbnailUrl ? (
+            <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 10, overflow: 'hidden', backgroundColor: '#0F172A' }}>
+              <Image source={{ uri: thumbnailUrl }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+            </View>
+          ) : null}
+
           <TouchableOpacity
             style={[styles.createBtn, creating && { opacity: 0.6 }]}
             disabled={creating}
@@ -329,7 +467,7 @@ export default function AdminGoLiveScreen() {
             ) : (
               <>
                 <Radio size={17} color="#FFFFFF" />
-                <Text style={styles.createBtnText}>Create YouTube Live (Unlisted)</Text>
+                <Text style={styles.createBtnText}>Create YouTube Live ({visibility.toUpperCase()})</Text>
               </>
             )}
           </TouchableOpacity>
@@ -338,7 +476,7 @@ export default function AdminGoLiveScreen() {
         {/* Active Broadcast RTMP Details & Go Live Controls */}
         {activeBroadcast && (
           <View style={[styles.card, { backgroundColor: theme.surfaceCard, borderColor: '#2563EB', borderWidth: 1.5 }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>2. Stream Key & Live Controls</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>3. Stream Key & Live Controls</Text>
             <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
               Video ID: {activeBroadcast.videoId}
             </Text>
@@ -409,7 +547,7 @@ const styles = StyleSheet.create({
   connectBtn: { backgroundColor: '#DC2626', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   connectBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   sectionTitle: { fontSize: 13.5, fontWeight: '800' },
-  chipRow: { gap: 8, paddingVertical: 2 },
+  chipRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -423,6 +561,14 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: '700', color: '#334155' },
   chipTextActive: { color: '#FFFFFF' },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13 },
+  pickThumbBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 10,
+  },
   createBtn: {
     flexDirection: 'row',
     alignItems: 'center',

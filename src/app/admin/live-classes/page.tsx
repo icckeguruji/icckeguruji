@@ -46,6 +46,8 @@ export default function LiveClassesPage() {
     title: '',
     title_hi: '',
     youtube_video_id: '',
+    thumbnail_url: '',
+    visibility: 'unlisted' as 'unlisted' | 'public' | 'private',
     scheduled_at: new Date(Date.now() + 3600000 * 2).toISOString().slice(0, 16),
     duration_minutes: 60,
     status: 'scheduled' as const,
@@ -141,6 +143,8 @@ export default function LiveClassesPage() {
         title: formData.title,
         title_hi: formData.title_hi || formData.title,
         youtube_video_id: vidId,
+        thumbnail_url: formData.thumbnail_url.trim() || undefined,
+        visibility: formData.visibility,
         scheduled_at: new Date(formData.scheduled_at).toISOString(),
         duration_minutes: Number(formData.duration_minutes),
         status: formData.status || 'scheduled',
@@ -552,6 +556,7 @@ export default function LiveClassesPage() {
                               body: JSON.stringify({
                                 action: 'create',
                                 title: formData.title.trim(),
+                                visibility: formData.visibility,
                                 scheduledAt: new Date(formData.scheduled_at).toISOString(),
                               }),
                             });
@@ -587,11 +592,36 @@ export default function LiveClassesPage() {
                   />
                   {ytBroadcastResult && (
                     <div className="mt-2 p-2.5 rounded-lg bg-slate-900 text-slate-100 text-xs space-y-1">
-                      <p className="font-bold text-emerald-400">YouTube Broadcast Created (Unlisted)</p>
+                      <p className="font-bold text-emerald-400">YouTube Broadcast Created ({formData.visibility.toUpperCase()})</p>
                       <p className="font-mono break-all">RTMP: {ytBroadcastResult.rtmpUrl}</p>
                       <p className="font-mono break-all">Key: {ytBroadcastResult.streamKey}</p>
                     </div>
                   )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Visibility</label>
+                    <select
+                      value={formData.visibility}
+                      onChange={(e) => setFormData({ ...formData, visibility: e.target.value as any })}
+                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg bg-white"
+                    >
+                      <option value="unlisted">Unlisted (App Only)</option>
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Thumbnail URL (Optional)</label>
+                    <input
+                      type="text"
+                      value={formData.thumbnail_url}
+                      onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

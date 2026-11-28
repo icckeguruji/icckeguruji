@@ -12,7 +12,15 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { action = 'create', title, description, scheduledAt, videoId, status } = body || {};
+    const {
+      action = 'create',
+      title,
+      description,
+      scheduledAt,
+      videoId,
+      status,
+      visibility = 'unlisted',
+    } = body || {};
     const accessToken = await getValidYouTubeAccessToken(req);
 
     if (action === 'transition') {
@@ -54,7 +62,7 @@ export async function POST(req: NextRequest) {
             scheduledStartTime: startIso,
           },
           status: {
-            privacyStatus: 'unlisted',
+            privacyStatus: ['unlisted', 'public', 'private'].includes(visibility) ? visibility : 'unlisted',
             selfDeclaredMadeForKids: false,
           },
           contentDetails: {
