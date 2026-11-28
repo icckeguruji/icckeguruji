@@ -142,7 +142,7 @@ export default function VerifyOtpScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.zeroSmsNotice}>
-            ℹ️ Free tier security: OTP sent via email (₹0/mo, zero SMS costs).
+            OTP verification has been sent to your registered email address.
           </Text>
         </View>
       </KeyboardAvoidingView>

@@ -675,7 +675,7 @@ export default function StudentsPage() {
                   <p className="text-blue-700 text-[10px] mt-0.5">
                     {t(
                       'विद्यार्थी मोबाइल अथवा यूज़रनेम से लॉगिन कर सकता है, परंतु सुरक्षा कारणों से ओटीपी केवल इसके पंजीकृत ईमेल पर भेजा जाएगा। कोई एसएमएस नहीं भेजा जाएगा।',
-                      'Login is supported via mobile/username, but OTP is delivered strictly to registered email with zero SMS fee.'
+                      'Login is supported via mobile number or username. OTP is sent to the registered email.'
                     )}
                   </p>
                 </div>

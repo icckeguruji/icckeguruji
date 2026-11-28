@@ -2342,34 +2342,21 @@ export default function StudentProfileScreen() {
               </View>
 
               <View style={{ gap: 14 }}>
-                <View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>Database Storage</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>14.2 MB / 500 MB (2.8%)</Text>
-                  </View>
-                  <View style={{ height: 6, backgroundColor: isDark ? '#27272A' : '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
-                    <View style={{ width: '2.8%', height: '100%', backgroundColor: '#2563EB' }} />
-                  </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }}>Pending Payments</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#2563EB' }}>{payments.filter((p: any) => p.status === 'pending').length} Pending</Text>
                 </View>
-
-                <View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>Media & Study Notes Storage</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#9333EA' }}>42.8 MB / 1000 MB (4.2%)</Text>
-                  </View>
-                  <View style={{ height: 6, backgroundColor: isDark ? '#27272A' : '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
-                    <View style={{ width: '4.2%', height: '100%', backgroundColor: '#9333EA' }} />
-                  </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }}>Registered Students</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#16A34A' }}>{students.length} Students</Text>
                 </View>
-
-                <View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>Active Student Accounts</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#16A34A' }}>Active & Ready</Text>
-                  </View>
-                  <View style={{ height: 6, backgroundColor: isDark ? '#27272A' : '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
-                    <View style={{ width: '5%', height: '100%', backgroundColor: '#16A34A' }} />
-                  </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: isDark ? '#27272A' : '#E2E8F0' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }}>Live & Scheduled Classes</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#DC2626' }}>{liveClasses.length} Classes</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }}>Study Notes & PDFs</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#9333EA' }}>{materials.length} Files</Text>
                 </View>
               </View>
             </ScrollView>

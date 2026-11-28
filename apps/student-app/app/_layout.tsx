@@ -177,6 +177,12 @@ export default function RootLayout() {
                 headerShown: false,
               }}
             />
+            <Stack.Screen
+              name="admin/teachers"
+              options={{
+                headerShown: false,
+              }}
+            />
           </Stack>
           <AppUpdateModal />
         </PaperProvider>

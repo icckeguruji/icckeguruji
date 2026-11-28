@@ -636,7 +636,7 @@ export default function CourseDetailsScreen() {
           </Text>
           <TouchableOpacity
             style={{ backgroundColor: '#2563EB', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}
-            onPress={() => router.replace('/courses')}
+            onPress={() => router.replace('/(tabs)/courses')}
           >
             <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>View All Courses</Text>
           </TouchableOpacity>

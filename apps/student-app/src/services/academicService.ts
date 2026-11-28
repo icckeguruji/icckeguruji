@@ -821,25 +821,31 @@ class AcademicRepository {
     }
     const active = this.courses.filter((c) => !this.isDeleted(c.id));
     return active.map((c) => {
-      const cClass = (c.class_name || this.getClassNameFromCourse(c) || '').toLowerCase();
-      const realLecCount = this.lectures.filter((l) => {
-        if (l.course_id === c.id) return true;
-        const sub = this.subjects.find((s) => s.id === l.subject_id);
-        if (sub && (sub.course_id === c.id || (sub.class_name && sub.class_name.toLowerCase() === cClass))) {
-          return true;
-        }
-        return false;
-      }).length;
+      const courseSubIds = new Set(
+        this.subjects.filter((s) => s.course_id === c.id && !this.isDeleted(s.id)).map((s) => s.id)
+      );
+      const courseChapIds = new Set(
+        this.chapters
+          .filter((ch) => (ch.course_id === c.id || courseSubIds.has(ch.subject_id)) && !this.isDeleted(ch.id))
+          .map((ch) => ch.id)
+      );
 
-      const realMatCount = this.materials.filter((m: any) => {
-        if (m.course_id === c.id) return true;
-        if (m.class_name && m.class_name.toLowerCase() === cClass) return true;
-        const sub = this.subjects.find((s) => s.id === m.subject_id);
-        if (sub && (sub.course_id === c.id || (sub.class_name && sub.class_name.toLowerCase() === cClass))) {
-          return true;
-        }
-        return false;
-      }).length;
+      const courseLectures = this.lectures.filter(
+        (l) => !this.isDeleted(l.id) && (l.course_id === c.id || courseSubIds.has(l.subject_id) || courseChapIds.has(l.chapter_id))
+      );
+      const completedLives = this.liveClasses.filter(
+        (lc) =>
+          !this.isDeleted(lc.id) &&
+          lc.status === 'completed' &&
+          lc.youtube_video_id &&
+          (lc.course_id === c.id || courseChapIds.has((lc as any).chapter_id)) &&
+          !courseLectures.some((l) => l.youtube_video_id === lc.youtube_video_id)
+      );
+      const realLecCount = courseLectures.length + completedLives.length;
+
+      const realMatCount = this.materials.filter(
+        (m: any) => !this.isDeleted(m.id) && (m.course_id === c.id || courseSubIds.has(m.subject_id) || courseChapIds.has(m.chapter_id))
+      ).length;
 
       return {
         ...c,

@@ -172,7 +172,7 @@ export default function PushNotificationsPage() {
       <AdminHeader
         titleHi="पुश नोटिफिकेशन एवं प्रसारण केंद्र"
         titleEn="Push Notifications & Mobile Broadcast"
-        subtitleHi="लाइव क्लास, रविवार टेस्ट एवं बोर्ड परीक्षा सूचनाओं का विद्यार्थियों के मोबाइल पर निःशुल्क तुरंत प्रसारण (₹0/माह)"
+        subtitleHi="Broadcast instant push alerts for live classes, weekly tests, and announcements"
         subtitleEn="Send free instant push notifications to student mobile app via Firebase & Expo Gateway"
       />
 
