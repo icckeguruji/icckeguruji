@@ -41,26 +41,71 @@ const defaultAppUpdate: AppUpdateConfig = {
   ],
 };
 
-async function getUpdateConfig(): Promise<AppUpdateConfig> {
-  if (isSupabaseConfigured) {
-    try {
-      const { data, error } = await supabase
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'app_update_config')
-        .maybeSingle();
+async function getLatestGitHubRelease(): Promise<Partial<AppUpdateConfig> | null> {
+  try {
+    const res = await fetch('https://api.github.com/repos/icckeguruji/icckeguruji/releases/latest', {
+      headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'ICC-Online-Updater' },
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const rel = await res.json();
+    const tag = String(rel.tag_name || '').replace(/^v/i, '').trim();
+    if (!tag) return null;
 
-      if (!error && data?.value && typeof data.value === 'object') {
-        return {
-          ...defaultAppUpdate,
-          ...data.value,
-        };
-      }
-    } catch (e) {
-      console.warn('getUpdateConfig error:', e);
-    }
+    const buildMatch = String(rel.body || '').match(/Build\s+(\d+)/i);
+    const patchNum = parseInt(tag.split('.')[2] || '0', 10) || 0;
+    const versionCode = buildMatch ? parseInt(buildMatch[1], 10) : patchNum + 1;
+
+    const assets = Array.isArray(rel.assets) ? rel.assets : [];
+    const apkAsset = assets.find((a: any) => a.name?.endsWith('.apk'));
+    const apkUrl =
+      apkAsset?.browser_download_url ||
+      `https://github.com/icckeguruji/icckeguruji/releases/latest/download/ideal-coaching-release.apk`;
+    const sizeMb = apkAsset?.size ? Math.round((apkAsset.size / (1024 * 1024)) * 10) / 10 : 27.0;
+
+    return {
+      latest_version: tag,
+      version_code: versionCode,
+      apk_download_url: apkUrl,
+      apk_size_mb: sizeMb,
+      release_date: (rel.published_at || new Date().toISOString()).split('T')[0],
+      title_en: `New Update Available (v${tag})`,
+      title_hi: `नया आधिकारिक अपडेट उपलब्ध है (v${tag})`,
+    };
+  } catch {
+    return null;
   }
-  return defaultAppUpdate;
+}
+
+async function getUpdateConfig(): Promise<AppUpdateConfig> {
+  let config: AppUpdateConfig = { ...defaultAppUpdate };
+
+  const [dbRes, ghRes] = await Promise.all([
+    (async () => {
+      if (!isSupabaseConfigured) return null;
+      try {
+        const { data } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'app_update_config')
+          .maybeSingle();
+        return data?.value || null;
+      } catch {
+        return null;
+      }
+    })(),
+    getLatestGitHubRelease(),
+  ]);
+
+  if (dbRes && typeof dbRes === 'object') {
+    config = { ...config, ...dbRes };
+  }
+
+  if (ghRes?.version_code && ghRes.version_code >= (config.version_code || 0)) {
+    config = { ...config, ...ghRes };
+  }
+
+  return config;
 }
 
 export async function GET() {

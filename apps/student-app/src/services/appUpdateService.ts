@@ -198,15 +198,20 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
       } catch {}
     }
 
-    // 3. Fallback: Check GitHub Releases API
-    if (!latestVersion || latestVersion === CURRENT_APP_VERSION) {
-      try {
-        const ghResponse = await fetch(GITHUB_LATEST_RELEASE_URL, {
-          headers: { Accept: 'application/vnd.github.v3+json' },
-        });
-        if (ghResponse.ok) {
-          const release = await ghResponse.json();
-          latestVersion = (release.tag_name || '1.0.0').replace(/^v/i, '');
+    // 3. Always cross-check GitHub Releases API in case a newer APK was just published
+    try {
+      const ghResponse = await fetch(GITHUB_LATEST_RELEASE_URL, {
+        headers: { Accept: 'application/vnd.github.v3+json' },
+      });
+      if (ghResponse.ok) {
+        const release = await ghResponse.json();
+        const ghVer = (release.tag_name || '1.0.0').replace(/^v/i, '');
+        const buildMatch = String(release.body || '').match(/Build\s+(\d+)/i);
+        const ghCode = buildMatch ? parseInt(buildMatch[1], 10) : (parseInt(ghVer.split('.')[2] || '0', 10) + 1);
+        if (ghCode > versionCode || isNewerVersion(ghVer, latestVersion)) {
+          latestVersion = ghVer;
+          versionCode = Math.max(versionCode, ghCode);
+          titleHi = `नया आधिकारिक अपडेट उपलब्ध है (v${ghVer})`;
           releaseNotes = release.body || releaseNotes;
           publishedAt = release.published_at || publishedAt;
           if (Array.isArray(release.assets)) {
@@ -219,8 +224,8 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
             }
           }
         }
-      } catch {}
-    }
+      }
+    } catch {}
 
     const hasUpdate =
       versionCode > CURRENT_VERSION_CODE || isNewerVersion(latestVersion, CURRENT_APP_VERSION);
