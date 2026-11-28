@@ -252,14 +252,17 @@ function withRtmpBroadcaster(config) {
   config = withMainApplication(config, (cfg) => {
     let contents = cfg.modResults.contents;
     if (!contents.includes('IccRtmpPackage')) {
-      contents = contents.replace(
-        'override fun getPackages(): List<ReactPackage> =',
-        'override fun getPackages(): List<ReactPackage> ='
-      );
-      contents = contents.replace(
-        'PackageList(this).packages.apply {',
-        'PackageList(this).packages.apply {\n              add(com.idealcoaching.app.IccRtmpPackage())'
-      );
+      if (contents.includes('PackageList(this).packages.apply {')) {
+        contents = contents.replace(
+          'PackageList(this).packages.apply {',
+          'PackageList(this).packages.apply {\n              add(com.idealcoaching.app.IccRtmpPackage())'
+        );
+      } else if (contents.includes('val packages = PackageList(this).packages')) {
+        contents = contents.replace(
+          'return packages',
+          'packages.add(com.idealcoaching.app.IccRtmpPackage())\n            return packages'
+        );
+      }
     }
     cfg.modResults.contents = contents;
     return cfg;

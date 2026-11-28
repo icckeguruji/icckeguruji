@@ -80,6 +80,8 @@ jobs:
           -keep class com.horcrux.svg.** { *; }
           -keep class com.reactnativecommunity.webview.** { *; }
           -keepclassmembers class com.reactnativecommunity.webview.** { *; }
+          -keep class com.idealcoaching.app.** { *; }
+          -keep class com.pedro.** { *; }
           -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
           -assumenosideeffects class android.util.Log {
               public static boolean isLoggable(java.lang.String, int);
