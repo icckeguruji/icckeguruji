@@ -34,6 +34,7 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "CAMERA",
+        "RECORD_AUDIO",
         "REQUEST_INSTALL_PACKAGES",
         "DOWNLOAD_WITHOUT_NOTIFICATION"
       ]
@@ -41,7 +42,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-sqlite"
+      "expo-sqlite",
+      "./plugins/withRtmpBroadcaster"
     ],
     "experiments": {
       "typedRoutes": true

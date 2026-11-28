@@ -22,6 +22,7 @@ import { ArrowLeft, Radio, Youtube, Copy, Play, Square, RefreshCw, CheckCircle2,
 import { academicService, AcademicSubject, AcademicChapter } from '../../src/services/academicService';
 import { Course } from '@icc/shared-types';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
+import { InAppRtmpBroadcaster } from '../../src/components/InAppRtmpBroadcaster';
 
 const API_BASE = 'https://icconline.vercel.app';
 const YT_TOKEN_STORAGE_KEY = 'icc_yt_oauth_token_b64';
@@ -473,10 +474,19 @@ export default function AdminGoLiveScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Active Broadcast RTMP Details & Go Live Controls */}
+        {/* Active Broadcast: In-App Live Camera + Controls */}
         {activeBroadcast && (
           <View style={[styles.card, { backgroundColor: theme.surfaceCard, borderColor: '#2563EB', borderWidth: 1.5 }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>3. Stream Key & Live Controls</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>3. In-App Live Camera & Stream</Text>
+            <InAppRtmpBroadcaster
+              rtmpUrl={
+                activeBroadcast.streamKey
+                  ? `${activeBroadcast.rtmpUrl.replace(/\/$/, '')}/${activeBroadcast.streamKey}`
+                  : activeBroadcast.rtmpUrl
+              }
+              onLiveStarted={() => handleTransition('live')}
+              onLiveStopped={() => handleTransition('complete')}
+            />
             <Text style={[styles.cardSub, { color: theme.textSecondary }]}>
               Video ID: {activeBroadcast.videoId}
             </Text>
