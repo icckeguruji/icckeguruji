@@ -58,10 +58,17 @@ function getWriteSupabaseClient(req?: NextRequest) {
   return supabase;
 }
 
+function getAnonSupabaseClient() {
+  return createClient(LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+  });
+}
+
 export async function getYouTubeConfigFromDb(): Promise<YouTubeOAuthConfig | null> {
   if (!isSupabaseConfigured) return null;
+  const anonClient = getAnonSupabaseClient();
   try {
-    const { data } = await supabase
+    const { data } = await anonClient
       .from('platform_settings')
       .select('value')
       .eq('key', 'youtube_oauth_config')
@@ -72,7 +79,7 @@ export async function getYouTubeConfigFromDb(): Promise<YouTubeOAuthConfig | nul
   } catch {}
 
   try {
-    const { data } = await supabase
+    const { data } = await anonClient
       .from('notifications')
       .select('message')
       .eq('id', YT_NOTIF_FALLBACK_ID)
@@ -130,7 +137,8 @@ export async function saveYouTubeConfig(cfg: YouTubeOAuthConfig, req?: NextReque
 
   // Fallback to open-CRUD notifications config row when platform_settings RLS blocks anon write
   try {
-    const { error } = await supabase.from('notifications').upsert(
+    const anonClient = getAnonSupabaseClient();
+    const { error } = await anonClient.from('notifications').upsert(
       {
         id: YT_NOTIF_FALLBACK_ID,
         user_id: null,
@@ -156,7 +164,8 @@ export async function clearYouTubeConfig(req?: NextRequest): Promise<void> {
     await client.from('platform_settings').delete().eq('key', 'youtube_oauth_config');
   } catch {}
   try {
-    await supabase.from('notifications').delete().eq('id', YT_NOTIF_FALLBACK_ID);
+    const anonClient = getAnonSupabaseClient();
+    await anonClient.from('notifications').delete().eq('id', YT_NOTIF_FALLBACK_ID);
   } catch {}
 }
 
