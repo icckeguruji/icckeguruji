@@ -61,6 +61,10 @@ function getWriteSupabaseClient(req?: NextRequest) {
 function getAnonSupabaseClient() {
   return createClient(LIVE_SUPABASE_URL, LIVE_SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: 'no-store' }),
+    },
   });
 }
 
