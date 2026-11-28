@@ -11,6 +11,7 @@ import {
   Alert,
   Platform,
   Image,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -66,6 +67,7 @@ export default function ChapterContentScreen() {
   const [recordedLectures, setRecordedLectures] = useState<RecordedLecture[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(true);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
 
@@ -434,7 +436,26 @@ export default function ChapterContentScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              try {
+                await academicService.syncFromCloud();
+                await loadContent();
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+            colors={['#2563EB']}
+            tintColor={isDark ? '#FFFFFF' : '#2563EB'}
+          />
+        }
+      >
         {/* Chapter Summary Card */}
         <View style={[styles.chapterCard, { backgroundColor: theme.surfaceCard, borderColor: theme.cardBorder }]}>
           <View style={[styles.chapterNumberBadge, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderColor: isDark ? '#3B82F6' : '#BFDBFE' }]}>

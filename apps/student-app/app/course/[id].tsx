@@ -11,6 +11,8 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  BackHandler,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -158,6 +160,7 @@ export default function CourseDetailsScreen() {
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
   const [studyMaterials, setStudyMaterials] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Admin Modals
   const [modalType, setModalType] = useState<
@@ -515,20 +518,60 @@ export default function CourseDetailsScreen() {
     setFormPdfName(null);
   };
 
-  // Back Navigation within Hierarchy
+  // Back Navigation within Hierarchy (step-wise for both UI button & Android hardware Back)
   const handleBackHierarchy = () => {
     if (activeLevel === 'chapter_content') {
       setActiveLevel('chapters');
+      return true;
     } else if (activeLevel === 'chapters') {
-      if (selectedSubject?.has_sub_subjects) {
+      if (selectedSubject?.has_sub_subjects && selectedSubject?.sub_subjects && selectedSubject.sub_subjects.length > 0) {
         setActiveLevel('sub_subjects');
       } else {
         setActiveLevel('subjects');
       }
+      return true;
     } else if (activeLevel === 'sub_subjects') {
       setActiveLevel('subjects');
+      return true;
     } else {
       router.back();
+      return true;
+    }
+  };
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (activeLevel !== 'subjects') {
+        handleBackHierarchy();
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [activeLevel, selectedSubject]);
+
+  // Pull-to-refresh stays on the exact current level (subjects / sub_subjects / chapters)
+  const handlePullRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await academicService.syncFromCloud();
+      const found = await academicService.getCourseById(id);
+      if (found) setCurrentCourse(found);
+      const subs = await academicService.getSubjects(id);
+      setSubjects(subs);
+      if (selectedSubject) {
+        const updatedSub = subs.find((s) => s.id === selectedSubject.id) || selectedSubject;
+        setSelectedSubject(updatedSub);
+        if (activeLevel === 'chapters') {
+          const chaps = await academicService.getChapters(updatedSub.id, selectedSubSubject?.id);
+          setChapters(chaps);
+        }
+      }
+    } catch (e) {
+      console.warn('Pull refresh error:', e);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -617,7 +660,17 @@ export default function CourseDetailsScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handlePullRefresh}
+            colors={['#2563EB']}
+            tintColor={isDark ? '#FFFFFF' : '#2563EB'}
+          />
+        }
+      >
         {/* Banner only visible at Top Subjects Level */}
         {activeLevel === 'subjects' && (
           <View style={styles.bannerContainer}>
